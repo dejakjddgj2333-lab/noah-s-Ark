@@ -1,4 +1,5 @@
 import 'api.dart';
+import 'auth.dart';
 
 /// 资讯条目 (后端 /api/news 行).
 class NewsItem {
@@ -8,6 +9,7 @@ class NewsItem {
         summary = (j['summary'] ?? '') as String,
         content = (j['content'] ?? '') as String,
         coverUrl = j['cover_url'] as String?,
+        sourceUrl = j['source_url'] as String?,
         source = (j['source'] ?? '') as String,
         category = (j['category'] ?? 'news') as String,
         publishAt = DateTime.tryParse((j['publish_at'] ?? '') as String) ??
@@ -22,6 +24,7 @@ class NewsItem {
   final String summary;
   final String content;
   final String? coverUrl;
+  final String? sourceUrl;
   final String source;
   final String category;
   final DateTime publishAt;
@@ -208,5 +211,142 @@ class McData {
     if (a >= 1e9) return '\$${(v / 1e9).toStringAsFixed(1)}B';
     if (a >= 1e6) return '\$${(v / 1e6).toStringAsFixed(1)}M';
     return '\$${v.toStringAsFixed(0)}';
+  }
+}
+
+/// 互动状态 (点赞/收藏/评论数). 对应 /api/interaction/state.
+class InteractionState {
+  InteractionState.fromJson(Map<String, dynamic> j)
+      : likeCount = (j['like_count'] ?? 0) as int,
+        commentCount = (j['comment_count'] ?? 0) as int,
+        likedByMe = (j['liked_by_me'] ?? false) as bool,
+        favoritedByMe = (j['favorited_by_me'] ?? false) as bool;
+
+  final int likeCount;
+  final int commentCount;
+  final bool likedByMe;
+  final bool favoritedByMe;
+
+  InteractionState copyWith({
+    int? likeCount,
+    int? commentCount,
+    bool? likedByMe,
+    bool? favoritedByMe,
+  }) =>
+      InteractionState.fromJson({
+        'like_count': likeCount ?? this.likeCount,
+        'comment_count': commentCount ?? this.commentCount,
+        'liked_by_me': likedByMe ?? this.likedByMe,
+        'favorited_by_me': favoritedByMe ?? this.favoritedByMe,
+      });
+}
+
+/// 评论/回复条目. 对应 /api/interaction/comments items.
+class McComment {
+  McComment.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        username = ((j['user'] as Map? ?? const {})['username'] ?? '') as String,
+        content = (j['content'] ?? '') as String,
+        replyCount = (j['reply_count'] ?? 0) as int,
+        likeCount = (j['like_count'] ?? 0) as int,
+        likedByMe = (j['liked_by_me'] ?? false) as bool,
+        createdAt = DateTime.tryParse((j['created_at'] ?? '') as String) ??
+            DateTime.now();
+
+  final int id;
+  final String username;
+  final String content;
+  final int replyCount;
+  final int likeCount;
+  final bool likedByMe;
+  final DateTime createdAt;
+}
+
+/// 资讯互动接口 (点赞/收藏/评论). target_type 固定 'news'.
+/// 未登录可读 (state/comments 无需 token); 写操作需登录, 自动带 token.
+class McInteraction {
+  McInteraction._();
+
+  static const _targetType = 'news';
+
+  static String? get _token => AuthStore.instance.token;
+
+  /// 互动状态: 点赞数/评论数 + 我是否已赞/已藏. 未登录 liked/favorited 恒 false.
+  static Future<InteractionState> state(int newsId) async {
+    final resp = await McApi.get(
+      '/api/interaction/state?target_type=$_targetType&target_id=$newsId',
+      token: _token,
+    );
+    return InteractionState.fromJson(resp);
+  }
+
+  /// 评论列表 (顶层). 返回 (items, total).
+  static Future<(List<McComment>, int)> comments(int newsId,
+      {int page = 1, int pageSize = 20}) async {
+    final resp = await McApi.get(
+      '/api/interaction/comments?target_type=$_targetType&target_id=$newsId'
+      '&page=$page&page_size=$pageSize',
+      token: _token,
+    );
+    final items = (resp['items'] as List? ?? [])
+        .map((e) => McComment.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final total = (resp['total'] ?? items.length) as int;
+    return (items, total);
+  }
+
+  /// 某条评论的回复列表 (时间升序).
+  static Future<List<McComment>> replies(int commentId) async {
+    final resp = await McApi.get(
+      '/api/interaction/comments/$commentId/replies',
+      token: _token,
+    );
+    return (resp['items'] as List? ?? [])
+        .map((e) => McComment.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 发评论/回复. 返回新评论. 需登录.
+  static Future<McComment> addComment(int newsId, String content,
+      {int? replyToId}) async {
+    final resp = await McApi.post(
+      '/api/interaction/comments',
+      {
+        'target_type': _targetType,
+        'target_id': newsId,
+        'content': content,
+        if (replyToId != null) 'reply_to_id': replyToId,
+      },
+      token: _token,
+    );
+    return McComment.fromJson(resp);
+  }
+
+  /// 删除自己的评论. 需登录 (owner). 204 无 body.
+  static Future<void> deleteComment(int commentId) async {
+    await McApi.del('/api/interaction/comments/$commentId', token: _token);
+  }
+
+  /// 点赞/取消点赞. 返回 (liked, likeCount). 需登录.
+  static Future<(bool, int)> toggleLike(int newsId) async {
+    final resp = await McApi.post(
+      '/api/interaction/like',
+      {'target_type': _targetType, 'target_id': newsId},
+      token: _token,
+    );
+    return (
+      (resp['liked'] ?? false) as bool,
+      (resp['like_count'] ?? 0) as int,
+    );
+  }
+
+  /// 收藏/取消收藏. 返回 favorited. 需登录.
+  static Future<bool> toggleFavorite(int newsId) async {
+    final resp = await McApi.post(
+      '/api/interaction/favorite',
+      {'target_type': _targetType, 'target_id': newsId},
+      token: _token,
+    );
+    return (resp['favorited'] ?? false) as bool;
   }
 }

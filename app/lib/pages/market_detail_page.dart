@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
+import '../services/api.dart';
 import '../services/data.dart';
 import '../services/ticker_ws.dart';
 
-/// 行情详情页: 实时价格 (OKX WS), 24H 统计, K线, 资金费率.
+/// 行情详情页: 实时价格 (OKX WS), 24H 统计, K线 / 盘口 / 成交 三 Tab,
+/// 资金费率倒计时, 持仓量 (后端缺失时整卡隐藏).
 class MarketDetailPage extends StatefulWidget {
   const MarketDetailPage({
     super.key,
@@ -30,7 +32,16 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   double _low24h = 0;
   double _volCcy24h = 0;
 
+  // 盘口 (books5 全量替换).
+  List<BookLevel> _bids = const [];
+  List<BookLevel> _asks = const [];
+
+  // 逐笔成交 (新在前, 封顶 50).
+  final List<TradePush> _trades = [];
+
   StreamSubscription<TickerPush>? _wsSub;
+  StreamSubscription<BookPush>? _bookSub;
+  StreamSubscription<TradePush>? _tradeSub;
 
   // K线.
   List<Map<String, double>> _candles = [];
@@ -41,10 +52,14 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   double? _fundingRate;
   DateTime? _nextFunding;
 
+  // 持仓量 (null = 未加载/失败, 整卡隐藏).
+  double? _openInterest;
+
   static const _bars = ['15m', '1H', '4H', '1D'];
 
   double get _changePct =>
       _open24h > 0 ? (_last - _open24h) / _open24h * 100 : 0;
+  double get _changeAbs => _last - _open24h;
   double get _notional => _volCcy24h * _last;
 
   @override
@@ -54,11 +69,14 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     _subscribeLive();
     _loadCandles();
     _loadFunding();
+    _loadOpenInterest();
   }
 
   @override
   void dispose() {
     _wsSub?.cancel();
+    _bookSub?.cancel();
+    _tradeSub?.cancel();
     super.dispose();
   }
 
@@ -79,6 +97,9 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   void _subscribeLive() {
     final ws = TickerWs.instance;
     ws.subscribe({widget.instId});
+    ws.subscribeBooks(widget.instId);
+    ws.subscribeTrades(widget.instId);
+
     _wsSub = ws.stream.listen((p) {
       if (!mounted || p.instId != widget.instId) return;
       setState(() {
@@ -88,7 +109,23 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         _low24h = p.low24h;
         _volCcy24h = p.volCcy24h;
       });
-    });
+    }, onError: (_) {});
+
+    _bookSub = ws.bookStream.listen((b) {
+      if (!mounted || b.instId != widget.instId) return;
+      setState(() {
+        _bids = b.bids;
+        _asks = b.asks;
+      });
+    }, onError: (_) {});
+
+    _tradeSub = ws.tradeStream.listen((t) {
+      if (!mounted || t.instId != widget.instId) return;
+      setState(() {
+        _trades.insert(0, t);
+        if (_trades.length > 50) _trades.removeRange(50, _trades.length);
+      });
+    }, onError: (_) {});
   }
 
   Future<void> _loadCandles() async {
@@ -120,6 +157,53 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     } catch (_) {/* 保留 null 占位 */}
   }
 
+  /// 持仓量: 后端可能无此端点, ApiException 时整卡隐藏 (不报错).
+  Future<void> _loadOpenInterest() async {
+    try {
+      final resp = await McData.overview('open-interest?symbol=${widget.symbol}');
+      final v = _findNumber(resp);
+      if (!mounted || v == null || v <= 0) return;
+      setState(() => _openInterest = v);
+    } on ApiException {
+      // 端点不存在 -> 整卡隐藏.
+    } catch (_) {}
+  }
+
+  /// 在响应里尽力找一个合理的持仓量数值 (USD).
+  static double? _findNumber(dynamic raw) {
+    double? pick(dynamic v) {
+      if (v is num) return v.toDouble();
+      return double.tryParse('$v');
+    }
+
+    dynamic node = raw;
+    // 常见包裹: {data: ...} / {data: [...]}.
+    if (node is Map && node.containsKey('data')) node = node['data'];
+    if (node is List) node = node.isEmpty ? null : node.first;
+    if (node is! Map) return pick(node);
+    const keys = [
+      'openInterest',
+      'open_interest',
+      'openInterestUsd',
+      'open_interest_usd',
+      'oi',
+      'oiUsd',
+      'value',
+    ];
+    for (final k in keys) {
+      if (node.containsKey(k)) {
+        final v = pick(node[k]);
+        if (v != null) return v;
+      }
+    }
+    // 兜底: 取第一个数值型字段.
+    for (final e in node.values) {
+      final v = pick(e);
+      if (v != null) return v;
+    }
+    return null;
+  }
+
   void _selectBar(String bar) {
     if (bar == _bar) return;
     setState(() => _bar = bar);
@@ -129,22 +213,43 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   @override
   Widget build(BuildContext context) {
     final pct = _changePct;
-    final positive = pct >= 0;
-    final pctColor = positive ? McColors.bull : McColors.bear;
+    final pctColor = pct >= 0 ? McColors.bull : McColors.bear;
     return Scaffold(
       backgroundColor: McColors.surface,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
-          children: [
-            _buildHeader(pct, pctColor),
-            const SizedBox(height: 16),
-            _buildStatsRow(),
-            const SizedBox(height: 20),
-            _buildKlineSection(),
-            const SizedBox(height: 20),
-            _buildFundingCard(),
-          ],
+        child: DefaultTabController(
+          length: 3,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+                child: _buildHeader(pct, pctColor),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: _buildStatsRow(),
+              ),
+              if (_openInterest != null) ...[
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: _buildOpenInterestCard(),
+                ),
+              ],
+              const SizedBox(height: 12),
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildKlineTab(),
+                    _buildOrderBookTab(),
+                    _buildTradesTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -171,8 +276,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
             ),
             Text(
               '/USDT 永续',
-              style:
-                  McText.sans(size: 13, color: McColors.onSurfaceVariant),
+              style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
             ),
           ],
         ),
@@ -196,8 +300,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
               const SizedBox(width: 10),
               Container(
                 margin: const EdgeInsets.only(bottom: 4),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: pctColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -216,20 +319,31 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     );
   }
 
-  /// 24H 统计: 高 / 低 / 成交额(名义 USD).
+  /// 24H 统计: 高 / 低 / 涨跌额 / 成交额.
   Widget _buildStatsRow() {
+    final abs = _changeAbs;
+    final absColor = abs >= 0 ? McColors.bull : McColors.bear;
     return Row(
       children: [
         Expanded(
           child: _stat('24H 最高', _high24h > 0 ? _fmtPrice(_high24h) : '--',
               McColors.bull),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: _stat('24H 最低', _low24h > 0 ? _fmtPrice(_low24h) : '--',
               McColors.bear),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _stat(
+              '24H 涨跌额',
+              _open24h > 0
+                  ? '${abs >= 0 ? '+' : ''}${_fmtPrice(abs)}'
+                  : '--',
+              absColor),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: _stat('24H 成交额',
               _notional > 0 ? McData.fmtUsdCompact(_notional) : '--',
@@ -241,13 +355,12 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
 
   Widget _stat(String label, String value, Color valueColor) {
     return McCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style:
-                  McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+              style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -255,11 +368,71 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
             child: Text(
               value,
               style: McText.sans(
-                  size: 15, weight: FontWeight.w700, color: valueColor),
+                  size: 14, weight: FontWeight.w700, color: valueColor),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 持仓量卡 (仅成功加载时显示).
+  Widget _buildOpenInterestCard() {
+    final oi = _openInterest!;
+    return McCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const Icon(Icons.stacked_bar_chart,
+              size: 15, color: McColors.secondary),
+          const SizedBox(width: 8),
+          Text('持仓量',
+              style: McText.sans(size: 13, weight: FontWeight.w600)),
+          const Spacer(),
+          Text(
+            McData.fmtUsdCompact(oi),
+            style: McText.mono(
+                size: 16, weight: FontWeight.w700, color: McColors.onSurface),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+              color: McColors.outlineVariant.withValues(alpha: 0.5)),
+        ),
+      ),
+      child: TabBar(
+        labelColor: McColors.primary,
+        unselectedLabelColor: McColors.onSurfaceVariant,
+        indicatorColor: McColors.primaryContainer,
+        indicatorWeight: 2.5,
+        labelStyle: McText.sans(size: 13, weight: FontWeight.w700),
+        unselectedLabelStyle: McText.sans(size: 13, weight: FontWeight.w500),
+        tabs: const [
+          Tab(text: 'K线'),
+          Tab(text: '盘口'),
+          Tab(text: '成交'),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- Tab 1: K线 + 资金费率 ----------------
+
+  Widget _buildKlineTab() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 32),
+      children: [
+        _buildKlineSection(),
+        const SizedBox(height: 16),
+        _FundingCountdownCard(rate: _fundingRate, nextFunding: _nextFunding),
+      ],
     );
   }
 
@@ -288,7 +461,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 220,
+            height: 240,
             child: _candleLoading
                 ? const Center(
                     child: SizedBox(
@@ -346,11 +519,297 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     );
   }
 
-  /// 资金费率卡片.
-  Widget _buildFundingCard() {
-    final rate = _fundingRate;
-    final rateColor =
-        (rate ?? 0) >= 0 ? McColors.bull : McColors.bear;
+  // ---------------- Tab 2: 盘口 ----------------
+
+  Widget _buildOrderBookTab() {
+    // 卖盘升序 -> 反转, 顶部显示最高卖价.
+    final asks = _asks.reversed.toList();
+    final bids = _bids;
+    var maxSz = 0.0;
+    for (final l in _asks) {
+      if (l.sz > maxSz) maxSz = l.sz;
+    }
+    for (final l in _bids) {
+      if (l.sz > maxSz) maxSz = l.sz;
+    }
+    final empty = _asks.isEmpty && _bids.isEmpty;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 32),
+      children: [
+        McCard(
+          padding: const EdgeInsets.all(14),
+          child: empty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text('等待盘口数据…',
+                        style: McText.sans(
+                            size: 12, color: McColors.onSurfaceVariant)),
+                  ),
+                )
+              : Column(
+                  children: [
+                    _bookHeader(),
+                    const SizedBox(height: 8),
+                    // 卖盘 (上 5, 红).
+                    for (final l in asks)
+                      _bookRow(l, McColors.bear, maxSz, Alignment.centerRight),
+                    const SizedBox(height: 8),
+                    _spreadRow(),
+                    const SizedBox(height: 8),
+                    // 买盘 (下 5, 绿).
+                    for (final l in bids)
+                      _bookRow(l, McColors.bull, maxSz, Alignment.centerRight),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bookHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('价格 (USDT)',
+            style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+        Text('数量 (${widget.symbol})',
+            style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+      ],
+    );
+  }
+
+  Widget _bookRow(BookLevel l, Color color, double maxSz, Alignment align) {
+    final frac = maxSz > 0 ? (l.sz / maxSz).clamp(0.0, 1.0) : 0.0;
+    return SizedBox(
+      height: 26,
+      child: Stack(
+        children: [
+          // 深度条 (右侧对齐).
+          Align(
+            alignment: align,
+            child: FractionallySizedBox(
+              widthFactor: frac,
+              child: Container(color: color.withValues(alpha: 0.10)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_fmtNum(l.px),
+                    style: McText.mono(
+                        size: 12, weight: FontWeight.w600, color: color)),
+                Text(_fmtSz(l.sz),
+                    style: McText.mono(
+                        size: 12, color: McColors.onSurface)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 中间价差行: 最新价 + 标记提示.
+  Widget _spreadRow() {
+    final bestBid = _bids.isNotEmpty ? _bids.first.px : 0.0;
+    final bestAsk = _asks.isNotEmpty ? _asks.first.px : 0.0;
+    final spread = (bestAsk > 0 && bestBid > 0) ? bestAsk - bestBid : 0.0;
+    final pctColor = _changePct >= 0 ? McColors.bull : McColors.bear;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Text(
+            _last > 0 ? _fmtNum(_last) : '--',
+            style: McText.mono(
+                size: 15, weight: FontWeight.w700, color: pctColor),
+          ),
+          const SizedBox(width: 6),
+          Text('标记',
+              style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          const Spacer(),
+          Text(
+            '价差 ${spread > 0 ? _fmtNum(spread) : '--'}',
+            style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- Tab 3: 成交 ----------------
+
+  Widget _buildTradesTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text('时间',
+                    style: McText.sans(
+                        size: 12, color: McColors.onSurfaceVariant)),
+              ),
+              Expanded(
+                child: Text('价格 (USDT)',
+                    textAlign: TextAlign.center,
+                    style: McText.sans(
+                        size: 12, color: McColors.onSurfaceVariant)),
+              ),
+              Expanded(
+                child: Text('数量 (${widget.symbol})',
+                    textAlign: TextAlign.right,
+                    style: McText.sans(
+                        size: 12, color: McColors.onSurfaceVariant)),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, color: McColors.outlineVariant.withValues(alpha: 0.4)),
+        Expanded(
+          child: _trades.isEmpty
+              ? Center(
+                  child: Text('等待成交数据…',
+                      style: McText.sans(
+                          size: 12, color: McColors.onSurfaceVariant)),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: _trades.length,
+                  itemBuilder: (context, i) {
+                    final t = _trades[i];
+                    final buy = t.side == 'buy';
+                    final c = buy ? McColors.bull : McColors.bear;
+                    return SizedBox(
+                      height: 26,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(_fmtClock(t.ts),
+                                style: McText.mono(
+                                    size: 12,
+                                    color: McColors.onSurfaceVariant)),
+                          ),
+                          Expanded(
+                            child: Text(_fmtNum(t.px),
+                                textAlign: TextAlign.center,
+                                style: McText.mono(
+                                    size: 12,
+                                    weight: FontWeight.w600,
+                                    color: c)),
+                          ),
+                          Expanded(
+                            child: Text(_fmtSz(t.sz),
+                                textAlign: TextAlign.right,
+                                style: McText.mono(
+                                    size: 12, color: McColors.onSurface)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------- 格式化 ----------------
+
+  static String _fmtPrice(double p) {
+    if (p >= 1000) return '\$${_comma(p)}';
+    if (p.abs() > 0 && p.abs() < 10) return '\$${p.toStringAsFixed(4)}';
+    return '\$${p.toStringAsFixed(2)}';
+  }
+
+  /// 无货币符号的裸价格 (盘口/成交用), 自适应精度.
+  static String _fmtNum(double p) {
+    if (p >= 1000) return _comma(p);
+    if (p.abs() > 0 && p.abs() < 10) return p.toStringAsFixed(4);
+    return p.toStringAsFixed(2);
+  }
+
+  static String _fmtSz(double sz) {
+    if (sz >= 1000) return _comma(sz);
+    if (sz.abs() > 0 && sz.abs() < 1) return sz.toStringAsFixed(4);
+    return sz.toStringAsFixed(2);
+  }
+
+  static String _comma(double v) {
+    final fixed = v.toStringAsFixed(2);
+    final dot = fixed.indexOf('.');
+    final intPart = fixed.substring(0, dot);
+    final buf = StringBuffer();
+    for (var i = 0; i < intPart.length; i++) {
+      buf.write(intPart[i]);
+      final remaining = intPart.length - i - 1;
+      if (remaining > 0 && remaining % 3 == 0) buf.write(',');
+    }
+    return '$buf.${fixed.substring(dot + 1)}';
+  }
+
+  /// ms 时间戳 → HH:mm:ss.
+  static String _fmtClock(int ms) {
+    if (ms <= 0) return '--:--:--';
+    final t = DateTime.fromMillisecondsSinceEpoch(ms);
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
+  }
+}
+
+/// 资金费率卡: 当前费率 + 下次结算倒计时 (每秒滴答).
+class _FundingCountdownCard extends StatefulWidget {
+  const _FundingCountdownCard({required this.rate, required this.nextFunding});
+
+  final double? rate;
+  final DateTime? nextFunding;
+
+  @override
+  State<_FundingCountdownCard> createState() => _FundingCountdownCardState();
+}
+
+class _FundingCountdownCardState extends State<_FundingCountdownCard> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String get _countdown {
+    final next = widget.nextFunding;
+    if (next == null) return '--:--:--';
+    var diff = next.difference(DateTime.now());
+    if (diff.isNegative) diff = Duration.zero;
+    String two(int n) => n.toString().padLeft(2, '0');
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    final s = diff.inSeconds % 60;
+    return '${two(h)}:${two(m)}:${two(s)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rate = widget.rate;
+    final rateColor = (rate ?? 0) >= 0 ? McColors.bull : McColors.bear;
     return McCard(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -368,7 +827,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           Row(
             children: [
               Expanded(
-                child: _fundingItem(
+                child: _item(
                   '当前费率',
                   rate == null
                       ? '--'
@@ -377,11 +836,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                 ),
               ),
               Expanded(
-                child: _fundingItem(
-                  '下次结算',
-                  _nextFunding == null ? '--' : _fmtTime(_nextFunding!),
-                  McColors.onSurface,
-                ),
+                child: _item('下次结算', _countdown, McColors.onSurface),
               ),
             ],
           ),
@@ -390,7 +845,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     );
   }
 
-  Widget _fundingItem(String label, String value, Color valueColor) {
+  Widget _item(String label, String value, Color valueColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -402,30 +857,6 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                 size: 14, weight: FontWeight.w700, color: valueColor)),
       ],
     );
-  }
-
-  static String _fmtPrice(double p) {
-    if (p >= 1000) return '\$${_comma(p)}';
-    if (p > 0 && p < 10) return '\$${p.toStringAsFixed(4)}';
-    return '\$${p.toStringAsFixed(2)}';
-  }
-
-  static String _comma(double v) {
-    final fixed = v.toStringAsFixed(2);
-    final dot = fixed.indexOf('.');
-    final intPart = fixed.substring(0, dot);
-    final buf = StringBuffer();
-    for (var i = 0; i < intPart.length; i++) {
-      buf.write(intPart[i]);
-      final remaining = intPart.length - i - 1;
-      if (remaining > 0 && remaining % 3 == 0) buf.write(',');
-    }
-    return '$buf.${fixed.substring(dot + 1)}';
-  }
-
-  static String _fmtTime(DateTime t) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(t.hour)}:${two(t.minute)}';
   }
 }
 
