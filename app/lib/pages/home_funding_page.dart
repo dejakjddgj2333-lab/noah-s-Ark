@@ -88,6 +88,20 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
           statusBold: false,
         ),
         _FundingRow(
+          symbol: 'XRP',
+          price: '\$2.0413',
+          rate: '+0.0092%',
+          rateColor: McColors.primary,
+          sub: ['0.009', '0.010', '0.009'],
+          subColor: McColors.primary,
+          apy: '+10.1%',
+          apyColor: McColors.primary,
+          status: '基准平稳',
+          statusColor: McColors.onSurfaceVariant,
+          statusBg: McColors.surfaceContainerHigh,
+          statusBold: false,
+        ),
+        _FundingRow(
           symbol: 'XTZ',
           price: '\$0.842',
           rate: '-0.0320%',
@@ -257,21 +271,6 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   static double _num(dynamic v) {
     if (v is num) return v.toDouble();
     return double.tryParse('$v') ?? 0;
-  }
-
-  static String _str(Map<String, dynamic> m, List<String> keys, String dflt) {
-    for (final k in keys) {
-      final v = m[k];
-      if (v is String && v.isNotEmpty) return v;
-      if (v is num) return '$v';
-    }
-    return dflt;
-  }
-
-  static String _fmtNum(double v) {
-    if (v >= 1000) return v.toStringAsFixed(1);
-    if (v >= 1) return v.toStringAsFixed(2);
-    return v.toStringAsFixed(4);
   }
 
   @override

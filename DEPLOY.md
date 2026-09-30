@@ -20,7 +20,7 @@ mkdir -p /www/wwwroot/hk
 git clone <github-repo-url> /www/wwwroot/hk/repo
 
 # 2. 建后端运行目录（.env.prod 已入库, 部署时自动同步, 无需手动建）
-mkdir -p /www/wwwroot/hk/mingce
+mkdir -p /www/wwwroot/shipapi.bdxapi.com
 
 # 3. 服务器装过 docker + rsync + node 即可（okx 已装过的话直接复用）
 ```

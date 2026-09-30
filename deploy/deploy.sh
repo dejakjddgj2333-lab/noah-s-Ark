@@ -5,9 +5,9 @@
 set -e
 
 # ---- 服务器路径（按需修改）----
-REPO=/www/wwwroot/hk/repo        # 仓库 clone 位置
-APP_DIR=/www/wwwroot/hk/mingce   # 后端运行目录
-ADMIN_WEB=/www/wwwroot/hk/admin  # 后台静态站点发布目录（宝塔站点根）
+REPO=/www/wwwroot/hk/repo                      # 仓库 clone 位置
+APP_DIR=/www/wwwroot/shipapi.bdxapi.com        # 后端运行目录
+ADMIN_WEB=/www/wwwroot/hk/admin                # 后台静态站点发布目录（宝塔站点根）
 
 echo "==> git pull"
 cd "$REPO"
