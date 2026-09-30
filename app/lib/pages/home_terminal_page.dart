@@ -162,16 +162,17 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
 
   /// 返回 [totalUsd, longUsd, shortUsd]; 无法得到有效多空合计时返回 null.
   static List<double>? _parseLiquidations(Map<String, dynamic> resp) {
-    final longs = <num>[], shorts = <num>[];
-    _collect(resp,
-        (k) => k.toLowerCase().contains('long') && k.toLowerCase().contains('liq'),
-        longs);
-    _collect(resp,
-        (k) =>
-            k.toLowerCase().contains('short') && k.toLowerCase().contains('liq'),
-        shorts);
-    final longUsd = longs.fold<double>(0, (a, b) => a + b);
-    final shortUsd = shorts.fold<double>(0, (a, b) => a + b);
+    final data = resp['data'];
+    if (data is! List) return null;
+    double longUsd = 0, shortUsd = 0;
+    for (final e in data) {
+      if (e is! Map) continue;
+      // 跳过 All 聚合行, 避免重复计数
+      if ((e['exchange'] ?? '').toString().toLowerCase() == 'all') continue;
+      num numOf(dynamic v) => v is num ? v : (num.tryParse('$v') ?? 0);
+      longUsd += numOf(e['longLiquidation_usd'] ?? e['longLiquidationUsd']);
+      shortUsd += numOf(e['shortLiquidation_usd'] ?? e['shortLiquidationUsd']);
+    }
     if (longUsd <= 0 || shortUsd <= 0) return null;
     return [longUsd + shortUsd, longUsd, shortUsd];
   }
@@ -252,25 +253,23 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
       children: [
-        // 1. 核心情绪与宏观双子盘
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                  child: _FearGreedCard(
-                      value: _fgValue, label: _fgLabel, color: _fgColor)),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: _DominanceCard(
-                btc: _btcDom,
-                eth: _ethDom,
-                other: _otherDom,
-                btcFrac: _btcDomFrac,
-                ethFrac: _ethDomFrac,
-              )),
-            ],
-          ),
+        // 1. 核心情绪与宏观双子盘 (自然高度, IntrinsicHeight 与 Expanded 基线冲突)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+                child: _FearGreedCard(
+                    value: _fgValue, label: _fgLabel, color: _fgColor)),
+            const SizedBox(width: 10),
+            Expanded(
+                child: _DominanceCard(
+              btc: _btcDom,
+              eth: _ethDom,
+              other: _otherDom,
+              btcFrac: _btcDomFrac,
+              ethFrac: _ethDomFrac,
+            )),
+          ],
         ),
         const SizedBox(height: 16),
 

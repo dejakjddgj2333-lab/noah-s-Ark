@@ -382,6 +382,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   void _applyParsed(List<_RawEx> raw) {
     double sumTotal = 0, sumLong = 0, sumShort = 0;
     for (final r in raw) {
+      if (_normName(r.name) == 'all') continue; // 聚合行, 跳过避免重复计数
       sumTotal += r.total;
       sumLong += r.long;
       sumShort += r.short;

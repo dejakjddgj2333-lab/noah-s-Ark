@@ -82,6 +82,23 @@ class LongShortRatio {
   final double? shortPct;
 }
 
+/// 永续合约资金费率.
+class FundingRate {
+  FundingRate.fromJson(Map<String, dynamic> j)
+      : rate = _toDouble(j['fundingRate']),
+        nextFundingTime = _msToTime(j['nextFundingTime']);
+
+  final double? rate;
+  final DateTime? nextFundingTime;
+
+  static DateTime? _msToTime(dynamic v) {
+    final ms = int.tryParse('$v');
+    return (ms == null || ms == 0)
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+}
+
 /// 数据获取层. 所有方法失败抛 ApiException; 页面自行决定回退.
 class McData {
   McData._();
@@ -98,6 +115,12 @@ class McData {
         .map((e) => NewsItem.fromJson(e as Map<String, dynamic>))
         .toList();
     return items;
+  }
+
+  /// 资讯详情 (后端 /api/news/{id}, 字段同列表项 + content).
+  static Future<NewsItem> newsDetail(int id) async {
+    final resp = await McApi.get('/api/news/$id');
+    return NewsItem.fromJson(resp);
   }
 
   static Future<List<OkxTicker>> tickers({String instType = 'SWAP'}) async {
@@ -124,6 +147,45 @@ class McData {
     final range = hi - lo;
     if (range == 0) return List.filled(data.length, 0.5);
     return data.map((v) => (v - lo) / range).toList();
+  }
+
+  /// 单交易对最新行情 (/api/market/ticker/{instId}).
+  static Future<OkxTicker> ticker(String instId) async {
+    final resp = await McApi.get('/api/market/ticker/$instId');
+    final data = resp['data'] as List? ?? [];
+    if (data.isEmpty) throw StateError('no ticker for $instId');
+    return OkxTicker.fromJson(data.first as Map<String, dynamic>);
+  }
+
+  /// K线原始数据: 返回 [{ts,o,h,l,c}] 时间升序 (后端返回最新在前, 已反转).
+  static Future<List<Map<String, double>>> candles(String instId,
+      {String bar = '1H', int limit = 60}) async {
+    final resp =
+        await McApi.get('/api/market/candles/$instId?bar=$bar&limit=$limit');
+    return (resp['data'] as List? ?? [])
+        .map((e) {
+          final row = e as List;
+          double p(int i) =>
+              i < row.length ? (double.tryParse('${row[i]}') ?? 0) : 0;
+          return <String, double>{
+            'ts': p(0),
+            'o': p(1),
+            'h': p(2),
+            'l': p(3),
+            'c': p(4),
+          };
+        })
+        .toList()
+        .reversed // OKX 最新在前 -> 时间升序
+        .toList();
+  }
+
+  /// 永续合约资金费率 (/api/market/funding-rate/{instId}).
+  static Future<FundingRate> fundingRate(String instId) async {
+    final resp = await McApi.get('/api/market/funding-rate/$instId');
+    final data = resp['data'] as List? ?? [];
+    return FundingRate.fromJson(
+        data.isEmpty ? const {} : data.first as Map<String, dynamic>);
   }
 
   /// CoinGlass 大盘指标透传. path 如 'sentiment', 'liquidations/exchange-list?range=24h'.

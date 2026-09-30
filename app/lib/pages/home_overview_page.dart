@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
+import '../services/ticker_ws.dart';
 
 /// 首页 · 综合看板 — 聚合各分板核心指标的总览页.
 ///
@@ -64,6 +67,10 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   // ---- 主流资产速览 (mock 默认) ----
   List<_AssetRow> _assets = _mockAssets();
 
+  // ---- 主流资产实时推送 (OKX WS, 失败静默保留 REST/ mock) ----
+  StreamSubscription<TickerPush>? _tickerSub;
+  static const _watchSymbols = ['BTC', 'ETH', 'SOL', 'SUI'];
+
   static List<_AssetRow> _mockAssets() => const [
         _AssetRow('₿', 'BTC', '/USDT', '\$96,450.00', '+3.42%', true,
             [0.1, 0.25, 0.2, 0.45, 0.4, 0.65, 0.6, 0.85]),
@@ -79,6 +86,40 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   void initState() {
     super.initState();
     _load();
+    _subscribeTickers();
+  }
+
+  @override
+  void dispose() {
+    _tickerSub?.cancel();
+    super.dispose();
+  }
+
+  // REST 加载后订阅 4 个合约的实时推送, 命中行就地刷新价格与涨跌幅.
+  void _subscribeTickers() {
+    final instIds = {for (final s in _watchSymbols) '$s-USDT-SWAP'};
+    TickerWs.instance.subscribe(instIds);
+    _tickerSub = TickerWs.instance.stream.listen(
+      _onTicker,
+      onError: (_) {}, // WS 异常静默, 保留 REST 数据
+    );
+  }
+
+  void _onTicker(TickerPush t) {
+    if (!mounted) return;
+    final symbol = t.instId.split('-').first;
+    final idx = _assets.indexWhere((r) => r.symbol == symbol);
+    if (idx < 0) return;
+    final up = t.changePct >= 0;
+    setState(() {
+      final list = [..._assets];
+      list[idx] = list[idx].copyWith(
+        price: _fmtPrice(t.last),
+        delta: '${up ? '+' : ''}${t.changePct.toStringAsFixed(2)}%',
+        up: up,
+      );
+      _assets = list;
+    });
   }
 
   Future<void> _load() async {
@@ -220,7 +261,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       final (total, long, short) = sums;
       if (total <= 0) return;
       setState(() {
-        _liqTotal = '${_fmtUsdZh(total)} 亿';
+        _liqTotal = _fmtUsdZh(total);
         _liqLongFrac = (long + short) <= 0 ? 0.5 : long / (long + short);
         _liqLongText = _fmtUsdZh(long);
         _liqShortText = _fmtUsdZh(short);
@@ -318,11 +359,15 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
     double total = 0, long = 0, short = 0;
     for (final e in list) {
       if (e is! Map) continue;
-      final l = _num(e['longLiquidationUsd'] ??
+      // 跳过 All 聚合行, 避免重复计数
+      if ((e['exchange'] ?? '').toString().toLowerCase() == 'all') continue;
+      final l = _num(e['longLiquidation_usd'] ??
+          e['longLiquidationUsd'] ??
           e['long_liquidation_usd'] ??
           e['longLiquidation'] ??
           e['longVolUsd']);
-      final s = _num(e['shortLiquidationUsd'] ??
+      final s = _num(e['shortLiquidation_usd'] ??
+          e['shortLiquidationUsd'] ??
           e['short_liquidation_usd'] ??
           e['shortLiquidation'] ??
           e['shortVolUsd']);

@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/data.dart';
+import '../services/ticker_ws.dart';
+import 'market_detail_page.dart';
 
 /// 行情 board.
 /// Reference: stitch_ref/home_market.html (content body only).
@@ -67,20 +71,32 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
   List<_RowData> _liveRows = [];
   bool _loading = true;
 
+  /// WS 实时推送订阅 (取消于 dispose).
+  StreamSubscription<TickerPush>? _wsSub;
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    super.dispose();
+  }
+
+  /// 名义成交额 USD = 24H 成交量 * 现价 (排序/显示统一用名义值).
+  static double _notional(OkxTicker t) => t.volCcy24h * t.last;
+
   Future<void> _load() async {
     try {
       final tickers = await McData.tickers(instType: 'SWAP');
-      // 过滤主流币并按 24H 成交额排序, 同一 symbol 只留成交额最高的合约, 取前 10.
+      // 过滤主流币并按 24H 名义成交额(USD)排序, 同一 symbol 只留成交额最高的合约, 取前 10.
       final majors = tickers
           .where((t) => HomeMarketPage._majors.contains(t.symbol))
           .toList()
-        ..sort((a, b) => b.volCcy24h.compareTo(a.volCcy24h));
+        ..sort((a, b) => _notional(b).compareTo(_notional(a)));
       final seen = <String>{};
       final top = majors.where((t) => seen.add(t.symbol)).take(10).toList();
       if (top.isEmpty) throw StateError('no major tickers');
@@ -106,11 +122,39 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
         _liveRows = rows;
         _loading = false;
       });
+      _subscribeLive(top.map((t) => t.instId).toSet());
     } catch (_) {
       // 后端不可用 / 数据异常 -> 保留 mock.
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  /// REST 加载成功后订阅 OKX WS 实时推送, 就地更新对应行.
+  void _subscribeLive(Set<String> instIds) {
+    _wsSub?.cancel();
+    final ws = TickerWs.instance;
+    ws.subscribe(instIds);
+    _wsSub = ws.stream.listen((p) {
+      if (!mounted) return;
+      final idx = _liveRows.indexWhere((r) => r.instId == p.instId);
+      if (idx < 0) return;
+      final pct = p.changePct;
+      final positive = pct >= 0;
+      setState(() {
+        _liveRows[idx] = _liveRows[idx].copyWith(
+          vol: '24H ${_fmtVol(p.notionalUsd)}',
+          price: _fmtPrice(p.last),
+          note: '高 ${_fmtPrice(p.high24h)}',
+          noteColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+          sparkColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+          delta: _fmtDelta(pct),
+          positive: positive,
+          notional: p.notionalUsd,
+          pct: pct,
+        );
+      });
+    });
   }
 
   _RowData _buildRow(OkxTicker t, List<double>? spark) {
@@ -121,7 +165,7 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
       glyphColor:
           HomeMarketPage._glyphColors[t.symbol] ?? McColors.onSurface,
       symbol: t.symbol,
-      vol: '24H ${_fmtVol(t.volCcy24h)}',
+      vol: '24H ${_fmtVol(_notional(t))}',
       price: _fmtPrice(t.last),
       note: '高 ${_fmtPrice(t.high24h)}',
       noteColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
@@ -132,21 +176,24 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
       delta: _fmtDelta(pct),
       positive: positive,
       alt: false, // 斑马纹由渲染序号决定
+      instId: t.instId,
+      notional: _notional(t),
+      pct: pct,
     );
   }
 
-  /// 依据当前榜单对行排序.
+  /// 依据当前榜单对行排序 (基于原始数值, 非格式化字符串).
   List<_RowData> _sorted(List<_RowData> rows) {
     final list = [...rows];
     switch (_sortIndex) {
       case 1: // 涨幅榜
-        list.sort((a, b) => _pct(b).compareTo(_pct(a)));
+        list.sort((a, b) => b.pct.compareTo(a.pct));
         break;
       case 2: // 跌幅榜
-        list.sort((a, b) => _pct(a).compareTo(_pct(b)));
+        list.sort((a, b) => a.pct.compareTo(b.pct));
         break;
-      default: // 成交额榜
-        list.sort((a, b) => _vol(b).compareTo(_vol(a)));
+      default: // 成交额榜 (名义 USD)
+        list.sort((a, b) => b.notional.compareTo(a.notional));
     }
     return list;
   }
@@ -158,23 +205,6 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
     final filtered =
         rows.where((r) => symbols.contains(r.symbol)).toList();
     return filtered.isEmpty ? rows : filtered;
-  }
-
-  // 从已格式化的字符串还原排序键 (避免再持一份原始 ticker).
-  static double _pct(_RowData r) =>
-      double.tryParse(r.delta.replaceAll('%', '').replaceAll('+', '')) ?? 0;
-
-  static double _vol(_RowData r) {
-    final s = r.vol.replaceAll('24H ', '').replaceAll('\$', '');
-    final mult = s.endsWith('B')
-        ? 1e9
-        : s.endsWith('M')
-            ? 1e6
-            : s.endsWith('K')
-                ? 1e3
-                : 1.0;
-    final num = double.tryParse(s.replaceAll(RegExp(r'[BMK]'), '')) ?? 0;
-    return num * mult;
   }
 
   static String _fmtPrice(double p) {
@@ -208,6 +238,18 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
 
   Future<void> _refresh() => _load();
 
+  /// 点击行 -> 行情详情页. mock 行无 instId 时由 symbol 推导.
+  void _openDetail(_RowData row) {
+    final instId =
+        row.instId.isEmpty ? '${row.symbol}-USDT-SWAP' : row.instId;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            MarketDetailPage(instId: instId, symbol: row.symbol),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final usingLive = _liveRows.isNotEmpty;
@@ -236,7 +278,10 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
           const SizedBox(height: 12),
 
           // 3. 专业行情数据列表
-          _MarketListCard(rows: rows, loading: _loading && !usingLive),
+          _MarketListCard(
+              rows: rows,
+              loading: _loading && !usingLive,
+              onRowTap: _openDetail),
           const SizedBox(height: 20),
 
           // 4. 板块轮动热力概览
@@ -615,10 +660,12 @@ class _ListControlBar extends StatelessWidget {
 
 /// 3. 专业行情数据列表.
 class _MarketListCard extends StatelessWidget {
-  const _MarketListCard({required this.rows, this.loading = false});
+  const _MarketListCard(
+      {required this.rows, this.loading = false, this.onRowTap});
 
   final List<_RowData> rows;
   final bool loading;
+  final ValueChanged<_RowData>? onRowTap;
 
   static const _mockRows = [
     _RowData(
@@ -759,7 +806,10 @@ class _MarketListCard extends StatelessWidget {
             ),
             for (var i = 0; i < rows.length; i++)
               _MarketRow(
-                  data: rows[i], alt: i.isEven, isLast: i == rows.length - 1),
+                  data: rows[i],
+                  alt: i.isEven,
+                  isLast: i == rows.length - 1,
+                  onTap: onRowTap == null ? null : () => onRowTap!(rows[i])),
             if (loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
@@ -799,6 +849,9 @@ class _RowData {
     required this.delta,
     required this.positive,
     required this.alt,
+    this.instId = '',
+    this.notional = 0,
+    this.pct = 0,
   });
 
   final String glyph;
@@ -813,15 +866,52 @@ class _RowData {
   final String delta;
   final bool positive;
   final bool alt;
+
+  /// 交易对 ID (如 BTC-USDT-SWAP), mock 行为 ''.
+  final String instId;
+
+  /// 名义成交额 USD (排序键), 涨跌幅原始值.
+  final double notional;
+  final double pct;
+
+  _RowData copyWith({
+    String? vol,
+    String? price,
+    String? note,
+    Color? noteColor,
+    Color? sparkColor,
+    String? delta,
+    bool? positive,
+    double? notional,
+    double? pct,
+  }) =>
+      _RowData(
+        glyph: glyph,
+        glyphColor: glyphColor,
+        symbol: symbol,
+        vol: vol ?? this.vol,
+        price: price ?? this.price,
+        note: note ?? this.note,
+        noteColor: noteColor ?? this.noteColor,
+        spark: spark,
+        sparkColor: sparkColor ?? this.sparkColor,
+        delta: delta ?? this.delta,
+        positive: positive ?? this.positive,
+        alt: alt,
+        instId: instId,
+        notional: notional ?? this.notional,
+        pct: pct ?? this.pct,
+      );
 }
 
 class _MarketRow extends StatelessWidget {
   const _MarketRow(
-      {required this.data, required this.alt, required this.isLast});
+      {required this.data, required this.alt, required this.isLast, this.onTap});
 
   final _RowData data;
   final bool alt;
   final bool isLast;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -830,7 +920,10 @@ class _MarketRow extends StatelessWidget {
     final deltaBg = data.positive
         ? HomeMarketPage._bullCont.withValues(alpha: 0.3)
         : HomeMarketPage._errCont.withValues(alpha: 0.4);
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: alt ? McColors.surfaceContainer : McColors.surfaceContainerLow,
@@ -957,6 +1050,7 @@ class _MarketRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
