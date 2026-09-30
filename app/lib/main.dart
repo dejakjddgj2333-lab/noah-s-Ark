@@ -12,6 +12,7 @@ import 'pages/home_market_page.dart';
 import 'pages/home_overview_page.dart';
 import 'pages/home_terminal_page.dart';
 import 'pages/home_whale_page.dart';
+import 'pages/invite_page.dart';
 import 'pages/login_page.dart';
 import 'pages/news_page.dart';
 import 'services/auth.dart';
@@ -39,6 +40,7 @@ class MingceApp extends StatelessWidget {
         final gated = <String, Widget>{
           '/deposit': const DepositPage(),
           '/commission': const CommissionPage(),
+          '/invite': const InvitePage(),
         };
         final page = gated[settings.name];
         if (page == null) return null;

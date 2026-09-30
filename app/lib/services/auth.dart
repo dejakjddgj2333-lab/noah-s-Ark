@@ -53,12 +53,15 @@ class AuthStore extends ChangeNotifier {
     required String password,
     required String email,
     required String code,
+    String? inviteCode,
   }) async {
     final resp = await McApi.post('/api/auth/register', {
       'username': username,
       'password': password,
       'email': email,
       'code': code,
+      if (inviteCode != null && inviteCode.isNotEmpty)
+        'invite_code': inviteCode,
     });
     await _applyToken(resp);
   }

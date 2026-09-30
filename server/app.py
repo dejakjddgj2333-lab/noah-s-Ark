@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import config
 from database import engine
 from models.hk import HkBase
-from routers import auth, market, news, overview
+from routers import auth, invite, market, news, overview
 
 
 @asynccontextmanager
@@ -39,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(invite.router, prefix="/api")
 app.include_router(news.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
 app.include_router(overview.router, prefix="/api")

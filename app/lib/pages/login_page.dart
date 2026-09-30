@@ -24,6 +24,7 @@ class _LoginPageState extends State<LoginPage> {
   final _pass2Ctrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _codeCtrl = TextEditingController();
+  final _inviteCtrl = TextEditingController();
 
   // 验证码倒计时
   int _countdown = 0;
@@ -37,6 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     _pass2Ctrl.dispose();
     _emailCtrl.dispose();
     _codeCtrl.dispose();
+    _inviteCtrl.dispose();
     super.dispose();
   }
 
@@ -116,6 +118,7 @@ class _LoginPageState extends State<LoginPage> {
           password: password,
           email: _emailCtrl.text.trim(),
           code: _codeCtrl.text.trim(),
+          inviteCode: _inviteCtrl.text.trim(),
         );
       }
       if (mounted) Navigator.of(context).pop(true);
@@ -223,6 +226,11 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                  ],
+                  if (!_isLogin) ...[
+                    const SizedBox(height: 12),
+                    _field(_inviteCtrl, '邀请码 (选填)', Icons.card_giftcard_outlined,
+                        keyboard: TextInputType.text),
                   ],
                   _field(_passCtrl, '密码', Icons.lock_outline, obscure: true),
                   if (!_isLogin) ...[
