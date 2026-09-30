@@ -1,0 +1,371 @@
+<!DOCTYPE html><html class="dark" lang="zh-CN" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#10131a;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-dim": "#10131a", "inverse-on-surface": "#2e3037", "outline-variant": "#4d4635", "on-tertiary": "#00363f", "tertiary-fixed-dim": "#0ad9f8", "on-background": "#e1e2eb", "on-secondary-fixed-variant": "#00522e", "on-error-container": "#ffdad6", "inverse-surface": "#e1e2eb", "surface-variant": "#32353c", "on-surface": "#e1e2eb", "surface-container-low": "#191c22", "surface-tint": "#e9c349", "on-primary-fixed-variant": "#574500", "on-tertiary-container": "#004c58", "on-error": "#690005", "error": "#ffb4ab", "on-surface-variant": "#d0c5af", "on-secondary": "#00391e", "inverse-primary": "#735c00", "on-tertiary-fixed-variant": "#004e5a", "surface-container-lowest": "#0b0e14", "surface-container-high": "#272a31", "surface": "#10131a", "tertiary-container": "#00c4df", "primary-fixed": "#ffe088", "surface-bright": "#363940", "on-primary": "#3c2f00", "secondary-fixed-dim": "#00e388", "on-secondary-fixed": "#00210f", "background": "#10131a", "on-primary-container": "#554300", "on-primary-fixed": "#241a00", "secondary-container": "#00f090", "primary-container": "#d4af37", "tertiary-fixed": "#a5eeff", "error-container": "#93000a", "on-tertiary-fixed": "#001f25", "surface-container": "#1d2026", "outline": "#99907c", "tertiary": "#2fe1ff", "secondary": "#b2ffca", "on-secondary-container": "#00683b", "secondary-fixed": "#58ffa5", "primary-fixed-dim": "#e9c349", "surface-container-highest": "#32353c" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xl": "1.5rem", "gutter": "0.5rem", "margin": "0.75rem", "space-xs": "0.25rem", "space-lg": "1rem", "space-md": "0.75rem", "space-sm": "0.375rem", "margin-desktop": "1.5rem", "gutter-desktop": "1rem" }, fontFamily: { "label-md": ["JetBrains Mono"], "body-sm": ["JetBrains Mono"], "title-sm": ["Space Grotesk"], "body-lg": ["JetBrains Mono"], "label-sm": ["JetBrains Mono"], "body-md": ["JetBrains Mono"], "headline-lg": ["Space Grotesk"], "headline-xl": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "ticker-val": ["JetBrains Mono"] }, fontSize: { "label-md": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "600" }], "body-sm": ["11px", { "lineHeight": "15px", "letterSpacing": "0em", "fontWeight": "400" }], "title-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }], "body-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400" }], "label-sm": ["9px", { "lineHeight": "12px", "letterSpacing": "0.1em", "fontWeight": "700" }], "body-md": ["12px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-xl": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-md": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "ticker-val": ["13px", { "lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "600" }] } } } };</script></head><body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface-container-lowest/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.4)] pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="明策 MINGCE Terminal Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Ul3BD1r1zDZEXQnFJ0w9KexSXuoZ1g6roNTN09HoX7iTlGmfXIkYld73nvEvu-LpuZyEHw_ktovwzU19uwcnsjNmyFaz2YBn6T-Xq1D-JIU3_nezrkZSPpIS8GZYT7BGHPqKs4CjuIKTrYJ7QpjAh48-UVx7HrJaJ2QMrKu_IpBkm2bXJ2OwnDaIu76pK1vqND1ZNPAoDLPLS0zpz9lJTmmz-FNsDvUMn_tI0y1EilV_VxhmDZFZGpuYU"><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-title-sm text-title-sm tracking-tight text-on-surface font-bold">明策 MINGCE</span><span class="font-label-sm text-label-sm text-primary uppercase">Alpha</span></div><div class="flex items-center gap-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-pulse"></span><span class="font-body-sm text-[10px] text-secondary tracking-wider uppercase leading-none">Mainnet Sync</span></div></div></div><div class="flex items-center gap-space-xs"><div class="flex flex-col items-end pr-space-xs"><span class="font-title-sm text-title-sm text-on-surface truncate max-w-[110px]">Signals Intel</span><span class="font-label-sm text-label-sm text-on-surface-variant font-ticker-val">GAS 12 GWEI</span></div><div class="relative flex items-center justify-center p-0.5 rounded-full bg-surface-container"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAs1yPklXIMuduh1XOwyOgLh3y28XGX1wF9KoOxflu-5pPp5zQAA2fmPu5zYx_9vlMpGusMlha1hcuACj22mGAgUWA5c4KBGDMdc1DqVieSfDLWDrPWPcc8Sc1dK8w_gMvxLeQGt_eHEqCIaVZl9LlcLAbpEJv3XrNVyeafgLPb0-_XZ8vlL6HUIgw2dth2dek0OZvlTbAlzzMc8p-wU5pV0k57m3D-zVGE0Ol2Zyt0RdJwRongjUQ"></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-screen"><div class="flex flex-col w-full space-y-5 px-margin pt-2 pb-space-xl">
+<!-- Breaking News Ticker -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-high p-space-sm shadow-xl">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/10 via-tertiary/5 to-transparent pointer-events-none"></div>
+<div class="flex items-center justify-between gap-space-xs relative z-10">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-primary-container text-on-primary-container shadow-sm flex-shrink-0 animate-pulse" style="background-color: rgb(46, 92, 255); color: rgb(255, 255, 255); box-shadow: rgba(46, 92, 255, 0.5) 0px 0px 14px;">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+</span>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold" style="color: rgb(59, 130, 246);">突发头条</span>
+<span class="font-body-sm text-[10px] text-on-surface-variant font-ticker-val">10分钟前</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface truncate font-medium">
+            SEC 主席关于数字资产监管框架发表最新利好言论
+          </p>
+</div>
+</div>
+<button class="flex items-center justify-center w-7 h-7 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Terminal Sub-Navigation Tabs -->
+<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-1">
+<button class="flex items-center gap-space-xs px-space-md py-2 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-bold tracking-normal shadow-sm flex-shrink-0" style="background-color: rgb(46, 92, 255); color: rgb(255, 255, 255); box-shadow: rgba(46, 92, 255, 0.45) 0px 0px 16px;">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">rss_feed</span>
+<span class="">7×24 快讯</span>
+<span class="w-1.5 h-1.5 rounded-full bg-on-primary-container animate-ping"></span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md tracking-normal flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[15px]">analytics</span>
+<span class="">投研深度</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md tracking-normal flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[15px]">calendar_today</span>
+<span class="">宏观日历</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md tracking-normal flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[15px]">gavel</span>
+<span class="">行业政策</span>
+</button>
+</div>
+<!-- Realtime Feed Filter & Audio Read Switch -->
+<div class="flex items-center justify-between px-space-xs pt-1">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-md text-label-md text-primary font-bold tracking-widest uppercase">REALTIME FEED</span>
+<span class="text-on-surface-variant font-ticker-val text-[11px]">/ 自动流送中</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined text-[14px]">volume_up</span>
+<span class="">语音速报</span>
+</button>
+<span class="w-px h-3 bg-surface-container-highest"></span>
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span class="">筛选</span>
+</button>
+</div>
+</div>
+<!-- 7×24 Flash News Timeline -->
+<div class="flex flex-col space-y-5 relative pt-1">
+<!-- Visual Ambient Vertical Track Line -->
+<div class="absolute left-[15px] top-4 bottom-4 w-px bg-surface-container-highest pointer-events-none"></div>
+<!-- Timeline Item 1 -->
+<div class="relative flex items-start gap-space-md">
+<!-- Glow Node Indicator -->
+<div class="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-low shadow-md flex-shrink-0 mt-1">
+<div class="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_#f2ca50]" style="background-color: rgb(46, 92, 255); box-shadow: rgb(46, 92, 255) 0px 0px 10px;"></div>
+</div>
+<!-- Feed Card Container -->
+<div class="flex-1 rounded-xl bg-surface-container-low p-4 shadow-md hover:bg-surface-container transition-all flex flex-col space-y-3">
+<!-- Header Info -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-ticker-val text-ticker-val text-primary font-bold" style="color: rgb(59, 130, 246);">14:32</span>
+<span class="font-label-sm text-[9px] px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-bold uppercase tracking-wider">重要</span>
+<span class="font-label-sm text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-medium">监管动态</span>
+</div>
+<span class="font-label-sm text-[10px] text-on-surface-variant font-ticker-val">TODAY</span>
+</div>
+<!-- Content -->
+<div class="space-y-1.5">
+<h2 class="font-title-sm text-title-sm text-on-surface font-bold leading-snug">
+          美联储主席最新讲话暗示：通胀可控，未来降息节奏或将温和保持
+        </h2>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          市场预计本周风险资产偏好上升，加密市场整体反弹，纳指期货同向上扬。核心交易员关注周五非农数据修正指引。
+        </p>
+</div>
+<!-- Interactive Sentiment Bar -->
+<div class="flex flex-col space-y-2 bg-surface-container-lowest/60 rounded-lg p-2.5">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<button class="sentiment-btn flex items-center gap-1 text-secondary-fixed hover:opacity-80 transition-opacity" data-count="1420" data-type="bullish">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="font-bold">利好 88%</span>
+<span class="text-on-surface-variant text-[10px] font-normal">(1,420)</span>
+</button>
+<button class="sentiment-btn flex items-center gap-1 text-error hover:opacity-80 transition-opacity" data-count="193" data-type="bearish">
+<span class="text-on-surface-variant text-[10px] font-normal">(193)</span>
+<span class="font-bold">利空 12%</span>
+<span class="material-symbols-outlined text-[14px]">trending_down</span>
+</button>
+</div>
+<!-- Gauge bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-variant overflow-hidden flex">
+<div class="h-full bg-secondary-container rounded-l-full transition-all duration-500" style="width: 88%"></div>
+<div class="h-full bg-error rounded-r-full transition-all duration-500" style="width: 12%"></div>
+</div>
+</div>
+<!-- Action micro-row -->
+<div class="flex items-center justify-between pt-1 border-t-0">
+<div class="flex items-center gap-space-sm text-on-surface-variant font-label-sm text-[10px]">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span>
+<span class="font-ticker-val">2.8K</span>
+</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">share</span>
+<span class="">分享海报</span>
+</span>
+</div>
+<button class="text-primary text-[11px] font-label-md flex items-center gap-0.5 hover:underline">
+<span class="">链上异动关联</span>
+<span class="material-symbols-outlined text-[12px]">arrow_outward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative flex items-start gap-space-md">
+<!-- Glow Node Indicator -->
+<div class="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-low shadow-md flex-shrink-0 mt-1">
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary shadow-[0_0_8px_#2fe1ff]"></div>
+</div>
+<!-- Feed Card Container -->
+<div class="flex-1 rounded-xl bg-surface-container-low p-4 shadow-md hover:bg-surface-container transition-all flex flex-col space-y-3">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-ticker-val text-ticker-val text-tertiary font-bold">14:15</span>
+<span class="font-label-sm text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-bold">ETF资金流</span>
+</div>
+<span class="font-label-sm text-[10px] text-on-surface-variant font-ticker-val">TODAY</span>
+</div>
+<div class="space-y-1.5">
+<h2 class="font-title-sm text-title-sm text-on-surface font-bold leading-snug">
+          美国以太坊现货 ETF 昨日净流入达 1.48 亿美元，创两周新高
+        </h2>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          贝莱德 ETHA 净流入占据主力，机构增持情绪显著修复，衍生品资金费率重回正值区间。
+        </p>
+</div>
+<!-- Interactive Sentiment Bar -->
+<div class="flex flex-col space-y-2 bg-surface-container-lowest/60 rounded-lg p-2.5">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<button class="sentiment-btn flex items-center gap-1 text-secondary-fixed hover:opacity-80 transition-opacity" data-count="890" data-type="bullish">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="font-bold">利好 94%</span>
+<span class="text-on-surface-variant text-[10px] font-normal">(890)</span>
+</button>
+<button class="sentiment-btn flex items-center gap-1 text-error hover:opacity-80 transition-opacity" data-count="58" data-type="bearish">
+<span class="text-on-surface-variant text-[10px] font-normal">(58)</span>
+<span class="font-bold">利空 6%</span>
+<span class="material-symbols-outlined text-[14px]">trending_down</span>
+</button>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-variant overflow-hidden flex">
+<div class="h-full bg-secondary-container rounded-l-full transition-all duration-500" style="width: 94%"></div>
+<div class="h-full bg-error rounded-r-full transition-all duration-500" style="width: 6%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1 border-t-0">
+<div class="flex items-center gap-space-sm text-on-surface-variant font-label-sm text-[10px]">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span>
+<span class="font-ticker-val">1.9K</span>
+</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">share</span>
+<span class="">分享海报</span>
+</span>
+</div>
+<button class="text-tertiary text-[11px] font-label-md flex items-center gap-0.5 hover:underline">
+<span class="">ETF资金走势表</span>
+<span class="material-symbols-outlined text-[12px]">stacked_bar_chart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative flex items-start gap-space-md">
+<!-- Glow Node Indicator -->
+<div class="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-low shadow-md flex-shrink-0 mt-1">
+<div class="w-2.5 h-2.5 rounded-full bg-secondary-fixed shadow-[0_0_8px_#00e388]"></div>
+</div>
+<!-- Feed Card Container -->
+<div class="flex-1 rounded-xl bg-surface-container-low p-4 shadow-md hover:bg-surface-container transition-all flex flex-col space-y-3">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-ticker-val text-ticker-val text-secondary font-bold">13:50</span>
+<span class="font-label-sm text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-medium">项目进展</span>
+</div>
+<span class="font-label-sm text-[10px] text-on-surface-variant font-ticker-val">TODAY</span>
+</div>
+<div class="space-y-1.5">
+<h2 class="font-title-sm text-title-sm text-on-surface font-bold leading-snug">
+          Solana 质押收益率稳定在 7.2%，链上活跃地址数连续三日突破历史峰值
+        </h2>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          生态 DePIN 与 AI 模块结算交易量环比上升 24%，网络 Gas 费消耗维持在高位收敛态势。
+        </p>
+</div>
+<!-- Interactive Sentiment Bar -->
+<div class="flex flex-col space-y-2 bg-surface-container-lowest/60 rounded-lg p-2.5">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<button class="sentiment-btn flex items-center gap-1 text-secondary-fixed hover:opacity-80 transition-opacity" data-count="410" data-type="bullish">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="font-bold">利好 82%</span>
+<span class="text-on-surface-variant text-[10px] font-normal">(410)</span>
+</button>
+<button class="sentiment-btn flex items-center gap-1 text-error hover:opacity-80 transition-opacity" data-count="90" data-type="bearish">
+<span class="text-on-surface-variant text-[10px] font-normal">(90)</span>
+<span class="font-bold">利空 18%</span>
+<span class="material-symbols-outlined text-[14px]">trending_down</span>
+</button>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-variant overflow-hidden flex">
+<div class="h-full bg-secondary-container rounded-l-full transition-all duration-500" style="width: 82%"></div>
+<div class="h-full bg-error rounded-r-full transition-all duration-500" style="width: 18%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1 border-t-0">
+<div class="flex items-center gap-space-sm text-on-surface-variant font-label-sm text-[10px]">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span>
+<span class="font-ticker-val">1.2K</span>
+</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">share</span>
+<span class="">分享海报</span>
+</span>
+</div>
+<button class="text-secondary text-[11px] font-label-md flex items-center gap-0.5 hover:underline">
+<span class="">SOL链上看板</span>
+<span class="material-symbols-outlined text-[12px]">insights</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Deep Research Featured Header -->
+<div class="flex items-center justify-between pt-2 px-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="w-1.5 h-4 bg-primary-container rounded-full" style="background-color: rgb(46, 92, 255); box-shadow: rgba(46, 92, 255, 0.6) 0px 0px 8px;"></span>
+<span class="font-title-sm text-title-sm text-on-surface font-bold tracking-tight">深度研报精选</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-bold" style="color: rgb(59, 130, 246); background-color: rgba(46, 92, 255, 0.15);">MINGCE VIP</span>
+</div>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary flex items-center gap-0.5 transition-colors" href="#">
+<span class="">查看全部</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+<!-- Deep Research Featured Card (Bento Style) -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low shadow-xl">
+<!-- Visual Cover Graphic Banner -->
+<div class="relative h-44 w-full overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="High-end dark algorithmic crypto terminal data visualization showing golden glowing liquidity cycles, Bitcoin price trajectory vector lines soaring toward 100,000 against obsidian brutalist tech background with cyan neon telemetry data overlay" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUmccAfIp9SrwPvn7gd-PX_AIUU5lh2yBABigC4mNReTUMONzD0kSGdyNQLv2CPIJcLQ_4dGM1Xd7sFYvSmuLidu4geO87jI5qKlwrPtVfr8gRMHlsyjI9grZ85RyZrmgqq2Z9e2vA0Dt1G_y5470y_dAw79aB_h6afqnkJdXTKA85nlyhbZyueee3vdjLhbiC2KYuPMyYdVPiVrZlQmEsjazVG0KVlGNvb7e1OjlsPiU9aiL67MT4">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-surface-container-low/40 to-transparent"></div>
+<!-- Badges on image -->
+<div class="absolute top-space-sm left-space-sm flex items-center gap-space-xs">
+<span class="font-label-sm text-[9px] px-2 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-primary font-bold uppercase tracking-wider shadow-sm" style="color: rgb(96, 165, 250); background-color: rgba(15, 23, 42, 0.95); border: 1px solid rgba(46, 92, 255, 0.4);">
+          重磅深度
+        </span>
+<span class="font-label-sm text-[9px] px-2 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-secondary font-medium font-ticker-val" style="color: rgb(147, 197, 253); background-color: rgba(15, 23, 42, 0.95); border: 1px solid rgba(59, 130, 246, 0.25);">
+          研报编号 #MC-2025-04
+        </span>
+</div>
+<div class="absolute top-space-sm right-space-sm">
+<button class="w-7 h-7 rounded-full bg-surface-container-lowest/80 backdrop-blur-md flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">bookmark_border</span>
+</button>
+</div>
+</div>
+<!-- Research Content Body -->
+<div class="p-4 -mt-3 relative z-10 space-y-3">
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold leading-tight hover:text-primary transition-colors cursor-pointer">
+        2025 牛市下半场：宏观流动性周期与比特币破十万路径推演
+      </h3>
+<div class="flex items-center gap-space-md font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1 font-medium text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">verified</span>
+<span class="">明策研究院</span>
+</span>
+<span class="font-ticker-val">·</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span class="font-ticker-val">阅读 3.4W</span>
+</span>
+<span class="font-ticker-val">·</span>
+<span class="">约15分钟阅读</span>
+</div>
+<!-- Feature Pill Checklist -->
+<div class="grid grid-cols-2 gap-space-xs pt-1">
+<div class="flex items-center gap-1.5 p-2 rounded-lg bg-surface-container text-on-surface font-body-sm text-[11px]">
+<span class="material-symbols-outlined text-[16px] text-primary">picture_as_pdf</span>
+<span class="truncate">包含 42 页完整 PDF 研报</span>
+</div>
+<div class="flex items-center gap-1.5 p-2 rounded-lg bg-surface-container text-on-surface font-body-sm text-[11px]">
+<span class="material-symbols-outlined text-[16px] text-tertiary">account_tree</span>
+<span class="truncate">附核心逻辑结构脑图</span>
+</div>
+</div>
+<!-- Tag Cloud -->
+<div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] font-label-md text-on-surface-variant hover:text-primary transition-colors">#宏观周期</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] font-label-md text-on-surface-variant hover:text-primary transition-colors">#BTC目标价</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] font-label-md text-on-surface-variant hover:text-primary transition-colors">#链上筹码分布</span>
+</div>
+<!-- Action Footer -->
+<div class="flex items-center justify-between gap-space-sm pt-1 border-t-0">
+<button class="flex-1 py-2.5 px-space-md rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] transition-transform" style="background-color: rgb(46, 92, 255); color: rgb(255, 255, 255); box-shadow: rgba(46, 92, 255, 0.35) 0px 0px 16px;">
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
+<span class="">在线研读全文</span>
+</button>
+<button class="p-2.5 rounded-lg bg-surface-container text-on-surface hover:text-primary transition-colors" title="下载研报PDF">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Editorial Insight Bar (Bottom Mini Delight) -->
+<div class="rounded-xl bg-surface-container-high p-space-sm flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px] flex-shrink-0">lightbulb</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">
+        加入明策量化社群，第一时间获取非农数据与巨鲸转账即时预警
+      </p>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-bright text-on-surface font-label-sm text-label-sm font-semibold flex-shrink-0 hover:text-primary transition-colors" style="background-color: rgb(46, 92, 255); color: rgb(255, 255, 255); box-shadow: rgba(46, 92, 255, 0.3) 0px 0px 10px;">
+      立即订阅
+    </button>
+</div>
+</div>
+<script>
+  // Simple interactive sentiment button micro-interaction
+  document.querySelectorAll('.sentiment-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const isBull = this.getAttribute('data-type') === 'bullish';
+      const countSpan = this.querySelector('span:last-child');
+      let count = parseInt(this.getAttribute('data-count'), 10);
+      
+      if (!this.classList.contains('voted')) {
+        this.classList.add('voted', 'opacity-100', 'font-black');
+        count++;
+        this.setAttribute('data-count', count);
+        countSpan.textContent = `(${count.toLocaleString()})`;
+        
+        // Haptic feedback illusion
+        this.style.transform = 'scale(1.08)';
+        setTimeout(() => {
+          this.style.transform = 'scale(1)';
+        }, 150);
+      }
+    });
+  });
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.6)]" data-active-classes="text-primary"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="home-terminal" href="#"><span class="material-symbols-outlined text-[22px]">radar</span><span class="font-label-sm text-label-sm font-semibold tracking-normal">首页</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] transition-colors relative group text-primary" data-path="signals-intel" href="#" style="color: rgb(46, 92, 255);"><div class="relative flex items-center justify-center"><span class="material-symbols-outlined text-[22px]">monitoring</span><span class="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-tertiary shadow-[0_0_6px_#00c4df]" style="background-color: rgb(46, 92, 255); box-shadow: rgb(46, 92, 255) 0px 0px 8px;"></span></div><span class="font-label-sm text-label-sm font-semibold tracking-normal">资讯</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="community-chat" href="#"><div class="relative flex items-center justify-center"><span class="material-symbols-outlined text-[22px]">forum</span><span class="absolute -top-1 -right-2 px-1 py-0.2 rounded-full bg-primary-container text-on-primary-container font-label-sm text-[9px] leading-tight font-bold">3</span></div><span class="font-label-sm text-label-sm font-semibold tracking-normal">社区</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="user-assets" href="#"><span class="material-symbols-outlined text-[22px]">account_balance_wallet</span><span class="font-label-sm text-label-sm font-semibold tracking-normal">我的</span></a></div></nav>
+
+</body></html>

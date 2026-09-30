@@ -1,0 +1,327 @@
+<!DOCTYPE html><html class="dark" lang="zh-CN"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0b0e14;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "surface-dim": "#10131a",
+        "surface-container-lowest": "#0b0e14",
+        "surface-container-low": "#151821",
+        "surface-container": "#1d2028",
+        "surface-container-high": "#272a33",
+        "surface-container-highest": "#32353f",
+        "surface": "#10131a",
+        "primary": "#b8c3ff",
+        "primary-container": "#2e5cff",
+        "on-primary": "#002487",
+        "on-primary-container": "#f0f0ff",
+        "secondary": "#0ad9f8",
+        "secondary-container": "#004e5a",
+        "tertiary": "#00e388",
+        "tertiary-container": "#004724",
+        "error": "#ffb4ab",
+        "error-container": "#93000a",
+        "on-surface": "#e1e2eb",
+        "on-surface-variant": "#9496a8",
+        "outline": "#8e90a2",
+        "outline-variant": "#2b2e39"
+      },
+      fontFamily: {
+        "headline": ["Inter", "sans-serif"],
+        "body": ["Inter", "sans-serif"],
+        "mono": ["JetBrains Mono", "monospace"]
+      }
+    }
+  }
+};</script></head><body class="bg-surface-container-lowest text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-white font-body">
+<!-- Sticky Top Hub Header & Connection Status -->
+<header class="fixed top-0 inset-x-0 z-50 bg-[#0b0e14]/90 backdrop-blur-xl border-b border-white/[0.06] pt-safe">
+<div class="h-14 px-4 flex items-center justify-between">
+<!-- Hub Title & Telegram Ping Status -->
+<div class="flex items-center gap-3">
+<div class="relative flex-shrink-0">
+<img alt="Mingce Monogram" class="w-9 h-9 rounded-xl object-cover shadow-[0_0_12px_rgba(46,92,255,0.45)] ring-1 ring-[#2e5cff]/40" src="https://lh3.googleusercontent.com/aida/AEtjO1Ul3BD1r1zDZEXQnFJ0w9KexSXuoZ1g6roNTN09HoX7iTlGmfXIkYld73nvEvu-LpuZyEHw_ktovwzU19uwcnsjNmyFaz2YBn6T-Xq1D-JIU3_nezrkZSPpIS8GZYT7BGHPqKs4CjuIKTrYJ7QpjAh48-UVx7HrJaJ2QMrKu_IpBkm2bXJ2OwnDaIu76pK1vqND1ZNPAoDLPLS0zpz9lJTmmz-FNsDvUMn_tI0y1EilV_VxhmDZFZGpuYU">
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#00e388] border-2 border-[#0b0e14]"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<h1 class="text-[17px] font-bold tracking-tight text-white flex items-center gap-1">社区交流</h1>
+<span class="bg-[#2e5cff]/20 text-[#7ba0ff] px-1.5 py-0.5 rounded text-[10px] font-semibold border border-[#2e5cff]/30 leading-none">HUB</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#00e388] animate-pulse"></span>
+<span class="text-[10px] font-mono text-[#00e388] font-medium tracking-wide">已连接 (低延迟 · 18ms)</span>
+</div>
+</div>
+</div>
+<!-- Right Quick Actions (Add/Create Chat + Menu/Folder Filter) -->
+<div class="flex items-center gap-1">
+<button aria-label="新建聊天/添加好友" class="w-8 h-8 rounded-lg bg-surface-container-high/80 hover:bg-[#2e5cff]/20 text-on-surface hover:text-[#b8c3ff] flex items-center justify-center transition-all active:scale-95" onclick="alert('发起新会话、添加好友或创建加密群组')">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<button aria-label="聊天过滤设置" class="w-8 h-8 rounded-lg bg-surface-container-high/80 hover:bg-surface-container-highest text-on-surface-variant hover:text-white flex items-center justify-center transition-all active:scale-95">
+<span class="material-symbols-outlined text-[19px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Telegram-style Global Search Bar -->
+<div class="px-3.5 pb-2.5 pt-1">
+<div class="flex items-center gap-2 bg-[#171a22] border border-white/[0.08] rounded-xl px-3 py-2 focus-within:border-[#2e5cff] focus-within:shadow-[0_0_12px_rgba(46,92,255,0.25)] transition-all">
+<span class="material-symbols-outlined text-[18px] text-[#8e90a2]">search</span>
+<input class="flex-1 bg-transparent border-0 text-[13px] text-white placeholder:text-[#6a6d7f] focus:outline-none p-0 tracking-tight" id="hub-search" placeholder="搜索用户、群组、公链频道或消息 (@username / Group)" type="text">
+<button aria-label="语音或过滤器" class="text-[#8e90a2] hover:text-[#2e5cff] flex items-center justify-center">
+<span class="material-symbols-outlined text-[17px]">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Quick Action Shortcuts Pill Strip -->
+<div class="px-3.5 pb-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2e5cff]/15 hover:bg-[#2e5cff]/25 border border-[#2e5cff]/40 text-[#b8c3ff] text-[11px] font-semibold whitespace-nowrap active:scale-95 transition-all" onclick="alert('输入对方明策 UID、Telegram @用户名 或 Web3 地址添加好友')">
+<span class="material-symbols-outlined text-[14px] text-[#2e5cff]">person_add</span>
+<span class="">添加好友</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high/70 hover:bg-surface-container-highest border border-white/[0.06] text-on-surface text-[11px] font-medium whitespace-nowrap active:scale-95 transition-all" onclick="alert('输入群链接或群邀请码加入群组')">
+<span class="material-symbols-outlined text-[14px] text-[#0ad9f8]">group_add</span>
+<span class="">加入群组</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high/70 hover:bg-surface-container-highest border border-white/[0.06] text-on-surface text-[11px] font-medium whitespace-nowrap active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[14px] text-[#00e388]">radar</span>
+<span class="">巨鲸信号频道</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high/70 hover:bg-surface-container-highest border border-white/[0.06] text-on-surface text-[11px] font-medium whitespace-nowrap active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[14px] text-[#b8c3ff]">query_stats</span>
+<span class="">量化策略社群</span>
+</button>
+</div>
+<!-- Horizontal Scrollable Telegram Chat Folder Tabs -->
+<div class="flex items-center gap-1 px-3 border-t border-white/[0.05] overflow-x-auto no-scrollbar bg-[#0d1017]">
+<button class="relative py-2.5 px-3 text-[12px] font-bold text-white whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
+<span class="">全部</span>
+<span class="px-1.5 py-0.2 rounded-full bg-[#2e5cff] text-[10px] font-mono text-white font-bold leading-none">12</span>
+<span class="absolute bottom-0 inset-x-2.5 h-[2px] bg-[#2e5cff] rounded-t-full shadow-[0_0_8px_#2e5cff]"></span>
+</button>
+<button class="relative py-2.5 px-3 text-[12px] font-medium text-on-surface-variant hover:text-white whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
+<span class="">群聊</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-highest text-[10px] font-mono text-on-surface-variant leading-none">8</span>
+</button>
+<button class="relative py-2.5 px-3 text-[12px] font-medium text-on-surface-variant hover:text-white whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
+<span class="">私聊/好友</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-highest text-[10px] font-mono text-on-surface-variant leading-none">4</span>
+</button>
+<button class="relative py-2.5 px-3 text-[12px] font-medium text-on-surface-variant hover:text-white whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
+<span class="">机器人/BOT</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-highest text-[10px] font-mono text-on-surface-variant leading-none">3</span>
+</button>
+<button class="relative py-2.5 px-3 text-[12px] font-medium text-on-surface-variant hover:text-white whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
+<span class="">频道/公告</span>
+</button>
+</div>
+</header>
+<!-- Main Scrollable Chat List Hub -->
+<main class="flex-1 flex flex-col pt-[172px] pb-24 min-h-screen bg-surface-container-lowest">
+<!-- Section Divider: Pinned Chats -->
+<div class="flex items-center justify-between px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/70">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-[#2e5cff]">push_pin</span>
+<span class="">置顶交流组与核心信号 (Pinned)</span>
+</div>
+<span class="">实时推送</span>
+</div>
+<div class="flex flex-col divide-y divide-white/[0.04]">
+<!-- Pinned Item 1: Official VIP Strategy Alpha Group -->
+<a class="flex items-center gap-3.5 px-4 py-3.5 bg-[#11151f]/85 hover:bg-[#161a26] transition-colors relative group active:bg-[#1a2030]" href="#">
+<div class="relative flex-shrink-0">
+<img alt="Mingce VIP Group Logo" class="w-12 h-12 rounded-xl object-cover ring-2 ring-[#2e5cff]/50 shadow-[0_0_12px_rgba(46,92,255,0.35)]" src="https://lh3.googleusercontent.com/aida/AEtjO1Ul3BD1r1zDZEXQnFJ0w9KexSXuoZ1g6roNTN09HoX7iTlGmfXIkYld73nvEvu-LpuZyEHw_ktovwzU19uwcnsjNmyFaz2YBn6T-Xq1D-JIU3_nezrkZSPpIS8GZYT7BGHPqKs4CjuIKTrYJ7QpjAh48-UVx7HrJaJ2QMrKu_IpBkm2bXJ2OwnDaIu76pK1vqND1ZNPAoDLPLS0zpz9lJTmmz-FNsDvUMn_tI0y1EilV_VxhmDZFZGpuYU">
+<span class="absolute -bottom-1 -right-1 bg-[#2e5cff] text-white rounded-full p-0.5 border-2 border-[#0b0e14] flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[11px] leading-none">verified</span>
+</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-[14px] font-bold text-white truncate">明策 VIP Alpha 策略交流群</span>
+<span class="bg-[#2e5cff]/20 text-[#b8c3ff] px-1.5 py-0.2 rounded text-[9px] font-bold border border-[#2e5cff]/40 uppercase flex-shrink-0 leading-tight">官方群</span>
+</div>
+<span class="text-[11px] font-mono text-[#00e388] font-semibold flex-shrink-0">14:58</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<p class="text-[12px] text-on-surface-variant truncate">
+<span class="text-[#0ad9f8] font-medium">巨鲸异动监测:</span> 币安 $25M 买单支撑墙已挂出，多军准备冲锋突破...
+          </p>
+<div class="flex items-center gap-1.5 flex-shrink-0">
+<span class="material-symbols-outlined text-[13px] text-[#2e5cff]">push_pin</span>
+<span class="min-w-[20px] h-[18px] px-1 rounded-full bg-[#2e5cff] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(46,92,255,0.8)]">99+</span>
+</div>
+</div>
+</div>
+</a>
+<!-- Pinned Item 2: On-chain Liquidation Bot -->
+<a class="flex items-center gap-3.5 px-4 py-3.5 bg-[#11151f]/85 hover:bg-[#161a26] transition-colors relative group active:bg-[#1a2030]" href="#">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-xl bg-[#2b1216] border border-[#ffb4ab]/30 flex items-center justify-center text-[#ffb4ab] shadow-[0_0_12px_rgba(255,180,171,0.25)]">
+<span class="material-symbols-outlined text-[24px]">warning</span>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-[#ffb4ab] text-[#690005] rounded-full p-0.5 border-2 border-[#0b0e14] flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] leading-none font-bold">bolt</span>
+</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-[14px] font-bold text-white truncate">明策清算机器人 BOT</span>
+<span class="bg-[#ffb4ab]/15 text-[#ffb4ab] px-1.5 py-0.2 rounded text-[9px] font-bold uppercase border border-[#ffb4ab]/30 leading-tight">BOT</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant flex-shrink-0">14:50</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<p class="text-[12px] text-on-surface-variant truncate">
+<span class="text-[#ffb4ab] font-medium">全网高频爆仓预警:</span> BTC 现价突破 $96,520，空头清算达 $12.8M
+          </p>
+<div class="flex items-center gap-1.5 flex-shrink-0">
+<span class="material-symbols-outlined text-[13px] text-[#8e90a2]">push_pin</span>
+<span class="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2e5cff] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-[0_0_6px_rgba(46,92,255,0.7)]">12</span>
+</div>
+</div>
+</div>
+</a>
+</div>
+<!-- Section Divider: Normal Chats & Direct Friends -->
+<div class="flex items-center justify-between px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/70">
+<span class="">全部交流消息 (Conversations)</span>
+<span class="">4 位好友在线</span>
+</div>
+<div class="flex flex-col divide-y divide-white/[0.04]">
+<!-- Item 3: Friend / Direct Chat "Crypto_Ghost_0x" -->
+<a class="flex items-center gap-3.5 px-4 py-3.5 hover:bg-[#151924] transition-colors relative group active:bg-[#1a2030]" href="#">
+<div class="relative flex-shrink-0">
+<img alt="Trader Avatar" class="w-12 h-12 rounded-xl object-cover ring-1 ring-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtNTUEnH8diGOLbTTupTWdIMVkcVVuMa5Lf8IBfLeqnj8zu_lsKHMxDKRDJOlwWyHQZ7P63C_Na1BQ5_jVeey6LbIDvMf0h2xHpFSvntec92DfNIGhbfdfCu_HjwZ9ppbKgBiwpdQwBMVXyy2Z6WfBRpOKrO01NsGkJXTSw3cuO1Ui-Y0VfDtOpByovZCx_cK9s27VgsqVa4PIyxgTJLMljevIV5MntRg6S7q8ROKBzv36jdjBHlP6">
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#00e388] border-2 border-[#0b0e14]"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-[14px] font-semibold text-white truncate">Crypto_Ghost_0x</span>
+<span class="bg-[#0ad9f8]/15 text-[#0ad9f8] px-1.5 py-0.2 rounded text-[9px] font-bold border border-[#0ad9f8]/30 uppercase flex-shrink-0 leading-tight">钻石合伙人</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant flex-shrink-0">14:52</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<p class="text-[12px] text-on-surface-variant truncate">
+            你刚才看链上那笔 1,500 BTC 的大额提现了吗？主力洗盘动作明显。
+          </p>
+<div class="flex items-center text-[#0ad9f8] flex-shrink-0">
+<span class="material-symbols-outlined text-[15px]">done_all</span>
+</div>
+</div>
+</div>
+</a>
+<!-- Item 4: Group Chat "以太坊与 L2 生态研讨组" -->
+<a class="flex items-center gap-3.5 px-4 py-3.5 hover:bg-[#151924] transition-colors relative group active:bg-[#1a2030]" href="#">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#16213e] to-[#0f3460] border border-[#2e5cff]/30 flex items-center justify-center text-[#7ba0ff] shadow-inner">
+<span class="material-symbols-outlined text-[24px]">token</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-[14px] font-semibold text-white truncate">以太坊与 L2 生态研讨组</span>
+<span class="text-[11px] font-mono text-on-surface-variant/80">(1,840 人)</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant flex-shrink-0">13:20</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<p class="text-[12px] text-on-surface-variant truncate">
+<span class="text-white/90">SatoshiSniper:</span> 资金费率回落，准备看第二轮轧空机会。
+          </p>
+<span class="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2e5cff] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-[0_0_6px_rgba(46,92,255,0.7)] flex-shrink-0">5</span>
+</div>
+</div>
+</a>
+<!-- Item 5: Friend / Direct Chat "Alex_Macro_Alpha" -->
+<a class="flex items-center gap-3.5 px-4 py-3.5 hover:bg-[#151924] transition-colors relative group active:bg-[#1a2030]" href="#">
+<div class="relative flex-shrink-0">
+<img alt="Mentor Avatar" class="w-12 h-12 rounded-xl object-cover ring-1 ring-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAs1yPklXIMuduh1XOwyOgLh3y28XGX1wF9KoOxflu-5pPp5zQAA2fmPu5zYx_9vlMpGusMlha1hcuACj22mGAgUWA5c4KBGDMdc1DqVieSfDLWDrPWPcc8Sc1dK8w_gMvxLeQGt_eHEqCIaVZl9LlcLAbpEJv3XrNVyeafgLPb0-_XZ8vlL6HUIgw2dth2dek0OZvlTbAlzzMc8p-wU5pV0k57m3D-zVGE0Ol2Zyt0RdJwRongjUQ">
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#8e90a2] border-2 border-[#0b0e14]"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-[14px] font-semibold text-white truncate">Alex_Macro_Alpha</span>
+<span class="bg-[#00e388]/15 text-[#00e388] px-1.5 py-0.2 rounded text-[9px] font-bold border border-[#00e388]/30 uppercase flex-shrink-0 leading-tight">量化导师</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant flex-shrink-0">昨天</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<p class="text-[12px] text-on-surface-variant truncate">
+            今晚美联储鲍威尔讲话要特别注意波动率，期权隐含波动已到 68%。
+          </p>
+<div class="flex items-center text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined text-[15px]">done</span>
+</div>
+</div>
+</div>
+</a>
+<!-- Item 6: Bot / Channel "巨鲸异动智能雷达广播" -->
+<a class="flex items-center gap-3.5 px-4 py-3.5 hover:bg-[#151924] transition-colors relative group active:bg-[#1a2030]" href="#">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-xl bg-[#0e2230] border border-[#0ad9f8]/40 flex items-center justify-center text-[#0ad9f8] shadow-[0_0_10px_rgba(10,217,248,0.2)]">
+<span class="material-symbols-outlined text-[24px]">radar</span>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-[#0ad9f8] text-[#00363f] rounded-full p-0.5 border-2 border-[#0b0e14] flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] leading-none font-bold">podcasts</span>
+</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-[14px] font-semibold text-white truncate">巨鲸异动智能雷达广播</span>
+<span class="bg-surface-container text-on-surface-variant px-1.5 py-0.2 rounded text-[9px] font-mono uppercase leading-tight">频道</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant flex-shrink-0">昨天</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<p class="text-[12px] text-on-surface-variant truncate">
+            [大额转账] 2,400 ETH (约 $8.2M) 从 Coinbase 提出至匿名多签金库。
+          </p>
+<span class="material-symbols-outlined text-[15px] text-on-surface-variant flex-shrink-0">volume_off</span>
+</div>
+</div>
+</a>
+</div>
+</main>
+<!-- Telegram-style Floating Action Button (FAB) -->
+<div class="fixed bottom-20 right-4 z-40">
+<button aria-label="发起新聊天 / 加群 / 扫一扫" class="w-13 h-13 p-3.5 rounded-2xl bg-[#2e5cff] text-white flex items-center justify-center shadow-[0_4px_20px_rgba(46,92,255,0.65)] hover:bg-[#1d4be0] active:scale-90 transition-all group ring-2 ring-white/20" onclick="alert('快捷操作：\n1. 发起新聊天\n2. 扫一扫加入\n3. 新建加密讨论群\n4. 添加好友 / 巨鲸BOT')">
+<span class="material-symbols-outlined text-[24px] group-hover:rotate-45 transition-transform duration-200">edit</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar (Preserved Shell Structure) -->
+<nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-[#0b0e14]/95 backdrop-blur-xl border-t border-white/[0.06] shadow-[0_-4px_20px_rgba(0,0,0,0.6)]" data-active-classes="text-primary">
+<div class="flex justify-around items-center h-16 px-2">
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="home-terminal" href="#">
+<span class="material-symbols-outlined text-[22px]">radar</span>
+<span class="text-[10px] font-medium tracking-normal">首页</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="signals-intel" href="#">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">monitoring</span>
+<span class="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#0ad9f8] shadow-[0_0_6px_#0ad9f8]"></span>
+</div>
+<span class="text-[10px] font-medium tracking-normal">资讯</span>
+</a>
+<a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] transition-colors relative group text-[#2e5cff]" data-path="community-chat" href="#">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">forum</span>
+<span class="absolute -top-1 -right-2 px-1 py-0.2 rounded-full bg-[#2e5cff] text-white font-mono text-[9px] leading-tight font-bold shadow-[0_0_10px_rgba(46,92,255,0.9)]">3</span>
+</div>
+<span class="text-[10px] font-semibold tracking-normal text-[#2e5cff]">社区</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="user-assets" href="#">
+<span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+<span class="text-[10px] font-medium tracking-normal">我的</span>
+</a>
+</div>
+</nav>
+
+
+</body></html>

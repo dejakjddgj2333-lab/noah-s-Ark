@@ -1,0 +1,1090 @@
+import 'package:flutter/material.dart';
+
+import '../core/theme.dart';
+import '../core/widgets.dart';
+import '../services/api.dart';
+import '../services/data.dart';
+
+/// 资讯 (News / Signals Intel) — full bottom-nav tab, content body only.
+/// Gold terminal theme variant (faithful to news.html palette).
+class NewsPage extends StatefulWidget {
+  const NewsPage({super.key});
+
+  // Blue theme tokens (aligned with other pages)
+  static const _gold = McColors.primaryContainer; // #2e5cff
+  static const _goldBright = McColors.primarySoft; // #82a4ff
+  static const _green = Color(0xFF00F090); // secondary-container
+  static const _greenText = Color(0xFF58FFA5); // secondary-fixed
+  static const _cyan = Color(0xFF00D8F6); // tertiary
+  static const _error = Color(0xFFFFB4AB);
+  static const _onSurfaceVariant = McColors.onSurfaceVariant;
+
+  @override
+  State<NewsPage> createState() => _NewsPageState();
+}
+
+class _NewsPageState extends State<NewsPage> {
+  List<NewsItem> _flash = const [];
+  List<NewsItem> _research = const [];
+  bool _loading = true;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _error = false;
+    });
+    try {
+      final results = await Future.wait([
+        McData.news(category: 'flash', pageSize: 20),
+        McData.news(category: 'research', pageSize: 5),
+      ]);
+      var research = results[1];
+      // 共享库暂无 research 类: 回退用普通 news 填充研报位
+      if (research.isEmpty) {
+        research = await McData.news(category: 'news', pageSize: 5);
+      }
+      if (!mounted) return;
+      setState(() {
+        _flash = results[0];
+        _research = research;
+        _loading = false;
+        _error = false;
+      });
+    } on ApiException {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
+  }
+
+  // ---- data mapping helpers ----
+
+  String _fmtTime(DateTime utc) {
+    final local = utc.toLocal();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  String _fmtCount(int n) {
+    if (n >= 10000) return '${(n / 10000).toStringAsFixed(1)}W';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+    return '$n';
+  }
+
+  /// Sentiment → bull percentage. positive 75-90 / negative 15-30 / neutral 50.
+  int _bullPct(NewsItem item) {
+    switch (item.sentiment) {
+      case 'positive':
+        return 75 + (item.id % 16); // 75-90
+      case 'negative':
+        return 15 + (item.id % 16); // 15-30
+      default:
+        return 50;
+    }
+  }
+
+  /// Category → Chinese tag label.
+  String _categoryLabel(String category) {
+    switch (category) {
+      case 'flash':
+        return '快讯';
+      case 'notice':
+        return '公告';
+      case 'research':
+        return '研报';
+      default:
+        return '资讯';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasResearch = _research.isNotEmpty;
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: NewsPage._gold,
+      child: _loading && _flash.isEmpty
+          ? _firstLoading()
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
+              children: [
+                _breakingTicker(),
+                const SizedBox(height: 20),
+                _subNavTabs(),
+                const SizedBox(height: 12),
+                _feedFilterRow(),
+                const SizedBox(height: 16),
+                _timeline(),
+                const SizedBox(height: 20),
+                if (hasResearch) ...[
+                  _researchHeader(),
+                  const SizedBox(height: 12),
+                  _researchCard(_research.first),
+                  const SizedBox(height: 20),
+                ],
+                _editorialBar(),
+              ],
+            ),
+    );
+  }
+
+  Widget _firstLoading() {
+    return ListView(
+      // keep scrollable so RefreshIndicator works during first load
+      children: const [
+        SizedBox(height: 240),
+        Center(child: CircularProgressIndicator()),
+      ],
+    );
+  }
+
+  /// Compact placeholder shown when a section has no data or failed to load.
+  Widget _emptyPlaceholder() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            _error ? '加载失败' : '暂无数据',
+            style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _load,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: NewsPage._gold,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _error ? '重试' : '刷新',
+                style: McText.mono(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: const Color(0xFFFFFFFF)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Breaking news ticker
+  Widget _breakingTicker() {
+    final headline = _flash.isNotEmpty
+        ? _flash.first.title
+        : 'SEC 主席关于数字资产监管框架发表最新利好言论';
+    final since = _flash.isNotEmpty ? _relativeTime(_flash.first.publishAt) : '10分钟前';
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 12)],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: NewsPage._gold,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(color: NewsPage._gold.withValues(alpha: 0.5), blurRadius: 14)
+              ],
+            ),
+            child: const Icon(Icons.bolt, size: 16, color: Color(0xFFFFFFFF)),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '突发头条',
+                      style: McText.mono(
+                          size: 12,
+                          weight: FontWeight.w700,
+                          color: NewsPage._gold,
+                          letterSpacing: 1),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      since,
+                      style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+                    ),
+                  ],
+                ),
+                Text(
+                  headline,
+                  style: McText.mono(
+                      size: 12,
+                      weight: FontWeight.w500,
+                      color: McColors.onSurface),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.chevron_right,
+                size: 18, color: NewsPage._onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _relativeTime(DateTime utc) {
+    final diff = DateTime.now().difference(utc.toLocal());
+    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
+    if (diff.inHours < 24) return '${diff.inHours}小时前';
+    return '${diff.inDays}天前';
+  }
+
+  // Terminal sub-navigation tabs
+  Widget _subNavTabs() {
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _tab(Icons.rss_feed, '7×24 快讯', active: true, ping: true),
+          _tab(Icons.analytics, '投研深度'),
+          _tab(Icons.calendar_today, '宏观日历'),
+          _tab(Icons.gavel, '行业政策'),
+        ],
+      ),
+    );
+  }
+
+  Widget _tab(IconData icon, String label,
+      {bool active = false, bool ping = false}) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: active ? NewsPage._gold : McColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: active
+            ? [BoxShadow(color: NewsPage._gold.withValues(alpha: 0.45), blurRadius: 16)]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon,
+              size: 15,
+              color: active ? const Color(0xFFFFFFFF) : NewsPage._onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: McText.mono(
+              size: 12,
+              weight: active ? FontWeight.w700 : FontWeight.w600,
+              color: active ? const Color(0xFFFFFFFF) : NewsPage._onSurfaceVariant,
+            ),
+          ),
+          if (ping) ...[
+            const SizedBox(width: 6),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFFFFF),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Realtime feed filter + audio read switch
+  Widget _feedFilterRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Row(
+              children: [
+                Text(
+                  'REALTIME FEED',
+                  style: McText.mono(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: NewsPage._gold,
+                      letterSpacing: 2),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    '/ 自动流送中',
+                    style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              _miniAction(Icons.volume_up, '语音速报'),
+              Container(
+                width: 1,
+                height: 12,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                color: McColors.surfaceContainerHighest,
+              ),
+              _miniAction(Icons.tune, '筛选'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniAction(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: NewsPage._onSurfaceVariant),
+        const SizedBox(width: 4),
+        Text(label, style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant)),
+      ],
+    );
+  }
+
+  // 7×24 flash news timeline (dashed connector behind nodes)
+  Widget _timeline() {
+    if (_flash.isEmpty) {
+      return _emptyPlaceholder();
+    }
+    return Stack(
+      children: [
+        // vertical dashed track (HTML: absolute left-[15px] top-4 bottom-4)
+        const Positioned(
+          left: 15,
+          top: 20,
+          bottom: 20,
+          width: 1,
+          child: _DashedLine(color: McColors.surfaceContainerHighest),
+        ),
+        Column(
+          children: [
+            for (var i = 0; i < _flash.length; i++) _buildTimelineItem(i, _flash[i]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimelineItem(int index, NewsItem item) {
+    // cycle node accent colours across items
+    const accents = [
+      (NewsPage._gold, NewsPage._goldBright),
+      (NewsPage._cyan, NewsPage._cyan),
+      (NewsPage._greenText, NewsPage._greenText),
+    ];
+    final (node, glow) = accents[index % accents.length];
+
+    final bullPct = _bullPct(item);
+    final views = _fmtCount(item.likeCount + item.commentCount);
+
+    final tags = <_Tag>[
+      if (item.sentiment != null)
+        const _Tag('重要', bg: Color(0xFF93000A), fg: Color(0xFFFFDAD6)),
+      if (item.source.isNotEmpty)
+        _Tag(item.source,
+            bg: McColors.surfaceContainerHigh, fg: NewsPage._onSurfaceVariant)
+      else
+        _Tag(_categoryLabel(item.category),
+            bg: McColors.surfaceContainerHigh, fg: NewsPage._gold),
+    ];
+
+    return _timelineItem(
+      nodeColor: node,
+      nodeGlow: glow,
+      time: _fmtTime(item.publishAt),
+      timeColor: node,
+      tags: tags,
+      title: item.title,
+      body: item.summary.isNotEmpty ? item.summary : item.content,
+      bullPct: bullPct,
+      bullCount: _fmtCount(item.likeCount),
+      bearCount: _fmtCount(item.commentCount),
+      views: views,
+      actionLabel: '查看详情',
+      actionIcon: Icons.arrow_outward,
+      actionColor: node,
+      isLast: index == _flash.length - 1,
+    );
+  }
+
+  Widget _timelineItem({
+    required Color nodeColor,
+    required Color nodeGlow,
+    required String time,
+    required Color timeColor,
+    required List<_Tag> tags,
+    required String title,
+    required String body,
+    required int bullPct,
+    required String bullCount,
+    required String bearCount,
+    required String views,
+    required String actionLabel,
+    required IconData actionIcon,
+    required Color actionColor,
+    bool isLast = false,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // glow node (dashed connector drawn behind by _timeline Stack)
+        Container(
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.only(top: 4),
+          decoration: const BoxDecoration(
+            color: McColors.surfaceContainerLow,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: McGlowDot(color: nodeColor, size: 12),
+        ),
+        const SizedBox(width: 12),
+        // feed card + bottom gap
+        Expanded(
+          child: Column(
+            children: [
+              Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(color: Colors.black38, blurRadius: 8)
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // header info
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            time,
+                            style: McText.mono(
+                                size: 13,
+                                weight: FontWeight.w700,
+                                color: timeColor),
+                          ),
+                          for (final t in tags)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: t.bg,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                t.text,
+                                style: McText.mono(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: t.fg,
+                                    letterSpacing: 1),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      'TODAY',
+                      style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // content
+                Text(
+                  title,
+                  style: McText.display(
+                      size: 16, weight: FontWeight.w700, height: 1.35),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  body,
+                  style: McText.mono(
+                      size: 12, color: NewsPage._onSurfaceVariant, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                // sentiment bar
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color:
+                        McColors.surfaceContainerLowest.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.trending_up,
+                                  size: 14, color: NewsPage._greenText),
+                              const SizedBox(width: 4),
+                              Text(
+                                '利好 $bullPct%',
+                                style: McText.mono(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: NewsPage._greenText),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '($bullCount)',
+                                style: McText.mono(
+                                    size: 12, color: NewsPage._onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                '($bearCount)',
+                                style: McText.mono(
+                                    size: 12, color: NewsPage._onSurfaceVariant),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '利空 ${100 - bullPct}%',
+                                style: McText.mono(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: NewsPage._error),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.trending_down,
+                                  size: 14, color: NewsPage._error),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: SizedBox(
+                          height: 6,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  flex: bullPct,
+                                  child: Container(color: NewsPage._green)),
+                              Expanded(
+                                  flex: 100 - bullPct,
+                                  child: Container(color: NewsPage._error)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // action micro-row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.visibility,
+                            size: 12, color: NewsPage._onSurfaceVariant),
+                        const SizedBox(width: 4),
+                        Text(views,
+                            style: McText.mono(
+                                size: 12, color: NewsPage._onSurfaceVariant)),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.share,
+                            size: 12, color: NewsPage._onSurfaceVariant),
+                        const SizedBox(width: 4),
+                        Text('分享海报',
+                            style: McText.mono(
+                                size: 12, color: NewsPage._onSurfaceVariant)),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          actionLabel,
+                          style: McText.mono(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: actionColor),
+                        ),
+                        Icon(actionIcon, size: 12, color: actionColor),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+                if (!isLast) const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ],
+    );
+  }
+
+  // 深度研报精选 header
+  Widget _researchHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: NewsPage._gold,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(color: NewsPage._gold.withValues(alpha: 0.6), blurRadius: 8)
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '深度研报精选',
+                style: McText.display(size: 16, weight: FontWeight.w700),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: NewsPage._gold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'MINGCE VIP',
+                  style: McText.mono(
+                      size: 12, weight: FontWeight.w700, color: NewsPage._gold),
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text('查看全部',
+                  style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant)),
+              const Icon(Icons.arrow_forward,
+                  size: 14, color: NewsPage._onSurfaceVariant),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Deep research featured card (bento style)
+  Widget _researchCard(NewsItem item) {
+    final reads = _fmtCount(item.likeCount + item.commentCount + item.shareCount);
+    return Container(
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 12)],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // cover graphic (gradient placeholder for the HTML image)
+          Container(
+            height: 176,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF32353C),
+                  Color(0xFF1D2026),
+                  Color(0xFF10131A),
+                ],
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          NewsPage._gold.withValues(alpha: 0.25),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 6,
+                  top: 6,
+                  child: Row(
+                    children: [
+                      _bannerBadge('重磅深度', NewsPage._goldBright, bold: true),
+                      const SizedBox(width: 6),
+                      _bannerBadge('研报编号 #MC-${item.id}', const Color(0xFF93C5FD)),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color:
+                          McColors.surfaceContainerLowest.withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.bookmark_border,
+                        size: 16, color: McColors.onSurface),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // research content body
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: McText.display(
+                      size: 20, weight: FontWeight.w700, height: 1.25),
+                ),
+                if (item.summary.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    item.summary,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: McText.mono(
+                        size: 12, color: NewsPage._onSurfaceVariant, height: 1.5),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.verified, size: 14, color: NewsPage._gold),
+                    const SizedBox(width: 4),
+                    Text(item.source.isNotEmpty ? item.source : '明策研究院',
+                        style: McText.mono(
+                            size: 12,
+                            weight: FontWeight.w500,
+                            color: McColors.onSurface)),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.visibility,
+                        size: 14, color: NewsPage._onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    Text('阅读 $reads',
+                        style:
+                            McText.mono(size: 12, color: NewsPage._onSurfaceVariant)),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(_relativeTime(item.publishAt),
+                          style:
+                              McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _featurePill(
+                          Icons.picture_as_pdf, '包含完整 PDF 研报', NewsPage._gold),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _featurePill(
+                          Icons.account_tree, '附核心逻辑结构脑图', NewsPage._cyan),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _tagChip('#宏观周期'),
+                    _tagChip('#BTC目标价'),
+                    _tagChip('#链上筹码分布'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: NewsPage._gold,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                                color: NewsPage._gold.withValues(alpha: 0.35),
+                                blurRadius: 16)
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.menu_book,
+                                size: 16, color: Color(0xFFFFFFFF)),
+                            const SizedBox(width: 6),
+                            Text(
+                              '在线研读全文',
+                              style: McText.mono(
+                                  size: 12,
+                                  weight: FontWeight.w700,
+                                  color: const Color(0xFFFFFFFF)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: McColors.surfaceContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.download,
+                          size: 18, color: McColors.onSurface),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bannerBadge(String text, Color color, {bool bold = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLowest.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        text,
+        style: McText.mono(
+            size: 12,
+            weight: bold ? FontWeight.w700 : FontWeight.w500,
+            color: color,
+            letterSpacing: 1),
+      ),
+    );
+  }
+
+  Widget _featurePill(IconData icon, String text, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: iconColor),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: McText.mono(size: 12, color: McColors.onSurface),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tagChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+      ),
+    );
+  }
+
+  // Editorial insight bar
+  Widget _editorialBar() {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb, size: 20, color: NewsPage._cyan),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '加入明策量化社群，第一时间获取非农数据与巨鲸转账即时预警',
+                    style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: NewsPage._gold,
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(color: NewsPage._gold.withValues(alpha: 0.3), blurRadius: 10)
+              ],
+            ),
+            child: Text(
+              '立即订阅',
+              style: McText.mono(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: const Color(0xFFFFFFFF)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tag {
+  const _Tag(this.text, {required this.bg, required this.fg});
+  final String text;
+  final Color bg;
+  final Color fg;
+}
+
+/// Vertical dashed connector between timeline nodes.
+class _DashedLine extends StatelessWidget {
+  const _DashedLine({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(1, double.infinity),
+      painter: _DashedLinePainter(color),
+    );
+  }
+}
+
+class _DashedLinePainter extends CustomPainter {
+  _DashedLinePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    const dash = 4.0;
+    const gap = 3.0;
+    var y = 2.0;
+    while (y < size.height - 2) {
+      canvas.drawLine(Offset(0.5, y), Offset(0.5, (y + dash).clamp(0, size.height - 2)), paint);
+      y += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter old) => old.color != color;
+}

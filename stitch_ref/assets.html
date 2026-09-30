@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;min-height:100vh;margin:0;padding:0;background-color:#10131a;overflow-x:hidden;}body{overscroll-behavior-y:auto;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-dim": "#10131a", "inverse-on-surface": "#2e3037", "outline-variant": "#434656", "on-tertiary": "#00391e", "tertiary-fixed-dim": "#00e388", "on-background": "#e1e2eb", "on-secondary-fixed-variant": "#004e5a", "on-error-container": "#ffdad6", "inverse-surface": "#e1e2eb", "surface-variant": "#32353c", "on-surface": "#e1e2eb", "surface-container-low": "#191c22", "surface-tint": "#b8c3ff", "on-primary-fixed-variant": "#0035bd", "on-tertiary-container": "#c2ffd3", "on-error": "#690005", "error": "#ffb4ab", "on-surface-variant": "#c4c5d9", "on-secondary": "#00363f", "inverse-primary": "#104aef", "on-tertiary-fixed-variant": "#00522e", "surface-container-lowest": "#0b0e14", "surface-container-high": "#272a31", "surface": "#10131a", "tertiary-container": "#007e49", "primary-fixed": "#dde1ff", "surface-bright": "#363940", "on-primary": "#002487", "secondary-fixed-dim": "#0ad9f8", "on-secondary-fixed": "#001f25", "background": "#10131a", "on-primary-container": "#f0f0ff", "on-primary-fixed": "#001355", "secondary-container": "#00d7f4", "primary-container": "#2e5cff", "tertiary-fixed": "#58ffa5", "error-container": "#93000a", "on-tertiary-fixed": "#00210f", "surface-container": "#1d2026", "outline": "#8e90a2", "tertiary": "#00e388", "secondary": "#9aecff", "on-secondary-container": "#005966", "secondary-fixed": "#a5eeff", "primary-fixed-dim": "#b8c3ff", "primary": "#b8c3ff", "cobalt": "#2e5cff", "cobalt-hover": "#254edb", "surface-container-highest": "#32353c" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xl": "1.5rem", "gutter": "0.5rem", "margin": "0.75rem", "space-xs": "0.25rem", "space-lg": "1rem", "space-md": "0.75rem", "space-sm": "0.375rem", "margin-desktop": "1.5rem", "gutter-desktop": "1rem" }, fontFamily: { "label-md": ["JetBrains Mono", "monospace"], "body-sm": ["JetBrains Mono", "monospace"], "title-sm": ["Space Grotesk", "sans-serif"], "body-lg": ["JetBrains Mono", "monospace"], "label-sm": ["JetBrains Mono", "monospace"], "body-md": ["JetBrains Mono", "monospace"], "headline-lg": ["Space Grotesk", "sans-serif"], "headline-xl": ["Space Grotesk", "sans-serif"], "headline-md": ["Space Grotesk", "sans-serif"], "ticker-val": ["JetBrains Mono", "monospace"] }, fontSize: { "label-md": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "600" }], "body-sm": ["11px", { "lineHeight": "15px", "letterSpacing": "0em", "fontWeight": "400" }], "title-sm": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }], "body-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "400" }], "label-sm": ["9px", { "lineHeight": "12px", "letterSpacing": "0.1em", "fontWeight": "700" }], "body-md": ["12px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-xl": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-md": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "ticker-val": ["13px", { "lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "600" }] } } } };</script></head><body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-white antialiased"><header class="fixed top-0 inset-x-0 z-50 bg-surface-container-lowest/85 backdrop-blur-xl border-b border-surface-container-high shadow-[0_1px_12px_rgba(0,0,0,0.4)] pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="明策 MINGCE Terminal Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Ul3BD1r1zDZEXQnFJ0w9KexSXuoZ1g6roNTN09HoX7iTlGmfXIkYld73nvEvu-LpuZyEHw_ktovwzU19uwcnsjNmyFaz2YBn6T-Xq1D-JIU3_nezrkZSPpIS8GZYT7BGHPqKs4CjuIKTrYJ7QpjAh48-UVx7HrJaJ2QMrKu_IpBkm2bXJ2OwnDaIu76pK1vqND1ZNPAoDLPLS0zpz9lJTmmz-FNsDvUMn_tI0y1EilV_VxhmDZFZGpuYU"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-title-sm text-title-sm tracking-tight text-on-surface font-bold">明策 MINGCE</span><span class="font-label-sm text-label-sm text-[#85A5FF] uppercase font-bold">Alpha</span></div><div class="flex items-center gap-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span class="font-body-sm text-[10px] text-tertiary tracking-wider uppercase leading-none">Mainnet Sync</span></div></div></div><div class="flex items-center gap-space-xs"><div class="flex flex-col items-end pr-space-xs"><span class="font-title-sm text-title-sm text-on-surface truncate max-w-[110px]">User Assets</span><span class="font-label-sm text-label-sm text-on-surface-variant font-ticker-val">GAS 12 GWEI</span></div><div class="relative flex items-center justify-center p-0.5 rounded-full bg-surface-container border border-surface-container-high"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAs1yPklXIMuduh1XOwyOgLh3y28XGX1wF9KoOxflu-5pPp5zQAA2fmPu5zYx_9vlMpGusMlha1hcuACj22mGAgUWA5c4KBGDMdc1DqVieSfDLWDrPWPcc8Sc1dK8w_gMvxLeQGt_eHEqCIaVZl9LlcLAbpEJv3XrNVyeafgLPb0-_XZ8vlL6HUIgw2dth2dek0OZvlTbAlzzMc8p-wU5pV0k57m3D-zVGE0Ol2Zyt0RdJwRongjUQ"/></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-20 pb-28 bg-surface min-h-screen overflow-y-auto"><div class="flex flex-col w-full px-margin pb-6 space-y-5">
+<!-- 1. 用户核心身份与网络状态 HUD -->
+<section class="relative bg-surface-container p-5 rounded-xl shadow-xl overflow-hidden border border-surface-container-high">
+<div class="absolute -top-12 -right-12 w-36 h-36 bg-[#2E5CFF]/15 rounded-full blur-2xl pointer-events-none"></div>
+<div class="absolute -bottom-8 -left-8 w-28 h-28 bg-[#2E5CFF]/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-start justify-between relative z-10">
+<div class="flex items-center gap-3 min-w-0">
+<!-- 头像光晕容器 -->
+<div class="relative flex-shrink-0">
+<div class="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-[#2E5CFF] via-secondary to-[#2E5CFF] opacity-80 blur-xs"></div>
+<img class="relative w-12 h-12 rounded-full object-cover shadow-md" data-alt="Cyberpunk high-frequency algorithmic trader avatar portrait, glowing gold and cyan neon accents, futuristic glass visor, dark studio obsidian background, cinematic lighting 8k render" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn4CLC6c23fh717jJfvNS9ix4vEGX4Y17WeSj46mKjT4Y_9463-memnG9s-F1m1bq06kE8qT_uzWVK3lu8528OSHToZMH6gHgDPuigT15viEMNs-ruOJMyPsD-7mx9wxRPzsVGG1s0IXpQLcqki0uvbA1LSd-6jEIWcgbPdTsfu4t2qww5nQJkflyPd6zNYKPdp7wzaA8vep83EFBc67cMuies5ThS-6kVxz5wK1oMxOSAQOgsaxp_"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-tertiary shadow-[0_0_8px_#00e388]"></span>
+</div>
+<div class="flex flex-col min-w-0 space-y-0.5">
+<div class="flex items-center gap-space-xs">
+<span class="font-title-sm text-title-sm font-bold text-on-surface truncate">Satoshi_Trader</span>
+<span class="material-symbols-outlined text-[#2E5CFF] text-[16px]" title="已实名认证终端">verified</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-ticker-val tracking-wide">ID: MC-892104</span>
+</div>
+</div>
+<!-- 合伙人等级徽标 -->
+<div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[#2E5CFF]/15 border border-[#2E5CFF]/40 shadow-[0_0_12px_rgba(46,92,255,0.25)]"><span class="material-symbols-outlined text-[#85A5FF] text-[14px]">diamond</span><span class="font-label-sm text-label-sm text-[#85A5FF] font-bold tracking-tight">钻石合伙人 45%</span></div>
+</div>
+<!-- Web3 钱包地址节点 Pill -->
+<div class="mt-4 flex items-center justify-between bg-surface-container-lowest px-3 py-2.5 rounded-lg border border-surface-container-high/60">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_6px_#00e388]"></span>
+<span class="font-label-md text-label-md text-on-surface font-ticker-val truncate max-w-[170px]">0x3Fa8...9e42</span>
+<span class="font-label-sm text-label-sm text-[#85A5FF] bg-[#2E5CFF]/10 px-2 py-0.5 rounded font-mono border border-[#2E5CFF]/20">Arbitrum One</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-1 text-on-surface-variant hover:text-[#2E5CFF] transition-colors" id="btn-copy-addr" title="复制钱包地址">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+<button class="p-1 text-on-surface-variant hover:text-error transition-colors" title="断开连接">
+<span class="material-symbols-outlined text-[16px]">power_settings_new</span>
+</button>
+</div>
+</div>
+</section>
+<!-- 2. 链上钱包充值与资产总览 -->
+<section class="relative bg-surface-container p-5 rounded-xl shadow-xl overflow-hidden space-y-4 border border-surface-container-high">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[#2E5CFF] text-[18px]">account_balance_wallet</span>
+<span class="font-label-md text-label-md text-on-surface-variant tracking-wider uppercase">终端资产总值 (USDT)</span>
+</div>
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="font-label-sm text-label-sm font-bold">24H 净流 +$1,240</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex items-baseline gap-2">
+<h2 class="font-headline-xl text-headline-xl font-bold text-on-surface tracking-tight font-ticker-val">$12,850.00</h2>
+<span class="font-body-md text-body-md text-on-surface-variant font-ticker-val">≈ ¥93,162.50</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant font-label-sm text-label-sm pt-1">
+<span class="">可用: <strong class="text-on-surface font-ticker-val">10,240.00</strong></span>
+<span class="">•</span>
+<span class="">策略保证金: <strong class="text-on-surface font-ticker-val">2,610.00</strong></span>
+</div>
+</div>
+<!-- 交互快捷按钮组 -->
+<div class="grid grid-cols-3 gap-2.5 pt-1">
+<!-- 快捷充值 (高亮主触控 纯正深海钴蓝 #2E5CFF) -->
+<button class="col-span-1 flex flex-col items-center justify-center py-3 px-1 bg-[#2E5CFF] hover:bg-[#254edb] text-white rounded-lg font-title-sm text-[13px] font-bold shadow-[0_4px_16px_rgba(46,92,255,0.4)] active:scale-95 transition-all" id="btn-open-deposit"><div class="flex items-center gap-1"><span class="material-symbols-outlined text-[17px]">bolt</span><span class="">链上充值</span></div></button>
+<!-- 快速提现 -->
+<button class="col-span-1 flex flex-col items-center justify-center py-3 px-1 bg-surface-container-high text-on-surface hover:bg-surface-bright rounded-lg font-title-sm text-[13px] font-semibold active:scale-95 transition-all border border-surface-container-highest">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-on-surface-variant text-[17px]">arrow_outward</span>
+<span class="">链上提现</span>
+</div>
+</button>
+<!-- 多链划转 / 钱包矩阵 -->
+<button class="col-span-1 flex flex-col items-center justify-center py-3 px-1 bg-surface-container-high text-on-surface hover:bg-surface-bright rounded-lg font-title-sm text-[13px] font-semibold active:scale-95 transition-all border border-surface-container-highest">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[#85A5FF] text-[17px]">sync_alt</span>
+<span class="">钱包矩阵</span>
+</div>
+</button>
+</div>
+<!-- 支持的充值公链矩阵 Pills -->
+<div class="flex items-center gap-1.5 pt-1 overflow-x-auto">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex-shrink-0">支持多链:</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface text-[10px] font-mono border border-surface-container-high">Arbitrum</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface text-[10px] font-mono border border-surface-container-high">TRC20</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface text-[10px] font-mono border border-surface-container-high">ERC20</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface text-[10px] font-mono border border-surface-container-high">BSC</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface text-[10px] font-mono border border-surface-container-high">Solana</span>
+</div>
+</section>
+<!-- 3. 合伙人分佣体系看板 (Affiliate & Referral Hub) -->
+<section class="relative bg-surface-container p-5 rounded-xl shadow-xl overflow-hidden space-y-4 border border-surface-container-high">
+<div class="flex items-center justify-between pb-0.5">
+<div class="flex items-center gap-space-xs">
+<div class="w-1.5 h-4 bg-[#2E5CFF] rounded-full"></div>
+<h3 class="font-title-sm text-title-sm font-bold text-on-surface">合伙人分佣体系</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-[#2E5CFF]/15 text-[#85A5FF] border border-[#2E5CFF]/40 font-label-sm text-label-sm font-bold shadow-[0_0_10px_rgba(46,92,255,0.2)]">协议返佣分润系统</span>
+</div>
+<!-- 收益卡片 -->
+<div class="grid grid-cols-2 gap-2.5 bg-surface-container-lowest p-3 rounded-lg border border-surface-container-high/60">
+<div class="flex flex-col p-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">累计分佣收益 (USDT)</span>
+<span class="font-headline-md text-headline-md font-bold text-[#85A5FF] font-ticker-val mt-1">$4,680.50</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-1.5">历史结算到账率 100%</span>
+</div>
+<div class="flex flex-col p-2 bg-surface-container-low rounded-md border border-surface-container-high/40">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">待结算收益</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#2E5CFF] animate-pulse shadow-[0_0_6px_#2e5cff]"></span>
+</div>
+<span class="font-headline-md text-headline-md font-bold text-on-surface font-ticker-val mt-1">$342.10</span>
+<span class="font-body-sm text-[10px] text-[#85A5FF] mt-1.5">每周一 00:00 (UTC+8) 划转</span>
+</div>
+</div>
+<!-- 3项指标数据网格 -->
+<div class="grid grid-cols-3 gap-2.5 text-center">
+<div class="p-2.5 bg-surface-container-high rounded-lg flex flex-col items-center justify-center border border-surface-container-highest">
+<span class="font-label-sm text-label-sm text-on-surface-variant">有效受邀者</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface font-ticker-val mt-1">148 人</span>
+</div>
+<div class="p-2.5 bg-surface-container-high rounded-lg flex flex-col items-center justify-center border border-surface-container-highest">
+<span class="font-label-sm text-label-sm text-on-surface-variant">今日贡献</span>
+<span class="font-title-sm text-title-sm font-bold text-tertiary font-ticker-val mt-1">+$86.40</span>
+</div>
+<div class="p-2.5 bg-surface-container-high rounded-lg flex flex-col items-center justify-center border border-surface-container-highest">
+<span class="font-label-sm text-label-sm text-on-surface-variant">分佣级别</span>
+<span class="font-title-sm text-title-sm font-bold text-[#85A5FF] font-ticker-val mt-1">L3 (45%)</span>
+</div>
+</div>
+<!-- 专属邀请码与裂变链接 -->
+<div class="bg-surface-container-lowest p-3 rounded-lg space-y-2 border border-surface-container-high/60">
+<div class="flex items-center justify-between text-body-sm text-on-surface-variant">
+<span class="">专属邀请码</span>
+<span class="">推广专属链接</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex-1 flex items-center justify-between bg-surface-container-high px-3 py-2 rounded border border-[#2E5CFF]/30">
+<span class="font-title-sm text-title-sm font-bold text-[#85A5FF] tracking-wider font-ticker-val">MC-892104</span>
+<button class="text-[#85A5FF] hover:text-white transition-colors flex items-center gap-1 font-label-sm text-label-sm" id="btn-copy-code"><span class="material-symbols-outlined text-[15px]">content_copy</span><span class="">复制</span></button>
+</div>
+<button class="flex items-center justify-center gap-1 bg-surface-bright text-on-surface hover:text-[#85A5FF] px-3 py-2 rounded font-label-md text-label-md font-semibold transition-colors border border-[#2E5CFF]/30" id="btn-share-poster">
+<span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+<span class="">海报</span>
+</button>
+</div>
+<!-- 直达分佣中心按钮 -->
+<button class="w-full py-2.5 bg-[#2E5CFF]/15 hover:bg-[#2E5CFF]/25 border border-[#2E5CFF]/40 text-[#85A5FF] rounded-lg font-title-sm text-[13px] font-bold flex items-center justify-center gap-1.5 transition-all">
+<span>直达合伙人分佣中心看板</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<!-- 实时返佣流水 Feed -->
+<div class="space-y-2 pt-0.5">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">最近返佣记录</span>
+<span class="font-label-sm text-label-sm text-[#85A5FF] cursor-pointer">查看全网明细</span>
+</div>
+<div class="space-y-2">
+<!-- 记录项 1 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container-high transition-colors border border-surface-container-high/40">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">合约交易返佣 • 0x4a...8c</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-ticker-val">10分钟前 · 交易额 $42,000</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-title-sm text-title-sm font-bold text-tertiary font-ticker-val">+$14.20</span>
+<span class="block font-label-sm text-[9px] text-on-surface-variant">USDT</span>
+</div>
+</div>
+<!-- 记录项 2 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container-high transition-colors border border-surface-container-high/40">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded bg-[#2E5CFF]/15 flex items-center justify-center text-[#85A5FF] flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">currency_exchange</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">充值交易分润 • 0x7e...3d</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-ticker-val">1小时前 · 新入金结算</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-title-sm text-title-sm font-bold text-tertiary font-ticker-val">+$28.50</span>
+<span class="block font-label-sm text-[9px] text-on-surface-variant">USDT</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. 终端设置与量化偏好设置区域 -->
+<section class="bg-surface-container p-5 rounded-xl shadow-xl space-y-4 border border-surface-container-high">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[#85A5FF] text-[18px]">tune</span>
+<h3 class="font-title-sm text-title-sm font-bold text-on-surface">终端监控与量化偏好设置</h3>
+</div>
+<div class="space-y-2.5">
+<!-- 巨鲸预警推送阈值 -->
+<div class="flex items-center justify-between px-3 py-3.5 bg-surface-container-lowest rounded-lg border border-surface-container-high/50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#2E5CFF] text-[20px]">notifications_active</span>
+<div class="flex flex-col">
+<span class="font-title-sm text-[14px] text-on-surface font-semibold">全网大额巨鲸预警阈值</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-ticker-val mt-0.5">当前触发: &gt; $1,000,000 USDT</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[#85A5FF] font-ticker-val font-label-sm text-label-sm font-bold">&gt;1M 开关开启</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-dim after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2E5CFF] shadow-[0_0_12px_rgba(46,92,255,0.4)]"></div>
+</label>
+</div>
+</div>
+<!-- 极端多空爆仓音频提醒 开关 -->
+<div class="flex items-center justify-between px-3 py-3.5 bg-surface-container-lowest rounded-lg border border-surface-container-high/50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error text-[20px]">volume_up</span>
+<div class="flex flex-col">
+<span class="font-title-sm text-[14px] text-on-surface font-semibold">极端多空爆仓音频提醒</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">高密度低延迟穿透声效 (已启用)</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-dim after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2E5CFF] shadow-[0_0_12px_rgba(46,92,255,0.4)]"></div>
+</label>
+</div>
+<!-- 机构专属 RPC 极速节点 -->
+<div class="flex items-center justify-between px-3 py-3.5 bg-surface-container-lowest rounded-lg border border-surface-container-high/50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-[20px]">speed</span>
+<div class="flex flex-col">
+<span class="font-title-sm text-[14px] text-on-surface font-semibold">机构专属 RPC 极速节点</span>
+<span class="font-body-sm text-body-sm text-tertiary font-ticker-val mt-0.5">Arbitrum FlashNode 延迟: 18ms</span>
+</div>
+</div>
+<button class="px-2.5 py-1.5 rounded bg-surface-container-high text-on-surface hover:text-[#85A5FF] font-label-sm text-label-sm transition-colors border border-surface-container-highest">切换节点</button>
+</div>
+<!-- 规则与安全中心、在线客服与合伙人电报群入口 -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<a class="flex items-center justify-between px-3 py-3 bg-surface-container-lowest hover:bg-surface-container-high rounded-lg border border-surface-container-high/50 transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#85A5FF] text-[18px]">verified_user</span>
+<span class="font-title-sm text-[13px] text-on-surface font-medium">规则与安全中心</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-white transition-colors">chevron_right</span>
+</a>
+<a class="flex items-center justify-between px-3 py-3 bg-surface-container-lowest hover:bg-surface-container-high rounded-lg border border-surface-container-high/50 transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">support_agent</span>
+<span class="font-title-sm text-[13px] text-on-surface font-medium">7x24 在线客服</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-white transition-colors">chevron_right</span>
+</a>
+</div>
+<!-- Telegram 讨论组与技术支持 -->
+<div class="flex items-center justify-between px-3 py-3.5 bg-surface-container-lowest rounded-lg border border-surface-container-high/50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#2E5CFF] text-[20px]">forum</span>
+<div class="flex flex-col">
+<span class="font-title-sm text-[14px] text-on-surface font-semibold">量化合伙人 TG 官方频道</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">明策 VIP Alpha 策略情报独家群</span>
+</div>
+</div>
+<a class="px-3 py-1.5 rounded bg-[#2E5CFF] text-white font-label-sm text-label-sm font-bold flex items-center gap-1 shadow-[0_0_14px_rgba(46,92,255,0.45)] hover:bg-[#254edb] transition-all" href="https://t.me/" target="_blank"><span class="">进入群组</span><span class="material-symbols-outlined text-[13px]">arrow_forward</span></a>
+</div>
+</div>
+</section>
+</div>
+<!-- 5. 快速链上充值模态抽屉 (Deposit Drawer) -->
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-surface-container-lowest/80 backdrop-blur-md hidden transition-opacity" id="deposit-modal">
+<div class="w-full max-w-md bg-surface-container p-space-md rounded-t-2xl shadow-2xl space-y-space-md max-h-[85vh] overflow-y-auto border-t border-surface-container-high">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#2E5CFF] animate-ping"></span>
+<h4 class="font-title-sm text-title-sm font-bold text-on-surface">Web3 链上快捷充值</h4>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-on-surface" id="btn-close-deposit">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- 充值币种与网络选择 -->
+<div class="space-y-space-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">选择充值网络</label>
+<div class="grid grid-cols-3 gap-1.5 font-label-md text-label-md">
+<button class="py-2 rounded bg-[#2E5CFF] text-white font-bold text-center shadow-[0_0_10px_rgba(46,92,255,0.3)]">Arbitrum</button>
+<button class="py-2 rounded bg-surface-container-high text-on-surface hover:bg-surface-bright text-center border border-surface-container-highest">TRC20</button>
+<button class="py-2 rounded bg-surface-container-high text-on-surface hover:bg-surface-bright text-center border border-surface-container-highest">ERC20</button>
+<button class="py-2 rounded bg-surface-container-high text-on-surface hover:bg-surface-bright text-center border border-surface-container-highest">Solana</button>
+<button class="py-2 rounded bg-surface-container-high text-on-surface hover:bg-surface-bright text-center border border-surface-container-highest">BSC</button>
+<button class="py-2 rounded bg-surface-container-high text-on-surface hover:bg-surface-bright text-center border border-surface-container-highest">Polygon</button>
+</div>
+</div>
+<!-- 二维码与地址 -->
+<div class="flex flex-col items-center justify-center p-space-md bg-surface-container-lowest rounded-xl space-y-space-sm border border-surface-container-high">
+<img class="w-40 h-40 rounded-lg object-contain p-2 bg-surface" data-alt="High tech minimalist cyber QR Code for cryptocurrency deposit with gold metallic grid corners, pure dark background, high contrast scan target" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4I-2YyhLLEN7YcOHDu1OCyqP0y-TaKcjg40zeK-04xRNoN7WgxTYFJukktRGCWVowef4Ba87mFqUWCLwGPuFg2YPylHRkDB5byNu7y7wqxTQEC4SAtEdZozGzETzHWqKzzTrEcQiizzKJ31dZCHI3I9OPbfnHqX4Cjx0nNaPXlnZIfAm5txtbpDgyEQRdPj3KSEfSFVOyh8Ol1UoE4TX3WIq3C2S4axOBYhW5uMzgBZ-GCt3AmMT-"/>
+<div class="text-center space-y-1 w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant">专属充值地址 (Arbitrum USDT)</span>
+<div class="flex items-center justify-center gap-2 bg-surface-container-high px-2 py-1.5 rounded font-ticker-val font-body-sm text-on-surface break-all border border-surface-container-highest">
+<span class="">0x3Fa8D081F082987a1C54302619E42</span>
+<button class="text-[#2E5CFF] hover:text-white flex-shrink-0" id="modal-copy-btn">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 充值注意提示 -->
+<div class="bg-surface-container-high p-space-sm rounded text-[11px] font-body-sm text-on-surface-variant space-y-1 border border-surface-container-highest">
+<p class="flex items-center gap-1 text-[#85A5FF]">
+<span class="material-symbols-outlined text-[14px]">info</span>
+<span class="">充值免手续费，1 次网络确认即可实时到账并自动入计分佣权重。</span>
+</p>
+<p class="">• 最小充值额: 10 USDT (低于该金额不予入账)</p>
+</div>
+<button class="w-full py-3 bg-[#2E5CFF] text-white hover:bg-[#254edb] font-title-sm text-title-sm font-bold rounded-lg shadow-[0_4px_20px_rgba(46,92,255,0.4)] active:scale-95 transition-all" id="btn-done-deposit">我已完成链上转账</button>
+</div>
+</div>
+<!-- 轻量交互脚本 -->
+<script>
+    (function() {
+      const openModalBtn = document.getElementById('btn-open-deposit');
+      const closeModalBtn = document.getElementById('btn-close-deposit');
+      const doneModalBtn = document.getElementById('btn-done-deposit');
+      const depositModal = document.getElementById('deposit-modal');
+      const copyCodeBtn = document.getElementById('btn-copy-code');
+      const copyAddrBtn = document.getElementById('btn-copy-addr');
+      const modalCopyBtn = document.getElementById('modal-copy-btn');
+      const sharePosterBtn = document.getElementById('btn-share-poster');
+
+      function toggleModal(show) {
+        if (depositModal) {
+          if (show) {
+            depositModal.classList.remove('hidden');
+          } else {
+            depositModal.classList.add('hidden');
+          }
+        }
+      }
+
+      if (openModalBtn) openModalBtn.addEventListener('click', () => toggleModal(true));
+      if (closeModalBtn) closeModalBtn.addEventListener('click', () => toggleModal(false));
+      if (doneModalBtn) doneModalBtn.addEventListener('click', () => toggleModal(false));
+
+      function showFeedback(btn) {
+        if (!btn) return;
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) {
+          const prev = icon.textContent;
+          icon.textContent = 'check';
+          setTimeout(() => {
+            icon.textContent = prev;
+          }, 1500);
+        }
+      }
+
+      if (copyCodeBtn) {
+        copyCodeBtn.addEventListener('click', () => {
+          navigator.clipboard && navigator.clipboard.writeText('MC-892104');
+          showFeedback(copyCodeBtn);
+        });
+      }
+
+      if (copyAddrBtn) {
+        copyAddrBtn.addEventListener('click', () => {
+          navigator.clipboard && navigator.clipboard.writeText('0x3Fa8D081F082987a1C54302619E42');
+          showFeedback(copyAddrBtn);
+        });
+      }
+
+      if (modalCopyBtn) {
+        modalCopyBtn.addEventListener('click', () => {
+          navigator.clipboard && navigator.clipboard.writeText('0x3Fa8D081F082987a1C54302619E42');
+          showFeedback(modalCopyBtn);
+        });
+      }
+
+      if (sharePosterBtn) {
+        sharePosterBtn.addEventListener('click', () => {
+          const original = sharePosterBtn.innerHTML;
+          sharePosterBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-tertiary">done</span><span>已生成</span>';
+          setTimeout(() => {
+            sharePosterBtn.innerHTML = original;
+          }, 2000);
+        });
+      }
+    })();
+  </script>
+</main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl border-t border-surface-container-high shadow-[0_-4px_20px_rgba(0,0,0,0.6)]" data-active-classes="text-[#2E5CFF]"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="home-terminal" href="#"><span class="material-symbols-outlined text-[22px]">radar</span><span class="font-label-sm text-label-sm font-semibold tracking-normal">首页</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="signals-intel" href="#"><div class="relative flex items-center justify-center"><span class="material-symbols-outlined text-[22px]">monitoring</span><span class="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-tertiary shadow-[0_0_6px_#00e388]"></span></div><span class="font-label-sm text-label-sm font-semibold tracking-normal">资讯</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface relative group" data-path="community-chat" href="#"><div class="relative flex items-center justify-center"><span class="material-symbols-outlined text-[22px]">forum</span><span class="absolute -top-1 -right-2 px-1 py-0.2 rounded-full bg-[#2E5CFF] text-white font-label-sm text-[9px] leading-tight font-bold">3</span></div><span class="font-label-sm text-label-sm font-semibold tracking-normal">社区</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] transition-colors relative group text-[#2E5CFF] font-semibold drop-shadow-[0_0_10px_rgba(46,92,255,0.6)]" data-path="user-assets" href="#"><span class="material-symbols-outlined text-[22px]">account_balance_wallet</span><span class="font-label-sm text-label-sm font-semibold tracking-normal">我的</span></a></div></nav></body></html>

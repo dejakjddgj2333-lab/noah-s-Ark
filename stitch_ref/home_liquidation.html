@@ -1,0 +1,627 @@
+<!DOCTYPE html><html class="dark" lang="zh-CN"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><style>
+@layer base{
+  html,body{width:100vw;margin:0;padding:0;background-color:#0B0E14;color:#e1e2eb;font-family:'Inter',sans-serif;}
+  body{overscroll-behavior:none;}
+  .pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}
+  .pt-safe{padding-top:env(safe-area-inset-top,0px);}
+}
+::-webkit-scrollbar{display:none;}
+.font-mono-num { font-family: 'JetBrains Mono', monospace; }
+</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#2e5cff",
+        "primary-light": "#688dff",
+        "primary-glow": "rgba(46, 92, 255, 0.4)",
+        "surface": "#0b0e14",
+        "surface-container": "#151921",
+        "surface-container-low": "#10131a",
+        "surface-container-high": "#1c212c",
+        "surface-container-highest": "#252b39",
+        "on-surface": "#f1f3f9",
+        "on-surface-variant": "#949aa8",
+        "outline": "#484f60",
+        "outline-subtle": "rgba(255,255,255,0.06)",
+        "bull": "#10B981",
+        "bull-bg": "rgba(16, 185, 129, 0.15)",
+        "bull-light": "#34D399",
+        "bear": "#EF4444",
+        "bear-bg": "rgba(239, 68, 68, 0.15)",
+        "bear-light": "#F87171"
+      }
+    }
+  }
+};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style></head><body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary selection:text-white"><header class="fixed top-0 w-full z-50 pt-safe bg-[#0B0E14]/85 backdrop-blur-xl border-b border-white/5"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><img alt="Brand logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Ul3BD1r1zDZEXQnFJ0w9KexSXuoZ1g6roNTN09HoX7iTlGmfXIkYld73nvEvu-LpuZyEHw_ktovwzU19uwcnsjNmyFaz2YBn6T-Xq1D-JIU3_nezrkZSPpIS8GZYT7BGHPqKs4CjuIKTrYJ7QpjAh48-UVx7HrJaJ2QMrKu_IpBkm2bXJ2OwnDaIu76pK1vqND1ZNPAoDLPLS0zpz9lJTmmz-FNsDvUMn_tI0y1EilV_VxhmDZFZGpuYU"><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="text-[17px] font-bold tracking-tight text-white">明策</span><span class="text-[10px] text-primary-light uppercase font-bold tracking-wider">MINGCE</span><span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary/20 text-primary-light text-[9px] uppercase tracking-wider font-semibold border border-primary/30">ALPHA</span></div><div class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-bull animate-pulse"></span><span class="text-[10px] text-bull font-medium tracking-tight">Mainnet Sync 2.0</span></div></div></div><div class="flex items-center gap-3"><button aria-label="Profile" class="flex items-center justify-center p-0.5 rounded-full ring-2 ring-primary/30 hover:ring-primary transition-all"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WXnEuOu03rPS1h31Tr8N8v6nRoq3ESNM9uZrpIYIpBnhfpbXMktHohwRQ6y59ReeijDHcV9nm1_9287UM6vr8feGVazlujdVxYQUGiMBzYp0ERNkIWiFkk39OPw-F56hoUTj55oQ6x7MTrfy0hzVMzzBn4KoM4fYYMwqoeQ_17av99-w0rzVNKcny3jU9pS_Hn_n0qBUeX0dOBkLJI-RKNwx915wlcJ9sooLPYEpN-FyYARY6CT3THvJM"></button></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 bg-surface pb-32"><div class="flex flex-col w-full">
+<!-- Secondary Horizontal Scrollable Navigation Tabs -->
+<div class="sticky top-16 z-40 bg-[#0B0E14]/95 backdrop-blur-md border-b border-white/5">
+<div class="flex items-center gap-2 px-4 py-2.5 overflow-x-auto no-scrollbar">
+<button class="shrink-0 px-3.5 py-1.5 rounded-lg text-on-surface-variant text-[13px] font-medium hover:text-white transition-colors">
+        综合
+      </button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-lg text-on-surface-variant text-[13px] font-medium hover:text-white transition-colors">
+        行情
+      </button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-lg text-on-surface-variant text-[13px] font-medium hover:text-white transition-colors">
+        多维指数
+      </button>
+<div class="relative shrink-0 flex flex-col items-center">
+<button class="px-3.5 py-1.5 rounded-lg text-white text-[14px] font-bold tracking-tight">
+          多空爆仓
+        </button>
+<div class="w-6 h-0.5 bg-primary rounded-full mt-0.5 shadow-[0_0_8px_#2e5cff]"></div>
+</div>
+<button class="shrink-0 px-3.5 py-1.5 rounded-lg text-on-surface-variant text-[13px] font-medium hover:text-white transition-colors">
+        巨鲸雷达
+      </button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-lg text-on-surface-variant text-[13px] font-medium hover:text-white transition-colors">
+        资金费率
+      </button>
+</div>
+</div>
+<!-- Asset Quick Filter Horizontal Bar -->
+<div class="px-4 pt-3 pb-1 flex items-center justify-between">
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pr-2">
+<button class="shrink-0 px-3.5 py-1.5 rounded-full bg-primary text-white text-[13px] font-semibold shadow-[0_2px_10px_rgba(46,92,255,0.35)]">全部</button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-white text-[13px] font-medium border border-white/5 transition-colors">BTC</button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-white text-[13px] font-medium border border-white/5 transition-colors">ETH</button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-white text-[13px] font-medium border border-white/5 transition-colors">SOL</button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-white text-[13px] font-medium border border-white/5 transition-colors">HYPE</button>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-white text-[13px] font-medium border border-white/5 transition-colors">XRP</button>
+</div>
+<button class="shrink-0 p-1.5 text-on-surface-variant hover:text-white rounded-lg bg-surface-container-high/40 border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">tune</span>
+</button>
+</div>
+<!-- Main Content Area with generous breathing room -->
+<div class="flex flex-col gap-4 px-4 mt-1.5">
+<!-- SECTION 1: 总爆仓 (Macro Time-bucket Liquidation Card Matrix) -->
+<section class="flex flex-col">
+<div class="flex items-center justify-between mb-2.5 px-0.5">
+<h2 class="text-[18px] font-bold text-white tracking-tight flex items-center gap-2">
+            总爆仓
+          </h2>
+<span class="text-[11px] text-on-surface-variant flex items-center gap-1 font-mono-num">
+<span class="w-1.5 h-1.5 rounded-full bg-bull animate-ping"></span>
+            全网多空清洗测度
+          </span>
+</div>
+<div class="bg-surface-container-low border border-white/5 rounded-2xl p-4 shadow-lg flex flex-col gap-2.5">
+<!-- Row 1: 1小时爆仓 -->
+<div class="bg-surface-container/70 rounded-xl p-3 flex items-center justify-between border border-white/5">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant">1小时爆仓</span>
+<span class="text-[17px] font-bold text-white font-mono-num mt-0.5">$301万</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="text-[10px] text-on-surface-variant">多单爆仓</span>
+<span class="text-[14px] font-bold text-bull font-mono-num mt-0.5">$167.6万</span>
+</div>
+<div class="flex flex-col items-end min-w-[70px]">
+<span class="text-[10px] text-on-surface-variant">空单爆仓</span>
+<span class="text-[14px] font-bold text-bear font-mono-num mt-0.5">$133.4万</span>
+</div>
+</div>
+</div>
+<!-- Row 2: 4小时爆仓 -->
+<div class="bg-surface-container/70 rounded-xl p-3 flex items-center justify-between border border-white/5">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant">4小时爆仓</span>
+<span class="text-[17px] font-bold text-white font-mono-num mt-0.5">$1120.7万</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="text-[10px] text-on-surface-variant">多单爆仓</span>
+<span class="text-[14px] font-bold text-bull font-mono-num mt-0.5">$454.6万</span>
+</div>
+<div class="flex flex-col items-end min-w-[70px]">
+<span class="text-[10px] text-on-surface-variant">空单爆仓</span>
+<span class="text-[14px] font-bold text-bear font-mono-num mt-0.5">$666.1万</span>
+</div>
+</div>
+</div>
+<!-- Row 3: 12小时爆仓 -->
+<div class="bg-surface-container/70 rounded-xl p-3 flex items-center justify-between border border-white/5">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant">12小时爆仓</span>
+<span class="text-[17px] font-bold text-white font-mono-num mt-0.5">$7150万</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="text-[10px] text-on-surface-variant">多单爆仓</span>
+<span class="text-[14px] font-bold text-bull font-mono-num mt-0.5">$4469.1万</span>
+</div>
+<div class="flex flex-col items-end min-w-[70px]">
+<span class="text-[10px] text-on-surface-variant">空单爆仓</span>
+<span class="text-[14px] font-bold text-bear font-mono-num mt-0.5">$2680.9万</span>
+</div>
+</div>
+</div>
+<!-- Row 4: 24小时爆仓 -->
+<div class="bg-surface-container/70 rounded-xl p-3 flex items-center justify-between border border-white/5 bg-gradient-to-r from-surface-container/90 to-primary/10">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="text-[11px] text-white font-semibold">24小时爆仓</span>
+<span class="px-1.5 py-0.2 rounded text-[9px] bg-primary/30 text-primary-light font-bold">CORE</span>
+</div>
+<span class="text-[19px] font-extrabold text-white font-mono-num mt-0.5">$3.3亿</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<span class="text-[10px] text-on-surface-variant">多单爆仓</span>
+<span class="text-[14px] font-bold text-bull font-mono-num mt-0.5">$2.7亿</span>
+</div>
+<div class="flex flex-col items-end min-w-[70px]">
+<span class="text-[10px] text-on-surface-variant">空单爆仓</span>
+<span class="text-[14px] font-bold text-bear font-mono-num mt-0.5">$6681.5万</span>
+</div>
+</div>
+</div>
+<!-- Bottom Bullet Summary Insights -->
+<div class="pt-2.5 border-t border-white/5 flex flex-col gap-2 text-[12px] leading-relaxed">
+<div class="flex items-start gap-2 text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0"></span>
+<span class="">最近24小时，全球共有 <strong class="text-primary-light font-mono-num font-semibold">87,865</strong> 人被爆仓，爆仓总金额为 <strong class="text-primary-light font-mono-num font-semibold">$3.35亿</strong></span>
+</div>
+<div class="flex items-start gap-2 text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0"></span>
+<span class="">最大单笔爆仓单发生在 <strong class="text-white font-medium">Binance-ETH</strong> 价值 <strong class="text-primary-light font-mono-num font-semibold">$1,199.47万</strong></span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: 交易所爆仓热力分布 Treemap -->
+<section class="flex flex-col">
+<div class="flex items-center justify-between mb-2.5 px-0.5">
+<h2 class="text-[18px] font-bold text-white tracking-tight flex items-center gap-2">
+            交易所爆仓热力分布
+          </h2>
+<span class="text-[11px] text-on-surface-variant">合约全网体量图</span>
+</div>
+<div class="bg-surface-container-low border border-white/5 rounded-2xl p-4 shadow-lg flex flex-col">
+<!-- Treemap Grid -->
+<div class="w-full h-[250px] flex gap-2.5">
+<!-- Binance Big Main Block -->
+<div class="w-[48%] h-full rounded-xl bg-gradient-to-br from-[#10B981]/90 to-[#059669]/95 p-3.5 flex flex-col justify-between text-white shadow-md relative overflow-hidden transition-transform active:scale-[0.98]">
+<div class="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+<div>
+<div class="text-[17px] font-bold tracking-tight">Binance</div>
+<div class="text-[10px] text-emerald-100/80 font-medium">币安合约</div>
+</div>
+<div>
+<div class="text-[21px] font-extrabold font-mono-num tracking-tight leading-none">$1.6亿</div>
+<div class="text-[10.5px] text-emerald-100/90 font-medium mt-0.5">占比 46.48%</div>
+</div>
+</div>
+<!-- Right Column -->
+<div class="flex-1 h-full flex flex-col gap-2.5">
+<!-- Top: Hyperliquid -->
+<div class="w-full h-[36%] rounded-xl bg-gradient-to-r from-[#10B981]/85 to-[#059669]/90 p-3 flex flex-col justify-between text-white shadow-sm transition-transform active:scale-[0.98]">
+<div class="flex items-center justify-between">
+<span class="text-[14px] font-bold tracking-tight">Hyperliquid</span>
+<span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono-num">16.2%</span>
+</div>
+<div class="text-[15px] font-bold font-mono-num leading-tight">$5423.5万</div>
+</div>
+<!-- Middle & Bottom Split -->
+<div class="w-full flex-1 flex gap-2">
+<!-- OKX Column -->
+<div class="w-[38%] h-full rounded-xl bg-[#10B981]/80 p-2.5 flex flex-col justify-between text-white shadow-sm transition-transform active:scale-[0.98]">
+<div>
+<div class="text-[12px] font-bold">OKX</div>
+<div class="text-[9px] text-emerald-100/80">欧易</div>
+</div>
+<div class="text-[12px] font-bold font-mono-num leading-tight">$3734.6万</div>
+</div>
+<!-- Sub Stack: Bybit + Gate/Bitget -->
+<div class="flex-1 h-full flex flex-col gap-1.5">
+<!-- Bybit -->
+<div class="h-[46%] rounded-xl bg-[#10B981]/75 px-2 py-1.5 flex flex-col justify-between text-white shadow-sm">
+<span class="text-[11px] font-bold">Bybit</span>
+<span class="text-[11px] font-bold font-mono-num">$3233.2万</span>
+</div>
+<!-- Gate + Bitget -->
+<div class="flex-1 flex gap-1.5">
+<div class="flex-1 rounded-lg bg-[#10B981]/70 p-1.5 flex flex-col justify-between text-white">
+<span class="text-[10px] font-bold">Gate</span>
+<span class="text-[10px] font-bold font-mono-num">$2708万</span>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<div class="flex-1 rounded-lg bg-[#10B981]/65 p-1 flex flex-col justify-center text-white">
+<span class="text-[9px] font-bold">Bitget</span>
+<span class="text-[9px] font-mono-num text-emerald-100">$1577万</span>
+</div>
+<div class="h-[28%] flex gap-1">
+<div class="flex-1 rounded bg-[#10B981]/50"></div>
+<div class="flex-1 rounded bg-[#EF4444]/90"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-[10.5px] text-on-surface-variant mt-2.5 px-0.5">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded bg-bull"></span> 多头清算主导
+            </span>
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded bg-bear"></span> 空头清算主导
+            </span>
+<span class="text-[10px] text-outline font-mono-num">实时根据成交刷新</span>
+</div>
+</div>
+</section>
+<!-- SECTION 3: 交易所爆仓统计 -->
+<section class="flex flex-col">
+<div class="flex items-center justify-between mb-2.5 px-0.5">
+<h2 class="text-[18px] font-bold text-white tracking-tight">
+            交易所爆仓统计
+          </h2>
+</div>
+<div class="bg-surface-container-low border border-white/5 rounded-2xl p-4 shadow-lg flex flex-col gap-3">
+<!-- Filter Pill Toolbar -->
+<div class="flex items-center justify-between">
+<div class="flex items-center bg-surface-container-high/60 p-1 rounded-xl border border-white/5">
+<button class="px-3 py-1 rounded-lg bg-surface text-white text-[12px] font-semibold shadow-xs">交易所</button>
+<button class="px-3 py-1 rounded-lg text-on-surface-variant hover:text-white text-[12px] font-medium transition-colors">资产</button>
+</div>
+<button class="flex items-center gap-1 px-3 py-1 rounded-xl bg-surface-container-high/60 text-white text-[12px] font-medium border border-white/5">
+<span class="">24小时</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_drop_down</span>
+</button>
+</div>
+<!-- Table Column Headers -->
+<div class="grid grid-cols-12 gap-2 text-[11px] text-on-surface-variant font-medium px-1 border-b border-white/5 pb-2">
+<div class="col-span-4">交易所</div>
+<div class="col-span-3 text-right">占比</div>
+<div class="col-span-5 text-right flex justify-between pl-4">
+<span class="">多单爆仓</span>
+<span class="">空单爆仓</span>
+</div>
+</div>
+<!-- Liquidation List Items (py-2.5 适度行内边距) -->
+<div class="flex flex-col divide-y divide-white/5">
+<!-- Row 0: 全部 -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-light font-bold text-[10px]">
+                      全
+                    </div>
+<span class="text-[13px] font-bold text-white">全部</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$3.3亿</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">100.00%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 80.2%"></div>
+<div class="h-full bg-[#F87171]" style="width: 19.8%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$2.7亿</span>
+<span class="text-bear font-medium">$6681.5万</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 1: Binance -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#F3BA2F]/10 flex items-center justify-center shrink-0">
+<span class="text-[#F3BA2F] font-bold text-[12px]">❖</span>
+</div>
+<span class="text-[13px] font-semibold text-white">Binance</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$1.6亿</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">46.48%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 79.4%"></div>
+<div class="h-full bg-[#F87171]" style="width: 20.6%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$1.2亿</span>
+<span class="text-bear font-medium">$3108.3万</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 2: Hyperliquid -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#10B981]/15 flex items-center justify-center shrink-0">
+<span class="text-[#10B981] font-bold text-[11px]">HL</span>
+</div>
+<span class="text-[13px] font-semibold text-white truncate">Hyperliquid</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$5423.5万</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">16.20%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 93.4%"></div>
+<div class="h-full bg-[#F87171]" style="width: 6.6%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$5066.3万</span>
+<span class="text-bear font-medium">$357.2万</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 3: OKX -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+<span class="text-white font-bold text-[10px]">OK</span>
+</div>
+<span class="text-[13px] font-semibold text-white">OKX</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$3734.6万</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">11.15%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 69.5%"></div>
+<div class="h-full bg-[#F87171]" style="width: 30.5%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$2596.3万</span>
+<span class="text-bear font-medium">$1138.2万</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 4: Bybit -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#F7A600]/10 flex items-center justify-center shrink-0">
+<span class="text-[#F7A600] font-bold text-[10px]">BY</span>
+</div>
+<span class="text-[13px] font-semibold text-white">Bybit</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$3233.2万</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">9.65%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 79.9%"></div>
+<div class="h-full bg-[#F87171]" style="width: 20.1%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$2583.1万</span>
+<span class="text-bear font-medium">$650.2万</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 5: Gate -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#0052FF]/15 flex items-center justify-center shrink-0">
+<span class="text-[#0052FF] font-bold text-[10px]">GT</span>
+</div>
+<span class="text-[13px] font-semibold text-white">Gate</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$2708.5万</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">8.09%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 79.4%"></div>
+<div class="h-full bg-[#F87171]" style="width: 20.6%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$2152.1万</span>
+<span class="text-bear font-medium">$556.4万</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 6: Bitget -->
+<div class="py-2.5 flex flex-col gap-1.5">
+<div class="grid grid-cols-12 gap-2 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#00F0FF]/15 flex items-center justify-center shrink-0">
+<span class="text-[#00F0FF] font-bold text-[10px]">BG</span>
+</div>
+<span class="text-[13px] font-semibold text-white">Bitget</span>
+</div>
+<div class="col-span-3 text-right">
+<div class="text-[13px] font-bold text-white font-mono-num">$1577.5万</div>
+<div class="text-[10px] text-on-surface-variant font-mono-num">4.71%</div>
+</div>
+<div class="col-span-5 flex flex-col gap-1 pl-2">
+<div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container-highest">
+<div class="h-full bg-[#34D399]" style="width: 83.3%"></div>
+<div class="h-full bg-[#F87171]" style="width: 16.7%"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono-num">
+<span class="text-bull font-medium">$1313.9万</span>
+<span class="text-bear font-medium">$263.6万</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 4: 实时爆仓 -->
+<section class="flex flex-col">
+<div class="flex items-center justify-between mb-2.5 px-0.5">
+<h2 class="text-[18px] font-bold text-white tracking-tight flex items-center gap-2">
+            实时爆仓
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-primary/20 text-primary-light font-mono-num font-semibold">LIVE</span>
+</h2>
+</div>
+<div class="bg-surface-container-low border border-white/5 rounded-2xl p-4 shadow-lg flex flex-col gap-3">
+<!-- Filter Toolbar -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high/70 text-white text-[12px] font-medium border border-white/5">
+<span class="">全部</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high/70 text-white text-[12px] font-medium border border-white/5">
+<span class="">≥ 1千</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_drop_down</span>
+</button>
+</div>
+<button aria-label="Refresh" class="p-1.5 rounded-xl bg-surface-container-high/70 text-on-surface-variant hover:text-white transition-colors border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+</div>
+<!-- Table Column Headers -->
+<div class="grid grid-cols-12 text-[11px] text-on-surface-variant font-medium px-1 border-b border-white/5 pb-2">
+<div class="col-span-4">交易所</div>
+<div class="col-span-3 text-center">价格</div>
+<div class="col-span-3 text-right">爆仓金额</div>
+<div class="col-span-2 text-right">时间</div>
+</div>
+<!-- Realtime Feed Stream -->
+<div class="flex flex-col divide-y divide-white/5" id="realtime-feed-list">
+<!-- Item 1 -->
+<div class="py-2.5 grid grid-cols-12 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#F3BA2F]/15 flex items-center justify-center shrink-0">
+<span class="text-[#F3BA2F] text-[12px] font-bold">❖</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-semibold text-white">Binance</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">FLOCKUSDT</span>
+</div>
+</div>
+<div class="col-span-3 flex flex-col items-center">
+<span class="text-[12px] font-bold text-white font-mono-num">$0.03982</span>
+<span class="text-[10px] font-semibold text-bull bg-bull/15 px-1 rounded mt-0.5">做多强平</span>
+</div>
+<div class="col-span-3 flex flex-col items-end">
+<span class="text-[13px] font-bold text-white font-mono-num">$1,984.16</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">≈4.98万 FLOCK</span>
+</div>
+<div class="col-span-2 text-right">
+<span class="text-[11px] text-on-surface-variant font-mono-num">16:09:42</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="py-2.5 grid grid-cols-12 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#F3BA2F]/15 flex items-center justify-center shrink-0">
+<span class="text-[#F3BA2F] text-[12px] font-bold">❖</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-semibold text-white">Binance</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">USELESS</span>
+</div>
+</div>
+<div class="col-span-3 flex flex-col items-center">
+<span class="text-[12px] font-bold text-white font-mono-num">$0.11759</span>
+<span class="text-[10px] font-semibold text-bear bg-bear/15 px-1 rounded mt-0.5">做空强平</span>
+</div>
+<div class="col-span-3 flex flex-col items-end">
+<span class="text-[13px] font-bold text-white font-mono-num">$1,877.84</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">≈1.6万 USELESS</span>
+</div>
+<div class="col-span-2 text-right">
+<span class="text-[11px] text-on-surface-variant font-mono-num">16:09:28</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="py-2.5 grid grid-cols-12 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+<span class="text-white text-[10px] font-bold">OK</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-semibold text-white">OKX</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">BTC-SWAP</span>
+</div>
+</div>
+<div class="col-span-3 flex flex-col items-center">
+<span class="text-[12px] font-bold text-white font-mono-num">$66,420.5</span>
+<span class="text-[10px] font-semibold text-bull bg-bull/15 px-1 rounded mt-0.5">做多强平</span>
+</div>
+<div class="col-span-3 flex flex-col items-end">
+<span class="text-[13px] font-bold text-bull font-mono-num">$48.29万</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">7.27 BTC</span>
+</div>
+<div class="col-span-2 text-right">
+<span class="text-[11px] text-on-surface-variant font-mono-num">16:08:50</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="py-2.5 grid grid-cols-12 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#10B981]/15 flex items-center justify-center shrink-0">
+<span class="text-[#10B981] text-[10px] font-bold">HL</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-semibold text-white">Hyperliquid</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">ETH-PERP</span>
+</div>
+</div>
+<div class="col-span-3 flex flex-col items-center">
+<span class="text-[12px] font-bold text-white font-mono-num">$3,418.90</span>
+<span class="text-[10px] font-semibold text-bull bg-bull/15 px-1 rounded mt-0.5">做多强平</span>
+</div>
+<div class="col-span-3 flex flex-col items-end">
+<span class="text-[13px] font-bold text-bull font-mono-num">$128.50万</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">375.8 ETH</span>
+</div>
+<div class="col-span-2 text-right">
+<span class="text-[11px] text-on-surface-variant font-mono-num">16:08:12</span>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="py-2.5 grid grid-cols-12 items-center">
+<div class="col-span-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#F7A600]/10 flex items-center justify-center shrink-0">
+<span class="text-[#F7A600] text-[10px] font-bold">BY</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-semibold text-white">Bybit</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">SOLUSDT</span>
+</div>
+</div>
+<div class="col-span-3 flex flex-col items-center">
+<span class="text-[12px] font-bold text-white font-mono-num">$148.20</span>
+<span class="text-[10px] font-semibold text-bear bg-bear/15 px-1 rounded mt-0.5">做空强平</span>
+</div>
+<div class="col-span-3 flex flex-col items-end">
+<span class="text-[13px] font-bold text-white font-mono-num">$21.35万</span>
+<span class="text-[10px] text-on-surface-variant font-mono-num">1,440.6 SOL</span>
+</div>
+<div class="col-span-2 text-right">
+<span class="text-[11px] text-on-surface-variant font-mono-num">16:07:45</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-[#0B0E14]/90 backdrop-blur-xl border-t border-white/5" data-active-classes="text-primary"><div class="h-16 px-4 flex items-center justify-around"><a aria-current="page" class="flex flex-col items-center justify-center min-w-[50px] min-h-[46px] gap-1 transition-colors text-primary" data-path="home" href="#"><span class="material-symbols-outlined text-[24px]">query_stats</span><span class="text-[11px] font-semibold">首页</span></a><a class="flex flex-col items-center justify-center min-w-[50px] min-h-[46px] gap-1 text-on-surface-variant hover:text-white transition-colors" data-path="news-intelligence" href="#"><span class="material-symbols-outlined text-[24px]">bar_chart</span><span class="text-[11px] font-medium">行情</span></a><a class="flex flex-col items-center justify-center min-w-[50px] min-h-[46px] gap-1 text-on-surface-variant hover:text-white transition-colors" data-path="quant-community" href="#"><span class="material-symbols-outlined text-[24px]">ssid_chart</span><span class="text-[11px] font-medium">图表</span></a><a class="flex flex-col items-center justify-center min-w-[50px] min-h-[46px] gap-1 text-on-surface-variant hover:text-white transition-colors" data-path="news-tab" href="#"><span class="material-symbols-outlined text-[24px]">newspaper</span><span class="text-[11px] font-medium">资讯</span></a><a class="flex flex-col items-center justify-center min-w-[50px] min-h-[46px] gap-1 text-on-surface-variant hover:text-white transition-colors" data-path="profile-center" href="#"><span class="material-symbols-outlined text-[24px]">sentiment_satisfied</span><span class="text-[11px] font-medium">我的</span></a></div></nav>
+
+</body></html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#10131a;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed": "#58ffa5", "surface-container": "#1d2026", "secondary-fixed": "#a5eeff", "on-secondary-fixed": "#001f25", "on-tertiary-fixed": "#00210f", "tertiary-container": "#007e49", "tertiary-fixed-dim": "#00e388", "surface-dim": "#10131a", "primary-fixed-dim": "#b8c3ff", "surface-tint": "#b8c3ff", "on-error": "#690005", "secondary-fixed-dim": "#0ad9f8", "surface-bright": "#363940", "on-secondary-fixed-variant": "#004e5a", "on-surface-variant": "#c4c5d9", "on-error-container": "#ffdad6", "tertiary": "#00e388", "surface-container-high": "#272a31", "on-tertiary-fixed-variant": "#00522e", "on-primary-fixed": "#001355", "inverse-primary": "#104aef", "primary": "#b8c3ff", "primary-container": "#2e5cff", "on-secondary-container": "#005966", "secondary": "#9aecff", "on-tertiary": "#00391e", "on-tertiary-container": "#c2ffd3", "background": "#10131a", "on-primary": "#002487", "surface-container-low": "#191c22", "inverse-on-surface": "#2e3037", "surface": "#10131a", "primary-fixed": "#dde1ff", "outline": "#8e90a2", "surface-container-lowest": "#0b0e14", "secondary-container": "#00d7f4", "error-container": "#93000a", "inverse-surface": "#e1e2eb", "error": "#ffb4ab", "on-primary-container": "#f0f0ff", "on-background": "#e1e2eb", "surface-container-highest": "#32353c", "surface-variant": "#32353c", "on-surface": "#e1e2eb", "on-secondary": "#00363f", "on-primary-fixed-variant": "#0035bd", "outline-variant": "#434656" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-lg": "0.75rem", "margin": "0.5rem", "space-xl": "1rem", "space-md": "0.5rem", "gutter-desktop": "0.75rem", "space-xs": "0.125rem", "gutter": "0.5rem", "space-sm": "0.25rem", "margin-desktop": "1rem" }, "fontFamily": { "label-md": ["Inter"], "body-md": ["Inter"], "label-sm": ["Inter"], "headline-lg": ["Inter"], "headline-sm": ["Inter"], "body-lg": ["Inter"], "headline-xl": ["Inter"], "body-sm": ["Inter"], "headline-xl-mobile": ["Inter"] }, "fontSize": { "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }], "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "body-sm": ["11px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-xl-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "600" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="Brand logo. - Primary color: #2e5cff
+- Font: inter
+- Mode: dark
+- Roundness: rounded-sm
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Ul3BD1r1zDZEXQnFJ0w9KexSXuoZ1g6roNTN09HoX7iTlGmfXIkYld73nvEvu-LpuZyEHw_ktovwzU19uwcnsjNmyFaz2YBn6T-Xq1D-JIU3_nezrkZSPpIS8GZYT7BGHPqKs4CjuIKTrYJ7QpjAh48-UVx7HrJaJ2QMrKu_IpBkm2bXJ2OwnDaIu76pK1vqND1ZNPAoDLPLS0zpz9lJTmmz-FNsDvUMn_tI0y1EilV_VxhmDZFZGpuYU"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-surface">明策</span><span class="font-label-sm text-label-sm text-primary uppercase font-bold tracking-wider">MINGCE</span><span class="inline-flex items-center px-1.5 py-0.5 rounded-lg bg-primary-container/20 text-primary font-label-sm text-[9px] uppercase tracking-wider font-semibold">ALPHA</span></div><div class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse"></span><span class="font-label-sm text-[10px] text-tertiary tracking-tight">Mainnet Sync</span></div></div></div><div class="flex items-center gap-space-md"><span class="hidden font-label-sm text-label-sm uppercase text-outline">Home</span><button aria-label="Profile" class="flex items-center justify-center p-0.5 rounded-full hover:opacity-85 transition-opacity"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WXnEuOu03rPS1h31Tr8N8v6nRoq3ESNM9uZrpIYIpBnhfpbXMktHohwRQ6y59ReeijDHcV9nm1_9287UM6vr8feGVazlujdVxYQUGiMBzYp0ERNkIWiFkk39OPw-F56hoUTj55oQ6x7MTrfy0hzVMzzBn4KoM4fYYMwqoeQ_17av99-w0rzVNKcny3jU9pS_Hn_n0qBUeX0dOBkLJI-RKNwx915wlcJ9sooLPYEpN-FyYARY6CT3THvJM"/></button></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full">
+<!-- 顶部横向二级导航栏 (Scrollable Sub-Nav) -->
+<div class="sticky top-16 z-40 bg-surface-container-lowest/90 backdrop-blur-md px-gutter">
+<div class="flex items-center gap-space-lg overflow-x-auto no-scrollbar py-space-sm">
+<button class="shrink-0 font-label-md text-label-md text-outline hover:text-on-surface transition-colors py-1.5 px-0.5">综合</button>
+<button class="relative shrink-0 font-label-md text-label-md text-on-surface font-semibold py-1.5 px-0.5 flex flex-col items-center">
+<span>行情</span>
+<span class="absolute bottom-0 w-full h-[2px] bg-primary-container rounded-full shadow-[0_0_8px_rgba(46,92,255,0.6)]"></span>
+</button>
+<button class="shrink-0 font-label-md text-label-md text-outline hover:text-on-surface transition-colors py-1.5 px-0.5">多维指数</button>
+<button class="shrink-0 font-label-md text-label-md text-outline hover:text-on-surface transition-colors py-1.5 px-0.5 flex items-center gap-1">
+<span>多空爆仓</span>
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-ping"></span>
+</button>
+<button class="shrink-0 font-label-md text-label-md text-outline hover:text-on-surface transition-colors py-1.5 px-0.5">巨鲸雷达</button>
+<button class="shrink-0 font-label-md text-label-md text-outline hover:text-on-surface transition-colors py-1.5 px-0.5">资金费率</button>
+</div>
+</div>
+<div class="px-gutter flex flex-col gap-5 mt-3 pb-8">
+<!-- 1. 全网市场热度概览卡片 (Market Vital Metrics) -->
+<div class="rounded-2xl bg-surface-container p-5 shadow-sm relative overflow-hidden">
+<!-- 背景光晕装饰 -->
+<div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-primary-container/15 blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">monitoring</span>
+<span class="font-label-md text-[13px] font-semibold text-on-surface">全网市场热度</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-high px-2.5 py-1 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-label-sm text-[10px] text-tertiary font-bold tracking-wider uppercase">BULL DOMINANT</span>
+</div>
+</div>
+<!-- 核心指标网格 (加大内边距与留白) -->
+<div class="grid grid-cols-3 gap-2.5 mb-4">
+<div class="flex flex-col bg-surface-container-low p-3 rounded-xl justify-between min-h-[76px]">
+<span class="font-label-sm text-[10px] text-outline">24H 总市值</span>
+<span class="font-headline-sm text-base text-on-surface font-bold tracking-tight mt-1">$3.24T</span>
+<span class="font-label-sm text-[10px] text-tertiary flex items-center gap-0.5 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[12px]">trending_up</span>+2.84%
+</span>
+</div>
+<div class="flex flex-col bg-surface-container-low p-3 rounded-xl justify-between min-h-[76px]">
+<span class="font-label-sm text-[10px] text-outline">24H 全网成交</span>
+<span class="font-headline-sm text-base text-on-surface font-bold tracking-tight mt-1">$142.8B</span>
+<span class="font-label-sm text-[10px] text-outline-variant mt-1">极度活跃</span>
+</div>
+<div class="flex flex-col bg-surface-container-low p-3 rounded-xl justify-between min-h-[76px]">
+<span class="font-label-sm text-[10px] text-outline">多头主导指数</span>
+<span class="font-headline-sm text-base text-tertiary font-bold tracking-tight mt-1">64%</span>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden mt-1.5">
+<div class="bg-tertiary h-full rounded-full" style="width: 64%"></div>
+</div>
+</div>
+</div>
+<!-- 快速标签筛选 (Sector Filter Tags) -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1 pb-0.5">
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-sm text-xs font-semibold shadow-sm">全部</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-xs hover:text-on-surface flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[13px] text-secondary">star</span>自选
+</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-xs hover:text-on-surface transition-colors">Layer 1</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-xs hover:text-on-surface transition-colors">DeFi</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-primary font-label-sm text-xs hover:text-on-surface flex items-center gap-1.5 transition-colors">
+<span>AI Agent</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-xs hover:text-on-surface transition-colors">Meme</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-xs hover:text-on-surface transition-colors">Solana生态</button>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-xs hover:text-on-surface transition-colors">RWA</button>
+</div>
+</div>
+<!-- 2. 榜单切换胶囊 + 时间尺度控制器 (加大上下呼吸留白) -->
+<div class="flex items-center justify-between pt-1 px-0.5">
+<!-- 榜单类别切换胶囊 -->
+<div class="inline-flex p-1 rounded-xl bg-surface-container-low gap-1">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold shadow-sm">成交额榜</button>
+<button class="px-3 py-1.5 rounded-lg text-outline font-label-sm text-xs hover:text-on-surface transition-colors">涨幅榜</button>
+<button class="px-3 py-1.5 rounded-lg text-outline font-label-sm text-xs hover:text-on-surface transition-colors">跌幅榜</button>
+</div>
+<!-- 周期控制器 -->
+<div class="inline-flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/30 hover:border-outline transition-colors cursor-pointer">
+<span class="font-label-sm text-xs text-primary font-bold">24H</span>
+<span class="material-symbols-outlined text-[15px] text-outline">unfold_more</span>
+</div>
+</div>
+<!-- 3. 专业行情数据列表 (增强行高间距 py-3.5 与细致分割线) -->
+<div class="flex flex-col bg-surface-container-low rounded-2xl overflow-hidden shadow-sm border border-outline-variant/20">
+<!-- 列头提示条 -->
+<div class="grid grid-cols-12 px-4 py-2.5 bg-surface-container-lowest text-outline font-label-sm text-[11px] uppercase tracking-wider border-b border-outline-variant/20">
+<div class="col-span-5 flex items-center gap-1">币种 / 成交额</div>
+<div class="col-span-3 text-right">现价 (USD)</div>
+<div class="col-span-4 text-right">24H 趋势 / 涨跌</div>
+</div>
+<!-- 行情行 1: BTC -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container hover:bg-surface-container-high transition-colors border-b border-outline-variant/15">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-on-surface shrink-0 text-sm shadow-sm">₿</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">BTC</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $42.5B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$96,450.00</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-0.5 block">高 $97.1K</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-tertiary" fill="none" viewbox="0 0 40 16">
+<path d="M1 12L8 10L16 13L24 7L32 9L39 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-tertiary-container/30 text-tertiary font-label-sm text-xs font-semibold tracking-tight">
++3.42%
+</span>
+</div>
+</div>
+<!-- 行情行 2: ETH -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container-low hover:bg-surface-container-high transition-colors border-b border-outline-variant/15">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-secondary shrink-0 text-sm shadow-sm">Ξ</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">ETH</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $24.8B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$3,420.50</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-0.5 block">高 $3.48K</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-tertiary" fill="none" viewbox="0 0 40 16">
+<path d="M1 14L10 11L18 12L26 8L33 6L39 3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-tertiary-container/30 text-tertiary font-label-sm text-xs font-semibold tracking-tight">
++2.18%
+</span>
+</div>
+</div>
+<!-- 行情行 3: SOL -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container hover:bg-surface-container-high transition-colors border-b border-outline-variant/15">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-primary shrink-0 text-sm shadow-sm">◎</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">SOL</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $11.2B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$194.20</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-0.5 block">突破强压</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-tertiary" fill="none" viewbox="0 0 40 16">
+<path d="M1 15L11 13L20 8L28 10L35 3L39 1" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-tertiary-container/30 text-tertiary font-label-sm text-xs font-semibold tracking-tight">
++6.85%
+</span>
+</div>
+</div>
+<!-- 行情行 4: SUI -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container-low hover:bg-surface-container-high transition-colors border-b border-outline-variant/15">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-secondary-container shrink-0 text-sm shadow-sm">💧</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">SUI</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $3.4B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$3.85</span>
+<span class="font-body-sm text-[10px] text-error mt-0.5 block">缩量洗盘</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-error" fill="none" viewbox="0 0 40 16">
+<path d="M1 3L9 5L17 4L27 10L33 8L39 14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-error-container/40 text-error font-label-sm text-xs font-semibold tracking-tight">
+-1.24%
+</span>
+</div>
+</div>
+<!-- 行情行 5: DOGE -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container hover:bg-surface-container-high transition-colors border-b border-outline-variant/15">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-on-surface shrink-0 text-sm shadow-sm">Ð</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">DOGE</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $5.8B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$0.3850</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-0.5 block">主升浪中</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-tertiary" fill="none" viewbox="0 0 40 16">
+<path d="M1 14L8 15L18 8L25 9L32 3L39 1" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-tertiary-container/30 text-tertiary font-label-sm text-xs font-semibold tracking-tight">
++12.40%
+</span>
+</div>
+</div>
+<!-- 行情行 6: AVAX -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container-low hover:bg-surface-container-high transition-colors border-b border-outline-variant/15">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-error shrink-0 text-sm shadow-sm">▲</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">AVAX</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $1.9B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$38.90</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-0.5 block">温和放量</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-tertiary" fill="none" viewbox="0 0 40 16">
+<path d="M1 13L10 11L18 10L26 8L34 5L39 3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-tertiary-container/30 text-tertiary font-label-sm text-xs font-semibold tracking-tight">
++4.15%
+</span>
+</div>
+</div>
+<!-- 行情行 7: NEAR -->
+<div class="grid grid-cols-12 items-center px-4 py-3.5 bg-surface-container hover:bg-surface-container-high transition-colors">
+<div class="col-span-5 flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-on-surface shrink-0 text-sm shadow-sm">Ⓝ</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-sm text-on-surface font-bold leading-tight">NEAR</span>
+<span class="font-label-sm text-[10px] text-outline">/USDT</span>
+</div>
+<span class="font-body-sm text-[10px] text-outline truncate mt-0.5">24H $1.2B</span>
+</div>
+</div>
+<div class="col-span-3 text-right pr-1">
+<span class="font-label-md text-[13px] font-semibold text-on-surface tracking-tight block">$6.75</span>
+<span class="font-body-sm text-[10px] text-tertiary mt-0.5 block">突破颈线</span>
+</div>
+<div class="col-span-4 flex items-center justify-end gap-2">
+<svg class="w-11 h-5 shrink-0 text-tertiary" fill="none" viewbox="0 0 40 16">
+<path d="M1 13L8 14L17 9L27 10L34 4L39 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+<span class="inline-flex items-center justify-center min-w-[62px] px-2 py-1.5 rounded-md bg-tertiary-container/30 text-tertiary font-label-sm text-xs font-semibold tracking-tight">
++8.30%
+</span>
+</div>
+</div>
+</div>
+<!-- 4. 板块轮动热力概览 (Sector Momentum Heatmap - 舒适间距与呼吸感) -->
+<div class="rounded-2xl bg-surface-container p-5 shadow-sm border border-outline-variant/20">
+<div class="flex items-center justify-between mb-3.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">grid_view</span>
+<span class="font-label-md text-[13px] font-semibold text-on-surface">板块轮动动能 (24H Heatmap)</span>
+</div>
+<span class="font-label-sm text-[11px] text-outline tracking-wider">全景热力</span>
+</div>
+<!-- 热力方块布局 (加大内衬 p-3 与间距 gap-3) -->
+<div class="grid grid-cols-2 gap-3">
+<!-- AI Agent -->
+<div class="rounded-xl bg-surface-container-high p-3 flex flex-col justify-between relative overflow-hidden min-h-[78px] border border-tertiary/20">
+<div class="flex items-center justify-between z-10">
+<span class="font-label-md text-[13px] font-semibold text-on-surface">AI Agent</span>
+<span class="font-label-sm text-xs text-tertiary font-bold">+14.2%</span>
+</div>
+<div class="flex items-center justify-between mt-3 z-10">
+<span class="font-body-sm text-[10px] text-outline">领涨: VIRTUAL</span>
+<span class="font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-tertiary-container/40 text-tertiary font-semibold">爆发</span>
+</div>
+<div class="absolute inset-0 bg-tertiary/10 pointer-events-none"></div>
+</div>
+<!-- Solana Meme -->
+<div class="rounded-xl bg-surface-container-high p-3 flex flex-col justify-between relative overflow-hidden min-h-[78px] border border-tertiary/15">
+<div class="flex items-center justify-between z-10">
+<span class="font-label-md text-[13px] font-semibold text-on-surface">Solana Meme</span>
+<span class="font-label-sm text-xs text-tertiary font-bold">+9.8%</span>
+</div>
+<div class="flex items-center justify-between mt-3 z-10">
+<span class="font-body-sm text-[10px] text-outline">领涨: BONK</span>
+<span class="font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-tertiary-container/40 text-tertiary font-semibold">放量</span>
+</div>
+<div class="absolute inset-0 bg-tertiary/5 pointer-events-none"></div>
+</div>
+<!-- Layer 2 -->
+<div class="rounded-xl bg-surface-container-high p-3 flex flex-col justify-between relative overflow-hidden min-h-[78px] border border-outline-variant/20">
+<div class="flex items-center justify-between z-10">
+<span class="font-label-md text-[13px] font-semibold text-on-surface">Layer 2</span>
+<span class="font-label-sm text-xs text-tertiary font-bold">+1.4%</span>
+</div>
+<div class="flex items-center justify-between mt-3 z-10">
+<span class="font-body-sm text-[10px] text-outline">领涨: ARB</span>
+<span class="font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-outline font-medium">震荡</span>
+</div>
+<div class="absolute inset-0 bg-tertiary/[0.02] pointer-events-none"></div>
+</div>
+<!-- DeFi 3.0 -->
+<div class="rounded-xl bg-surface-container-high p-3 flex flex-col justify-between relative overflow-hidden min-h-[78px] border border-outline-variant/20">
+<div class="flex items-center justify-between z-10">
+<span class="font-label-md text-[13px] font-semibold text-on-surface">DeFi 3.0</span>
+<span class="font-label-sm text-xs text-tertiary font-bold">+0.8%</span>
+</div>
+<div class="flex items-center justify-between mt-3 z-10">
+<span class="font-body-sm text-[10px] text-outline">领涨: AAVE</span>
+<span class="font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-outline font-medium">蓄势</span>
+</div>
+<div class="absolute inset-0 bg-primary-container/[0.02] pointer-events-none"></div>
+</div>
+</div>
+</div>
+<!-- 5. 底部系统监控与实时状态指示条 (Heartbeat Bar) -->
+<div class="rounded-xl bg-surface-container-lowest px-4 py-2.5 flex items-center justify-between mt-1 mb-24 border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="font-label-sm text-[10px] text-outline tracking-wider font-mono">WS_NODE: 18ms</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-label-sm text-[10px] text-outline font-mono">BLOCK: #20,412,890</span>
+<span class="font-label-sm text-[10px] text-primary bg-primary-container/20 px-2 py-0.5 rounded-md font-semibold">明策撮合引擎 V4.2</span>
+</div>
+</div>
+</div>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/80 backdrop-blur-xl shadow-[0_-1px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary-container fill-current"><div class="h-16 px-gutter flex items-center justify-around"><a aria-current="page" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] gap-space-xs transition-colors text-primary-container fill-current" data-path="home" href="#"><span class="material-symbols-outlined text-[22px]">query_stats</span><span class="font-label-sm text-label-sm">首页</span></a><a class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] gap-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="news-intelligence" href="#"><span class="material-symbols-outlined text-[22px]">newspaper</span><span class="font-label-sm text-label-sm">资讯</span></a><a class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] gap-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="quant-community" href="#"><span class="material-symbols-outlined text-[22px]">forum</span><span class="font-label-sm text-label-sm">社区</span></a><a class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] gap-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="profile-center" href="#"><span class="material-symbols-outlined text-[22px]">tune</span><span class="font-label-sm text-label-sm">我的</span></a></div></nav></body></html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html><html class="dark" lang="zh-CN" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<meta content="mobile_tab" name="shell-type">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #10131a;
+        color: #e1e2eb;
+        font-family: 'Inter', sans-serif;
+      }
+      body {
+        overscroll-behavior-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .pb-safe {
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#10131a",
+            "surface-dim": "#10131a",
+            "surface-container-lowest": "#0b0e14",
+            "surface-container-low": "#191c22",
+            "surface-container": "#1d2026",
+            "surface-container-high": "#272a31",
+            "surface-container-highest": "#32353c",
+            "on-surface": "#e1e2eb",
+            "on-surface-variant": "#9ea0b2",
+            "outline": "#434656",
+            "outline-variant": "#2b2e3a",
+            "primary": "#b8c3ff",
+            "primary-container": "#2e5cff",
+            "on-primary-container": "#ffffff",
+            "secondary": "#00d7f4",
+            "secondary-fixed": "#00e388",
+            "tertiary": "#00e388",
+            "error": "#ff6363",
+            "error-container": "rgba(255, 99, 99, 0.12)"
+          },
+          fontFamily: {
+            mono: ["JetBrains Mono", "monospace"],
+            display: ["Space Grotesk", "sans-serif"],
+            sans: ["Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-white">
+<!-- 1. 顶部 Header 状态栏 -->
+<header class="fixed top-0 inset-x-0 z-50 bg-[#10131a]/90 backdrop-blur-xl border-b border-outline-variant/60 shadow-[0_4px_20px_rgba(0,0,0,0.5)] pt-safe">
+<div class="h-14 px-3.5 flex items-center justify-between">
+<!-- 品牌 Logo & 状态 -->
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2e5cff] to-[#122e9e] flex items-center justify-center shadow-[0_0_12px_rgba(46,92,255,0.45)]">
+<span class="font-display font-black text-white text-[15px] tracking-tighter">M</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-display text-sm text-on-surface font-bold tracking-tight">明策 MINGCE</span>
+<span class="font-mono text-[9px] px-1 py-0.2 rounded bg-[#2e5cff]/20 text-[#82a4ff] border border-[#2e5cff]/40 font-bold uppercase tracking-wider">Alpha</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-pulse shadow-[0_0_6px_#00e388]"></span>
+<span class="font-mono text-[10px] text-secondary-fixed tracking-wider uppercase leading-none font-medium">Mainnet Sync</span>
+</div>
+</div>
+</div>
+<!-- 右侧终端与头像 -->
+<div class="flex items-center gap-2">
+<div class="flex flex-col items-end pr-1">
+<span class="font-sans text-[11px] text-on-surface font-medium">Home Terminal</span>
+<span class="font-mono text-[10px] text-on-surface-variant flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary"></span>GAS 12 GWEI
+          </span>
+</div>
+<div class="relative flex items-center justify-center p-0.5 rounded-full ring-1 ring-[#2e5cff]/50 bg-surface-container">
+<img alt="User Avatar" class="w-7 h-7 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WXnEuOu03rPS1h31Tr8N8v6nRoq3ESNM9uZrpIYIpBnhfpbXMktHohwRQ6y59ReeijDHcV9nm1_9287UM6vr8feGVazlujdVxYQUGiMBzYp0ERNkIWiFkk39OPw-F56hoUTj55oQ6x7MTrfy0hzVMzzBn4KoM4fYYMwqoeQ_17av99-w0rzVNKcny3jU9pS_Hn_n0qBUeX0dOBkLJI-RKNwx915wlcJ9sooLPYEpN-FyYARY6CT3THvJM">
+</div>
+</div>
+</div>
+</header>
+<!-- 主滚动区域，预留顶部导航高度与底部 tab 高度，彻底解决无法滚动截断问题 -->
+<main class="flex-1 w-full pt-[calc(env(safe-area-inset-top,0px)+3.75rem)] pb-28 px-3.5 space-y-4"><!-- 2. 顶部多维指标分类 Tab 标签栏 & 时间选择 -->
+<div class="border-b border-outline-variant/40 pt-1 -mx-3.5 px-3.5 bg-[#10131a]/60 backdrop-blur-md sticky top-14 z-40">
+  <div class="flex items-center gap-6 overflow-x-auto no-scrollbar py-2"><button class="text-xs font-sans text-on-surface-variant hover:text-on-surface whitespace-nowrap transition-colors py-1 shrink-0">综合</button>
+    <button class="text-xs font-sans text-on-surface-variant hover:text-on-surface whitespace-nowrap transition-colors py-1 shrink-0">行情</button>
+    <button class="relative text-xs font-sans font-bold text-white whitespace-nowrap py-1 flex flex-col items-center shrink-0">
+      <span class="">多维指数</span>
+      <span class="absolute -bottom-2 w-full h-0.5 bg-[#2e5cff] shadow-[0_0_8px_rgba(46,92,255,0.8)] rounded-full"></span>
+    </button>
+    <button class="text-xs font-sans text-on-surface-variant hover:text-on-surface whitespace-nowrap transition-colors py-1 shrink-0">多空爆仓</button>
+    <button class="text-xs font-sans text-on-surface-variant hover:text-on-surface whitespace-nowrap transition-colors py-1 shrink-0">巨鲸雷达</button>
+    <button class="text-xs font-sans text-on-surface-variant hover:text-on-surface whitespace-nowrap transition-colors py-1 shrink-0">资金费率</button></div>
+</div>
+
+<!-- 第一组: 核心情绪与宏观双子盘 -->
+<div class="grid grid-cols-2 gap-2.5">
+  <!-- 恐惧与贪婪卡片 -->
+  <div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-on-surface-variant flex items-center gap-1 font-medium">
+        <span class="material-symbols-outlined text-[15px] text-[#2e5cff]">psychology</span>
+        情绪指数
+      </span>
+      <span class="font-mono text-[10px] text-secondary-fixed bg-secondary-fixed/10 px-1.5 py-0.5 rounded border border-secondary-fixed/20 font-semibold">+4 较昨日</span>
+    </div>
+    <div class="my-2.5">
+      <div class="flex items-baseline gap-1.5">
+        <span class="font-display text-2xl font-bold text-on-surface">74</span>
+        <span class="font-sans text-xs font-semibold text-[#00e388]">贪婪 (Greed)</span>
+      </div>
+      <!-- 仪表分段进度条 -->
+      <div class="w-full grid grid-cols-5 gap-1 h-1.5 bg-surface-container-lowest p-0.5 rounded-full mt-2">
+        <div class="h-full rounded-full bg-error/40"></div>
+        <div class="h-full rounded-full bg-error/70"></div>
+        <div class="h-full rounded-full bg-[#f59e0b]/60"></div>
+        <div class="h-full rounded-full bg-[#2e5cff] shadow-[0_0_8px_rgba(46,92,255,0.8)]"></div>
+        <div class="h-full rounded-full bg-surface-variant/40"></div>
+      </div>
+    </div>
+    <div class="flex justify-between items-center text-[10px] text-on-surface-variant font-mono">
+      <span class="">昨日 68 · 贪婪</span>
+      <span class="">上周 62 · 中性</span>
+    </div>
+  </div>
+
+  <!-- 全网市占率分布卡片 -->
+  <div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-on-surface-variant flex items-center gap-1 font-medium">
+        <span class="material-symbols-outlined text-[15px] text-secondary">pie_chart</span>
+        市占率分布
+      </span>
+      <span class="font-mono text-[10px] text-on-surface-variant">BTC.D 56.4%</span>
+    </div>
+    <div class="my-2.5">
+      <div class="flex items-baseline justify-between">
+        <span class="font-mono text-xl font-bold text-on-surface">56.4%</span>
+        <span class="font-mono text-[11px] text-on-surface-variant">ETH 14.8%</span>
+      </div>
+      <!-- 组合比例进度条 -->
+      <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden flex mt-2">
+        <div class="bg-[#2e5cff] h-full shadow-[0_0_6px_rgba(46,92,255,0.6)]" style="width: 56.4%"></div>
+        <div class="bg-secondary h-full" style="width: 14.8%"></div>
+        <div class="bg-surface-variant/50 h-full flex-1"></div>
+      </div>
+    </div>
+    <div class="flex justify-between items-center text-[10px] text-on-surface-variant font-mono">
+      <span class="text-[#2e5cff] font-semibold">● BTC 56.4%</span>
+      <span class="text-secondary font-semibold">● ETH 14.8%</span>
+      <span class="text-on-surface-variant">● Other 28.8%</span>
+    </div>
+  </div>
+</div>
+
+<!-- 第二组: 市场深度量化指标矩阵 (2x3 栅格) -->
+<div class="space-y-2.5">
+  <div class="flex items-center justify-between px-0.5">
+    <div class="flex items-center gap-1.5">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#2e5cff] shadow-[0_0_6px_rgba(46,92,255,0.6)]"></span>
+      <span class="text-xs font-semibold text-on-surface tracking-wide">市场深度量化指标矩阵</span>
+    </div>
+    <span class="font-mono text-[10px] text-on-surface-variant">6 个核心模型实时计算</span>
+  </div>
+  <div class="grid grid-cols-2 gap-2.5">
+    <!-- 指数 1: 山寨季指数 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant font-medium">山寨季指数</span>
+        <span class="font-mono text-[9px] text-[#82a4ff] bg-[#2e5cff]/15 px-1 py-0.5 rounded border border-[#2e5cff]/30 font-medium">BTC Season</span>
+      </div>
+      <div class="my-2">
+        <div class="flex items-baseline gap-1">
+          <span class="font-mono text-xl font-bold text-on-surface">38</span>
+          <span class="text-[11px] text-on-surface-variant font-mono">/100</span>
+        </div>
+        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-1.5">
+          <div class="bg-[#2e5cff] h-full shadow-[0_0_6px_rgba(46,92,255,0.6)]" style="width: 38%"></div>
+        </div>
+      </div>
+      <span class="text-[10px] text-on-surface-variant font-mono">距山寨爆发差 37 点</span>
+    </div>
+
+    <!-- 指数 2: 全网未平仓合约 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant font-medium">全网未平仓合约</span>
+        <span class="font-mono text-[9px] text-secondary-fixed bg-secondary-fixed/10 px-1 py-0.5 rounded border border-secondary-fixed/20 font-bold">+4.15%</span>
+      </div>
+      <div class="my-2">
+        <div class="flex items-baseline gap-1">
+          <span class="font-mono text-xl font-bold text-on-surface">$89.4B</span>
+        </div>
+        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-1.5 flex">
+          <div class="bg-secondary-fixed h-full shadow-[0_0_6px_#00e388]" style="width: 68%"></div>
+          <div class="bg-surface-variant/40 h-full flex-1"></div>
+        </div>
+      </div>
+      <span class="text-[10px] text-secondary-fixed font-mono">24h 增量资金强劲流入</span>
+    </div>
+
+    <!-- 指数 3: 资金费率全网加权 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant font-medium">资金费率加权</span>
+        <span class="font-mono text-[9px] text-secondary-fixed bg-secondary-fixed/10 px-1 py-0.5 rounded border border-secondary-fixed/20">适度偏多</span>
+      </div>
+      <div class="my-2">
+        <span class="font-mono text-xl font-bold text-secondary-fixed">+0.0125%</span>
+        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-1.5 flex">
+          <div class="bg-secondary-fixed/80 h-full" style="width: 48%"></div>
+          <div class="bg-surface-variant/40 h-full flex-1"></div>
+        </div>
+      </div>
+      <span class="text-[10px] text-on-surface-variant font-mono">全网多头适度杠杆配置</span>
+    </div>
+
+    <!-- 指数 4: 现货累计买卖差 (CVD) -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant font-medium">现货累计买卖差</span>
+        <span class="font-mono text-[9px] text-[#82a4ff] bg-[#2e5cff]/15 px-1 py-0.5 rounded border border-[#2e5cff]/30">看涨支撑</span>
+      </div>
+      <div class="my-2">
+        <span class="font-mono text-xl font-bold text-on-surface">+$382M</span>
+        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-1.5">
+          <div class="bg-[#2e5cff] h-full shadow-[0_0_6px_rgba(46,92,255,0.6)]" style="width: 62%"></div>
+        </div>
+      </div>
+      <span class="text-[10px] text-on-surface-variant font-mono">主力主动吃单净流入</span>
+    </div>
+
+    <!-- 指数 5: 稳定币供给指数 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant font-medium">稳定币供给指数</span>
+        <span class="font-mono text-[9px] text-secondary-fixed bg-secondary-fixed/10 px-1 py-0.5 rounded border border-secondary-fixed/20">7D +$1.8B</span>
+      </div>
+      <div class="my-2">
+        <span class="font-mono text-xl font-bold text-on-surface">$168.5B</span>
+        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-1.5">
+          <div class="bg-secondary-fixed h-full shadow-[0_0_6px_#00e388]" style="width: 78%"></div>
+        </div>
+      </div>
+      <span class="text-[10px] text-on-surface-variant font-mono">场外资金流动性充足</span>
+    </div>
+
+    <!-- 指数 6: 多空持仓人数比 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant font-medium">多空人数比 (L/S)</span>
+        <span class="font-mono text-[9px] text-[#82a4ff] bg-[#2e5cff]/15 px-1 py-0.5 rounded border border-[#2e5cff]/30">散户偏多</span>
+      </div>
+      <div class="my-2">
+        <span class="font-mono text-xl font-bold text-on-surface">1.28</span>
+        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-1.5 flex">
+          <div class="bg-[#2e5cff] h-full" style="width: 56%"></div>
+          <div class="bg-error/70 h-full flex-1"></div>
+        </div>
+      </div>
+      <span class="text-[10px] text-on-surface-variant font-mono">散户多方聚集 · 顶部分歧</span>
+    </div>
+  </div>
+</div>
+
+<!-- 第三组: 24H 全网多空爆仓实时监控 -->
+<div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/50 shadow-sm space-y-2.5">
+  <div class="flex items-center justify-between px-0.5">
+    <div class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+      <span class="text-xs font-semibold text-on-surface tracking-wide">全网多空爆仓实时监控</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="flex items-center bg-surface-container-lowest p-0.5 rounded-lg border border-outline-variant/40">
+        <button class="px-1.5 py-0.5 rounded text-[10px] font-mono text-on-surface-variant">1H</button>
+        <button class="px-1.5 py-0.5 rounded text-[10px] font-mono text-on-surface-variant">4H</button>
+        <button class="px-1.5 py-0.5 rounded bg-[#2e5cff] text-white text-[10px] font-mono font-bold shadow-[0_0_6px_rgba(46,92,255,0.6)]">24H</button>
+      </div>
+      <span class="font-mono text-sm font-bold text-error">$3.82 亿</span>
+    </div>
+  </div>
+
+  <!-- 多空爆仓比例进度条 -->
+  <div class="space-y-1.5">
+    <div class="w-full h-2 rounded-full bg-surface-container-lowest flex overflow-hidden p-0.5">
+      <div class="bg-error h-full rounded-l-full shadow-[0_0_8px_rgba(255,99,99,0.5)] transition-all duration-300" style="width: 56%"></div>
+      <div class="bg-secondary-fixed h-full rounded-r-full shadow-[0_0_8px_rgba(0,227,136,0.5)] transition-all duration-300" style="width: 44%"></div>
+    </div>
+    <div class="flex justify-between items-center font-mono text-[11px]">
+      <span class="text-error flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-error"></span>多头爆仓 $2.14 亿 (56%)
+      </span>
+      <span class="text-secondary-fixed flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed"></span>空头爆仓 $1.68 亿 (44%)
+      </span>
+    </div>
+  </div>
+
+  <!-- 最大单笔爆仓标牌 -->
+  <div class="bg-surface-container p-2.5 rounded-lg flex items-center justify-between text-xs border border-outline-variant/40">
+    <div class="flex items-center gap-2">
+      <span class="font-mono text-[10px] text-error bg-error/10 px-1.5 py-0.5 rounded border border-error/20 font-bold uppercase">最大单笔</span>
+      <span class="text-on-surface text-[11px]">Binance - ETHUSDT 永续</span>
+    </div>
+    <span class="font-mono font-bold text-error text-[11px]">$8.50M 强平</span>
+  </div>
+</div>
+
+<!-- 第四组: 巨鲸与做市异动雷达 -->
+<div class="space-y-2.5">
+  <div class="flex items-center justify-between px-0.5">
+    <div class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-[15px] text-[#2e5cff]">radar</span>
+      <span class="text-xs font-semibold text-on-surface tracking-wide">链上巨鲸与做市异动雷达</span>
+    </div>
+    <span class="font-mono text-[10px] text-secondary-fixed flex items-center gap-1">
+      <span class="w-1 h-1 rounded-full bg-secondary-fixed animate-pulse"></span>实时同步中
+    </span>
+  </div>
+
+  <div class="space-y-2">
+    <!-- 巨鲸卡片 1 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 flex items-start gap-2.5 shadow-sm">
+      <div class="w-8 h-8 rounded-lg bg-[#2e5cff]/15 border border-[#2e5cff]/30 flex items-center justify-center shrink-0 mt-0.5 text-base">
+        🐋
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-secondary-fixed bg-secondary-fixed/10 px-1.5 py-0.5 rounded border border-secondary-fixed/20">提币囤积 (Accumulation)</span>
+          <span class="font-mono text-[10px] text-on-surface-variant">3分钟前</span>
+        </div>
+        <p class="text-xs text-on-surface leading-relaxed">
+          巨鲸地址 <span class="font-mono text-primary font-medium">0x7a8...9f21</span> 从 <span class="font-semibold text-white">Binance</span> 提取 <span class="font-mono text-secondary-fixed font-bold">1,200 BTC</span> ($115.7M) 至冷钱包。
+        </p>
+        <div class="flex items-center gap-2 mt-2 font-mono text-[10px] text-on-surface-variant">
+          <span class="bg-surface-container px-1.5 py-0.5 rounded">强利好吸筹</span>
+          <span class="bg-surface-container px-1.5 py-0.5 rounded">Tx: 8f42...a90b</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 巨鲸卡片 2 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 flex items-start gap-2.5 shadow-sm">
+      <div class="w-8 h-8 rounded-lg bg-error/15 border border-error/30 flex items-center justify-center shrink-0 mt-0.5 text-base">
+        ⚠️
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-error bg-error/10 px-1.5 py-0.5 rounded border border-error/20">大额充值 (Potential Sell)</span>
+          <span class="font-mono text-[10px] text-on-surface-variant">14分钟前</span>
+        </div>
+        <p class="text-xs text-on-surface leading-relaxed">
+          某以太坊鲸鱼将 <span class="font-mono text-error font-bold">25,000 ETH</span> ($85.5M) 从未知钱包充入 <span class="font-semibold text-white">Coinbase</span> 交易所。
+        </p>
+        <div class="flex items-center gap-2 mt-2 font-mono text-[10px] text-on-surface-variant">
+          <span class="bg-surface-container px-1.5 py-0.5 rounded text-error">潜在抛压预警</span>
+          <span class="bg-surface-container px-1.5 py-0.5 rounded">Ethereum Network</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 巨鲸卡片 3 -->
+    <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/50 flex items-start gap-2.5 shadow-sm">
+      <div class="w-8 h-8 rounded-lg bg-[#2e5cff]/15 border border-[#2e5cff]/30 flex items-center justify-center shrink-0 mt-0.5 text-base">
+        ⚡
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-[#82a4ff] bg-[#2e5cff]/15 px-1 py-0.5 rounded border border-[#2e5cff]/30">做市机构动向</span>
+          <span class="font-mono text-[10px] text-on-surface-variant">28分钟前</span>
+        </div>
+        <p class="text-xs text-on-surface leading-relaxed">
+          <span class="font-semibold text-white">DWF Labs</span> 链上向某主流衍生品交易所转入 <span class="font-mono text-primary font-bold">5,000,000 USDT</span> 进行流动性做市部署。
+        </p>
+        <div class="flex items-center gap-2 mt-2 font-mono text-[10px] text-on-surface-variant">
+          <span class="bg-surface-container px-1.5 py-0.5 rounded text-secondary">流动性注入</span>
+          <span class="bg-surface-container px-1.5 py-0.5 rounded">TRON Network</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 第五组: 主流资产多维量化指标一览 -->
+<div class="space-y-2.5">
+  <div class="flex items-center justify-between px-0.5">
+    <div class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-[15px] text-[#2e5cff]">trending_up</span>
+      <span class="text-xs font-semibold text-on-surface tracking-wide">主流资产多维量化指标一览</span>
+    </div>
+    <span class="font-mono text-[10px] text-on-surface-variant">24H 实时监控</span>
+  </div>
+  <div class="bg-surface-container-low rounded-xl border border-outline-variant/50 divide-y divide-outline-variant/30 overflow-hidden shadow-sm">
+    <!-- 行情 1: BTC -->
+    <div class="p-3 flex items-center justify-between hover:bg-surface-container transition-colors">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs font-mono shrink-0">
+          ₿
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-1">
+            <span class="font-sans font-bold text-sm text-on-surface">BTC</span>
+            <span class="text-[11px] text-on-surface-variant">/USDT</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] text-on-surface-variant">
+            <span class="">持仓 $42.5B</span>
+            <span class="text-secondary-fixed">费率 +0.012%</span>
+          </div>
+        </div>
+      </div>
+      <div class="w-16 h-6 shrink-0 flex items-center mx-1">
+        <svg class="w-full h-full text-secondary-fixed" fill="none" viewBox="0 0 100 30">
+          <path d="M0 24 L15 20 L30 22 L45 14 L60 16 L75 8 L90 10 L100 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </div>
+      <div class="flex flex-col items-end shrink-0">
+        <span class="font-mono text-xs font-bold text-on-surface">$96,450.00</span>
+        <span class="font-mono text-[11px] font-bold text-secondary-fixed bg-secondary-fixed/10 px-1.5 py-0.5 rounded mt-1">
+          +3.42%
+        </span>
+      </div>
+    </div>
+    <!-- 行情 2: ETH -->
+    <div class="p-3 flex items-center justify-between hover:bg-surface-container transition-colors">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-secondary text-xs font-mono shrink-0">
+          Ξ
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-1">
+            <span class="font-sans font-bold text-sm text-on-surface">ETH</span>
+            <span class="text-[11px] text-on-surface-variant">/USDT</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] text-on-surface-variant">
+            <span class="">持仓 $24.8B</span>
+            <span class="text-secondary-fixed">费率 +0.008%</span>
+          </div>
+        </div>
+      </div>
+      <div class="w-16 h-6 shrink-0 flex items-center mx-1">
+        <svg class="w-full h-full text-secondary-fixed" fill="none" viewBox="0 0 100 30">
+          <path d="M0 26 L20 22 L40 18 L55 20 L70 12 L85 10 L100 4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </div>
+      <div class="flex flex-col items-end shrink-0">
+        <span class="font-mono text-xs font-bold text-on-surface">$3,420.50</span>
+        <span class="font-mono text-[11px] font-bold text-secondary-fixed bg-secondary-fixed/10 px-1.5 py-0.5 rounded mt-1">
+          +2.18%
+        </span>
+      </div>
+    </div>
+    <!-- 行情 3: SOL -->
+    <div class="p-3 flex items-center justify-between hover:bg-surface-container transition-colors">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs font-mono shrink-0">
+          ◎
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-1">
+            <span class="font-sans font-bold text-sm text-on-surface">SOL</span>
+            <span class="text-[11px] text-on-surface-variant">/USDT</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] text-on-surface-variant">
+            <span class="">持仓 $11.2B</span>
+            <span class="text-secondary-fixed">费率 +0.024%</span>
+          </div>
+        </div>
+      </div>
+      <div class="w-16 h-6 shrink-0 flex items-center mx-1">
+        <svg class="w-full h-full text-secondary-fixed" fill="none" viewBox="0 0 100 30">
+          <path d="M0 28 L20 20 L40 16 L60 18 L75 8 L90 5 L100 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </div>
+      <div class="flex flex-col items-end shrink-0">
+        <span class="font-mono text-xs font-bold text-on-surface">$194.20</span>
+        <span class="font-mono text-[11px] font-bold text-secondary-fixed bg-secondary-fixed/10 px-1.5 py-0.5 rounded mt-1">
+          +6.85%
+        </span>
+      </div>
+    </div>
+    <!-- 行情 4: SUI -->
+    <div class="p-3 flex items-center justify-between hover:bg-surface-container transition-colors">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-secondary text-xs font-mono shrink-0">
+          💧
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-1">
+            <span class="font-sans font-bold text-sm text-on-surface">SUI</span>
+            <span class="text-[11px] text-on-surface-variant">/USDT</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] text-on-surface-variant">
+            <span class="">持仓 $3.4B</span>
+            <span class="text-error">费率 -0.005%</span>
+          </div>
+        </div>
+      </div>
+      <div class="w-16 h-6 shrink-0 flex items-center mx-1">
+        <svg class="w-full h-full text-error" fill="none" viewBox="0 0 100 30">
+          <path d="M0 8 L20 10 L40 18 L60 15 L75 22 L90 20 L100 28" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </div>
+      <div class="flex flex-col items-end shrink-0">
+        <span class="font-mono text-xs font-bold text-on-surface">$3.85</span>
+        <span class="font-mono text-[11px] font-bold text-error bg-error/10 px-1.5 py-0.5 rounded mt-1">
+          -1.24%
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 底部终端微状态栏 -->
+<div class="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface-variant font-mono text-[10px] mt-4">
+  <div class="flex items-center gap-1.5">
+    <span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed"></span>
+    <span class="">WebSocket: 18ms (直连 Tokyo-A)</span>
+  </div>
+  <span class="uppercase">Block #21,498,924</span>
+</div></main>
+<!-- 7. 底部固定 Tab 导航栏 -->
+<nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-[#10131a]/95 backdrop-blur-xl border-t border-outline-variant/50 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
+<div class="flex justify-around items-center h-14 px-2">
+<!-- 首页 (激活高亮) -->
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[60px] text-[#2e5cff] drop-shadow-[0_0_10px_rgba(46,92,255,0.7)]" href="#">
+<span class="material-symbols-outlined text-[22px]">radar</span>
+<span class="font-sans text-[10px] font-bold tracking-tight">首页</span>
+</a>
+<!-- 资讯 -->
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[60px] text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">monitoring</span>
+<span class="absolute -top-0.5 -right-1 w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_6px_#00d7f4]"></span>
+</div>
+<span class="font-sans text-[10px] font-medium tracking-tight">资讯</span>
+</a>
+<!-- 社区 (带未读徽标 3) -->
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[60px] text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">forum</span>
+<span class="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-[#2e5cff] text-white font-mono text-[9px] font-bold shadow-[0_0_8px_rgba(46,92,255,0.6)]">3</span>
+</div>
+<span class="font-sans text-[10px] font-medium tracking-tight">社区</span>
+</a>
+<!-- 我的 -->
+<a class="flex flex-col items-center justify-center gap-0.5 min-w-[60px] text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+<span class="font-sans text-[10px] font-medium tracking-tight">我的</span>
+</a>
+</div>
+</nav>
+
+
+</body></html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN" style=""><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#10131a;}body{overscroll-behavior:none;font-family:'Inter',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'surface-tint': '#b8c3ff', 'surface-container-lowest': '#0b0e14', 'surface-container-highest': '#32353c', 'surface-bright': '#363940', 'secondary-fixed': '#a5eeff', 'on-error': '#690005', 'on-secondary-fixed-variant': '#004e5a', 'on-tertiary': '#00391e', 'on-secondary-container': '#005966', 'outline-variant': '#434656', 'inverse-on-surface': '#2e3037', 'surface-container-high': '#272a31', 'on-surface': '#e1e2eb', 'surface-variant': '#32353c', 'on-primary-fixed': '#001355', 'on-background': '#e1e2eb', 'primary-fixed-dim': '#b8c3ff', 'on-primary-container': '#f0f0ff', 'on-surface-variant': '#c4c5d9', 'tertiary-container': '#007e49', 'tertiary': '#00e388', 'tertiary-fixed-dim': '#00e388', 'on-error-container': '#ffdad6', 'inverse-surface': '#e1e2eb', 'outline': '#8e90a2', 'primary-container': '#2e5cff', 'tertiary-fixed': '#58ffa5', 'error-container': '#93000a', 'primary-fixed': '#dde1ff', 'surface-dim': '#10131a', 'primary': '#b8c3ff', 'secondary-container': '#00d7f4', 'on-tertiary-container': '#c2ffd3', 'inverse-primary': '#104aef', 'surface-container-low': '#191c22', 'on-secondary': '#00363f', 'on-tertiary-fixed': '#00210f', 'on-tertiary-fixed-variant': '#00522e', 'on-primary': '#002487', 'background': '#10131a', 'error': '#ffb4ab', 'surface-container': '#1d2026', 'on-secondary-fixed': '#001f25', 'secondary-fixed-dim': '#0ad9f8', 'secondary': '#9aecff', 'on-primary-fixed-variant': '#0035bd', 'surface': '#10131a' }, borderRadius: { 'DEFAULT': '0.125rem', 'lg': '0.25rem', 'xl': '0.5rem', 'full': '0.75rem' }, spacing: { 'margin-desktop': '1rem', 'space-lg': '0.75rem', 'space-md': '0.5rem', 'space-xl': '1rem', 'margin': '0.5rem', 'gutter-desktop': '0.75rem', 'space-sm': '0.25rem', 'space-xs': '0.125rem', 'gutter': '0.5rem' }, fontFamily: { 'label-md': ['Inter'], 'body-md': ['Inter'], 'headline-xl': ['Inter'], 'headline-lg': ['Inter'], 'label-sm': ['Inter'], 'body-lg': ['Inter'], 'headline-xl-mobile': ['Inter'], 'headline-sm': ['Inter'], 'body-sm': ['Inter'] }, fontSize: { 'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.02em', fontWeight: '500' }], 'body-md': ['13px', { lineHeight: '18px', fontWeight: '400' }], 'headline-xl': ['32px', { lineHeight: '40px', letterSpacing: '-0.02em', fontWeight: '600' }], 'headline-lg': ['24px', { lineHeight: '32px', letterSpacing: '-0.01em', fontWeight: '600' }], 'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.05em', fontWeight: '600' }], 'body-lg': ['15px', { lineHeight: '22px', fontWeight: '400' }], 'headline-xl-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.015em', fontWeight: '600' }], 'headline-sm': ['18px', { lineHeight: '24px', letterSpacing: '-0.005em', fontWeight: '600' }], 'body-sm': ['11px', { lineHeight: '16px', fontWeight: '400' }] } } } };</script></head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-14 px-margin flex items-center justify-between border-b border-surface-container-high/60"><div class="flex items-center gap-2 min-w-0"><button aria-label="返回" class="w-10 h-10 -ml-1 flex items-center justify-center text-on-surface active:text-primary transition-colors shrink-0" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[20px]">arrow_back</span></button><span class="font-headline-sm text-[16px] text-on-surface font-semibold tracking-tight whitespace-nowrap truncate">合伙人分佣</span></div><div class="flex items-center gap-space-xs shrink-0"><button class="h-8 px-2.5 flex items-center gap-1 rounded-full bg-surface-container-high/70 text-on-surface-variant hover:text-on-surface active:scale-95 transition-all shrink-0 whitespace-nowrap" type="button"><span class="material-symbols-outlined text-[15px] text-secondary">help_outline</span><span class="font-label-md text-[12px] whitespace-nowrap">规则说明</span></button><button aria-label="分享推广" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-container-high/70 text-on-surface-variant hover:text-on-surface active:scale-95 transition-all shrink-0" type="button"><span class="material-symbols-outlined text-[17px]">share</span></button><img alt="Profile" class="w-7 h-7 rounded-full object-cover shrink-0 ml-0.5" src="https://lh3.googleusercontent.com/aida/AEtjO1WXnEuOu03rPS1h31Tr8N8v6nRoq3ESNM9uZrpIYIpBnhfpbXMktHohwRQ6y59ReeijDHcV9nm1_9287UM6vr8feGVazlujdVxYQUGiMBzYp0ERNkIWiFkk39OPw-F56hoUTj55oQ6x7MTrfy0hzVMzzBn4KoM4fYYMwqoeQ_17av99-w0rzVNKcny3jU9pS_Hn_n0qBUeX0dOBkLJI-RKNwx915wlcJ9sooLPYEpN-FyYARY6CT3THvJM"/></div></div></header><main class="flex flex-col relative w-full pt-14 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full px-margin pb-10 space-y-space-md"><!-- Top Hero Card: Institutional Tier & Balance Engine with enhanced breathing room -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-high p-5 shadow-md">
+<div class="absolute -right-12 -top-12 w-48 h-48 bg-primary-container/20 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute left-1/3 -bottom-10 w-36 h-36 bg-secondary-container/10 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Header Tier Bar -->
+<div class="relative z-10 flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container text-secondary text-label-sm font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[14px] text-secondary">verified</span>
+        Tier 3 钻石合伙人
+      </span>
+<span class="inline-flex items-center px-2 py-1 rounded-lg bg-tertiary-container/30 text-tertiary text-label-sm font-medium">
+        45.0% 永续返佣
+      </span>
+</div>
+<span class="text-on-surface-variant font-label-sm flex items-center gap-1.5">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+      实时链上清算
+    </span>
+</div>
+<!-- Primary Balances Block with focal presence -->
+<div class="relative z-10 mt-5">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant font-body-sm text-[12px]">累计已结算收益 (USDT)</span>
+<span class="text-tertiary font-label-sm flex items-center gap-0.5 bg-tertiary-container/20 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]">trending_up</span> +12.4% 本周
+      </span>
+</div>
+<div class="font-headline-xl-mobile text-[34px] leading-tight font-bold text-on-surface tracking-tight mt-1.5">
+      $18,452.80
+    </div>
+</div>
+<!-- Quick Action Box inside Hero with comfortable breathing room -->
+<div class="relative z-10 mt-4 p-3.5 rounded-xl bg-surface-container-lowest/90 backdrop-blur-sm border border-surface-container-high/40">
+<div class="flex items-center justify-between gap-3">
+<div class="min-w-0">
+<div class="text-on-surface-variant font-label-sm text-[11px]">可提现佣金</div>
+<div class="text-primary font-headline-sm text-[20px] font-bold tracking-tight mt-0.5 truncate">
+          $3,240.50 <span class="text-label-sm font-medium text-on-surface-variant">USDT</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md font-semibold flex items-center gap-1.5 active:scale-95 transition-all shadow-[0_0_12px_rgba(46,92,255,0.35)]" type="button">
+<span class="material-symbols-outlined text-[16px]">account_balance_wallet</span>
+          立即提现
+        </button>
+<button class="px-3 py-2 bg-surface-container-highest text-on-surface rounded-lg font-label-md text-label-md font-medium active:scale-95 transition-all" type="button">
+          划转
+        </button>
+</div>
+</div>
+</div>
+<!-- Micro Stats Strip with relaxed gap & padding -->
+<div class="relative z-10 grid grid-cols-4 gap-2 mt-4 pt-1">
+<div class="flex flex-col bg-surface-container/70 p-2.5 rounded-lg border border-surface-container-high/30">
+<span class="text-on-surface-variant font-label-sm text-[11px] truncate">待结算预估</span>
+<span class="text-on-surface font-body-md text-[13px] font-semibold mt-1">$420.00</span>
+</div>
+<div class="flex flex-col bg-surface-container/70 p-2.5 rounded-lg border border-surface-container-high/30">
+<span class="text-on-surface-variant font-label-sm text-[11px] truncate">有效直推</span>
+<span class="text-secondary font-body-md text-[13px] font-semibold mt-1">48 人</span>
+</div>
+<div class="flex flex-col bg-surface-container/70 p-2.5 rounded-lg border border-surface-container-high/30">
+<span class="text-on-surface-variant font-label-sm text-[11px] truncate">间接网络</span>
+<span class="text-on-surface font-body-md text-[13px] font-semibold mt-1">312 人</span>
+</div>
+<div class="flex flex-col bg-surface-container/70 p-2.5 rounded-lg border border-surface-container-high/30">
+<span class="text-on-surface-variant font-label-sm text-[11px] truncate">昨日净收益</span>
+<span class="text-tertiary font-body-md text-[13px] font-semibold mt-1">+$168.2</span>
+</div>
+</div>
+</div>
+<!-- Level Progress & Tier Ladder with refined lightness -->
+<div class="rounded-xl bg-surface-container p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-secondary">workspace_premium</span>
+<span class="text-on-surface font-headline-sm text-[15px] font-semibold">合伙人等级晋升</span>
+</div>
+<button class="text-secondary text-label-sm font-medium flex items-center hover:opacity-80 transition-opacity" type="button">
+      距黑钻还差 28%
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</button>
+</div>
+<!-- Progress & Milestones -->
+<div class="space-y-3">
+<div class="flex justify-between items-center text-label-sm">
+<span class="text-secondary font-semibold">当前: 钻石 45%</span>
+<span class="text-on-surface-variant">目标: 黑钻合伙人 50%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-lowest rounded-full overflow-hidden flex p-0.5">
+<div class="h-full bg-gradient-to-r from-primary-container to-secondary-container rounded-full" style="width: 72%;"></div>
+</div>
+<div class="grid grid-cols-2 gap-2.5 pt-1">
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-surface-container-high/30">
+<div class="flex items-center justify-between text-label-sm text-on-surface-variant">
+<span>月团队交易量</span>
+<span class="text-primary font-semibold">72%</span>
+</div>
+<div class="text-on-surface font-body-sm font-semibold mt-1">$7.2M / $10.0M</div>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-surface-container-high/30">
+<div class="flex items-center justify-between text-label-sm text-on-surface-variant">
+<span>活跃跟单用户</span>
+<span class="text-tertiary font-semibold">96%</span>
+</div>
+<div class="text-on-surface font-body-sm font-semibold mt-1">48 / 50 人</div>
+</div>
+</div>
+</div>
+<!-- Privileges Chips -->
+<div class="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5">
+<span class="shrink-0 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">insights</span>
+      专属量化研报
+    </span>
+<span class="shrink-0 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">support_agent</span>
+      1v1 客户经理
+    </span>
+<span class="shrink-0 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-tertiary">speed</span>
+      高频节点减免
+    </span>
+</div>
+</div>
+<!-- Referral Code & Share Center with airy layout -->
+<div class="rounded-xl bg-surface-container p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary">share</span>
+<span class="text-on-surface font-headline-sm text-[15px] font-semibold">专属推广渠道与邀请码</span>
+</div>
+<span class="text-on-surface-variant text-label-sm">实时返现生效</span>
+</div>
+<!-- Code & Link in spaced grid -->
+<div class="grid grid-cols-1 gap-2.5">
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-xl border border-surface-container-high/30">
+<div class="min-w-0">
+<div class="text-on-surface-variant font-label-sm text-[11px]">专属邀请码</div>
+<div class="text-on-surface font-headline-sm text-[18px] font-bold tracking-wider mt-0.5">MC-8899X</div>
+</div>
+<button class="px-3.5 py-1.5 bg-surface-container-high active:bg-primary-container text-on-surface rounded-lg font-label-md text-label-md transition-colors shrink-0" onclick="navigator.clipboard?.writeText('MC-8899X'); this.innerText='已复制'; setTimeout(()=&gt;this.innerText='复制', 1500)" type="button">
+        复制
+      </button>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-xl border border-surface-container-high/30">
+<div class="min-w-0 pr-2">
+<div class="text-on-surface-variant font-label-sm text-[11px]">推广专属链接</div>
+<div class="text-primary font-body-md text-[13px] font-medium truncate mt-0.5">mingce.io/r/8899X</div>
+</div>
+<button class="px-3.5 py-1.5 bg-surface-container-high active:bg-primary-container text-on-surface rounded-lg font-label-md text-label-md transition-colors shrink-0" onclick="navigator.clipboard?.writeText('https://mingce.io/r/8899X'); this.innerText='已复制'; setTimeout(()=&gt;this.innerText='复制链接', 1500)" type="button">
+        复制链接
+      </button>
+</div>
+</div>
+<!-- Ratio Allocation Card -->
+<div class="p-3.5 rounded-xl bg-surface-container-low border border-surface-container-high/30 space-y-2">
+<div class="flex items-center justify-between text-label-sm">
+<span class="text-on-surface-variant font-medium">分佣比例配置</span>
+<span class="text-on-surface font-semibold">总额: 45%</span>
+</div>
+<div class="flex items-center justify-between text-body-sm pt-0.5">
+<span class="text-primary font-semibold">自留返佣: 40%</span>
+<span class="text-secondary font-semibold">好友返现: 5%</span>
+</div>
+<div class="w-full h-2 rounded-full overflow-hidden flex bg-surface-container-lowest mt-1">
+<div class="h-full bg-primary-container" style="width: 88.8%;"></div>
+<div class="h-full bg-secondary" style="width: 11.2%;"></div>
+</div>
+</div>
+<!-- Quick Action Share Toolbar -->
+<div class="grid grid-cols-3 gap-2.5 pt-1">
+<button class="py-2.5 px-2 flex flex-col items-center justify-center rounded-xl bg-surface-container-high hover:bg-surface-container-highest active:scale-98 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px] text-primary">image</span>
+<span class="text-label-sm font-medium text-on-surface mt-1.5">推广海报</span>
+</button>
+<button class="py-2.5 px-2 flex flex-col items-center justify-center rounded-xl bg-surface-container-high hover:bg-surface-container-highest active:scale-98 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px] text-secondary">send</span>
+<span class="text-label-sm font-medium text-on-surface mt-1.5">发 Telegram</span>
+</button>
+<button class="py-2.5 px-2 flex flex-col items-center justify-center rounded-xl bg-surface-container-high hover:bg-surface-container-highest active:scale-98 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px] text-tertiary">qr_code_2</span>
+<span class="text-label-sm font-medium text-on-surface mt-1.5">拓客二维码</span>
+</button>
+</div>
+</div>
+<!-- Unified Data & Activity Section (Merged Tab Module: Channel Network & Settlement Stream) -->
+<div class="rounded-xl bg-surface-container p-5 shadow-sm space-y-4">
+<!-- Primary Top Level Tab Header -->
+<div class="flex items-center justify-between pb-1 border-b border-surface-container-high/60">
+<div class="flex items-center gap-4">
+<button class="text-[15px] font-semibold text-on-surface border-b-2 border-primary pb-2 flex items-center gap-1.5 transition-all" id="tab-btn-network" onclick="document.getElementById('network-pane').classList.remove('hidden'); document.getElementById('settlement-pane').classList.add('hidden'); this.className='text-[15px] font-semibold text-on-surface border-b-2 border-primary pb-2 flex items-center gap-1.5 transition-all'; document.getElementById('tab-btn-settle').className='text-[15px] font-medium text-on-surface-variant hover:text-on-surface pb-2 flex items-center gap-1.5 transition-all';" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">group</span>
+        渠道网络
+        <span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-[11px] font-medium text-secondary">363</span>
+</button>
+<button class="text-[15px] font-medium text-on-surface-variant hover:text-on-surface pb-2 flex items-center gap-1.5 transition-all" id="tab-btn-settle" onclick="document.getElementById('settlement-pane').classList.remove('hidden'); document.getElementById('network-pane').classList.add('hidden'); this.className='text-[15px] font-semibold text-on-surface border-b-2 border-primary pb-2 flex items-center gap-1.5 transition-all'; document.getElementById('tab-btn-network').className='text-[15px] font-medium text-on-surface-variant hover:text-on-surface pb-2 flex items-center gap-1.5 transition-all';" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">receipt_long</span>
+        返佣结算流水
+      </button>
+</div>
+<span class="text-on-surface-variant text-[11px] font-label-sm">全量已存证</span>
+</div>
+<!-- Pane 1: Network & Contribution -->
+<div class="space-y-3" id="network-pane">
+<div class="flex items-center justify-between">
+<!-- Sub Filters -->
+<div class="flex p-0.5 bg-surface-container-lowest rounded-lg gap-1 flex-1 max-w-[260px]">
+<button class="flex-1 py-1 text-center rounded text-label-sm bg-surface-container-high text-on-surface font-semibold" type="button">直推 (48)</button>
+<button class="flex-1 py-1 text-center rounded text-label-sm text-on-surface-variant hover:text-on-surface" type="button">间接 (312)</button>
+<button class="flex-1 py-1 text-center rounded text-label-sm text-on-surface-variant hover:text-on-surface" type="button">机构 (3)</button>
+</div>
+<button class="text-on-surface-variant font-label-sm text-[11px] flex items-center gap-0.5" type="button">
+        按交易量
+        <span class="material-symbols-outlined text-[14px]">swap_vert</span>
+</button>
+</div>
+<!-- Member Contribution List -->
+<div class="space-y-2 pt-1">
+<!-- Item 1 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low border border-surface-container-high/30">
+<div class="flex items-center gap-3 min-w-0">
+<img alt="quantitative trader avatar" class="w-9 h-9 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcA0Qp9ny3olkcMgiWUvD7Y_HEc_1rFYjHOlifzE9ol5PJRskMgOo1em3g034DnlRRLgcZddCPF-Nekh3TMR0KPsg84eRSsmvpG2UpdotGWFDf7FhUL_nI7Q4MUW2gkO6BTEQGF2uHk588qXraWQvl-ZwKfhB4-asxOEkQmBqwvdqzfEO0vmHaxvddEBLSasr6gRM6g4IeJpl-E6-La7CuATwh9axdyyNiWE4Q12sTtSaHMUc-4Qs6"/>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-on-surface font-body-md font-semibold truncate">0x7a8e...8e92</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-container/20 text-primary text-[10px] font-bold">VIP 6</span>
+</div>
+<div class="text-on-surface-variant font-body-sm text-[12px] truncate mt-0.5">本月交易量 $1.82M</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="text-tertiary font-body-md font-bold">+$452.10</div>
+<div class="text-on-surface-variant font-label-sm text-[10px]">贡献返佣</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low border border-surface-container-high/30">
+<div class="flex items-center gap-3 min-w-0">
+<img alt="holographic crypto avatar" class="w-9 h-9 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfSggOn27knEj1WsFdrUThEL2GhT4nboB4Sps2mPLuHFHBsIg9IBAAUsfvOGHrzBEWzbYDqxODIaB6bTrdcyIJia2tIB7UZX3Me4RTHHnqCyEGnThSZmw9xoarbA3HM5tGzbXYhF8nsIkZB_AEJ5kOeO3odWCxHxxSqOb-Yp44xaDziSb--sKxBrrtff-V-ahzceRO5G3My5gygzwvs0QEeZf8zc8z3MTUOxBe5z1GTMibOu7Ss5qy"/>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-on-surface font-body-md font-semibold truncate">Crypto_K***</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-container/20 text-secondary text-[10px] font-bold">VIP 4</span>
+</div>
+<div class="text-on-surface-variant font-body-sm text-[12px] truncate mt-0.5">本月交易量 $940K</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="text-tertiary font-body-md font-bold">+$289.40</div>
+<div class="text-on-surface-variant font-label-sm text-[10px]">贡献返佣</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low border border-surface-container-high/30">
+<div class="flex items-center gap-3 min-w-0">
+<img alt="institutional finance avatar" class="w-9 h-9 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTHuA5y75xozINMukQBYTcCptjtxnHP_sNUJaawnFupWzVoLb_JxeWofrcE0IJwRh5uB0X2vwXeh_0Vrks3rr41xAd2atrfO3Lx0D-_feaL6Vqr78pnIR_jjmoEGsFX9wop8CToobsoG74hqRO8lEefOjunIFaUflhMpDtwBwqAnvuus3v7gSvWkE0VTaO3N_zu7jqvY3agJIy6Vi7ULZwKgJUBSPfKnafcmvo0Z-ibl__mTZtF856"/>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-on-surface font-body-md font-semibold truncate">AlphaFund_09</span>
+<span class="px-1.5 py-0.2 rounded bg-tertiary-container/30 text-tertiary text-[10px] font-bold">机构席位</span>
+</div>
+<div class="text-on-surface-variant font-body-sm text-[12px] truncate mt-0.5">本月交易量 $2.40M</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="text-tertiary font-body-md font-bold">+$618.50</div>
+<div class="text-on-surface-variant font-label-sm text-[10px]">贡献返佣</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pane 2: Settlement Stream (Tab content, switchable) -->
+<div class="hidden space-y-3" id="settlement-pane">
+<div class="flex items-center gap-2 overflow-x-auto pb-1">
+<button class="shrink-0 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-label-sm font-semibold" type="button">全部动态</button>
+<button class="shrink-0 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-label-sm hover:text-on-surface" type="button">交易返佣</button>
+<button class="shrink-0 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-label-sm hover:text-on-surface" type="button">策略分成</button>
+<button class="shrink-0 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-label-sm hover:text-on-surface" type="button">提现记录</button>
+</div>
+<div class="space-y-2 pt-1">
+<!-- Record 1 -->
+<div class="p-3 rounded-xl bg-surface-container-lowest border border-surface-container-high/30 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary-container/15 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">candlestick_chart</span>
+</div>
+<div>
+<div class="text-on-surface font-body-md font-semibold">BTC/USDT 永续高频返佣</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-0.5">2 分钟前 · 来自 0x8a...411e</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-tertiary font-body-md font-bold">+$14.28</div>
+<span class="text-[10px] text-on-surface-variant">已结算</span>
+</div>
+</div>
+<!-- Record 2 -->
+<div class="p-3 rounded-xl bg-surface-container-lowest border border-surface-container-high/30 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-secondary-container/15 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">notifications_active</span>
+</div>
+<div>
+<div class="text-on-surface font-body-md font-semibold">ETH 巨鲸预警策略分成 (30%)</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-0.5">18 分钟前 · 策略订阅分成</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-tertiary font-body-md font-bold">+$45.00</div>
+<span class="text-[10px] text-on-surface-variant">已结算</span>
+</div>
+</div>
+<!-- Record 3 -->
+<div class="p-3 rounded-xl bg-surface-container-lowest border border-surface-container-high/30 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary-container/15 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">grid_view</span>
+</div>
+<div>
+<div class="text-on-surface font-body-md font-semibold">SOL/USDT 量化网格返佣</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-0.5">1 小时前 · 来自 VIP_Alpha</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-tertiary font-body-md font-bold">+$6.80</div>
+<span class="text-[10px] text-on-surface-variant">已结算</span>
+</div>
+</div>
+<!-- Record 4 -->
+<div class="p-3 rounded-xl bg-surface-container-lowest border border-surface-container-high/30 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">north_east</span>
+</div>
+<div>
+<div class="text-on-surface font-body-md font-semibold">佣金链上提现</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-0.5">昨天 19:42 · 目标 0x4b...8821</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-on-surface font-body-md font-semibold">-$1,500.00</div>
+<span class="text-[10px] text-secondary">已到账</span>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+</body></html>

@@ -1,0 +1,1131 @@
+import 'package:flutter/material.dart';
+
+import '../core/theme.dart';
+import '../core/widgets.dart';
+import '../services/data.dart';
+
+/// 行情 board.
+/// Reference: stitch_ref/home_market.html (content body only).
+/// NOTE: this screen uses the Material-3 token palette, where outline /
+/// on-surface-variant / secondary / error differ from the terminal screen.
+class HomeMarketPage extends StatefulWidget {
+  const HomeMarketPage({super.key});
+
+  // Palette local to this screen (from home_market.html tailwind config).
+  static const _onSurfVar = Color(0xFFC4C5D9); // on-surface-variant
+  static const _outline = Color(0xFF8E90A2); // outline
+  static const _outlineVar = Color(0xFF434656); // outline-variant
+  static const _secondary = Color(0xFF9AECFF); // secondary
+  static const _secondaryCont = Color(0xFF00D7F4); // secondary-container
+  static const _bull = Color(0xFF00E388); // tertiary
+  static const _bullCont = Color(0xFF007E49); // tertiary-container
+  static const _err = Color(0xFFFFB4AB); // error
+  static const _errCont = Color(0xFF93000A); // error-container
+
+  /// 主流币种白名单 (若后端返回则展示).
+  static const _majors = [
+    'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'LINK', 'NEAR', 'SUI',
+  ];
+
+  static const _glyphs = {
+    'BTC': '₿', 'ETH': 'Ξ', 'SOL': '◎', 'XRP': '✕', 'DOGE': 'Ð',
+    'ADA': '₳', 'AVAX': '▲', 'LINK': '⬡', 'NEAR': 'Ⓝ', 'SUI': '💧',
+  };
+
+  static const _glyphColors = {
+    'BTC': McColors.onSurface,
+    'ETH': _secondary,
+    'SOL': McColors.primary,
+    'XRP': _secondaryCont,
+    'DOGE': McColors.onSurface,
+    'ADA': _secondary,
+    'AVAX': _err,
+    'LINK': _secondary,
+    'NEAR': McColors.onSurface,
+    'SUI': _secondaryCont,
+  };
+
+  @override
+  State<HomeMarketPage> createState() => _HomeMarketPageState();
+}
+
+class _HomeMarketPageState extends State<HomeMarketPage> {
+  /// 当前榜单排序: 0 成交额, 1 涨幅, 2 跌幅.
+  int _sortIndex = 0;
+
+  /// 真实行情行 (拉取成功后填充); 为空表示仍用 mock.
+  List<_RowData> _liveRows = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final tickers = await McData.tickers(instType: 'SWAP');
+      // 过滤主流币并按 24H 成交额排序, 同一 symbol 只留成交额最高的合约, 取前 10.
+      final majors = tickers
+          .where((t) => HomeMarketPage._majors.contains(t.symbol))
+          .toList()
+        ..sort((a, b) => b.volCcy24h.compareTo(a.volCcy24h));
+      final seen = <String>{};
+      final top = majors.where((t) => seen.add(t.symbol)).take(10).toList();
+      if (top.isEmpty) throw StateError('no major tickers');
+
+      // 并行拉取前 6 行的分时线, 单个失败回退平线.
+      final sparkSymbols = top.take(6).map((t) => t.symbol).toList();
+      final sparks = await Future.wait(
+        top.take(6).map((t) => McData.sparkline(t.instId).catchError(
+            (_) => const <double>[0.5, 0.5, 0.5, 0.5, 0.5, 0.5])),
+      );
+      final sparkMap = <String, List<double>>{
+        for (var i = 0; i < sparkSymbols.length; i++)
+          sparkSymbols[i]: sparks[i].isEmpty
+              ? const [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+              : sparks[i],
+      };
+
+      final rows = [
+        for (final t in top) _buildRow(t, sparkMap[t.symbol]),
+      ];
+      if (!mounted) return;
+      setState(() {
+        _liveRows = rows;
+        _loading = false;
+      });
+    } catch (_) {
+      // 后端不可用 / 数据异常 -> 保留 mock.
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  _RowData _buildRow(OkxTicker t, List<double>? spark) {
+    final pct = t.changePct;
+    final positive = pct >= 0;
+    return _RowData(
+      glyph: HomeMarketPage._glyphs[t.symbol] ?? '●',
+      glyphColor:
+          HomeMarketPage._glyphColors[t.symbol] ?? McColors.onSurface,
+      symbol: t.symbol,
+      vol: '24H ${_fmtVol(t.volCcy24h)}',
+      price: _fmtPrice(t.last),
+      note: '高 ${_fmtPrice(t.high24h)}',
+      noteColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+      spark: (spark == null || spark.isEmpty)
+          ? const [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+          : spark,
+      sparkColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+      delta: _fmtDelta(pct),
+      positive: positive,
+      alt: false, // 斑马纹由渲染序号决定
+    );
+  }
+
+  /// 依据当前榜单对行排序.
+  List<_RowData> _sorted(List<_RowData> rows) {
+    final list = [...rows];
+    switch (_sortIndex) {
+      case 1: // 涨幅榜
+        list.sort((a, b) => _pct(b).compareTo(_pct(a)));
+        break;
+      case 2: // 跌幅榜
+        list.sort((a, b) => _pct(a).compareTo(_pct(b)));
+        break;
+      default: // 成交额榜
+        list.sort((a, b) => _vol(b).compareTo(_vol(a)));
+    }
+    return list;
+  }
+
+  // 从已格式化的字符串还原排序键 (避免再持一份原始 ticker).
+  static double _pct(_RowData r) =>
+      double.tryParse(r.delta.replaceAll('%', '').replaceAll('+', '')) ?? 0;
+
+  static double _vol(_RowData r) {
+    final s = r.vol.replaceAll('24H ', '').replaceAll('\$', '');
+    final mult = s.endsWith('B')
+        ? 1e9
+        : s.endsWith('M')
+            ? 1e6
+            : s.endsWith('K')
+                ? 1e3
+                : 1.0;
+    final num = double.tryParse(s.replaceAll(RegExp(r'[BMK]'), '')) ?? 0;
+    return num * mult;
+  }
+
+  static String _fmtPrice(double p) {
+    if (p >= 1000) return '\$${_comma(p)}';
+    if (p > 0 && p < 10) return '\$${p.toStringAsFixed(4)}';
+    return '\$${p.toStringAsFixed(2)}';
+  }
+
+  static String _fmtVol(double v) {
+    if (v >= 1e9) return '\$${(v / 1e9).toStringAsFixed(1)}B';
+    if (v >= 1e6) return '\$${(v / 1e6).toStringAsFixed(0)}M';
+    if (v >= 1e3) return '\$${(v / 1e3).toStringAsFixed(0)}K';
+    return '\$${v.toStringAsFixed(0)}';
+  }
+
+  static String _fmtDelta(double pct) =>
+      '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%';
+
+  static String _comma(double v) {
+    final fixed = v.toStringAsFixed(2);
+    final dot = fixed.indexOf('.');
+    final intPart = fixed.substring(0, dot);
+    final buf = StringBuffer();
+    for (var i = 0; i < intPart.length; i++) {
+      buf.write(intPart[i]);
+      final remaining = intPart.length - i - 1;
+      if (remaining > 0 && remaining % 3 == 0) buf.write(',');
+    }
+    return '$buf.${fixed.substring(dot + 1)}';
+  }
+
+  Future<void> _refresh() => _load();
+
+  @override
+  Widget build(BuildContext context) {
+    final usingLive = _liveRows.isNotEmpty;
+    final rows = usingLive ? _sorted(_liveRows) : _MarketListCard._mockRows;
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      color: McColors.primary,
+      backgroundColor: McColors.surfaceContainer,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
+        children: [
+          // 1. 全网市场热度概览卡片
+          const _MarketVitalsCard(),
+          const SizedBox(height: 20),
+
+          // 2. 榜单切换胶囊 + 时间尺度控制器
+          _ListControlBar(
+            sortIndex: _sortIndex,
+            onChanged: (i) => setState(() => _sortIndex = i),
+          ),
+          const SizedBox(height: 12),
+
+          // 3. 专业行情数据列表
+          _MarketListCard(rows: rows, loading: _loading && !usingLive),
+          const SizedBox(height: 20),
+
+          // 4. 板块轮动热力概览
+          const _SectorHeatmapCard(),
+          const SizedBox(height: 12),
+
+          // 5. 底部系统监控心跳条
+          const _HeartbeatBar(),
+        ],
+      ),
+    );
+  }
+}
+
+/// 1. 全网市场热度 + 板块筛选标签.
+class _MarketVitalsCard extends StatelessWidget {
+  const _MarketVitalsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Row(
+                  children: [
+                    const Icon(Icons.query_stats,
+                        size: 18, color: McColors.primary),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text('全网市场热度',
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              McText.sans(size: 13, weight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: McColors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  children: [
+                    const McGlowDot(color: HomeMarketPage._bull, size: 6),
+                    const SizedBox(width: 6),
+                    Text(
+                      'BULL DOMINANT',
+                      style: McText.sans(
+                          size: 12,
+                          weight: FontWeight.w700,
+                          color: HomeMarketPage._bull,
+                          letterSpacing: 1),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Expanded(
+                  child: _vital(
+                    '24H 总市值',
+                    '\$3.24T',
+                    valueColor: McColors.onSurface,
+                    sub: Row(
+                      children: [
+                        const Icon(Icons.trending_up,
+                            size: 12, color: HomeMarketPage._bull),
+                        Text('+2.84%',
+                            style: McText.sans(
+                                size: 12,
+                                weight: FontWeight.w600,
+                                color: HomeMarketPage._bull)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _vital(
+                    '24H 全网成交',
+                    '\$142.8B',
+                    valueColor: McColors.onSurface,
+                    sub: Text('极度活跃',
+                        style: McText.sans(
+                            size: 12, color: HomeMarketPage._outlineVar)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _vital(
+                    '多头主导指数',
+                    '64%',
+                    valueColor: HomeMarketPage._bull,
+                    sub: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Container(
+                        height: 6,
+                        color: McColors.surfaceContainerHighest,
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: 0.64,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: HomeMarketPage._bull,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+          ),
+          const SizedBox(height: 16),
+          // 板块筛选标签 (横向滚动)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                _tag('全部', active: true),
+                _tag('自选', icon: Icons.star),
+                _tag('Layer 1'),
+                _tag('DeFi'),
+                _tag('AI Agent', dot: true),
+                _tag('Meme'),
+                _tag('Solana生态'),
+                _tag('RWA'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vital(
+    String label,
+    String value, {
+    required Color valueColor,
+    required Widget sub,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 76),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: McText.sans(size: 12, color: HomeMarketPage._outline)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: McText.sans(
+                  size: 16, weight: FontWeight.w700, color: valueColor)),
+          const SizedBox(height: 4),
+          sub,
+        ],
+      ),
+    );
+  }
+
+  Widget _tag(String text, {bool active = false, IconData? icon, bool dot = false}) {
+    final color = active
+        ? McColors.onPrimaryContainer
+        : (dot ? McColors.primary : HomeMarketPage._onSurfVar);
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: active
+            ? McColors.primaryContainer
+            : McColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: HomeMarketPage._secondary),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            text,
+            style: McText.sans(
+              size: 12,
+              weight: active ? FontWeight.w600 : FontWeight.w500,
+              color: color,
+            ),
+          ),
+          if (dot) ...[
+            const SizedBox(width: 6),
+            const McGlowDot(color: HomeMarketPage._bull, size: 6),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 2. 榜单切换胶囊 + 24H 周期控制器.
+class _ListControlBar extends StatelessWidget {
+  const _ListControlBar({required this.sortIndex, required this.onChanged});
+
+  final int sortIndex;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _capsule('成交额榜', index: 0),
+                _capsule('涨幅榜', index: 1),
+                _capsule('跌幅榜', index: 2),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: HomeMarketPage._outlineVar.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Text('24H',
+                    style: McText.sans(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: McColors.primary)),
+                const SizedBox(width: 6),
+                const Icon(Icons.unfold_more,
+                    size: 15, color: HomeMarketPage._outline),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _capsule(String text, {required int index}) {
+    final active = sortIndex == index;
+    return GestureDetector(
+      onTap: () => onChanged(index),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(right: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              active ? McColors.surfaceContainerHighest : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          text,
+          style: McText.sans(
+            size: 12,
+            weight: active ? FontWeight.w600 : FontWeight.w500,
+            color: active ? McColors.onSurface : HomeMarketPage._outline,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 3. 专业行情数据列表.
+class _MarketListCard extends StatelessWidget {
+  const _MarketListCard({required this.rows, this.loading = false});
+
+  final List<_RowData> rows;
+  final bool loading;
+
+  static const _mockRows = [
+    _RowData(
+        glyph: '₿',
+        glyphColor: McColors.onSurface,
+        symbol: 'BTC',
+        vol: '24H \$42.5B',
+        price: '\$96,450.00',
+        note: '高 \$97.1K',
+        noteColor: HomeMarketPage._bull,
+        spark: [0.25, 0.38, 0.19, 0.56, 0.44, 0.88],
+        sparkColor: HomeMarketPage._bull,
+        delta: '+3.42%',
+        positive: true,
+        alt: true),
+    _RowData(
+        glyph: 'Ξ',
+        glyphColor: HomeMarketPage._secondary,
+        symbol: 'ETH',
+        vol: '24H \$24.8B',
+        price: '\$3,420.50',
+        note: '高 \$3.48K',
+        noteColor: HomeMarketPage._bull,
+        spark: [0.13, 0.31, 0.25, 0.50, 0.63, 0.81],
+        sparkColor: HomeMarketPage._bull,
+        delta: '+2.18%',
+        positive: true,
+        alt: false),
+    _RowData(
+        glyph: '◎',
+        glyphColor: McColors.primary,
+        symbol: 'SOL',
+        vol: '24H \$11.2B',
+        price: '\$194.20',
+        note: '突破强压',
+        noteColor: HomeMarketPage._bull,
+        spark: [0.06, 0.19, 0.50, 0.38, 0.81, 0.94],
+        sparkColor: HomeMarketPage._bull,
+        delta: '+6.85%',
+        positive: true,
+        alt: true),
+    _RowData(
+        glyph: '💧',
+        glyphColor: HomeMarketPage._secondaryCont,
+        symbol: 'SUI',
+        vol: '24H \$3.4B',
+        price: '\$3.85',
+        note: '缩量洗盘',
+        noteColor: HomeMarketPage._err,
+        spark: [0.81, 0.69, 0.75, 0.38, 0.50, 0.13],
+        sparkColor: HomeMarketPage._err,
+        delta: '-1.24%',
+        positive: false,
+        alt: false),
+    _RowData(
+        glyph: 'Ð',
+        glyphColor: McColors.onSurface,
+        symbol: 'DOGE',
+        vol: '24H \$5.8B',
+        price: '\$0.3850',
+        note: '主升浪中',
+        noteColor: HomeMarketPage._bull,
+        spark: [0.13, 0.06, 0.50, 0.44, 0.81, 0.94],
+        sparkColor: HomeMarketPage._bull,
+        delta: '+12.40%',
+        positive: true,
+        alt: true),
+    _RowData(
+        glyph: '▲',
+        glyphColor: HomeMarketPage._err,
+        symbol: 'AVAX',
+        vol: '24H \$1.9B',
+        price: '\$38.90',
+        note: '温和放量',
+        noteColor: HomeMarketPage._bull,
+        spark: [0.19, 0.31, 0.38, 0.50, 0.69, 0.81],
+        sparkColor: HomeMarketPage._bull,
+        delta: '+4.15%',
+        positive: true,
+        alt: false),
+    _RowData(
+        glyph: 'Ⓝ',
+        glyphColor: McColors.onSurface,
+        symbol: 'NEAR',
+        vol: '24H \$1.2B',
+        price: '\$6.75',
+        note: '突破颈线',
+        noteColor: HomeMarketPage._bull,
+        spark: [0.19, 0.13, 0.44, 0.38, 0.75, 0.88],
+        sparkColor: HomeMarketPage._bull,
+        delta: '+8.30%',
+        positive: true,
+        alt: true),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: McColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: HomeMarketPage._outlineVar.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            // 列头
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: McColors.surfaceContainerLowest,
+                border: Border(
+                  bottom: BorderSide(
+                      color:
+                          HomeMarketPage._outlineVar.withValues(alpha: 0.2)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Text('币种 / 成交额', style: _headStyle()),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text('现价 (USD)',
+                        textAlign: TextAlign.right, style: _headStyle()),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: Text('24H 趋势 / 涨跌',
+                        textAlign: TextAlign.right, style: _headStyle()),
+                  ),
+                ],
+              ),
+            ),
+            for (var i = 0; i < rows.length; i++)
+              _MarketRow(
+                  data: rows[i], alt: i.isEven, isLast: i == rows.length - 1),
+            if (loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 14),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: McColors.primary),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  TextStyle _headStyle() => McText.sans(
+      size: 12,
+      weight: FontWeight.w600,
+      color: HomeMarketPage._outline,
+      letterSpacing: 1);
+}
+
+class _RowData {
+  const _RowData({
+    required this.glyph,
+    required this.glyphColor,
+    required this.symbol,
+    required this.vol,
+    required this.price,
+    required this.note,
+    required this.noteColor,
+    required this.spark,
+    required this.sparkColor,
+    required this.delta,
+    required this.positive,
+    required this.alt,
+  });
+
+  final String glyph;
+  final Color glyphColor;
+  final String symbol;
+  final String vol;
+  final String price;
+  final String note;
+  final Color noteColor;
+  final List<double> spark;
+  final Color sparkColor;
+  final String delta;
+  final bool positive;
+  final bool alt;
+}
+
+class _MarketRow extends StatelessWidget {
+  const _MarketRow(
+      {required this.data, required this.alt, required this.isLast});
+
+  final _RowData data;
+  final bool alt;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final deltaColor =
+        data.positive ? HomeMarketPage._bull : HomeMarketPage._err;
+    final deltaBg = data.positive
+        ? HomeMarketPage._bullCont.withValues(alpha: 0.3)
+        : HomeMarketPage._errCont.withValues(alpha: 0.4);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: alt ? McColors.surfaceContainer : McColors.surfaceContainerLow,
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(
+                    color: HomeMarketPage._outlineVar.withValues(alpha: 0.15)),
+              ),
+      ),
+      child: Row(
+        children: [
+          // 币种 / 成交额
+          Expanded(
+            flex: 5,
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    color: McColors.surfaceContainerHigh,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    data.glyph,
+                    style: McText.sans(
+                        size: 14,
+                        weight: FontWeight.w700,
+                        color: data.glyphColor),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Flexible(
+                            child: Text(data.symbol,
+                                overflow: TextOverflow.ellipsis,
+                                style: McText.sans(
+                                    size: 14, weight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 4),
+                          Text('/USDT',
+                              style: McText.sans(
+                                  size: 12, color: HomeMarketPage._outline)),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(data.vol,
+                          overflow: TextOverflow.ellipsis,
+                          style: McText.sans(
+                              size: 12, color: HomeMarketPage._outline)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 现价
+          Expanded(
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(data.price,
+                        style: McText.sans(
+                            size: 13, weight: FontWeight.w600)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(data.note,
+                      overflow: TextOverflow.ellipsis,
+                      style: McText.sans(size: 12, color: data.noteColor)),
+                ],
+              ),
+            ),
+          ),
+          // 趋势 / 涨跌
+          Expanded(
+            flex: 4,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Flexible(
+                  child: McSparkline(
+                      points: data.spark,
+                      color: data.sparkColor,
+                      width: 40,
+                      height: 20,
+                      strokeWidth: 1.75),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 62),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: deltaBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    alignment: Alignment.center,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        data.delta,
+                        style: McText.sans(
+                            size: 12, weight: FontWeight.w600, color: deltaColor),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 4. 板块轮动动能热力概览.
+class _SectorHeatmapCard extends StatelessWidget {
+  const _SectorHeatmapCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: HomeMarketPage._outlineVar.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Row(
+                  children: [
+                    const Icon(Icons.grid_view,
+                        size: 18, color: HomeMarketPage._secondary),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text('板块轮动动能 (24H Heatmap)',
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              McText.sans(size: 13, weight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('全景热力',
+                  style: McText.sans(
+                      size: 12,
+                      color: HomeMarketPage._outline,
+                      letterSpacing: 1)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                      child: _HeatTile(
+                          name: 'AI Agent',
+                          pct: '+14.2%',
+                          leader: '领涨: VIRTUAL',
+                          tag: '爆发',
+                          hot: true,
+                          overlay: 0.10,
+                          borderAlpha: 0.20)),
+                  SizedBox(width: 12),
+                  Expanded(
+                      child: _HeatTile(
+                          name: 'Solana Meme',
+                          pct: '+9.8%',
+                          leader: '领涨: BONK',
+                          tag: '放量',
+                          hot: true,
+                          overlay: 0.05,
+                          borderAlpha: 0.15)),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                      child: _HeatTile(
+                          name: 'Layer 2',
+                          pct: '+1.4%',
+                          leader: '领涨: ARB',
+                          tag: '震荡',
+                          hot: false,
+                          overlay: 0.02)),
+                  SizedBox(width: 12),
+                  Expanded(
+                      child: _HeatTile(
+                          name: 'DeFi 3.0',
+                          pct: '+0.8%',
+                          leader: '领涨: AAVE',
+                          tag: '蓄势',
+                          hot: false,
+                          overlay: 0.02)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeatTile extends StatelessWidget {
+  const _HeatTile({
+    required this.name,
+    required this.pct,
+    required this.leader,
+    required this.tag,
+    required this.hot,
+    required this.overlay,
+    this.borderAlpha = 0.20,
+  });
+
+  final String name;
+  final String pct;
+  final String leader;
+  final String tag;
+  final bool hot;
+  final double overlay;
+  final double borderAlpha;
+
+  @override
+  Widget build(BuildContext context) {
+    const bull = HomeMarketPage._bull;
+    final borderColor = hot
+        ? bull.withValues(alpha: borderAlpha)
+        : HomeMarketPage._outlineVar.withValues(alpha: 0.2);
+    return Container(
+      constraints: const BoxConstraints(minHeight: 78),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(color: bull.withValues(alpha: overlay)),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(name,
+                        overflow: TextOverflow.ellipsis,
+                        style: McText.sans(size: 13, weight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(pct,
+                      style: McText.sans(
+                          size: 12, weight: FontWeight.w700, color: bull)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(leader,
+                        overflow: TextOverflow.ellipsis,
+                        style: McText.sans(
+                            size: 12, color: HomeMarketPage._outline)),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: hot
+                          ? HomeMarketPage._bullCont.withValues(alpha: 0.4)
+                          : McColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      tag,
+                      style: McText.sans(
+                        size: 12,
+                        weight: hot ? FontWeight.w600 : FontWeight.w500,
+                        color: hot ? bull : HomeMarketPage._outline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 5. 底部系统监控心跳条.
+class _HeartbeatBar extends StatelessWidget {
+  const _HeartbeatBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: HomeMarketPage._outlineVar.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  const McGlowDot(color: HomeMarketPage._bull, size: 8),
+                  const SizedBox(width: 8),
+                  Text('WS_NODE: 18ms',
+                      style: McText.mono(
+                          size: 12,
+                          color: HomeMarketPage._outline,
+                          letterSpacing: 1)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                children: [
+                  Text('BLOCK: #20,412,890',
+                      style: McText.mono(
+                          size: 12, color: HomeMarketPage._outline)),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: McColors.primaryContainer.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('明策撮合引擎 V4.2',
+                        style: McText.mono(
+                            size: 12,
+                            weight: FontWeight.w600,
+                            color: McColors.primary)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
