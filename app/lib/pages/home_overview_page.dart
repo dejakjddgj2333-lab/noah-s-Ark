@@ -7,6 +7,7 @@ import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
 import '../services/ticker_ws.dart';
+import 'market_detail_page.dart';
 
 /// 首页 · 综合看板 — 聚合各分板核心指标的总览页.
 ///
@@ -599,8 +600,18 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
 
   Widget _assetRow(_AssetRow r) {
     final c = r.up ? McColors.bull : McColors.bear;
-    return Padding(
-      padding: const EdgeInsets.all(12),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MarketDetailPage(
+            instId: '${r.symbol}-USDT-SWAP',
+            symbol: r.symbol,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
       child: Row(
         children: [
           Container(
@@ -645,6 +656,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
             ],
           ),
         ],
+      ),
       ),
     );
   }

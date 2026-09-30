@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from models.hk import HkComment, HkLike
 from models.shared import NewsArticle
 
 router = APIRouter(prefix="/news", tags=["资讯"])
@@ -83,4 +84,20 @@ async def get_news(
     article = await db.get(NewsArticle, news_id)
     if article is None or article.status != "published":
         raise HTTPException(status_code=404, detail="资讯不存在或已下架")
-    return _news_out(article, lang)
+    data = _news_out(article, lang)
+    # 详情页用 hk 互动表的实时计数覆盖静态列 (列表页仍走静态列省查询)
+    data["like_count"] = await db.scalar(
+        select(func.count())
+        .select_from(HkLike)
+        .where(HkLike.target_type == "news", HkLike.target_id == news_id)
+    ) or 0
+    data["comment_count"] = await db.scalar(
+        select(func.count())
+        .select_from(HkComment)
+        .where(
+            HkComment.target_type == "news",
+            HkComment.target_id == news_id,
+            HkComment.status == "visible",
+        )
+    ) or 0
+    return data

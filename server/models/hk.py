@@ -3,7 +3,17 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import declarative_base
 
 HkBase = declarative_base()
@@ -40,4 +50,62 @@ class HkEmailCode(HkBase):
     purpose = Column(String(16), nullable=False, default="register")
     used = Column(Boolean, nullable=False, default=False)
     expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkComment(HkBase):
+    """通用评论: target_type 区分目标(当前仅 news), reply_to_id 支持楼中楼."""
+
+    __tablename__ = "hk_comments"
+    __table_args__ = (
+        Index("ix_hk_comments_target", "target_type", "target_id"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    target_type = Column(String(16), nullable=False)  # 当前仅 news
+    target_id = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    reply_to_id = Column(Integer, nullable=True)  # 一级评论为 NULL, 指向本表 id
+    status = Column(String(16), nullable=False, default="visible")  # visible/deleted
+    created_at = Column(DateTime, default=utc_now, index=True)
+
+
+class HkLike(HkBase):
+    """通用点赞 (幂等, 唯一约束防重)."""
+
+    __tablename__ = "hk_likes"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "target_type", "target_id", name="uq_hk_like_user_target"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    target_type = Column(String(16), nullable=False)  # 当前仅 news
+    target_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkFavorite(HkBase):
+    """通用收藏 (幂等, 唯一约束防重)."""
+
+    __tablename__ = "hk_favorites"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "target_type", "target_id", name="uq_hk_favorite_user_target"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    target_type = Column(String(16), nullable=False)  # 当前仅 news
+    target_id = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=utc_now)

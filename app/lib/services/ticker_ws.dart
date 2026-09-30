@@ -30,8 +30,54 @@ class TickerPush {
   double get notionalUsd => volCcy24h * last;
 }
 
+/// 盘口单档 (价格, 数量).
+class BookLevel {
+  const BookLevel(this.px, this.sz);
+
+  final double px;
+  final double sz;
+}
+
+/// books5 频道推送 (5 档, 每次全量替换).
+class BookPush {
+  const BookPush({
+    required this.instId,
+    required this.bids,
+    required this.asks,
+  });
+
+  final String instId;
+
+  /// 买盘 5 档, 价格降序.
+  final List<BookLevel> bids;
+
+  /// 卖盘 5 档, 价格升序.
+  final List<BookLevel> asks;
+}
+
+/// trades 频道推送 (逐笔成交).
+class TradePush {
+  const TradePush({
+    required this.instId,
+    required this.px,
+    required this.sz,
+    required this.side,
+    required this.ts,
+  });
+
+  final String instId;
+  final double px;
+  final double sz;
+
+  /// 'buy' / 'sell'.
+  final String side;
+
+  /// 成交时间戳 (ms).
+  final int ts;
+}
+
 /// 直连 OKX 公共 WS (wss://ws.okx.com:8443/ws/v5/public) 单例,
-/// 订阅多个交易对 tickers 频道, 自动重连 + 心跳.
+/// 订阅 tickers / books5 / trades 频道, 自动重连 + 心跳.
 class TickerWs {
   TickerWs._();
   static final TickerWs instance = TickerWs._();
@@ -43,16 +89,24 @@ class TickerWs {
   Timer? _pingTimer;
   Timer? _reconnectTimer;
   Set<String> _instIds = {};
+  Set<String> _bookInstIds = {};
+  Set<String> _tradeInstIds = {};
   bool _disposed = false;
   int _retryCount = 0;
 
   final _pushController = StreamController<TickerPush>.broadcast();
   Stream<TickerPush> get stream => _pushController.stream;
 
+  final _bookController = StreamController<BookPush>.broadcast();
+  Stream<BookPush> get bookStream => _bookController.stream;
+
+  final _tradeController = StreamController<TradePush>.broadcast();
+  Stream<TradePush> get tradeStream => _tradeController.stream;
+
   final _connController = StreamController<bool>.broadcast();
   Stream<bool> get connStream => _connController.stream;
 
-  /// 增量订阅一组交易对. 首次调用触发连接, 后续只订阅新增的.
+  /// 增量订阅一组交易对 tickers. 首次调用触发连接, 后续只订阅新增的.
   void subscribe(Set<String> instIds) {
     if (instIds.isEmpty) return;
     final newIds = instIds.difference(_instIds);
@@ -60,7 +114,37 @@ class TickerWs {
     if (_channel == null) {
       _connect();
     } else if (newIds.isNotEmpty) {
-      _sendSubscribe(newIds);
+      _send([
+        for (final id in newIds) {'channel': 'tickers', 'instId': id},
+      ]);
+    }
+  }
+
+  /// 订阅某交易对 5 档盘口 (books5, 全量替换). 与 tickers 订阅独立计数.
+  void subscribeBooks(String instId) {
+    if (instId.isEmpty) return;
+    final isNew = !_bookInstIds.contains(instId);
+    _bookInstIds = _bookInstIds.union({instId});
+    if (_channel == null) {
+      _connect();
+    } else if (isNew) {
+      _send([
+        {'channel': 'books5', 'instId': instId},
+      ]);
+    }
+  }
+
+  /// 订阅某交易对逐笔成交 (trades). 与 tickers 订阅独立计数.
+  void subscribeTrades(String instId) {
+    if (instId.isEmpty) return;
+    final isNew = !_tradeInstIds.contains(instId);
+    _tradeInstIds = _tradeInstIds.union({instId});
+    if (_channel == null) {
+      _connect();
+    } else if (isNew) {
+      _send([
+        {'channel': 'trades', 'instId': instId},
+      ]);
     }
   }
 
@@ -80,23 +164,25 @@ class TickerWs {
     );
     _retryCount = 0;
     if (!_connController.isClosed) _connController.add(true);
-    _sendSubscribe(_instIds);
+    // 重连后重订阅全部频道.
+    _resubscribeAll();
     // OKX 要求 30s 内必须有消息, 25s 心跳.
     _pingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       _channel?.sink.add('ping');
     });
   }
 
-  void _sendSubscribe(Set<String> instIds) {
-    if (instIds.isEmpty) return;
-    _channel?.sink.add(
-      jsonEncode({
-        'op': 'subscribe',
-        'args': [
-          for (final id in instIds) {'channel': 'tickers', 'instId': id},
-        ],
-      }),
-    );
+  void _resubscribeAll() {
+    _send([
+      for (final id in _instIds) {'channel': 'tickers', 'instId': id},
+      for (final id in _bookInstIds) {'channel': 'books5', 'instId': id},
+      for (final id in _tradeInstIds) {'channel': 'trades', 'instId': id},
+    ]);
+  }
+
+  void _send(List<Map<String, String>> args) {
+    if (args.isEmpty) return;
+    _channel?.sink.add(jsonEncode({'op': 'subscribe', 'args': args}));
   }
 
   void _onMessage(dynamic raw) {
@@ -106,25 +192,79 @@ class TickerWs {
       if (json.containsKey('event')) return; // subscribe/error 回执
       final data = json['data'] as List?;
       if (data == null || data.isEmpty) return;
-      for (final row in data) {
-        final map = row as Map<String, dynamic>;
-        final instId = map['instId'] as String?;
-        final last = double.tryParse(map['last']?.toString() ?? '');
-        if (instId == null || last == null) continue;
-        _pushController.add(
-          TickerPush(
-            instId: instId,
-            last: last,
-            open24h: double.tryParse(map['open24h']?.toString() ?? '') ?? 0,
-            high24h: double.tryParse(map['high24h']?.toString() ?? '') ?? 0,
-            low24h: double.tryParse(map['low24h']?.toString() ?? '') ?? 0,
-            volCcy24h: double.tryParse(map['volCcy24h']?.toString() ?? '') ?? 0,
-          ),
-        );
+      final arg = json['arg'] as Map?;
+      final channel = arg?['channel']?.toString() ?? 'tickers';
+      final argInstId = arg?['instId']?.toString() ?? '';
+      switch (channel) {
+        case 'books5':
+          _onBooks(data, argInstId);
+        case 'trades':
+          _onTrades(data);
+        default:
+          _onTickers(data);
       }
     } catch (_) {
       // 单条坏消息不影响连接.
     }
+  }
+
+  void _onTickers(List<dynamic> data) {
+    for (final row in data) {
+      final map = row as Map<String, dynamic>;
+      final instId = map['instId'] as String?;
+      final last = double.tryParse(map['last']?.toString() ?? '');
+      if (instId == null || last == null) continue;
+      _pushController.add(
+        TickerPush(
+          instId: instId,
+          last: last,
+          open24h: double.tryParse(map['open24h']?.toString() ?? '') ?? 0,
+          high24h: double.tryParse(map['high24h']?.toString() ?? '') ?? 0,
+          low24h: double.tryParse(map['low24h']?.toString() ?? '') ?? 0,
+          volCcy24h: double.tryParse(map['volCcy24h']?.toString() ?? '') ?? 0,
+        ),
+      );
+    }
+  }
+
+  void _onBooks(List<dynamic> data, String instId) {
+    for (final row in data) {
+      final map = row as Map<String, dynamic>;
+      final bids = _parseLevels(map['bids']);
+      final asks = _parseLevels(map['asks']);
+      _bookController.add(BookPush(instId: instId, bids: bids, asks: asks));
+    }
+  }
+
+  void _onTrades(List<dynamic> data) {
+    for (final row in data) {
+      final map = row as Map<String, dynamic>;
+      final instId = map['instId'] as String?;
+      final px = double.tryParse(map['px']?.toString() ?? '');
+      final sz = double.tryParse(map['sz']?.toString() ?? '') ?? 0;
+      if (instId == null || px == null) continue;
+      _tradeController.add(
+        TradePush(
+          instId: instId,
+          px: px,
+          sz: sz,
+          side: map['side']?.toString() ?? '',
+          ts: int.tryParse(map['ts']?.toString() ?? '') ?? 0,
+        ),
+      );
+    }
+  }
+
+  List<BookLevel> _parseLevels(dynamic raw) {
+    if (raw is! List) return const [];
+    final out = <BookLevel>[];
+    for (final lv in raw) {
+      if (lv is! List || lv.length < 2) continue;
+      final px = double.tryParse(lv[0]?.toString() ?? '');
+      final sz = double.tryParse(lv[1]?.toString() ?? '') ?? 0;
+      if (px != null) out.add(BookLevel(px, sz));
+    }
+    return out;
   }
 
   void _scheduleReconnect() {
@@ -148,6 +288,8 @@ class TickerWs {
     if (!keepController) {
       _reconnectTimer?.cancel();
       _pushController.close();
+      _bookController.close();
+      _tradeController.close();
       _connController.close();
     }
   }

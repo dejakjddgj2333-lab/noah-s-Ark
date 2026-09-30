@@ -14,12 +14,16 @@ class McApi {
 
   static Future<Map<String, dynamic>> post(
     String path,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
     final resp = await http
         .post(
           Uri.parse('$baseUrl$path'),
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 10));
@@ -34,7 +38,19 @@ class McApi {
     return _decode(resp);
   }
 
+  /// DELETE 请求. 204 无 body 时返回空 Map (不抛异常).
+  static Future<Map<String, dynamic>> del(String path, {String? token}) async {
+    final resp = await http.delete(
+      Uri.parse('$baseUrl$path'),
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    ).timeout(const Duration(seconds: 10));
+    return _decode(resp);
+  }
+
   static Map<String, dynamic> _decode(http.Response resp) {
+    if (resp.statusCode == 204 || resp.bodyBytes.isEmpty) {
+      return <String, dynamic>{};
+    }
     final data = jsonDecode(utf8.decode(resp.bodyBytes));
     if (resp.statusCode >= 400) {
       // FastAPI detail: str 或校验错误数组
