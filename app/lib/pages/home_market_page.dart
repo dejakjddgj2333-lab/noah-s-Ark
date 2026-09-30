@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/data.dart';
@@ -20,7 +21,6 @@ class HomeMarketPage extends StatefulWidget {
   static const _outline = Color(0xFF8E90A2); // outline
   static const _outlineVar = Color(0xFF434656); // outline-variant
   static const _secondary = Color(0xFF9AECFF); // secondary
-  static const _secondaryCont = Color(0xFF00D7F4); // secondary-container
   static const _bull = Color(0xFF00E388); // tertiary
   static const _bullCont = Color(0xFF007E49); // tertiary-container
   static const _err = Color(0xFFFFB4AB); // error
@@ -30,24 +30,6 @@ class HomeMarketPage extends StatefulWidget {
   static const _majors = [
     'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'LINK', 'NEAR', 'SUI',
   ];
-
-  static const _glyphs = {
-    'BTC': '₿', 'ETH': 'Ξ', 'SOL': '◎', 'XRP': '✕', 'DOGE': 'Ð',
-    'ADA': '₳', 'AVAX': '▲', 'LINK': '⬡', 'NEAR': 'Ⓝ', 'SUI': '💧',
-  };
-
-  static const _glyphColors = {
-    'BTC': McColors.onSurface,
-    'ETH': _secondary,
-    'SOL': McColors.primary,
-    'XRP': _secondaryCont,
-    'DOGE': McColors.onSurface,
-    'ADA': _secondary,
-    'AVAX': _err,
-    'LINK': _secondary,
-    'NEAR': McColors.onSurface,
-    'SUI': _secondaryCont,
-  };
 
   /// 板块分类 symbol 白名单 (客户端筛选).
   static const _categories = <String, List<String>>{
@@ -161,9 +143,6 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
     final pct = t.changePct;
     final positive = pct >= 0;
     return _RowData(
-      glyph: HomeMarketPage._glyphs[t.symbol] ?? '●',
-      glyphColor:
-          HomeMarketPage._glyphColors[t.symbol] ?? McColors.onSurface,
       symbol: t.symbol,
       vol: '24H ${_fmtVol(_notional(t))}',
       price: _fmtPrice(t.last),
@@ -669,8 +648,6 @@ class _MarketListCard extends StatelessWidget {
 
   static const _mockRows = [
     _RowData(
-        glyph: '₿',
-        glyphColor: McColors.onSurface,
         symbol: 'BTC',
         vol: '24H \$42.5B',
         price: '\$96,450.00',
@@ -682,8 +659,6 @@ class _MarketListCard extends StatelessWidget {
         positive: true,
         alt: true),
     _RowData(
-        glyph: 'Ξ',
-        glyphColor: HomeMarketPage._secondary,
         symbol: 'ETH',
         vol: '24H \$24.8B',
         price: '\$3,420.50',
@@ -695,8 +670,6 @@ class _MarketListCard extends StatelessWidget {
         positive: true,
         alt: false),
     _RowData(
-        glyph: '◎',
-        glyphColor: McColors.primary,
         symbol: 'SOL',
         vol: '24H \$11.2B',
         price: '\$194.20',
@@ -708,8 +681,6 @@ class _MarketListCard extends StatelessWidget {
         positive: true,
         alt: true),
     _RowData(
-        glyph: '💧',
-        glyphColor: HomeMarketPage._secondaryCont,
         symbol: 'SUI',
         vol: '24H \$3.4B',
         price: '\$3.85',
@@ -721,8 +692,6 @@ class _MarketListCard extends StatelessWidget {
         positive: false,
         alt: false),
     _RowData(
-        glyph: 'Ð',
-        glyphColor: McColors.onSurface,
         symbol: 'DOGE',
         vol: '24H \$5.8B',
         price: '\$0.3850',
@@ -734,8 +703,6 @@ class _MarketListCard extends StatelessWidget {
         positive: true,
         alt: true),
     _RowData(
-        glyph: '▲',
-        glyphColor: HomeMarketPage._err,
         symbol: 'AVAX',
         vol: '24H \$1.9B',
         price: '\$38.90',
@@ -747,8 +714,6 @@ class _MarketListCard extends StatelessWidget {
         positive: true,
         alt: false),
     _RowData(
-        glyph: 'Ⓝ',
-        glyphColor: McColors.onSurface,
         symbol: 'NEAR',
         vol: '24H \$1.2B',
         price: '\$6.75',
@@ -837,8 +802,6 @@ class _MarketListCard extends StatelessWidget {
 
 class _RowData {
   const _RowData({
-    required this.glyph,
-    required this.glyphColor,
     required this.symbol,
     required this.vol,
     required this.price,
@@ -854,8 +817,6 @@ class _RowData {
     this.pct = 0,
   });
 
-  final String glyph;
-  final Color glyphColor;
   final String symbol;
   final String vol;
   final String price;
@@ -886,8 +847,6 @@ class _RowData {
     double? pct,
   }) =>
       _RowData(
-        glyph: glyph,
-        glyphColor: glyphColor,
         symbol: symbol,
         vol: vol ?? this.vol,
         price: price ?? this.price,
@@ -941,22 +900,7 @@ class _MarketRow extends StatelessWidget {
             flex: 5,
             child: Row(
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: const BoxDecoration(
-                    color: McColors.surfaceContainerHigh,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    data.glyph,
-                    style: McText.sans(
-                        size: 14,
-                        weight: FontWeight.w700,
-                        color: data.glyphColor),
-                  ),
-                ),
+                CoinIcon(data.symbol, size: 36),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Column(

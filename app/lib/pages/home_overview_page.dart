@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -73,13 +74,13 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   static const _watchSymbols = ['BTC', 'ETH', 'SOL', 'SUI'];
 
   static List<_AssetRow> _mockAssets() => const [
-        _AssetRow('₿', 'BTC', '/USDT', '\$96,450.00', '+3.42%', true,
+        _AssetRow('BTC', '/USDT', '\$96,450.00', '+3.42%', true,
             [0.1, 0.25, 0.2, 0.45, 0.4, 0.65, 0.6, 0.85]),
-        _AssetRow('Ξ', 'ETH', '/USDT', '\$3,420.50', '+2.18%', true,
+        _AssetRow('ETH', '/USDT', '\$3,420.50', '+2.18%', true,
             [0.05, 0.2, 0.35, 0.3, 0.55, 0.5, 0.75, 0.9]),
-        _AssetRow('◎', 'SOL', '/USDT', '\$194.20', '+6.85%', true,
+        _AssetRow('SOL', '/USDT', '\$194.20', '+6.85%', true,
             [0.0, 0.3, 0.5, 0.4, 0.7, 0.6, 0.85, 1.0]),
-        _AssetRow('💧', 'SUI', '/USDT', '\$3.85', '-1.24%', false,
+        _AssetRow('SUI', '/USDT', '\$3.85', '-1.24%', false,
             [0.9, 0.7, 0.75, 0.5, 0.4, 0.45, 0.2, 0.1]),
       ];
 
@@ -455,28 +456,31 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           // 1. 市场全景横幅
           _marketBanner(),
           const SizedBox(height: 16),
-          // 2. 情绪 + 爆仓 双子卡
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _SentimentCard(
-                  value: _sentimentValue,
-                  label: _sentimentLabel,
-                  color: _sentimentColor,
-                  sub: _sentimentSub,
+          // 2. 情绪 + 爆仓 双子卡 (定高对齐; IntrinsicHeight 与 Expanded 基线冲突不可用)
+          SizedBox(
+            height: 156,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _SentimentCard(
+                    value: _sentimentValue,
+                    label: _sentimentLabel,
+                    color: _sentimentColor,
+                    sub: _sentimentSub,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _LiquidationMiniCard(
-                  total: _liqTotal,
-                  longFrac: _liqLongFrac,
-                  longText: _liqLongText,
-                  shortText: _liqShortText,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _LiquidationMiniCard(
+                    total: _liqTotal,
+                    longFrac: _liqLongFrac,
+                    longText: _liqLongText,
+                    shortText: _liqShortText,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           // 3. 主流资产速览
@@ -498,14 +502,17 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           const SizedBox(height: 10),
           _whaleFeed(),
           const SizedBox(height: 16),
-          // 5. 资金费率 + 山寨季 双子卡
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _FundingMiniCard(rate: _fundingRate)),
-              const SizedBox(width: 10),
-              const Expanded(child: _AltSeasonCard()),
-            ],
+          // 5. 资金费率 + 山寨季 双子卡 (定高对齐)
+          SizedBox(
+            height: 156,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _FundingMiniCard(rate: _fundingRate)),
+                const SizedBox(width: 10),
+                const Expanded(child: _AltSeasonCard()),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           _statusBar(),
@@ -614,18 +621,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: McColors.surfaceContainerHigh,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(r.icon,
-                style: McText.mono(
-                    size: 12, weight: FontWeight.w700, color: McColors.primary)),
-          ),
+          CoinIcon(r.symbol, size: 32),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -781,10 +777,9 @@ class _WhaleItem {
 
 /// 主流资产行的不可变数据模型 (mock 与真实数据共用).
 class _AssetRow {
-  const _AssetRow(this.icon, this.symbol, this.pair, this.price, this.delta,
+  const _AssetRow(this.symbol, this.pair, this.price, this.delta,
       this.up, this.spark);
 
-  final String icon;
   final String symbol;
   final String pair;
   final String price;
@@ -799,7 +794,6 @@ class _AssetRow {
     List<double>? spark,
   }) {
     return _AssetRow(
-      icon,
       symbol,
       pair,
       price ?? this.price,

@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
+import 'macro_calendar_page.dart';
 import 'news_detail_page.dart';
 
 /// 资讯 (News / Signals Intel) — full bottom-nav tab, content body only.
@@ -30,46 +31,159 @@ class _NewsPageState extends State<NewsPage> {
   bool _loading = true;
   bool _error = false;
 
+  // 分类过滤 + 分页
+  String _category = 'flash';
+  String? _keyword; // 行业政策 keyword 过滤模式 (非空时忽略 category)
+  int _page = 1;
+  bool _loadingMore = false;
+  bool _endReached = false;
+  static const int _pageSize = 20;
+  final ScrollController _scroll = ScrollController();
+
+  // 行业政策关键词 (后端 keyword 支持逗号分隔 OR)
+  static const String _policyKeyword = '监管,政策,SEC,法案,央行,合规';
+
+  // 分类 tab: 标签 → 后端 category (资讯/快讯/公告/研报)
+  static const List<(String, String)> _categories = [
+    ('资讯', 'news'),
+    ('快讯', 'flash'),
+    ('公告', 'notice'),
+    ('研报', 'research'),
+  ];
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     setState(() {
+      _loading = true;
       _error = false;
     });
+    await Future.wait([_loadTimeline(reset: true), _loadResearch()]);
+  }
+
+  // 时间线列表 (当前分类). reset=true 从第一页重新拉.
+  Future<void> _loadTimeline({bool reset = false}) async {
+    if (reset) {
+      _page = 1;
+      _endReached = false;
+    }
     try {
-      final results = await Future.wait([
-        McData.news(category: 'flash', pageSize: 20),
-        McData.news(category: 'research', pageSize: 5),
-      ]);
-      var research = results[1];
-      // 共享库暂无 research 类: 回退用普通 news 填充研报位
-      if (research.isEmpty) {
-        research = await McData.news(category: 'news', pageSize: 5);
-      }
+      final items = await McData.news(
+        category: _keyword == null ? _category : null,
+        keyword: _keyword,
+        page: _page,
+        pageSize: _pageSize,
+      );
       if (!mounted) return;
       setState(() {
-        _flash = results[0];
-        _research = research;
+        if (reset) {
+          _flash = items;
+        } else {
+          _flash = [..._flash, ...items];
+        }
+        _endReached = items.length < _pageSize;
         _loading = false;
         _error = false;
+        _loadingMore = false;
       });
     } on ApiException {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = true;
+        _loadingMore = false;
+        if (_flash.isEmpty) _error = true;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = true;
+        _loadingMore = false;
+        if (_flash.isEmpty) _error = true;
       });
     }
+  }
+
+  // 研报位: 共享库暂无 research 类时回退普通 news.
+  Future<void> _loadResearch() async {
+    try {
+      var research = await McData.news(category: 'research', pageSize: 5);
+      if (research.isEmpty) {
+        research = await McData.news(category: 'news', pageSize: 5);
+      }
+      if (!mounted) return;
+      setState(() => _research = research);
+    } catch (_) {
+      // 研报位失败静默, 不影响主时间线
+    }
+  }
+
+  void _selectCategory(String category) {
+    if ((category == _category && _keyword == null) || _loadingMore) return;
+    setState(() {
+      _category = category;
+      _keyword = null; // 退出 keyword 过滤模式
+      _loading = true;
+      _error = false;
+      _flash = const [];
+    });
+    _loadTimeline(reset: true);
+  }
+
+  // 投研深度 tab: 切到研报到顶
+  void _jumpToResearch() {
+    if (_loadingMore) return;
+    setState(() {
+      _category = 'research';
+      _keyword = null;
+      _loading = true;
+      _error = false;
+      _flash = const [];
+    });
+    _scrollToTop();
+    _loadTimeline(reset: true);
+  }
+
+  // 行业政策 tab: keyword 过滤模式
+  void _applyPolicyFilter() {
+    if (_keyword != null || _loadingMore) return;
+    setState(() {
+      _keyword = _policyKeyword;
+      _loading = true;
+      _error = false;
+      _flash = const [];
+    });
+    _scrollToTop();
+    _loadTimeline(reset: true);
+  }
+
+  void _scrollToTop() {
+    if (!_scroll.hasClients) return;
+    _scroll.animateTo(0,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  }
+
+  void _openCalendar() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MacroCalendarPage()),
+    );
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || _endReached) return;
+    setState(() => _loadingMore = true);
+    _page++;
+    await _loadTimeline();
   }
 
   // ---- data mapping helpers ----
@@ -122,13 +236,15 @@ class _NewsPageState extends State<NewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final hasResearch = _research.isNotEmpty;
+    // 研报 tab 激活时隐藏独立研报位, 避免与时间线重复.
+    final hasResearch = _research.isNotEmpty && _category != 'research';
     return RefreshIndicator(
       onRefresh: _load,
       color: NewsPage._gold,
       child: _loading && _flash.isEmpty
           ? _firstLoading()
           : ListView(
+              controller: _scroll,
               padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
               children: [
                 _breakingTicker(),
@@ -136,8 +252,12 @@ class _NewsPageState extends State<NewsPage> {
                 _subNavTabs(),
                 const SizedBox(height: 12),
                 _feedFilterRow(),
+                const SizedBox(height: 12),
+                _categoryChips(),
                 const SizedBox(height: 16),
                 _timeline(),
+                const SizedBox(height: 16),
+                _loadMoreButton(),
                 const SizedBox(height: 20),
                 if (hasResearch) ...[
                   _researchHeader(),
@@ -152,6 +272,155 @@ class _NewsPageState extends State<NewsPage> {
                 _editorialBar(),
               ],
             ),
+    );
+  }
+
+  // 分类过滤 chips: 资讯/快讯/公告/研报 (+政策 keyword 模式)
+  Widget _categoryChips() {
+    return SizedBox(
+      height: 32,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        children: [
+          for (final (label, cat) in _categories)
+            _categoryChip(label, cat,
+                active: _keyword == null && _category == cat),
+          _policyChip(),
+        ],
+      ),
+    );
+  }
+
+  // 行业政策 keyword 过滤 chip (active 时带小指示点)
+  Widget _policyChip() {
+    final active = _keyword != null;
+    return GestureDetector(
+      onTap: _applyPolicyFilter,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? NewsPage._cyan : McColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: active
+                ? NewsPage._cyan
+                : McColors.outlineVariant.withValues(alpha: 0.6),
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                      color: NewsPage._cyan.withValues(alpha: 0.4),
+                      blurRadius: 12)
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (active) ...[
+              Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFFFFF),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              '政策',
+              style: McText.mono(
+                size: 12,
+                weight: active ? FontWeight.w700 : FontWeight.w600,
+                color: active
+                    ? const Color(0xFFFFFFFF)
+                    : NewsPage._onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryChip(String label, String category, {bool active = false}) {
+    return GestureDetector(
+      onTap: () => _selectCategory(category),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? NewsPage._gold : McColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: active
+                ? NewsPage._gold
+                : McColors.outlineVariant.withValues(alpha: 0.6),
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                      color: NewsPage._gold.withValues(alpha: 0.4),
+                      blurRadius: 12)
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: McText.mono(
+            size: 12,
+            weight: active ? FontWeight.w700 : FontWeight.w600,
+            color:
+                active ? const Color(0xFFFFFFFF) : NewsPage._onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 加载更多 / 没有更多了
+  Widget _loadMoreButton() {
+    if (_flash.isEmpty) return const SizedBox.shrink();
+    if (_endReached) {
+      return Center(
+        child: Text(
+          '没有更多了',
+          style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
+        ),
+      );
+    }
+    return Center(
+      child: GestureDetector(
+        onTap: _loadingMore ? null : _loadMore,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 9),
+          decoration: BoxDecoration(
+            color: McColors.surfaceContainer,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: McColors.outlineVariant.withValues(alpha: 0.6)),
+          ),
+          child: _loadingMore
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: NewsPage._goldBright),
+                )
+              : Text(
+                  '加载更多',
+                  style: McText.mono(
+                      size: 12,
+                      weight: FontWeight.w600,
+                      color: NewsPage._goldBright),
+                ),
+        ),
+      ),
     );
   }
 
@@ -293,18 +562,27 @@ class _NewsPageState extends State<NewsPage> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _tab(Icons.rss_feed, '7×24 快讯', active: true, ping: true),
-          _tab(Icons.analytics, '投研深度'),
-          _tab(Icons.calendar_today, '宏观日历'),
-          _tab(Icons.gavel, '行业政策'),
+          _tab(Icons.rss_feed, '7×24 快讯',
+              active: _keyword == null && _category == 'flash',
+              ping: true,
+              onTap: () => _selectCategory('flash')),
+          _tab(Icons.analytics, '投研深度',
+              active: _keyword == null && _category == 'research',
+              onTap: _jumpToResearch),
+          _tab(Icons.calendar_today, '宏观日历', onTap: _openCalendar),
+          _tab(Icons.gavel, '行业政策',
+              active: _keyword != null, onTap: _applyPolicyFilter),
         ],
       ),
     );
   }
 
   Widget _tab(IconData icon, String label,
-      {bool active = false, bool ping = false}) {
-    return Container(
+      {bool active = false, bool ping = false, VoidCallback? onTap}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(right: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -341,6 +619,7 @@ class _NewsPageState extends State<NewsPage> {
             ),
           ],
         ],
+      ),
       ),
     );
   }
@@ -784,6 +1063,18 @@ class _NewsPageState extends State<NewsPage> {
             ),
             child: Stack(
               children: [
+                // 真实封面图, 加载失败保持渐变占位
+                if (item.coverUrl != null && item.coverUrl!.isNotEmpty)
+                  Positioned.fill(
+                    child: Image.network(
+                      item.coverUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) =>
+                          const SizedBox.shrink(),
+                      loadingBuilder: (context, child, progress) =>
+                          progress == null ? child : const SizedBox.shrink(),
+                    ),
+                  ),
                 Positioned(
                   right: -20,
                   top: -20,
