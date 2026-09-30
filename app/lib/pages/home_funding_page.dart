@@ -104,6 +104,8 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
       ];
 
+  // ---- Module 4 matrix rows: BTC/ETH/SOL/XRP/DOGE 已接线, XTZ 保留 mock ----
+
   @override
   void initState() {
     super.initState();
@@ -111,16 +113,25 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   }
 
   Future<void> _load() async {
-    // BTC 与 ETH 各自独立尝试, 任一失败不影响另一个与已有 mock.
-    await _fetchSymbol('BTC');
-    await _fetchSymbol('ETH');
+    // 各 symbol 独立并行尝试, 任一失败不影响其它与已有 mock.
+    await Future.wait([
+      _fetchSymbol('BTC'),
+      _fetchSymbol('ETH'),
+      _fetchSymbol('SOL'),
+      _fetchSymbol('XRP'),
+      _fetchSymbol('DOGE'),
+    ]);
   }
 
   Future<void> _fetchSymbol(String symbol) async {
     try {
       final resp =
           await McData.overview('funding/exchange-rates?symbol=$symbol');
-      final parsed = _parseExchangeRates(resp['data']);
+      // 接口无现价字段: 用该 symbol 现有 (mock) 价格兜底.
+      final existing = _rows.where((r) => r.symbol == symbol);
+      final parsed = _parseExchangeRates(
+          symbol, resp['data'],
+          fallbackPrice: existing.isEmpty ? '--' : existing.first.price);
       if (parsed == null || !mounted) return;
       final (row, avgRate) = parsed;
       setState(() {
@@ -141,22 +152,37 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   }
 
   // CoinGlass funding-rate/exchange-list → (费率行, 平均费率).
-  // 返回 null 表示数据不可用 (保留 mock).
-  static (_FundingRow, double?)? _parseExchangeRates(dynamic raw) {
+  // 结构: [{symbol, stablecoin_margin_list: [{exchange, funding_rate, ...}]}].
+  // 匹配目标 symbol, 聚合其各所费率. 返回 null 表示数据不可用 (保留 mock).
+  static (_FundingRow, double?)? _parseExchangeRates(
+      String symbol, dynamic raw, {String fallbackPrice = '--'}) {
     final list = _asList(raw);
-    final rates = <double>[];
-    final names = <String>[];
-    String? price;
+    Map<String, dynamic>? target;
     for (final e in list) {
       if (e is! Map) continue;
       final m = e.cast<String, dynamic>();
-      final rate = _num(m['fundingRate'] ?? m['rate'] ?? m['funding_rate']);
-      final ex = _str(m, ['exchange', 'exchangeName', 'exchange_name'], '');
-      // CoinGlass 费率常为百分数 (0.01 = 0.01%); 兼容小数形式 (0.0001).
-      final pct = rate.abs() < 0.001 && rate != 0 ? rate * 100 : rate;
-      rates.add(pct);
-      names.add(ex);
-      price ??= _priceStr(m);
+      final s = (m['symbol'] ?? m['coin'] ?? '').toString().toUpperCase();
+      if (s == symbol) {
+        target = m;
+        break;
+      }
+    }
+    if (target == null) return null;
+
+    // 各所费率: 优先 stablecoin 保证金列表, 其次 token 保证金.
+    final rates = <double>[];
+    for (final key in ['stablecoin_margin_list', 'token_margin_list']) {
+      final ml = target[key];
+      if (ml is! List) continue;
+      for (final e in ml) {
+        if (e is! Map) continue;
+        final m = e.cast<String, dynamic>();
+        final rate = _num(m['fundingRate'] ?? m['funding_rate'] ?? m['rate']);
+        // CoinGlass 费率为百分数 (0.004477 = 0.004477%); 兼容小数形式 (0.0001).
+        final pct = rate.abs() < 0.001 && rate != 0 ? rate * 100 : rate;
+        rates.add(pct);
+      }
+      if (rates.isNotEmpty) break; // 有 stablecoin 即不再叠加 token 列表
     }
     if (rates.isEmpty) return null;
     final avg = rates.reduce((a, b) => a + b) / rates.length;
@@ -169,8 +195,8 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     }
     final status = _statusOf(avg);
     final row = _FundingRow(
-      symbol: names.isEmpty ? '' : _symbolOf(list),
-      price: price ?? '--',
+      symbol: symbol,
+      price: fallbackPrice, // 接口无现价字段, 沿用 mock 价格
       rate: _fmtRate(avg),
       rateColor: avg >= 0.03
           ? McColors.tertiary
@@ -189,23 +215,6 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
       statusBold: status.$4,
     );
     return (row, avg);
-  }
-
-  static String _symbolOf(List<dynamic> list) {
-    for (final e in list) {
-      if (e is Map) {
-        final s = e['symbol'] ?? e['coin'];
-        if (s is String && s.isNotEmpty) return s.toUpperCase();
-      }
-    }
-    return '';
-  }
-
-  static String? _priceStr(Map<String, dynamic> m) {
-    final p = m['price'] ?? m['indexPrice'] ?? m['markPrice'];
-    if (p == null) return null;
-    final v = _num(p);
-    return v > 0 ? '\$${_fmtNum(v)}' : null;
   }
 
   // rate 为百分数 (0.01 = 0.01%); 8H 一结 → 年化 = rate * 3 * 365.

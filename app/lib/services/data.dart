@@ -54,6 +54,34 @@ class OkxTicker {
   String get symbol => instId.split('-').first;
 }
 
+double? _toDouble(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v');
+
+/// 全网全景横幅数据 (CoinGecko /global). 上游失败时字段为 null.
+class GlobalStats {
+  GlobalStats.fromJson(Map<String, dynamic> j)
+      : totalMarketCapUsd = _toDouble(j['total_market_cap_usd']),
+        totalVolumeUsd = _toDouble(j['total_volume_usd']),
+        changePct24h = _toDouble(j['market_cap_change_pct_24h']),
+        btcDominance = _toDouble(j['btc_dominance']),
+        ethDominance = _toDouble(j['eth_dominance']);
+
+  final double? totalMarketCapUsd;
+  final double? totalVolumeUsd;
+  final double? changePct24h;
+  final double? btcDominance;
+  final double? ethDominance;
+}
+
+/// 全局多空账户占比 (多头主导指数).
+class LongShortRatio {
+  LongShortRatio.fromJson(Map<String, dynamic> j)
+      : longPct = _toDouble(j['long_pct']),
+        shortPct = _toDouble(j['short_pct']);
+
+  final double? longPct;
+  final double? shortPct;
+}
+
 /// 数据获取层. 所有方法失败抛 ApiException; 页面自行决定回退.
 class McData {
   McData._();
@@ -102,4 +130,21 @@ class McData {
   /// 失败 (503 未配置/502 上游错误) 抛 ApiException — 调用方回退 mock.
   static Future<Map<String, dynamic>> overview(String path) =>
       McApi.get('/api/market-overview/$path');
+
+  /// 全网全景 (总市值/成交额/涨跌幅/占比). 字段失败为 null.
+  static Future<GlobalStats> globalStats() async =>
+      GlobalStats.fromJson(await overview('global-stats'));
+
+  /// 全局多空账户占比 (多头主导指数). 字段失败为 null.
+  static Future<LongShortRatio> longShortRatio() async =>
+      LongShortRatio.fromJson(await overview('long-short-ratio'));
+
+  /// 大额美元缩写: 2.86T / 112.3B / 3.4M.
+  static String fmtUsdCompact(double v) {
+    final a = v.abs();
+    if (a >= 1e12) return '\$${(v / 1e12).toStringAsFixed(2)}T';
+    if (a >= 1e9) return '\$${(v / 1e9).toStringAsFixed(1)}B';
+    if (a >= 1e6) return '\$${(v / 1e6).toStringAsFixed(1)}M';
+    return '\$${v.toStringAsFixed(0)}';
+  }
 }

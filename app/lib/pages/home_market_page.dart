@@ -45,6 +45,13 @@ class HomeMarketPage extends StatefulWidget {
     'SUI': _secondaryCont,
   };
 
+  /// 板块分类 symbol 白名单 (客户端筛选).
+  static const _categories = <String, List<String>>{
+    'Layer 1': ['BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'NEAR', 'SUI'],
+    'DeFi': ['UNI', 'AAVE', 'LINK', 'MKR', 'CRV', 'LDO'],
+    'AI Agent': ['NEAR', 'FET', 'RNDR', 'WLD', 'TAO', 'GRT'],
+  };
+
   @override
   State<HomeMarketPage> createState() => _HomeMarketPageState();
 }
@@ -52,6 +59,9 @@ class HomeMarketPage extends StatefulWidget {
 class _HomeMarketPageState extends State<HomeMarketPage> {
   /// 当前榜单排序: 0 成交额, 1 涨幅, 2 跌幅.
   int _sortIndex = 0;
+
+  /// 当前板块筛选: 全部 / 自选 / Layer 1 / DeFi / AI Agent (客户端过滤).
+  String _category = '全部';
 
   /// 真实行情行 (拉取成功后填充); 为空表示仍用 mock.
   List<_RowData> _liveRows = [];
@@ -141,6 +151,15 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
     return list;
   }
 
+  /// 依据板块分类客户端过滤 (仅保留已拉取到的 symbol; 无匹配回退原列表).
+  List<_RowData> _categorized(List<_RowData> rows) {
+    final symbols = HomeMarketPage._categories[_category];
+    if (symbols == null) return rows; // 全部 / 自选 -> 不过滤
+    final filtered =
+        rows.where((r) => symbols.contains(r.symbol)).toList();
+    return filtered.isEmpty ? rows : filtered;
+  }
+
   // 从已格式化的字符串还原排序键 (避免再持一份原始 ticker).
   static double _pct(_RowData r) =>
       double.tryParse(r.delta.replaceAll('%', '').replaceAll('+', '')) ?? 0;
@@ -192,7 +211,8 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
   @override
   Widget build(BuildContext context) {
     final usingLive = _liveRows.isNotEmpty;
-    final rows = usingLive ? _sorted(_liveRows) : _MarketListCard._mockRows;
+    final base = usingLive ? _liveRows : _MarketListCard._mockRows;
+    final rows = _categorized(_sorted(base));
     return RefreshIndicator(
       onRefresh: _refresh,
       color: McColors.primary,
@@ -202,7 +222,10 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
         padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
         children: [
           // 1. 全网市场热度概览卡片
-          const _MarketVitalsCard(),
+          _MarketVitalsCard(
+            category: _category,
+            onCategory: (c) => setState(() => _category = c),
+          ),
           const SizedBox(height: 20),
 
           // 2. 榜单切换胶囊 + 时间尺度控制器
@@ -229,8 +252,66 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
 }
 
 /// 1. 全网市场热度 + 板块筛选标签.
-class _MarketVitalsCard extends StatelessWidget {
-  const _MarketVitalsCard();
+class _MarketVitalsCard extends StatefulWidget {
+  const _MarketVitalsCard({required this.category, required this.onCategory});
+
+  final String category;
+  final ValueChanged<String> onCategory;
+
+  @override
+  State<_MarketVitalsCard> createState() => _MarketVitalsCardState();
+}
+
+class _MarketVitalsCardState extends State<_MarketVitalsCard> {
+  // 横幅 vitals (mock 默认, 拉取成功后覆盖).
+  String _mcTotal = '\$3.24T';
+  String _mcDelta = '+2.84%';
+  bool _mcDeltaUp = true;
+  String _mcVolume = '\$142.8B';
+  String _longPct = '64%';
+  double _longFrac = 0.64;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await Future.wait([_loadGlobal(), _loadLongShort()]);
+  }
+
+  Future<void> _loadGlobal() async {
+    try {
+      final g = await McData.globalStats();
+      if (!mounted) return;
+      final cap = g.totalMarketCapUsd;
+      final vol = g.totalVolumeUsd;
+      final chg = g.changePct24h;
+      if (cap == null && vol == null && chg == null) return;
+      setState(() {
+        if (cap != null) _mcTotal = McData.fmtUsdCompact(cap);
+        if (vol != null) _mcVolume = McData.fmtUsdCompact(vol);
+        if (chg != null) {
+          _mcDeltaUp = chg >= 0;
+          _mcDelta = '${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(2)}%';
+        }
+      });
+    } catch (_) {/* 保留 mock */}
+  }
+
+  Future<void> _loadLongShort() async {
+    try {
+      final r = await McData.longShortRatio();
+      if (!mounted) return;
+      final lp = r.longPct;
+      if (lp == null) return;
+      setState(() {
+        _longPct = '${lp.round()}%';
+        _longFrac = (lp / 100).clamp(0.0, 1.0);
+      });
+    } catch (_) {/* 保留 mock */}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -293,17 +374,25 @@ class _MarketVitalsCard extends StatelessWidget {
                 Expanded(
                   child: _vital(
                     '24H 总市值',
-                    '\$3.24T',
+                    _mcTotal,
                     valueColor: McColors.onSurface,
                     sub: Row(
                       children: [
-                        const Icon(Icons.trending_up,
-                            size: 12, color: HomeMarketPage._bull),
-                        Text('+2.84%',
+                        Icon(
+                            _mcDeltaUp
+                                ? Icons.trending_up
+                                : Icons.trending_down,
+                            size: 12,
+                            color: _mcDeltaUp
+                                ? HomeMarketPage._bull
+                                : HomeMarketPage._err),
+                        Text(_mcDelta,
                             style: McText.sans(
                                 size: 12,
                                 weight: FontWeight.w600,
-                                color: HomeMarketPage._bull)),
+                                color: _mcDeltaUp
+                                    ? HomeMarketPage._bull
+                                    : HomeMarketPage._err)),
                       ],
                     ),
                   ),
@@ -312,7 +401,7 @@ class _MarketVitalsCard extends StatelessWidget {
                 Expanded(
                   child: _vital(
                     '24H 全网成交',
-                    '\$142.8B',
+                    _mcVolume,
                     valueColor: McColors.onSurface,
                     sub: Text('极度活跃',
                         style: McText.sans(
@@ -323,7 +412,7 @@ class _MarketVitalsCard extends StatelessWidget {
                 Expanded(
                   child: _vital(
                     '多头主导指数',
-                    '64%',
+                    _longPct,
                     valueColor: HomeMarketPage._bull,
                     sub: ClipRRect(
                       borderRadius: BorderRadius.circular(3),
@@ -332,7 +421,7 @@ class _MarketVitalsCard extends StatelessWidget {
                         color: McColors.surfaceContainerHighest,
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
-                          widthFactor: 0.64,
+                          widthFactor: _longFrac,
                           child: Container(
                             decoration: BoxDecoration(
                               color: HomeMarketPage._bull,
@@ -353,7 +442,7 @@ class _MarketVitalsCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Row(
               children: [
-                _tag('全部', active: true),
+                _tag('全部'),
                 _tag('自选', icon: Icons.star),
                 _tag('Layer 1'),
                 _tag('DeFi'),
@@ -399,39 +488,46 @@ class _MarketVitalsCard extends StatelessWidget {
     );
   }
 
-  Widget _tag(String text, {bool active = false, IconData? icon, bool dot = false}) {
+  Widget _tag(String text, {IconData? icon, bool dot = false}) {
+    // 已接线的可筛选分类: 全部/自选/Layer1/DeFi/AI Agent; 其余保持静态展示.
+    const wired = {'全部', '自选', 'Layer 1', 'DeFi', 'AI Agent'};
+    final active = widget.category == text;
     final color = active
         ? McColors.onPrimaryContainer
         : (dot ? McColors.primary : HomeMarketPage._onSurfVar);
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: active
-            ? McColors.primaryContainer
-            : McColors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 13, color: HomeMarketPage._secondary),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            text,
-            style: McText.sans(
-              size: 12,
-              weight: active ? FontWeight.w600 : FontWeight.w500,
-              color: color,
+    return GestureDetector(
+      onTap: wired.contains(text) ? () => widget.onCategory(text) : null,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: active
+              ? McColors.primaryContainer
+              : McColors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 13, color: HomeMarketPage._secondary),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              text,
+              style: McText.sans(
+                size: 12,
+                weight: active ? FontWeight.w600 : FontWeight.w500,
+                color: color,
+              ),
             ),
-          ),
-          if (dot) ...[
-            const SizedBox(width: 6),
-            const McGlowDot(color: HomeMarketPage._bull, size: 6),
+            if (dot) ...[
+              const SizedBox(width: 6),
+              const McGlowDot(color: HomeMarketPage._bull, size: 6),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -31,11 +31,74 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
   String _fundingValue = '+0.0125%';
   Color _fundingColor = McColors.bull;
 
+  // 山寨季指数 (mock 默认, altcoin_season 拉取成功后覆盖).
+  String _altSeasonValue = '38';
+  double _altSeasonFrac = 0.38;
+  String _altSeasonFooter = '距山寨爆发差 37 点';
+
+  // 市占率分布 (mock 默认, btc/eth dominance 拉取成功后覆盖).
+  String _btcDom = '56.4%';
+  String _ethDom = '14.8%';
+  String _otherDom = '28.8%';
+  double _btcDomFrac = 0.564;
+  double _ethDomFrac = 0.148;
+
   @override
   void initState() {
     super.initState();
     // 不阻塞首帧: 立即渲染 mock, 成功后再 setState 覆盖.
-    Future.wait([_loadSentiment(), _loadLiquidations(), _loadFunding()]);
+    Future.wait([
+      _loadSentiment(),
+      _loadLiquidations(),
+      _loadFunding(),
+      _loadIndicators(),
+      _loadDominance(),
+    ]);
+  }
+
+  Future<void> _loadIndicators() async {
+    try {
+      final resp = await McData.overview('indicators');
+      final list = resp['indicators'];
+      if (list is! List || !mounted) return;
+      for (final e in list) {
+        if (e is! Map) continue;
+        if (e['key'] != 'altcoin_season') continue;
+        final v = e['value'];
+        if (v is! num) continue;
+        final chg = e['change_1d'];
+        final val = v.toDouble();
+        setState(() {
+          _altSeasonValue = val.round().toString();
+          _altSeasonFrac = (val / 100).clamp(0.0, 1.0);
+          _altSeasonFooter = chg is num
+              ? '24H ${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(0)} 点'
+              : _altSeasonFooter;
+        });
+      }
+    } catch (_) {/* 保留 mock */}
+  }
+
+  Future<void> _loadDominance() async {
+    try {
+      final g = await McData.globalStats();
+      if (!mounted) return;
+      final btc = g.btcDominance;
+      final eth = g.ethDominance;
+      if (btc == null && eth == null) return;
+      setState(() {
+        if (btc != null) {
+          _btcDom = '${btc.toStringAsFixed(1)}%';
+          _btcDomFrac = (btc / 100).clamp(0.0, 1.0);
+        }
+        if (eth != null) {
+          _ethDom = '${eth.toStringAsFixed(1)}%';
+          _ethDomFrac = (eth / 100).clamp(0.0, 1.0);
+        }
+        final other = (100 - (_btcDomFrac + _ethDomFrac) * 100).clamp(0.0, 100.0);
+        _otherDom = '${other.toStringAsFixed(1)}%';
+      });
+    } catch (_) {/* 保留 mock */}
   }
 
   Future<void> _loadSentiment() async {
@@ -198,7 +261,14 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
                   child: _FearGreedCard(
                       value: _fgValue, label: _fgLabel, color: _fgColor)),
               const SizedBox(width: 10),
-              Expanded(child: _DominanceCard()),
+              Expanded(
+                  child: _DominanceCard(
+                btc: _btcDom,
+                eth: _ethDom,
+                other: _otherDom,
+                btcFrac: _btcDomFrac,
+                ethFrac: _ethDomFrac,
+              )),
             ],
           ),
         ),
@@ -244,15 +314,15 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
 
   Widget _matrixGrid() {
     final cards = [
-      const _MatrixCard(
+      _MatrixCard(
         title: '山寨季指数',
-        pill: McPill('BTC Season', color: McColors.primarySoft, bold: false),
-        value: '38',
+        pill: const McPill('BTC Season', color: McColors.primarySoft, bold: false),
+        value: _altSeasonValue,
         suffix: '/100',
         valueColor: McColors.onSurface,
-        fraction: 0.38,
+        fraction: _altSeasonFrac,
         barColor: McColors.primaryContainer,
-        footer: '距山寨爆发差 37 点',
+        footer: _altSeasonFooter,
         footerColor: McColors.onSurfaceVariant,
       ),
       const _MatrixCard(
@@ -451,8 +521,25 @@ class _FearGreedCard extends StatelessWidget {
 
 /// 全网市占率分布卡片.
 class _DominanceCard extends StatelessWidget {
+  const _DominanceCard({
+    required this.btc,
+    required this.eth,
+    required this.other,
+    required this.btcFrac,
+    required this.ethFrac,
+  });
+
+  final String btc;
+  final String eth;
+  final String other;
+  final double btcFrac;
+  final double ethFrac;
+
   @override
   Widget build(BuildContext context) {
+    final bf = (btcFrac * 1000).round();
+    final ef = (ethFrac * 1000).round();
+    final of = (1000 - bf - ef).clamp(1, 1000);
     return McCard(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -484,13 +571,13 @@ class _DominanceCard extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('56.4%',
+                    Text(btc,
                         style: McText.mono(size: 20, weight: FontWeight.w700)),
                     Flexible(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerRight,
-                        child: Text('ETH 14.8%',
+                        child: Text('ETH $eth',
                             style: McText.mono(
                                 size: 11, color: McColors.onSurfaceVariant)),
                       ),
@@ -505,7 +592,7 @@ class _DominanceCard extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          flex: 564,
+                          flex: bf,
                           child: Container(
                             decoration: BoxDecoration(
                               color: McColors.primaryContainer,
@@ -520,11 +607,11 @@ class _DominanceCard extends StatelessWidget {
                           ),
                         ),
                         Expanded(
-                          flex: 148,
+                          flex: ef,
                           child: Container(color: McColors.secondary),
                         ),
                         Expanded(
-                          flex: 288,
+                          flex: of,
                           child: Container(
                             color: McColors.surfaceVariant.withValues(alpha: 0.5),
                           ),
@@ -539,11 +626,11 @@ class _DominanceCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _legendLine('BTC 56.4%', McColors.primaryContainer),
+              _legendLine('BTC $btc', McColors.primaryContainer),
               const SizedBox(height: 4),
-              _legendLine('ETH 14.8%', McColors.secondary),
+              _legendLine('ETH $eth', McColors.secondary),
               const SizedBox(height: 4),
-              _legendLine('Other 28.8%', McColors.onSurfaceVariant),
+              _legendLine('Other $other', McColors.onSurfaceVariant),
             ],
           ),
         ],

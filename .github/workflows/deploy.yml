@@ -1,0 +1,55 @@
+name: deploy
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检测改动范围
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+              - 'docker-compose.yml'
+              - '.env.prod'
+            admin:
+              - 'admin/**'
+            all:
+              - 'deploy/**'
+              - '.github/workflows/deploy.yml'
+
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          BACKEND: ${{ steps.changes.outputs.backend }}
+          ADMIN: ${{ steps.changes.outputs.admin }}
+          ALL: ${{ steps.changes.outputs.all }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: BACKEND,ADMIN,ALL
+          script: |
+            cd /www/wwwroot/hk/repo
+            git fetch origin master
+            git reset --hard origin/master
+
+            TARGETS=""
+            [ "$ALL" = "true" ] && TARGETS="all"
+            if [ -z "$TARGETS" ]; then
+              [ "$BACKEND" = "true" ] && TARGETS="$TARGETS backend"
+              [ "$ADMIN" = "true" ] && TARGETS="$TARGETS admin"
+            fi
+
+            if [ -z "$TARGETS" ]; then
+              echo "无相关改动,跳过部署"
+              exit 0
+            fi
+            bash deploy/deploy.sh $TARGETS

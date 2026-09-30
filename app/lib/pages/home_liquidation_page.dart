@@ -38,6 +38,89 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   final String _liqCount = '87,865'; // 爆仓人数 (接口无此字段, 保留 mock)
   String _liqTotalText = '\$3.35亿';
 
+  // 分时段爆仓 (1h/4h/12h): 首屏 mock, 拉取成功后覆盖.
+  String _total1h = '\$301万';
+  String _long1h = '\$167.6万';
+  String _short1h = '\$133.4万';
+  String _total4h = '\$1120.7万';
+  String _long4h = '\$454.6万';
+  String _short4h = '\$666.1万';
+  String _total12h = '\$7150万';
+  String _long12h = '\$4469万';
+  String _short12h = '\$2681万';
+
+  // 实时爆仓 feed: 首屏 mock, orders 接口 502 时保留 mock.
+  late List<_FeedItem> _feedItems = _mockFeedItems();
+
+  static List<_FeedItem> _mockFeedItems() => const [
+        _FeedItem(
+          avatarBg: Color(0x26F3BA2F),
+          avatarLabel: '❖',
+          avatarColor: Color(0xFFF3BA2F),
+          name: 'Binance',
+          symbol: 'FLOCKUSDT',
+          price: '\$0.03982',
+          long: true,
+          amount: '\$1,984.16',
+          amountColor: Colors.white,
+          qty: '≈4.98万 FLOCK',
+          time: '16:09:42',
+        ),
+        _FeedItem(
+          avatarBg: Color(0x26F3BA2F),
+          avatarLabel: '❖',
+          avatarColor: Color(0xFFF3BA2F),
+          name: 'Binance',
+          symbol: 'USELESS',
+          price: '\$0.11759',
+          long: false,
+          amount: '\$1,877.84',
+          amountColor: Colors.white,
+          qty: '≈1.6万 USELESS',
+          time: '16:09:28',
+        ),
+        _FeedItem(
+          avatarBg: Color(0x1AFFFFFF),
+          avatarLabel: 'OK',
+          avatarColor: Colors.white,
+          name: 'OKX',
+          symbol: 'BTC-SWAP',
+          price: '\$66,420.5',
+          long: true,
+          amount: '\$48.29万',
+          amountColor: Color(0xFF10B981),
+          qty: '7.27 BTC',
+          time: '16:08:50',
+        ),
+        _FeedItem(
+          avatarBg: Color(0x2610B981),
+          avatarLabel: 'HL',
+          avatarColor: Color(0xFF10B981),
+          name: 'Hyperliquid',
+          symbol: 'ETH-PERP',
+          price: '\$3,418.90',
+          long: true,
+          amount: '\$128.50万',
+          amountColor: Color(0xFF10B981),
+          qty: '375.8 ETH',
+          time: '16:08:12',
+        ),
+        _FeedItem(
+          avatarBg: Color(0x1AF7A600),
+          avatarLabel: 'BY',
+          avatarColor: Color(0xFFF7A600),
+          name: 'Bybit',
+          symbol: 'SOLUSDT',
+          price: '\$148.20',
+          long: false,
+          amount: '\$21.35万',
+          amountColor: Colors.white,
+          qty: '1,440.6 SOL',
+          time: '16:07:45',
+          showDivider: false,
+        ),
+      ];
+
   // 交易所统计行: 首屏展示 mock, 成功后按名称覆盖.
   late List<_ExStat> _exStats = _mockExStats();
 
@@ -130,6 +213,14 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   }
 
   Future<void> _load() async {
+    await Future.wait([
+      _load24h(),
+      _loadTimeframes(),
+      _loadOrders(),
+    ]);
+  }
+
+  Future<void> _load24h() async {
     try {
       final resp =
           await McData.overview('liquidations/exchange-list?range=24h');
@@ -141,6 +232,150 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     } catch (_) {
       // 网络/解析异常 — 保留 mock.
     }
+  }
+
+  // 1h/4h/12h 分时段: 并行拉取, 各所求和 -> 总爆仓+多单+空单. 任一失败保留 mock.
+  Future<void> _loadTimeframes() async {
+    final results = await Future.wait([
+      _sumRange('1h'),
+      _sumRange('4h'),
+      _sumRange('12h'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      final r1 = results[0];
+      if (r1 != null) {
+        _total1h = _fmtUsdZh(r1.$1);
+        _long1h = _fmtUsdZh(r1.$2);
+        _short1h = _fmtUsdZh(r1.$3);
+      }
+      final r4 = results[1];
+      if (r4 != null) {
+        _total4h = _fmtUsdZh(r4.$1);
+        _long4h = _fmtUsdZh(r4.$2);
+        _short4h = _fmtUsdZh(r4.$3);
+      }
+      final r12 = results[2];
+      if (r12 != null) {
+        _total12h = _fmtUsdZh(r12.$1);
+        _long12h = _fmtUsdZh(r12.$2);
+        _short12h = _fmtUsdZh(r12.$3);
+      }
+    });
+  }
+
+  /// 某 range 各交易所爆仓求和: (total, long, short); 失败返回 null.
+  static Future<(double, double, double)?> _sumRange(String range) async {
+    try {
+      final resp =
+          await McData.overview('liquidations/exchange-list?range=$range');
+      final parsed = _parseExchangeList(resp['data']);
+      if (parsed == null) return null;
+      double total = 0, long = 0, short = 0;
+      for (final r in parsed) {
+        // 排除 "All" 汇总行, 避免重复计数.
+        if (_normName(r.name) == 'all') continue;
+        total += r.total;
+        long += r.long;
+        short += r.short;
+      }
+      return total > 0 ? (total, long, short) : null;
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // 实时爆仓 feed: orders 接口当前套餐 502 -> 静默保留 mock; 套餐升级后自动启用.
+  Future<void> _loadOrders() async {
+    try {
+      final resp = await McData.overview('liquidations/orders');
+      final items = _parseOrders(resp['orders']);
+      if (!mounted || items.isEmpty) return;
+      setState(() => _feedItems = items);
+    } on ApiException {
+      // 预期 502 (Upgrade plan) — 保留 mock feed.
+    } catch (_) {
+      // 网络/解析异常 — 保留 mock.
+    }
+  }
+
+  // CoinGlass liquidation/order → feed 条目 (best-effort, 字段缺失即跳过).
+  static List<_FeedItem> _parseOrders(dynamic raw) {
+    final list = _asList(raw);
+    final out = <_FeedItem>[];
+    for (final e in list) {
+      if (e is! Map) continue;
+      final m = e.cast<String, dynamic>();
+      final exchange = _str(m, ['exchangeName', 'exchange', 'exchange_name'], '');
+      final symbol = _str(m, ['symbol', 'instId', 'pair'], '');
+      if (symbol.isEmpty) continue;
+      final usd = _num(m['volUsd'] ??
+          m['vol_usd'] ??
+          m['liquidationUsd'] ??
+          m['amountUsd'] ??
+          m['usd']);
+      final price = _num(m['price'] ?? m['markPrice'] ?? m['avgPrice']);
+      final side = _str(m, ['side', 'posSide', 'positionSide'], '').toLowerCase();
+      // side: 1/2 或 long/short; CoinGlass order 用 side=1 多 2 空 常见.
+      final isLong = side.contains('long') ||
+          side == '1' ||
+          side.contains('buy');
+      final ts = m['time'] ?? m['createTime'] ?? m['ts'] ?? m['timestamp'];
+      final base = symbol.replaceAll(RegExp(r'(USDT|USD|PERP|-SWAP)$'), '');
+      final qty = _num(m['vol'] ?? m['amount'] ?? m['size'] ?? m['qty']);
+      out.add(_FeedItem(
+        avatarBg: McColors.surfaceContainerHighest,
+        avatarLabel: exchange.isEmpty ? '·' : exchange.substring(0, 1),
+        avatarColor: _primaryLight,
+        name: exchange.isEmpty ? 'Unknown' : exchange,
+        symbol: symbol,
+        price: price > 0 ? '\$${_fmtPrice(price)}' : '--',
+        long: isLong,
+        amount: usd > 0 ? _fmtUsdZh(usd) : '--',
+        amountColor: isLong ? _bull : _bear,
+        qty: qty > 0 ? '≈${_fmtQty(qty)} $base' : base,
+        time: _fmtClock(ts),
+        showDivider: out.length < 4,
+      ));
+      if (out.length >= 5) break;
+    }
+    return out;
+  }
+
+  static String _fmtPrice(double v) {
+    if (v >= 1000) return _comma(v.toStringAsFixed(1));
+    if (v >= 1) return v.toStringAsFixed(2);
+    return v.toStringAsFixed(5);
+  }
+
+  static String _comma(String numStr) {
+    final parts = numStr.split('.');
+    final intPart = parts[0];
+    final buf = StringBuffer();
+    for (var i = 0; i < intPart.length; i++) {
+      buf.write(intPart[i]);
+      final rem = intPart.length - i - 1;
+      if (rem > 0 && rem % 3 == 0) buf.write(',');
+    }
+    return parts.length > 1 ? '$buf.${parts[1]}' : buf.toString();
+  }
+
+  static String _fmtQty(double v) {
+    if (v >= 1e4) return '${(v / 1e4).toStringAsFixed(1)}万';
+    if (v >= 100) return v.toStringAsFixed(0);
+    if (v >= 1) return v.toStringAsFixed(1);
+    return v.toStringAsFixed(3);
+  }
+
+  static String _fmtClock(dynamic ts) {
+    final ms = ts is num ? ts.toInt() : int.tryParse('$ts') ?? 0;
+    if (ms <= 0) return '--:--:--';
+    final dt =
+        DateTime.fromMillisecondsSinceEpoch(ms > 100000000000 ? ms : ms * 1000);
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(dt.hour)}:${two(dt.minute)}:${two(dt.second)}';
   }
 
   // 应用解析结果: 覆盖已知名称的交易所行, 重算 24H 总爆仓与「全部」行.
@@ -220,11 +455,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           ['exchangeName', 'exchange_name', 'exchange', 'name'], '');
       if (name.isEmpty) continue;
       final long = _num(m['longLiquidationUsd'] ??
+          m['longLiquidation_usd'] ??
           m['long_liquidation_usd'] ??
           m['longLiquidation'] ??
           m['longVolUsd'] ??
           m['long_vol_usd']);
       final short = _num(m['shortLiquidationUsd'] ??
+          m['shortLiquidation_usd'] ??
           m['short_liquidation_usd'] ??
           m['shortLiquidation'] ??
           m['shortVolUsd'] ??
@@ -431,11 +668,11 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           radius: 16,
           child: Column(
             children: [
-              _liqTimeRow(label: '1小时爆仓', total: '\$301万', long: '\$167.6万', short: '\$133.4万'),
+              _liqTimeRow(label: '1小时爆仓', total: _total1h, long: _long1h, short: _short1h),
               const SizedBox(height: 10),
-              _liqTimeRow(label: '4小时爆仓', total: '\$1120.7万', long: '\$454.6万', short: '\$666.1万'),
+              _liqTimeRow(label: '4小时爆仓', total: _total4h, long: _long4h, short: _short4h),
               const SizedBox(height: 10),
-              _liqTimeRow(label: '12小时爆仓', total: '\$7150万', long: '\$4469万', short: '\$2681万'),
+              _liqTimeRow(label: '12小时爆仓', total: _total12h, long: _long12h, short: _short12h),
               const SizedBox(height: 10),
               _liqTimeRow(
                 label: '24小时爆仓',
@@ -1176,67 +1413,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                   ],
                 ),
               ),
-              _feedRow(
-                avatarBg: const Color(0xFFF3BA2F).withValues(alpha: 0.15),
-                avatar: Text('❖', style: McText.sans(size: 12, weight: FontWeight.w700, color: const Color(0xFFF3BA2F))),
-                name: 'Binance',
-                symbol: 'FLOCKUSDT',
-                price: '\$0.03982',
-                long: true,
-                amount: '\$1,984.16',
-                amountColor: Colors.white,
-                qty: '≈4.98万 FLOCK',
-                time: '16:09:42',
-              ),
-              _feedRow(
-                avatarBg: const Color(0xFFF3BA2F).withValues(alpha: 0.15),
-                avatar: Text('❖', style: McText.sans(size: 12, weight: FontWeight.w700, color: const Color(0xFFF3BA2F))),
-                name: 'Binance',
-                symbol: 'USELESS',
-                price: '\$0.11759',
-                long: false,
-                amount: '\$1,877.84',
-                amountColor: Colors.white,
-                qty: '≈1.6万 USELESS',
-                time: '16:09:28',
-              ),
-              _feedRow(
-                avatarBg: Colors.white.withValues(alpha: 0.1),
-                avatar: Text('OK', style: McText.sans(size: 12, weight: FontWeight.w700, color: Colors.white)),
-                name: 'OKX',
-                symbol: 'BTC-SWAP',
-                price: '\$66,420.5',
-                long: true,
-                amount: '\$48.29万',
-                amountColor: _bull,
-                qty: '7.27 BTC',
-                time: '16:08:50',
-              ),
-              _feedRow(
-                avatarBg: _bull.withValues(alpha: 0.15),
-                avatar: Text('HL', style: McText.sans(size: 12, weight: FontWeight.w700, color: _bull)),
-                name: 'Hyperliquid',
-                symbol: 'ETH-PERP',
-                price: '\$3,418.90',
-                long: true,
-                amount: '\$128.50万',
-                amountColor: _bull,
-                qty: '375.8 ETH',
-                time: '16:08:12',
-              ),
-              _feedRow(
-                avatarBg: const Color(0xFFF7A600).withValues(alpha: 0.1),
-                avatar: Text('BY', style: McText.sans(size: 12, weight: FontWeight.w700, color: const Color(0xFFF7A600))),
-                name: 'Bybit',
-                symbol: 'SOLUSDT',
-                price: '\$148.20',
-                long: false,
-                amount: '\$21.35万',
-                amountColor: Colors.white,
-                qty: '1,440.6 SOL',
-                time: '16:07:45',
-                showDivider: false,
-              ),
+              for (var i = 0; i < _feedItems.length; i++)
+                _feedRow(_feedItems[i],
+                    showDivider: i < _feedItems.length - 1),
             ],
           ),
         ),
@@ -1262,20 +1441,8 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     );
   }
 
-  Widget _feedRow({
-    required Color avatarBg,
-    required Widget avatar,
-    required String name,
-    required String symbol,
-    required String price,
-    required bool long,
-    required String amount,
-    required Color amountColor,
-    required String qty,
-    required String time,
-    bool showDivider = true,
-  }) {
-    final sideColor = long ? _bull : _bear;
+  Widget _feedRow(_FeedItem item, {bool showDivider = true}) {
+    final sideColor = item.long ? _bull : _bear;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
@@ -1290,19 +1457,20 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 Container(
                   width: 24,
                   height: 24,
-                  decoration: BoxDecoration(color: avatarBg, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: item.avatarBg, shape: BoxShape.circle),
                   alignment: Alignment.center,
-                  child: avatar,
+                  child: Text(item.avatarLabel,
+                      style: McText.sans(size: 12, weight: FontWeight.w700, color: item.avatarColor)),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name,
+                      Text(item.name,
                           overflow: TextOverflow.ellipsis,
                           style: McText.sans(size: 13, weight: FontWeight.w600, color: Colors.white)),
-                      Text(symbol, style: McText.mono(size: 12, color: _onSurfaceVariant)),
+                      Text(item.symbol, style: McText.mono(size: 12, color: _onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -1313,7 +1481,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
             flex: 3,
             child: Column(
               children: [
-                Text(price, style: McText.mono(size: 12, weight: FontWeight.w700, color: Colors.white)),
+                Text(item.price, style: McText.mono(size: 12, weight: FontWeight.w700, color: Colors.white)),
                 const SizedBox(height: 2),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -1322,7 +1490,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    long ? '做多强平' : '做空强平',
+                    item.long ? '做多强平' : '做空强平',
                     style: McText.sans(size: 12, weight: FontWeight.w600, color: sideColor),
                   ),
                 ),
@@ -1334,11 +1502,11 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(amount,
+                Text(item.amount,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: McText.mono(size: 13, weight: FontWeight.w700, color: amountColor)),
-                Text(qty,
+                    style: McText.mono(size: 13, weight: FontWeight.w700, color: item.amountColor)),
+                Text(item.qty,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: McText.mono(size: 12, color: _onSurfaceVariant)),
@@ -1351,7 +1519,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
               alignment: Alignment.centerRight,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(time, style: McText.mono(size: 12, color: _onSurfaceVariant)),
+                child: Text(item.time, style: McText.mono(size: 12, color: _onSurfaceVariant)),
               ),
             ),
           ),
@@ -1410,6 +1578,37 @@ class _ExStat {
       showDivider: showDivider,
     );
   }
+}
+
+/// 实时爆仓 feed 行的不可变数据模型 (mock 与真实数据共用).
+class _FeedItem {
+  const _FeedItem({
+    required this.avatarBg,
+    required this.avatarLabel,
+    required this.avatarColor,
+    required this.name,
+    required this.symbol,
+    required this.price,
+    required this.long,
+    required this.amount,
+    required this.amountColor,
+    required this.qty,
+    required this.time,
+    this.showDivider = true,
+  });
+
+  final Color avatarBg;
+  final String avatarLabel;
+  final Color avatarColor;
+  final String name;
+  final String symbol;
+  final String price;
+  final bool long;
+  final String amount;
+  final Color amountColor;
+  final String qty;
+  final String time;
+  final bool showDivider;
 }
 
 /// 解析阶段的原始数值 (未格式化).
