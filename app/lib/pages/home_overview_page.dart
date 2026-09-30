@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
+import '../services/ticker_ws.dart';
 
 /// 首页 · 综合看板 — 聚合各分板核心指标的总览页.
 ///
@@ -33,8 +36,40 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   // ---- 资金费率迷你卡 (mock 默认) ----
   String _fundingRate = '+0.0125%';
 
+  // ---- 市场全景横幅 (mock 默认) ----
+  String _mcTotal = '\$3.24T';
+  String _mcDelta = '+2.84%';
+  bool _mcDeltaUp = true;
+  String _mcVolume = '\$142.8B';
+  String _longPct = '64%';
+  double _longFrac = 0.64;
+
+  // ---- 巨鲸异动速递 (mock 默认) ----
+  List<_WhaleItem> _whaleItems = _mockWhaleItems();
+
+  static List<_WhaleItem> _mockWhaleItems() => const [
+        _WhaleItem(
+          emoji: '🐋',
+          pillText: '提币囤积',
+          pillColor: McColors.bull,
+          time: '3分钟前',
+          body: '巨鲸地址 0x7a8...9f21 从 Binance 提取 1,200 BTC (\$115.7M) 至冷钱包。',
+        ),
+        _WhaleItem(
+          emoji: '⚠️',
+          pillText: '大额充值',
+          pillColor: McColors.bear,
+          time: '14分钟前',
+          body: '某以太坊鲸鱼将 25,000 ETH (\$85.5M) 从未知钱包充入 Coinbase 交易所。',
+        ),
+      ];
+
   // ---- 主流资产速览 (mock 默认) ----
   List<_AssetRow> _assets = _mockAssets();
+
+  // ---- 主流资产实时推送 (OKX WS, 失败静默保留 REST/ mock) ----
+  StreamSubscription<TickerPush>? _tickerSub;
+  static const _watchSymbols = ['BTC', 'ETH', 'SOL', 'SUI'];
 
   static List<_AssetRow> _mockAssets() => const [
         _AssetRow('₿', 'BTC', '/USDT', '\$96,450.00', '+3.42%', true,
@@ -51,6 +86,40 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   void initState() {
     super.initState();
     _load();
+    _subscribeTickers();
+  }
+
+  @override
+  void dispose() {
+    _tickerSub?.cancel();
+    super.dispose();
+  }
+
+  // REST 加载后订阅 4 个合约的实时推送, 命中行就地刷新价格与涨跌幅.
+  void _subscribeTickers() {
+    final instIds = {for (final s in _watchSymbols) '$s-USDT-SWAP'};
+    TickerWs.instance.subscribe(instIds);
+    _tickerSub = TickerWs.instance.stream.listen(
+      _onTicker,
+      onError: (_) {}, // WS 异常静默, 保留 REST 数据
+    );
+  }
+
+  void _onTicker(TickerPush t) {
+    if (!mounted) return;
+    final symbol = t.instId.split('-').first;
+    final idx = _assets.indexWhere((r) => r.symbol == symbol);
+    if (idx < 0) return;
+    final up = t.changePct >= 0;
+    setState(() {
+      final list = [..._assets];
+      list[idx] = list[idx].copyWith(
+        price: _fmtPrice(t.last),
+        delta: '${up ? '+' : ''}${t.changePct.toStringAsFixed(2)}%',
+        up: up,
+      );
+      _assets = list;
+    });
   }
 
   Future<void> _load() async {
@@ -60,7 +129,110 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       _loadLiquidation(),
       _loadFunding(),
       _loadAssets(),
+      _loadGlobalBanner(),
+      _loadLongShort(),
+      _loadWhales(),
     ]);
+  }
+
+  Future<void> _loadGlobalBanner() async {
+    try {
+      final g = await McData.globalStats();
+      if (!mounted) return;
+      final cap = g.totalMarketCapUsd;
+      final vol = g.totalVolumeUsd;
+      final chg = g.changePct24h;
+      if (cap == null && vol == null && chg == null) return; // 全 null -> 保留 mock
+      setState(() {
+        if (cap != null) _mcTotal = McData.fmtUsdCompact(cap);
+        if (vol != null) _mcVolume = McData.fmtUsdCompact(vol);
+        if (chg != null) {
+          _mcDeltaUp = chg >= 0;
+          _mcDelta = '${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(2)}%';
+        }
+      });
+    } on ApiException {
+      // 保留 mock.
+    } catch (_) {}
+  }
+
+  Future<void> _loadLongShort() async {
+    try {
+      final r = await McData.longShortRatio();
+      if (!mounted) return;
+      final lp = r.longPct;
+      if (lp == null) return;
+      setState(() {
+        _longPct = '${lp.round()}%';
+        _longFrac = (lp / 100).clamp(0.0, 1.0);
+      });
+    } on ApiException {
+      // 保留 mock.
+    } catch (_) {}
+  }
+
+  Future<void> _loadWhales() async {
+    try {
+      final resp = await McData.overview('whale-alerts');
+      final items = _parseWhaleAlerts(resp['alerts']);
+      if (!mounted || items.isEmpty) return;
+      setState(() => _whaleItems = items);
+    } on ApiException {
+      // 保留 mock.
+    } catch (_) {}
+  }
+
+  // Hyperliquid whale-alert → 速递条目 (取前 3, best-effort).
+  static List<_WhaleItem> _parseWhaleAlerts(dynamic raw) {
+    final list = _asList(raw);
+    final out = <_WhaleItem>[];
+    for (final e in list) {
+      if (e is! Map) continue;
+      final m = e.cast<String, dynamic>();
+      final symbol = (m['symbol'] ?? m['coin'] ?? '').toString();
+      if (symbol.isEmpty) continue;
+      final user = (m['user'] ?? m['address'] ?? '').toString();
+      final usd = _num(m['position_value_usd'] ??
+          m['positionValueUsd'] ??
+          m['usd_value'] ??
+          m['positionValue']);
+      final action = _num(m['position_action'] ?? m['action']);
+      // position_action: 1 开仓/加仓, 2 平仓/减仓 (CoinGlass Hyperliquid).
+      final isAdd = action == 1;
+      final isReduce = action == 2;
+      final color = isReduce
+          ? McColors.bear
+          : (isAdd ? McColors.bull : McColors.primary);
+      final pill = isReduce ? '减仓离场' : (isAdd ? '加仓开仓' : '仓位异动');
+      final emoji = isReduce ? '⚠️' : (isAdd ? '🐋' : '⚡');
+      final verb = isReduce ? '减仓/平仓' : (isAdd ? '加仓/开仓' : '调整仓位');
+      out.add(_WhaleItem(
+        emoji: emoji,
+        pillText: pill,
+        pillColor: color,
+        time: _relTime(m['create_time'] ?? m['createTime'] ?? m['time']),
+        body:
+            '巨鲸地址 ${_shortAddr(user)} 在 Hyperliquid $verb $symbol，仓位规模约 ${_fmtUsdZh(usd)}。',
+      ));
+      if (out.length >= 3) break;
+    }
+    return out;
+  }
+
+  static String _shortAddr(String addr) {
+    if (addr.length <= 10) return addr.isEmpty ? '匿名巨鲸' : addr;
+    return '${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}';
+  }
+
+  static String _relTime(dynamic ts) {
+    final ms = ts is num ? ts.toInt() : int.tryParse('$ts') ?? 0;
+    if (ms <= 0) return '刚刚';
+    final dt = DateTime.fromMillisecondsSinceEpoch(ms > 100000000000 ? ms : ms * 1000);
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
+    if (diff.inHours < 24) return '${diff.inHours}小时前';
+    return '${diff.inDays}天前';
   }
 
   Future<void> _loadSentiment() async {
@@ -89,7 +261,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       final (total, long, short) = sums;
       if (total <= 0) return;
       setState(() {
-        _liqTotal = '${_fmtUsdZh(total)} 亿';
+        _liqTotal = _fmtUsdZh(total);
         _liqLongFrac = (long + short) <= 0 ? 0.5 : long / (long + short);
         _liqLongText = _fmtUsdZh(long);
         _liqShortText = _fmtUsdZh(short);
@@ -187,11 +359,15 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
     double total = 0, long = 0, short = 0;
     for (final e in list) {
       if (e is! Map) continue;
-      final l = _num(e['longLiquidationUsd'] ??
+      // 跳过 All 聚合行, 避免重复计数
+      if ((e['exchange'] ?? '').toString().toLowerCase() == 'all') continue;
+      final l = _num(e['longLiquidation_usd'] ??
+          e['longLiquidationUsd'] ??
           e['long_liquidation_usd'] ??
           e['longLiquidation'] ??
           e['longVolUsd']);
-      final s = _num(e['shortLiquidationUsd'] ??
+      final s = _num(e['shortLiquidation_usd'] ??
+          e['shortLiquidationUsd'] ??
           e['short_liquidation_usd'] ??
           e['shortLiquidation'] ??
           e['shortVolUsd']);
@@ -365,9 +541,9 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           const SizedBox(height: 14),
           Row(
             children: [
-              _vital('24H 总市值', '\$3.24T', '+2.84%', true),
-              _vital('24H 成交额', '\$142.8B', null, null),
-              _vital('多头主导指数', '64%', null, null, bar: 0.64),
+              _vital('24H 总市值', _mcTotal, _mcDelta, _mcDeltaUp),
+              _vital('24H 成交额', _mcVolume, null, null),
+              _vital('多头主导指数', _longPct, null, null, bar: _longFrac),
             ],
           ),
         ],
@@ -473,25 +649,20 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
     );
   }
 
-  // 巨鲸异动速递 (2 条)
+  // 巨鲸异动速递 (实时, 失败回退 mock)
   Widget _whaleFeed() {
     return Column(
       children: [
-        _whaleCard(
-          emoji: '🐋',
-          pillText: '提币囤积',
-          pillColor: McColors.bull,
-          time: '3分钟前',
-          body: '巨鲸地址 0x7a8...9f21 从 Binance 提取 1,200 BTC (\$115.7M) 至冷钱包。',
-        ),
-        const SizedBox(height: 8),
-        _whaleCard(
-          emoji: '⚠️',
-          pillText: '大额充值',
-          pillColor: McColors.bear,
-          time: '14分钟前',
-          body: '某以太坊鲸鱼将 25,000 ETH (\$85.5M) 从未知钱包充入 Coinbase 交易所。',
-        ),
+        for (var i = 0; i < _whaleItems.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _whaleCard(
+            emoji: _whaleItems[i].emoji,
+            pillText: _whaleItems[i].pillText,
+            pillColor: _whaleItems[i].pillColor,
+            time: _whaleItems[i].time,
+            body: _whaleItems[i].body,
+          ),
+        ],
       ],
     );
   }
@@ -577,6 +748,23 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       ),
     );
   }
+}
+
+/// 巨鲸异动速递条目的不可变数据模型 (mock 与真实数据共用).
+class _WhaleItem {
+  const _WhaleItem({
+    required this.emoji,
+    required this.pillText,
+    required this.pillColor,
+    required this.time,
+    required this.body,
+  });
+
+  final String emoji;
+  final String pillText;
+  final Color pillColor;
+  final String time;
+  final String body;
 }
 
 /// 主流资产行的不可变数据模型 (mock 与真实数据共用).

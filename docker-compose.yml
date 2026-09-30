@@ -1,0 +1,21 @@
+# 明策 MINGCE hk 后端 - 宝塔/Docker 生产部署
+# 使用方式：docker compose up -d --build
+# 前置条件：宿主机已有共享 PostgreSQL（与 okx 同库，host 网络用 127.0.0.1 访问）
+# 注意：.env.prod 已入库（私有仓库），deploy.sh 会同步到运行目录
+
+services:
+  app:
+    build: ./server
+    container_name: mingce-app
+    network_mode: host   # 直接使用宿主机网络，127.0.0.1 即可访问共享 PG
+    env_file:
+      - .env.prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    # hk 无 Alembic，表结构由 app.py lifespan 的 create_all 保证
+    # 端口 8001（okx 已占 8000）
+    command: uvicorn app:app --host 0.0.0.0 --port 8001

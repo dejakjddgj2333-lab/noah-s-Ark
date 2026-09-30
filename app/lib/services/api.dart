@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// 明策 API 客户端. baseUrl 按平台调整: web 直连, Android 模拟器用 10.0.2.2.
+/// 明策 API 客户端. 默认走线上后端 (push 到 GitHub 自动部署);
+/// 本地联调用 --dart-define=API_BASE=http://localhost:8000 覆盖.
 class McApi {
   McApi._();
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'http://shipapi.bdxapi.com',
   );
 
   static Future<Map<String, dynamic>> post(

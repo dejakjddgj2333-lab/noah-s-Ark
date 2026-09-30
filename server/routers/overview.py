@@ -81,3 +81,137 @@ async def get_whale_alerts():
     """Hyperliquid 鲸鱼仓位变动."""
     data = await _cg_get("/api/hyperliquid/whale-alert", ttl=60)
     return {"alerts": data}
+
+
+# ---------- 横幅全局数据 (CoinGecko) ----------
+
+# path -> (data, expire_at); 独立于 CoinGlass 的小缓存
+_gecko_cache: dict[str, tuple[Any, float]] = {}
+
+_GECKO_GLOBAL_NULL = {
+    "total_market_cap_usd": None,
+    "total_volume_usd": None,
+    "market_cap_change_pct_24h": None,
+    "btc_dominance": None,
+    "eth_dominance": None,
+}
+
+
+@router.get("/global-stats")
+async def get_global_stats():
+    """横幅全局数据(市值/成交/占比). 失败返回全 null + 200, 前端回退 mock."""
+    now = time.time()
+    hit = _gecko_cache.get("global")
+    if hit and hit[1] > now:
+        return hit[0]
+
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.get("https://api.coingecko.com/api/v3/global")
+            body = resp.json()
+        d = body["data"]
+        out = {
+            "total_market_cap_usd": (d.get("total_market_cap") or {}).get("usd"),
+            "total_volume_usd": (d.get("total_volume") or {}).get("usd"),
+            "market_cap_change_pct_24h": d.get("market_cap_change_percentage_24h_usd"),
+            "btc_dominance": (d.get("market_cap_percentage") or {}).get("btc"),
+            "eth_dominance": (d.get("market_cap_percentage") or {}).get("eth"),
+        }
+    except Exception:
+        out = dict(_GECKO_GLOBAL_NULL)
+
+    _gecko_cache["global"] = (out, now + 600)
+    return out
+
+
+# ---------- 多空比 ----------
+
+@router.get("/long-short-ratio")
+async def get_long_short_ratio(symbol: str = Query("BTC")):
+    """多头主导: 全局账户多空占比(最新一日).
+
+    exchange-list 在此套餐 404; 用 history 端点 (Binance 现货对).
+    失败返回 null, 前端回退.
+    """
+    try:
+        data = await _cg_get(
+            "/api/futures/global-long-short-account-ratio/history",
+            {
+                "exchange": "Binance",
+                "symbol": f"{symbol.upper()}USDT",
+                "interval": "1d",
+                "limit": 2,
+            },
+            ttl=300,
+        )
+        latest = data[-1] if isinstance(data, list) and data else None
+        return {
+            "long_pct": (latest or {}).get("global_account_long_percent"),
+            "short_pct": (latest or {}).get("global_account_short_percent"),
+        }
+    except HTTPException:
+        return {"long_pct": None, "short_pct": None}
+
+
+# ---------- 多维指数卡 ----------
+
+# key -> (中文名, path, 值字段); 数据均为时间升序列表, 最新在末位
+_INDICATORS: dict[str, tuple[str, str, str]] = {
+    "ahr999": ("AHR999 抄底指标", "/api/index/ahr999", "ahr999_value"),
+    "pi_cycle": ("Pi Cycle 顶部指标", "/api/index/pi-cycle-indicator", "price"),
+    "puell": ("Puell 倍数", "/api/index/puell-multiple", "puell_multiple"),
+    "btc_dominance": ("BTC 市值占比", "/api/index/bitcoin-dominance", "bitcoin_dominance"),
+    "altcoin_season": ("山寨季指数", "/api/index/altcoin-season", "altcoin_index"),
+    "cgdi": ("CGDI 衍生品指数", "/api/futures/cgdi-index/history", "cgdi_index_value"),
+    "cdri": ("CDRI 衍生品风险指数", "/api/futures/cdri-index/history", "cdri_index_value"),
+}
+
+
+@router.get("/indicators")
+async def get_indicators():
+    """多维指数卡: 最新值 + 1d 变化 + 近 30 值 sparkline. 单项失败跳过该项."""
+    out = []
+    for key, (name, path, field) in _INDICATORS.items():
+        try:
+            data = await _cg_get(path, ttl=300)
+        except HTTPException:
+            continue
+        if not isinstance(data, list) or not data:
+            continue
+        series = [x.get(field) for x in data if isinstance(x, dict) and x.get(field) is not None]
+        if not series:
+            continue
+        latest = series[-1]
+        prev = series[-2] if len(series) > 1 else None
+        change = (latest - prev) if (latest is not None and prev is not None) else None
+        out.append({
+            "key": key,
+            "name": name,
+            "value": latest,
+            "change_1d": change,
+            "sparkline": series[-30:],
+        })
+    return {"indicators": out}
+
+
+# ---------- 实时爆仓 / 爆仓补充 ----------
+
+@router.get("/liquidations/orders")
+async def get_liq_orders(
+    min_amount: int = Query(100000),
+    limit: int = Query(50),
+):
+    """实时大额爆仓单(最新在前), 原始字段透传前端解析."""
+    data = await _cg_get(
+        "/api/futures/liquidation/order",
+        {"min_liquidation_amount": min_amount, "limit": limit},
+        ttl=20,
+    )
+    return {"orders": data}
+
+
+@router.get("/liquidations/coin-list")
+async def get_liq_coin_list():
+    """各币 24h 爆仓(人数/多空明细), 原始字段透传."""
+    data = await _cg_get("/api/futures/liquidation/coin-list", ttl=60)
+    return {"coins": data}

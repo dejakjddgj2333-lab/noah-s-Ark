@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
+import 'news_detail_page.dart';
 
 /// 资讯 (News / Signals Intel) — full bottom-nav tab, content body only.
 /// Gold terminal theme variant (faithful to news.html palette).
@@ -73,6 +74,13 @@ class _NewsPageState extends State<NewsPage> {
 
   // ---- data mapping helpers ----
 
+  void _openDetail(int id) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => NewsDetailPage(id: id)),
+    );
+  }
+
   String _fmtTime(DateTime utc) {
     final local = utc.toLocal();
     final hh = local.hour.toString().padLeft(2, '0');
@@ -134,7 +142,11 @@ class _NewsPageState extends State<NewsPage> {
                 if (hasResearch) ...[
                   _researchHeader(),
                   const SizedBox(height: 12),
-                  _researchCard(_research.first),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _openDetail(_research.first.id),
+                    child: _researchCard(_research.first),
+                  ),
                   const SizedBox(height: 20),
                 ],
                 _editorialBar(),
@@ -437,22 +449,26 @@ class _NewsPageState extends State<NewsPage> {
             bg: McColors.surfaceContainerHigh, fg: NewsPage._gold),
     ];
 
-    return _timelineItem(
-      nodeColor: node,
-      nodeGlow: glow,
-      time: _fmtTime(item.publishAt),
-      timeColor: node,
-      tags: tags,
-      title: item.title,
-      body: item.summary.isNotEmpty ? item.summary : item.content,
-      bullPct: bullPct,
-      bullCount: _fmtCount(item.likeCount),
-      bearCount: _fmtCount(item.commentCount),
-      views: views,
-      actionLabel: '查看详情',
-      actionIcon: Icons.arrow_outward,
-      actionColor: node,
-      isLast: index == _flash.length - 1,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openDetail(item.id),
+      child: _timelineItem(
+        nodeColor: node,
+        nodeGlow: glow,
+        time: _fmtTime(item.publishAt),
+        timeColor: node,
+        tags: tags,
+        title: item.title,
+        body: item.summary.isNotEmpty ? item.summary : item.content,
+        bullPct: bullPct,
+        bullCount: _fmtCount(item.likeCount),
+        bearCount: _fmtCount(item.commentCount),
+        views: views,
+        actionLabel: '查看详情',
+        actionIcon: Icons.arrow_outward,
+        actionColor: node,
+        isLast: index == _flash.length - 1,
+      ),
     );
   }
 

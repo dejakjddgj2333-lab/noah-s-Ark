@@ -1,0 +1,36 @@
+# 环境配置（不要打进镜像）
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# 本地数据
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志
+*.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+Dockerfile
+.dockerignore
+
+# 文档
+*.md
