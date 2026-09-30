@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.hk import HkComment, HkLike
-from models.shared import NewsArticle
+from models.shared import MacroEvent, NewsArticle
 
 router = APIRouter(prefix="/news", tags=["资讯"])
 
@@ -41,12 +41,14 @@ def _news_out(a: NewsArticle, lang: str = "zh", with_content: bool = True) -> di
 async def list_news(
     category: str | None = Query(None),
     source: str | None = Query(None),
+    keyword: str | None = Query(None),
     lang: str = Query("zh"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
 ):
-    """资讯列表: 发布时间倒序, 只出已发布. lang=zh 中文, 其他出原文(有备份时)."""
+    """资讯列表: 发布时间倒序, 只出已发布. lang=zh 中文, 其他出原文(有备份时).
+    keyword: 标题/摘要模糊匹配 (用于 行业政策 等主题筛选)."""
     if category and category not in NEWS_CATEGORIES:
         raise HTTPException(status_code=400, detail=f"分类必须是: {', '.join(NEWS_CATEGORIES)}")
 
@@ -55,6 +57,16 @@ async def list_news(
         stmt = stmt.where(NewsArticle.category == category)
     if source:
         stmt = stmt.where(NewsArticle.source == source)
+    if keyword:
+        # 逗号分隔多关键词, OR 匹配 (如 行业政策: 监管,政策,SEC,法案)
+        terms = [t.strip() for t in keyword.split(",") if t.strip()]
+        if terms:
+            conds = [
+                NewsArticle.title.ilike(f"%{t}%")
+                | NewsArticle.summary.ilike(f"%{t}%")
+                for t in terms
+            ]
+            stmt = stmt.where(or_(*conds))
 
     total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
     rows = (
@@ -71,6 +83,62 @@ async def list_news(
         "total": total or 0,
         "page": page,
         "page_size": page_size,
+    }
+
+
+@router.get("/macro-calendar")
+async def get_macro_calendar(
+    date: str | None = Query(None, description="北京时间日期 YYYY-MM-DD, 默认今天"),
+    db: AsyncSession = Depends(get_db),
+):
+    """宏观日历: 按北京时间日过滤 (event_at 存 UTC, 换算 ±8h)."""
+    from datetime import datetime, timedelta
+
+    try:
+        day = (
+            datetime.strptime(date, "%Y-%m-%d")
+            if date
+            else datetime.utcnow() + timedelta(hours=8)
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date 格式: YYYY-MM-DD")
+    bj_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+    # 北京时间 [start, +24h) 对应 UTC 区间
+    utc_start = bj_start - timedelta(hours=8)
+    utc_end = utc_start + timedelta(days=1)
+
+    try:
+        rows = (
+            await db.scalars(
+                select(MacroEvent)
+                .where(
+                    MacroEvent.event_at >= utc_start, MacroEvent.event_at < utc_end
+                )
+                .order_by(MacroEvent.event_at)
+            )
+        ).all()
+    except Exception:
+        # macro_events 表未迁移 (okx 侧未部署) 时返回空, 前端显示 暂无数据
+        await db.rollback()
+        rows = []
+    return {
+        "date": bj_start.strftime("%Y-%m-%d"),
+        "items": [
+            {
+                "id": e.id,
+                # 转北京时间输出
+                "event_at": (e.event_at + timedelta(hours=8)).strftime("%H:%M"),
+                "country": e.country,
+                "currency": e.currency,
+                "name": e.name,
+                "importance": e.importance,
+                "previous": e.previous,
+                "forecast": e.forecast,
+                "actual": e.actual,
+                "unit": e.unit,
+            }
+            for e in rows
+        ],
     }
 
 

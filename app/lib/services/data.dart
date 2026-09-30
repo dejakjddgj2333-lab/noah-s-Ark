@@ -102,6 +102,35 @@ class FundingRate {
   }
 }
 
+/// 宏观日历事件 (后端 /api/news/macro-calendar). 时间已是北京时间, 直接展示.
+class MacroEventItem {
+  MacroEventItem.fromJson(Map<String, dynamic> j)
+      : id = (j['id'] ?? 0) as int,
+        eventAt = (j['event_at'] ?? '') as String,
+        country = (j['country'] ?? '') as String,
+        currency = (j['currency'] ?? '') as String,
+        name = (j['name'] ?? '') as String,
+        importance = (j['importance'] ?? 1) as int,
+        previous = j['previous'] as String?,
+        forecast = j['forecast'] as String?,
+        actual = j['actual'] as String?,
+        unit = (j['unit'] ?? '') as String;
+
+  final int id;
+  final String eventAt; // 'HH:mm' 北京时间
+  final String country;
+  final String currency;
+  final String name;
+  final int importance; // 1-3 (低/中/高)
+  final String? previous;
+  final String? forecast;
+  final String? actual;
+  final String unit;
+
+  String get importanceLabel =>
+      importance >= 3 ? '高' : importance == 2 ? '中' : '低';
+}
+
 /// 数据获取层. 所有方法失败抛 ApiException; 页面自行决定回退.
 class McData {
   McData._();
@@ -110,9 +139,13 @@ class McData {
     String? category,
     int page = 1,
     int pageSize = 20,
+    String? keyword,
   }) async {
     final q = StringBuffer('/api/news?page=$page&page_size=$pageSize');
     if (category != null) q.write('&category=$category');
+    if (keyword != null && keyword.isNotEmpty) {
+      q.write('&keyword=${Uri.encodeComponent(keyword)}');
+    }
     final resp = await McApi.get(q.toString());
     final items = (resp['items'] as List? ?? [])
         .map((e) => NewsItem.fromJson(e as Map<String, dynamic>))
@@ -124,6 +157,17 @@ class McData {
   static Future<NewsItem> newsDetail(int id) async {
     final resp = await McApi.get('/api/news/$id');
     return NewsItem.fromJson(resp);
+  }
+
+  /// 宏观日历 (/api/news/macro-calendar?date=YYYY-MM-DD). date 为北京时间日, null=今天.
+  static Future<List<MacroEventItem>> macroCalendar({String? date}) async {
+    final path = (date == null || date.isEmpty)
+        ? '/api/news/macro-calendar'
+        : '/api/news/macro-calendar?date=${Uri.encodeComponent(date)}';
+    final resp = await McApi.get(path);
+    return (resp['items'] as List? ?? [])
+        .map((e) => MacroEventItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   static Future<List<OkxTicker>> tickers({String instType = 'SWAP'}) async {
@@ -315,7 +359,7 @@ class McInteraction {
         'target_type': _targetType,
         'target_id': newsId,
         'content': content,
-        if (replyToId != null) 'reply_to_id': replyToId,
+        'reply_to_id': ?replyToId,
       },
       token: _token,
     );

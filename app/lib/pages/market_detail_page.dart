@@ -319,35 +319,43 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     );
   }
 
-  /// 24H 统计: 高 / 低 / 涨跌额 / 成交额.
+  /// 24H 统计: 高 / 低 / 涨跌额 / 成交额 (2×2 网格).
   Widget _buildStatsRow() {
     final abs = _changeAbs;
     final absColor = abs >= 0 ? McColors.bull : McColors.bear;
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _stat('24H 最高', _high24h > 0 ? _fmtPrice(_high24h) : '--',
-              McColors.bull),
+        Row(
+          children: [
+            Expanded(
+              child: _stat('24H 最高',
+                  _high24h > 0 ? _fmtPrice(_high24h) : '--', McColors.bull),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _stat('24H 最低',
+                  _low24h > 0 ? _fmtPrice(_low24h) : '--', McColors.bear),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _stat('24H 最低', _low24h > 0 ? _fmtPrice(_low24h) : '--',
-              McColors.bear),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _stat(
-              '24H 涨跌额',
-              _open24h > 0
-                  ? '${abs >= 0 ? '+' : ''}${_fmtPrice(abs)}'
-                  : '--',
-              absColor),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _stat('24H 成交额',
-              _notional > 0 ? McData.fmtUsdCompact(_notional) : '--',
-              McColors.onSurface),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _stat(
+                  '24H 涨跌额',
+                  _open24h > 0
+                      ? '${abs >= 0 ? '+' : ''}${_fmtPrice(abs)}'
+                      : '--',
+                  absColor),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _stat('24H 成交额',
+                  _notional > 0 ? McData.fmtUsdCompact(_notional) : '--',
+                  McColors.onSurface),
+            ),
+          ],
         ),
       ],
     );
@@ -362,14 +370,12 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           Text(label,
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: McText.sans(
-                  size: 14, weight: FontWeight.w700, color: valueColor),
-            ),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: McText.sans(
+                size: 14, weight: FontWeight.w700, color: valueColor),
           ),
         ],
       ),

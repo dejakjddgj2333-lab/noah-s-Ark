@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/data.dart';
@@ -1186,8 +1187,6 @@ class _AssetListCard extends StatelessWidget {
 
   static const _rows = [
     _AssetRow(
-      glyph: '₿',
-      glyphColor: McColors.primary,
       symbol: 'BTC',
       sub1: '持仓 \$42.5B',
       sub2: '费率 +0.012%',
@@ -1199,8 +1198,6 @@ class _AssetListCard extends StatelessWidget {
       positive: true,
     ),
     _AssetRow(
-      glyph: 'Ξ',
-      glyphColor: McColors.secondary,
       symbol: 'ETH',
       sub1: '持仓 \$24.8B',
       sub2: '费率 +0.008%',
@@ -1212,8 +1209,6 @@ class _AssetListCard extends StatelessWidget {
       positive: true,
     ),
     _AssetRow(
-      glyph: '◎',
-      glyphColor: McColors.primary,
       symbol: 'SOL',
       sub1: '持仓 \$11.2B',
       sub2: '费率 +0.024%',
@@ -1225,8 +1220,6 @@ class _AssetListCard extends StatelessWidget {
       positive: true,
     ),
     _AssetRow(
-      glyph: '💧',
-      glyphColor: McColors.secondary,
       symbol: 'SUI',
       sub1: '持仓 \$3.4B',
       sub2: '费率 -0.005%',
@@ -1268,8 +1261,6 @@ class _AssetListCard extends StatelessWidget {
 
 class _AssetRow extends StatelessWidget {
   const _AssetRow({
-    required this.glyph,
-    required this.glyphColor,
     required this.symbol,
     required this.sub1,
     required this.sub2,
@@ -1281,8 +1272,6 @@ class _AssetRow extends StatelessWidget {
     required this.positive,
   });
 
-  final String glyph;
-  final Color glyphColor;
   final String symbol;
   final String sub1;
   final String sub2;
@@ -1303,20 +1292,7 @@ class _AssetRow extends StatelessWidget {
           Flexible(
             child: Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: McColors.surfaceContainerHigh,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    glyph,
-                    style: McText.mono(
-                        size: 12, weight: FontWeight.w700, color: glyphColor),
-                  ),
-                ),
+                CoinIcon(symbol, size: 32),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Column(
