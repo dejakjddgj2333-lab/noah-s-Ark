@@ -1,0 +1,22 @@
+:root {
+  --app-sidebar-width: 220px;
+  --app-header-height: 56px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  background-color: #f0f2f5;
+}
+
+.app-main {
+  padding: 16px;
+}
