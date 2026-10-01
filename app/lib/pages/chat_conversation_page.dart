@@ -74,10 +74,12 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   ChatMessage? _replyingTo;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
 
-  // 媒体
+  // 媒体 (按需创建: web 不碰原生插件通道; dispose 只清已创建的)
   final _picker = ImagePicker();
-  final _recorder = AudioRecorder();
-  final _player = AudioPlayer();
+  AudioRecorder? _recorderInst;
+  AudioRecorder get _recorder => _recorderInst ??= AudioRecorder();
+  AudioPlayer? _playerInst;
+  AudioPlayer get _player => _playerInst ??= AudioPlayer();
   int? _playingId; // 正在播放的语音消息 id
   bool _voiceMode = false; // 语音输入模式 (替换输入框为 按住说话)
   bool _recording = false;
@@ -112,9 +114,9 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   void dispose() {
     _wsSub?.cancel();
     _playerSub?.cancel();
-    _player.dispose();
-    if (_recording) _recorder.stop();
-    _recorder.dispose();
+    _playerInst?.dispose();
+    if (_recording) _recorderInst?.stop();
+    _recorderInst?.dispose();
     _scroll.dispose();
     _controller.dispose();
     _focus.dispose();
