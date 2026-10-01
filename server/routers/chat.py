@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -958,17 +959,26 @@ async def upload_chat_file(
     except Exception:
         dest.unlink(missing_ok=True)  # 失败清理半成品
         raise
-    return {"file_url": f"/api/chat/files/{name}"}
+    # URL 不带扩展名: 宝塔/nginx 按 .png 等后缀拦截静态请求, 会绕过代理 404
+    return {"file_url": f"/api/chat/files/{name.split('.')[0]}"}
 
 
 @router.get("/files/{name}")
 async def get_chat_file(name: str):
-    """按文件名回源; 仅取 basename 防路径穿越. 无需鉴权 (前端直接 <img>/<audio>)."""
+    """按文件 id 回源 (uuid 无扩展名, 磁盘按 uuid.* glob); 防路径穿越. 无需鉴权."""
     safe = Path(name).name
     if not safe or safe != name:
         raise HTTPException(status_code=404, detail="文件不存在")
-    path = CHAT_UPLOAD_DIR / safe
-    if not path.is_file():
+    path: Path | None = None
+    if re.fullmatch(r"[A-Za-z0-9]+", safe):  # 纯 uuid 才走 glob, 防通配符注入
+        matches = list(CHAT_UPLOAD_DIR.glob(f"{safe}.*"))
+        if matches:
+            path = matches[0]
+    if path is None and "." in safe:  # 兼容存量 uuid.ext 直链
+        p = CHAT_UPLOAD_DIR / safe
+        if p.is_file():
+            path = p
+    if path is None:
         raise HTTPException(status_code=404, detail="文件不存在")
     return FileResponse(path)
 
