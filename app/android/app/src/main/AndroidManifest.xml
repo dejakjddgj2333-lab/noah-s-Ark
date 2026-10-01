@@ -2,7 +2,7 @@
     <!-- 网络权限 + 允许 http 明文（shipapi 暂未上 https） -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mingce"
+        android:label="Noah’s Ark"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

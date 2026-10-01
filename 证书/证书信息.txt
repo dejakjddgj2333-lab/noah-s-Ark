@@ -1,0 +1,3 @@
+安卓包名：com.hkmc.noahsark
+别名：noahsark
+密码：noahsark

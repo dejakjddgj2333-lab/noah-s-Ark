@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
+import '../services/liquidation_ws.dart';
 
 /// 多空爆仓 (Long/Short Liquidation) content body.
 /// Palette overrides from stitch_ref/home_liquidation.html.
@@ -35,7 +38,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   String _total24 = '\$3.3亿';
   String _long24 = '\$2.7亿';
   String _short24 = '\$6682万';
-  final String _liqCount = '87,865'; // 爆仓人数 (接口无此字段, 保留 mock)
+  String _liqCount = '87,865'; // 爆仓人数 (coin-list 无人数字段时保留 mock)
   String _liqTotalText = '\$3.35亿';
 
   // 分时段爆仓 (1h/4h/12h): 首屏 mock, 拉取成功后覆盖.
@@ -49,8 +52,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   String _long12h = '\$4469万';
   String _short12h = '\$2681万';
 
-  // 实时爆仓 feed: 首屏 mock, orders 接口 502 时保留 mock.
-  late List<_FeedItem> _feedItems = _mockFeedItems();
+  // 实时爆仓 feed: 首屏 mock 占位, Binance WS 推送后逐条前置覆盖.
+  final List<_FeedItem> _feedItems = _mockFeedItems();
+  StreamSubscription<LiqPush>? _liqSub;
 
   static List<_FeedItem> _mockFeedItems() => const [
         _FeedItem(
@@ -209,14 +213,21 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   @override
   void initState() {
     super.initState();
+    _subscribeLiqWs();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _liqSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
     await Future.wait([
       _load24h(),
       _loadTimeframes(),
-      _loadOrders(),
+      _loadLiqCount(),
     ]);
   }
 
@@ -287,61 +298,67 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     }
   }
 
-  // 实时爆仓 feed: orders 接口当前套餐 502 -> 静默保留 mock; 套餐升级后自动启用.
-  Future<void> _loadOrders() async {
+  // 实时爆仓 feed: 改用 Binance 合约强平 WS (免费/无 key), 替代 CoinGlass
+  // orders 接口 (当前套餐 502 plan-gated, 无法返回实时流).
+  void _subscribeLiqWs() {
+    _liqSub = LiquidationWs.instance.stream.listen((p) {
+      if (!mounted) return;
+      setState(() {
+        _feedItems.insert(0, _toFeedItem(p));
+        if (_feedItems.length > 50) _feedItems.removeLast();
+      });
+    });
+  }
+
+  static _FeedItem _toFeedItem(LiqPush p) {
+    final isLong = p.side == 'long';
+    return _FeedItem(
+      avatarBg: const Color(0x26F3BA2F),
+      avatarLabel: '❖',
+      avatarColor: const Color(0xFFF3BA2F),
+      name: 'Binance',
+      symbol: p.symbol,
+      price: '\$${_fmtPrice(p.price)}',
+      long: isLong,
+      amount: _fmtUsdZh(p.notionalUsd),
+      amountColor: isLong ? _bull : _bear,
+      qty: '≈${_fmtQty(p.qty)} ${p.baseCcy}',
+      time: _fmtClock(p.ts),
+      showDivider: false,
+    );
+  }
+
+  // 爆仓人数: 尝试 /overview/liquidations/coin-list, 查每币种是否有
+  // 人数类字段 (liquidation_count/num/...). CoinGlass v4 coin-list 实际只返回
+  // 金额/价格类字段, 无人数字段 — 故通常保留 mock, 有则求和覆盖.
+  Future<void> _loadLiqCount() async {
     try {
-      final resp = await McData.overview('liquidations/orders');
-      final items = _parseOrders(resp['orders']);
-      if (!mounted || items.isEmpty) return;
-      setState(() => _feedItems = items);
+      final resp = await McData.overview('liquidations/coin-list');
+      final list = _asList(resp['coins']);
+      double sum = 0;
+      var found = false;
+      for (final e in list) {
+        if (e is! Map) continue;
+        final m = e.cast<String, dynamic>();
+        final n = _num(m['liquidation_count'] ??
+            m['liquidationCount'] ??
+            m['liqCount'] ??
+            m['num'] ??
+            m['count'] ??
+            m['personCount'] ??
+            m['liquidatedPersonCount']);
+        if (n > 0) {
+          found = true;
+          sum += n;
+        }
+      }
+      if (!found || sum <= 0 || !mounted) return;
+      setState(() => _liqCount = _comma(sum.toStringAsFixed(0)));
     } on ApiException {
-      // 预期 502 (Upgrade plan) — 保留 mock feed.
+      // 503 未配置 / 502 上游错误 — 保留 mock.
     } catch (_) {
       // 网络/解析异常 — 保留 mock.
     }
-  }
-
-  // CoinGlass liquidation/order → feed 条目 (best-effort, 字段缺失即跳过).
-  static List<_FeedItem> _parseOrders(dynamic raw) {
-    final list = _asList(raw);
-    final out = <_FeedItem>[];
-    for (final e in list) {
-      if (e is! Map) continue;
-      final m = e.cast<String, dynamic>();
-      final exchange = _str(m, ['exchangeName', 'exchange', 'exchange_name'], '');
-      final symbol = _str(m, ['symbol', 'instId', 'pair'], '');
-      if (symbol.isEmpty) continue;
-      final usd = _num(m['volUsd'] ??
-          m['vol_usd'] ??
-          m['liquidationUsd'] ??
-          m['amountUsd'] ??
-          m['usd']);
-      final price = _num(m['price'] ?? m['markPrice'] ?? m['avgPrice']);
-      final side = _str(m, ['side', 'posSide', 'positionSide'], '').toLowerCase();
-      // side: 1/2 或 long/short; CoinGlass order 用 side=1 多 2 空 常见.
-      final isLong = side.contains('long') ||
-          side == '1' ||
-          side.contains('buy');
-      final ts = m['time'] ?? m['createTime'] ?? m['ts'] ?? m['timestamp'];
-      final base = symbol.replaceAll(RegExp(r'(USDT|USD|PERP|-SWAP)$'), '');
-      final qty = _num(m['vol'] ?? m['amount'] ?? m['size'] ?? m['qty']);
-      out.add(_FeedItem(
-        avatarBg: McColors.surfaceContainerHighest,
-        avatarLabel: exchange.isEmpty ? '·' : exchange.substring(0, 1),
-        avatarColor: _primaryLight,
-        name: exchange.isEmpty ? 'Unknown' : exchange,
-        symbol: symbol,
-        price: price > 0 ? '\$${_fmtPrice(price)}' : '--',
-        long: isLong,
-        amount: usd > 0 ? _fmtUsdZh(usd) : '--',
-        amountColor: isLong ? _bull : _bear,
-        qty: qty > 0 ? '≈${_fmtQty(qty)} $base' : base,
-        time: _fmtClock(ts),
-        showDivider: out.length < 4,
-      ));
-      if (out.length >= 5) break;
-    }
-    return out;
   }
 
   static String _fmtPrice(double v) {

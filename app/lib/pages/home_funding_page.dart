@@ -118,7 +118,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
       ];
 
-  // ---- Module 4 matrix rows: BTC/ETH/SOL/XRP/DOGE 已接线, XTZ 保留 mock ----
+  // ---- Module 4 matrix rows: BTC/ETH/SOL/XRP/DOGE/XTZ 费率已接线, 现价由 tickers 填充 ----
 
   @override
   void initState() {
@@ -134,14 +134,57 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
       _fetchSymbol('SOL'),
       _fetchSymbol('XRP'),
       _fetchSymbol('DOGE'),
+      _fetchSymbol('XTZ'),
+      _loadPrices(),
     ]);
+  }
+
+  // 现价: funding 接口不带现价, 用 OKX tickers 按 symbol 覆盖每行价格.
+  // 失败静默保留现有 (mock) 价格.
+  Future<void> _loadPrices() async {
+    try {
+      final tickers = await McData.tickers(instType: 'SWAP');
+      final bySymbol = {for (final t in tickers) t.symbol: t};
+      if (!mounted) return;
+      setState(() {
+        _rows = [
+          for (final r in _rows)
+            if (bySymbol.containsKey(r.symbol))
+              r.copyWith(price: _fmtPrice(bySymbol[r.symbol]!.last))
+            else
+              r,
+        ];
+      });
+    } catch (_) {
+      // 现价接口失败 — 保留现有价格.
+    }
+  }
+
+  // 现价格式化: 与行情页一致 (千分位 / 4 位小数 / 2 位小数).
+  static String _fmtPrice(double p) {
+    if (p >= 1000) return '\$${_comma(p)}';
+    if (p > 0 && p < 10) return '\$${p.toStringAsFixed(4)}';
+    return '\$${p.toStringAsFixed(2)}';
+  }
+
+  static String _comma(double v) {
+    final fixed = v.toStringAsFixed(2);
+    final dot = fixed.indexOf('.');
+    final intPart = fixed.substring(0, dot);
+    final buf = StringBuffer();
+    for (var i = 0; i < intPart.length; i++) {
+      buf.write(intPart[i]);
+      final remaining = intPart.length - i - 1;
+      if (remaining > 0 && remaining % 3 == 0) buf.write(',');
+    }
+    return '$buf.${fixed.substring(dot + 1)}';
   }
 
   Future<void> _fetchSymbol(String symbol) async {
     try {
       final resp =
           await McData.overview('funding/exchange-rates?symbol=$symbol');
-      // 接口无现价字段: 用该 symbol 现有 (mock) 价格兜底.
+      // 接口无现价字段: 沿用现有价格, 真实现价由 _loadPrices 统一覆盖.
       final existing = _rows.where((r) => r.symbol == symbol);
       final parsed = _parseExchangeRates(
           symbol, resp['data'],
@@ -210,7 +253,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     final status = _statusOf(avg);
     final row = _FundingRow(
       symbol: symbol,
-      price: fallbackPrice, // 接口无现价字段, 沿用 mock 价格
+      price: fallbackPrice, // 接口无现价字段, 沿用现有价格 (真实现价由 tickers 覆盖)
       rate: _fmtRate(avg),
       rateColor: avg >= 0.03
           ? McColors.tertiary
@@ -970,6 +1013,22 @@ class _FundingRow {
   final Color statusBg;
   final bool statusBold;
   final bool showDivider;
+
+  _FundingRow copyWith({String? price}) => _FundingRow(
+        symbol: symbol,
+        price: price ?? this.price,
+        rate: rate,
+        rateColor: rateColor,
+        sub: sub,
+        subColor: subColor,
+        apy: apy,
+        apyColor: apyColor,
+        status: status,
+        statusColor: statusColor,
+        statusBg: statusBg,
+        statusBold: statusBold,
+        showDivider: showDivider,
+      );
 }
 
 /// 7D funding-rate trend: dashed zero baseline + gradient area + glowing endpoint.

@@ -21,6 +21,9 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   // 时间线条目: 首屏即展示内置 mock, 拉取成功后整体替换.
   List<_WhaleFeedItem> _feedItems = _mockFeedItems();
 
+  // 链上流动性总览: null = 未加载/失败, 卡片回退 mock.
+  LiquidityOverview? _liq;
+
   static List<_WhaleFeedItem> _mockFeedItems() => const [
         _WhaleFeedItem(
           pillIcon: Icons.download_for_offline,
@@ -96,6 +99,11 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   }
 
   Future<void> _load() async {
+    // 两块独立拉取, 互不影响; 任一失败静默保留对应 mock.
+    await Future.wait<void>([_loadFeed(), _loadLiquidity()]);
+  }
+
+  Future<void> _loadFeed() async {
     try {
       final resp = await McData.overview('whale-alerts');
       final items = _parseAlerts(resp['alerts']);
@@ -103,6 +111,18 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
       setState(() => _feedItems = items);
     } on ApiException {
       // 503 未配置 / 502 上游错误 — 保留 mock.
+    } catch (_) {
+      // 网络/解析异常 — 保留 mock.
+    }
+  }
+
+  Future<void> _loadLiquidity() async {
+    try {
+      final liq = await McData.liquidityOverview();
+      if (!mounted || liq.isEmpty) return;
+      setState(() => _liq = liq);
+    } on ApiException {
+      // 上游/后端异常 — 保留 mock.
     } catch (_) {
       // 网络/解析异常 — 保留 mock.
     }
@@ -192,6 +212,21 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     return '\$${v.toStringAsFixed(2)}';
   }
 
+  // 大额紧凑: 复用全局 fmtUsdCompact (2.86T/112.3B/3.4M).
+  static String _fmtCap(double? v) =>
+      v == null ? '--' : McData.fmtUsdCompact(v);
+
+  // 带符号百分数, null 显示 --.
+  static String _fmtPct(double? v) {
+    if (v == null) return '--';
+    final sign = v >= 0 ? '+' : '';
+    return '$sign${v.toStringAsFixed(2)}%';
+  }
+
+  // 涨跌着色: 正 bull / 负 bear / 未知 outline.
+  static Color _pctColor(double? v) =>
+      v == null ? McColors.outline : (v >= 0 ? McColors.bull : McColors.bear);
+
   static String _relTime(dynamic ts) {
     final ms = ts is num ? ts.toInt() : int.tryParse('$ts') ?? 0;
     if (ms <= 0) return '刚刚';
@@ -228,6 +263,13 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
 
   // 1. 链上流动性异动总览 bento card
   Widget _liquidityOverview() {
+    final liq = _liq;
+    // 真实值缺失即回退 mock 首帧.
+    final stableTotal = liq?.stableTotalUsd;
+    final stableChg = liq?.stableChange1dPct;
+    final tvlTotal = liq?.tvlTotalUsd;
+    final tvlChg = liq?.tvlChange1dPct;
+    final tops = liq?.topStables ?? const <StableCoin>[];
     return McCard(
       color: McColors.surfaceContainer,
       padding: const EdgeInsets.all(20),
@@ -277,28 +319,32 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             children: [
               Expanded(
                 child: _metricBox(
-                  label: '超大额异动总额',
-                  value: '\$1.85B',
+                  label: '稳定币总流通',
+                  value: stableTotal != null ? _fmtCap(stableTotal) : '\$300.5B',
                   valueColor: McColors.onSurface,
-                  delta: '+14.2%',
-                  deltaColor: McColors.tertiary,
-                  caption: '跨链单笔 > \$5M 累计',
+                  delta: stableTotal != null ? _fmtPct(stableChg) : '+0.32%',
+                  deltaColor: stableTotal != null
+                      ? _pctColor(stableChg)
+                      : McColors.bull,
+                  caption: 'DefiLlama 全稳定币 24H',
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: _metricBox(
-                  label: '交易所净流向',
-                  badge: '强看涨',
-                  value: '-\$340M',
-                  valueColor: McColors.tertiary,
-                  caption: '主力冷钱包加速囤积',
+                  label: 'DeFi 总锁仓 TVL',
+                  value: tvlTotal != null ? _fmtCap(tvlTotal) : '\$94.6B',
+                  valueColor: McColors.onSurface,
+                  delta: tvlTotal != null ? _fmtPct(tvlChg) : '+0.85%',
+                  deltaColor:
+                      tvlTotal != null ? _pctColor(tvlChg) : McColors.bull,
+                  caption: 'DefiLlama 全链锁仓 24H',
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          // real-time flow meter
+          // top 稳定币 mini 列表
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
@@ -316,53 +362,34 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.arrow_downward,
-                            size: 14, color: McColors.tertiary),
+                        const Icon(Icons.currency_exchange,
+                            size: 14, color: McColors.primary),
                         const SizedBox(width: 6),
                         Text(
-                          '提币离场 (68.4%)',
+                          'TOP 稳定币 · 24H',
                           style: McText.sans(
                               size: 12,
-                              weight: FontWeight.w500,
-                              color: McColors.tertiary),
+                              weight: FontWeight.w600,
+                              color: McColors.onSurfaceVariant),
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          '充值抛压 (31.6%)',
-                          style: McText.sans(
-                              size: 12,
-                              weight: FontWeight.w500,
-                              color: McColors.error),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.arrow_upward,
-                            size: 14, color: McColors.error),
-                      ],
+                    Text(
+                      '流通 / 涨跌',
+                      style: McText.sans(size: 12, color: McColors.outline),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: SizedBox(
-                    height: 8,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 684,
-                          child: Container(color: McColors.tertiary),
-                        ),
-                        Expanded(
-                          flex: 316,
-                          child: Container(color: McColors.error),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 10),
+                if (tops.isEmpty)
+                  ..._mockStableRows()
+                else
+                  ...[
+                    for (var i = 0; i < tops.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 8),
+                      _stableRow(tops[i]),
+                    ],
+                  ],
               ],
             ),
           ),
@@ -480,8 +507,71 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     );
   }
 
-  Widget _filterPill(String text, {bool selected = false}) {
-    return Container(
+  // 单个稳定币行: 名称 + 流通 + 24H 涨跌 (bull/bear 着色).
+  Widget _stableRow(StableCoin s) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            s.name,
+            style: McText.sans(
+                size: 12, weight: FontWeight.w600, color: McColors.onSurface),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _fmtCap(s.circulatingUsd),
+              style:
+                  McText.sans(size: 12, color: McColors.onSurfaceVariant),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 64,
+              child: Text(
+                _fmtPct(s.change1dPct),
+                textAlign: TextAlign.right,
+                style: McText.sans(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: _pctColor(s.change1dPct)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // mock 首帧的稳定币行 (真实数据未到时).
+  List<Widget> _mockStableRows() {
+    const mock = [
+      ('USDT', 183.7e9, 0.00),
+      ('USDC', 74.2e9, 0.01),
+      ('DAI', 5.3e9, -0.02),
+    ];
+    return [
+      for (var i = 0; i < mock.length; i++) ...[
+        if (i > 0) const SizedBox(height: 8),
+        _stableRow(StableCoin.fromJson({
+          'name': mock[i].$1,
+          'circulating_usd': mock[i].$2,
+          'change_1d_pct': mock[i].$3,
+        })),
+      ],
+    ];
+  }
+
+  Widget _filterPill(String text, {bool selected = false}) {    return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(

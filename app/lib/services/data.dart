@@ -85,9 +85,42 @@ class LongShortRatio {
   final double? shortPct;
 }
 
+/// 链上流动性总览 (DefiLlama /api/market-overview/liquidity). 字段失败为 null.
+class LiquidityOverview {
+  LiquidityOverview.fromJson(Map<String, dynamic> j)
+      : stableTotalUsd = _toDouble(j['stable_total_usd']),
+        stableChange1dPct = _toDouble(j['stable_change_1d_pct']),
+        tvlTotalUsd = _toDouble(j['tvl_total_usd']),
+        tvlChange1dPct = _toDouble(j['tvl_change_1d_pct']),
+        topStables = (j['top_stables'] as List? ?? [])
+            .whereType<Map>()
+            .map((e) => StableCoin.fromJson(e.cast<String, dynamic>()))
+            .toList();
+
+  final double? stableTotalUsd;
+  final double? stableChange1dPct;
+  final double? tvlTotalUsd;
+  final double? tvlChange1dPct;
+  final List<StableCoin> topStables;
+
+  bool get isEmpty =>
+      stableTotalUsd == null && tvlTotalUsd == null && topStables.isEmpty;
+}
+
+/// 单个稳定币 (Top 列表项).
+class StableCoin {
+  StableCoin.fromJson(Map<String, dynamic> j)
+      : name = (j['name'] ?? '') as String,
+        circulatingUsd = _toDouble(j['circulating_usd']),
+        change1dPct = _toDouble(j['change_1d_pct']);
+
+  final String name;
+  final double? circulatingUsd;
+  final double? change1dPct;
+}
+
 /// 永续合约资金费率.
-class FundingRate {
-  FundingRate.fromJson(Map<String, dynamic> j)
+class FundingRate {  FundingRate.fromJson(Map<String, dynamic> j)
       : rate = _toDouble(j['fundingRate']),
         nextFundingTime = _msToTime(j['nextFundingTime']);
 
@@ -247,6 +280,10 @@ class McData {
   /// 全局多空账户占比 (多头主导指数). 字段失败为 null.
   static Future<LongShortRatio> longShortRatio() async =>
       LongShortRatio.fromJson(await overview('long-short-ratio'));
+
+  /// 链上流动性总览 (稳定币流通 + DeFi TVL). 字段失败为 null.
+  static Future<LiquidityOverview> liquidityOverview() async =>
+      LiquidityOverview.fromJson(await overview('liquidity'));
 
   /// 大额美元缩写: 2.86T / 112.3B / 3.4M.
   static String fmtUsdCompact(double v) {

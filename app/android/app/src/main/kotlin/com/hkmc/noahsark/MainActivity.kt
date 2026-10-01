@@ -1,4 +1,4 @@
-package com.mingce.mingce
+package com.hkmc.noahsark
 
 import io.flutter.embedding.android.FlutterActivity
 

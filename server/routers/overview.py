@@ -124,6 +124,97 @@ async def get_global_stats():
     return out
 
 
+# ---------- 链上流动性异动总览 (DefiLlama) ----------
+
+# key -> (data, expire_at); 独立于 CoinGlass/Gecko 的小缓存
+_llama_cache: dict[str, tuple[Any, float]] = {}
+
+_STABLE_NULL = {"stable_total_usd": None, "stable_change_1d_pct": None, "top_stables": []}
+_TVL_NULL = {"tvl_total_usd": None, "tvl_change_1d_pct": None}
+
+
+def _pct(cur: Any, prev: Any) -> float | None:
+    """(cur-prev)/prev*100, 任一缺失/除零返回 None."""
+    if not isinstance(cur, (int, float)) or not isinstance(prev, (int, float)):
+        return None
+    if not prev:
+        return None
+    return (cur - prev) / prev * 100.0
+
+
+async def _fetch_stables() -> dict:
+    """稳定币总流通 + 24h 变化 + Top5. 失败返回全 null."""
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.get(
+                "https://stablecoins.llama.fi/stablecoins",
+                params={"includePrices": "true"},
+            )
+            body = resp.json()
+        assets = body.get("peggedAssets") or []
+        usd = [a for a in assets if isinstance(a, dict) and a.get("pegType") == "peggedUSD"]
+
+        total = 0.0
+        prev_total = 0.0
+        rows = []
+        for a in usd:
+            cur = (a.get("circulating") or {}).get("peggedUSD")
+            prev = (a.get("circulatingPrevDay") or {}).get("peggedUSD")
+            if isinstance(cur, (int, float)):
+                total += cur
+                if isinstance(prev, (int, float)):
+                    prev_total += prev
+                # 上游给了 change_1d 直接用, 否则用昨值推算
+                chg = a.get("change_1d")
+                if not isinstance(chg, (int, float)):
+                    chg = _pct(cur, prev)
+                rows.append({
+                    "name": a.get("symbol") or a.get("name") or "?",
+                    "circulating_usd": cur,
+                    "change_1d_pct": chg,
+                })
+        rows.sort(key=lambda r: r["circulating_usd"], reverse=True)
+        return {
+            "stable_total_usd": total or None,
+            "stable_change_1d_pct": _pct(total, prev_total),
+            "top_stables": rows[:5],
+        }
+    except Exception:
+        return dict(_STABLE_NULL)
+
+
+async def _fetch_tvl() -> dict:
+    """DeFi 全网 TVL + 24h 变化 (取末两点). 失败返回全 null."""
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.get("https://api.llama.fi/v2/historicalChainTvl")
+            body = resp.json()
+        pts = [p for p in body if isinstance(p, dict) and isinstance(p.get("tvl"), (int, float))]
+        if len(pts) < 2:
+            return dict(_TVL_NULL)
+        last, prev = pts[-1]["tvl"], pts[-2]["tvl"]
+        return {"tvl_total_usd": last, "tvl_change_1d_pct": _pct(last, prev)}
+    except Exception:
+        return dict(_TVL_NULL)
+
+
+@router.get("/liquidity")
+async def get_liquidity():
+    """链上流动性总览 (DefiLlama): 稳定币流通 + DeFi TVL, 各带 24h 变化.
+
+    任一来源失败仅该块字段为 null, 永不 500; 前端回退 mock. 缓存 300s.
+    """
+    now = time.time()
+    hit = _llama_cache.get("liquidity")
+    if hit and hit[1] > now:
+        return hit[0]
+
+    stables, tvl = await _fetch_stables(), await _fetch_tvl()
+    out = {**stables, **tvl}
+    _llama_cache["liquidity"] = (out, now + 300)
+    return out
+
+
 # ---------- 多空比 ----------
 
 @router.get("/long-short-ratio")

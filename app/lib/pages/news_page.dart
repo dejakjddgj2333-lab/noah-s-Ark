@@ -27,7 +27,6 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   List<NewsItem> _flash = const [];
-  List<NewsItem> _research = const [];
   bool _loading = true;
   bool _error = false;
 
@@ -43,12 +42,11 @@ class _NewsPageState extends State<NewsPage> {
   // 行业政策关键词 (后端 keyword 支持逗号分隔 OR)
   static const String _policyKeyword = '监管,政策,SEC,法案,央行,合规';
 
-  // 分类 tab: 标签 → 后端 category (资讯/快讯/公告/研报)
+  // 分类 tab: 标签 → 后端 category (资讯/快讯/公告)
   static const List<(String, String)> _categories = [
     ('资讯', 'news'),
     ('快讯', 'flash'),
     ('公告', 'notice'),
-    ('研报', 'research'),
   ];
 
   @override
@@ -68,7 +66,7 @@ class _NewsPageState extends State<NewsPage> {
       _loading = true;
       _error = false;
     });
-    await Future.wait([_loadTimeline(reset: true), _loadResearch()]);
+    await _loadTimeline(reset: true);
   }
 
   // 时间线列表 (当前分类). reset=true 从第一页重新拉.
@@ -113,20 +111,6 @@ class _NewsPageState extends State<NewsPage> {
     }
   }
 
-  // 研报位: 共享库暂无 research 类时回退普通 news.
-  Future<void> _loadResearch() async {
-    try {
-      var research = await McData.news(category: 'research', pageSize: 5);
-      if (research.isEmpty) {
-        research = await McData.news(category: 'news', pageSize: 5);
-      }
-      if (!mounted) return;
-      setState(() => _research = research);
-    } catch (_) {
-      // 研报位失败静默, 不影响主时间线
-    }
-  }
-
   void _selectCategory(String category) {
     if ((category == _category && _keyword == null) || _loadingMore) return;
     setState(() {
@@ -136,20 +120,6 @@ class _NewsPageState extends State<NewsPage> {
       _error = false;
       _flash = const [];
     });
-    _loadTimeline(reset: true);
-  }
-
-  // 投研深度 tab: 切到研报到顶
-  void _jumpToResearch() {
-    if (_loadingMore) return;
-    setState(() {
-      _category = 'research';
-      _keyword = null;
-      _loading = true;
-      _error = false;
-      _flash = const [];
-    });
-    _scrollToTop();
     _loadTimeline(reset: true);
   }
 
@@ -227,8 +197,6 @@ class _NewsPageState extends State<NewsPage> {
         return '快讯';
       case 'notice':
         return '公告';
-      case 'research':
-        return '研报';
       default:
         return '资讯';
     }
@@ -236,8 +204,6 @@ class _NewsPageState extends State<NewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 研报 tab 激活时隐藏独立研报位, 避免与时间线重复.
-    final hasResearch = _research.isNotEmpty && _category != 'research';
     return RefreshIndicator(
       onRefresh: _load,
       color: NewsPage._gold,
@@ -259,23 +225,13 @@ class _NewsPageState extends State<NewsPage> {
                 const SizedBox(height: 16),
                 _loadMoreButton(),
                 const SizedBox(height: 20),
-                if (hasResearch) ...[
-                  _researchHeader(),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _openDetail(_research.first.id),
-                    child: _researchCard(_research.first),
-                  ),
-                  const SizedBox(height: 20),
-                ],
                 _editorialBar(),
               ],
             ),
     );
   }
 
-  // 分类过滤 chips: 资讯/快讯/公告/研报 (+政策 keyword 模式)
+  // 分类过滤 chips: 资讯/快讯/公告 (+政策 keyword 模式)
   Widget _categoryChips() {
     return SizedBox(
       height: 32,
@@ -566,9 +522,6 @@ class _NewsPageState extends State<NewsPage> {
               active: _keyword == null && _category == 'flash',
               ping: true,
               onTap: () => _selectCategory('flash')),
-          _tab(Icons.analytics, '投研深度',
-              active: _keyword == null && _category == 'research',
-              onTap: _jumpToResearch),
           _tab(Icons.calendar_today, '宏观日历', onTap: _openCalendar),
           _tab(Icons.gavel, '行业政策',
               active: _keyword != null, onTap: _applyPolicyFilter),
@@ -976,328 +929,6 @@ class _NewsPageState extends State<NewsPage> {
             ),
           ),
         ],
-    );
-  }
-
-  // 深度研报精选 header
-  Widget _researchHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: NewsPage._gold,
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: [
-                    BoxShadow(color: NewsPage._gold.withValues(alpha: 0.6), blurRadius: 8)
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '深度研报精选',
-                style: McText.display(size: 16, weight: FontWeight.w700),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: NewsPage._gold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'MINGCE VIP',
-                  style: McText.mono(
-                      size: 12, weight: FontWeight.w700, color: NewsPage._gold),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Text('查看全部',
-                  style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant)),
-              const Icon(Icons.arrow_forward,
-                  size: 14, color: NewsPage._onSurfaceVariant),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Deep research featured card (bento style)
-  Widget _researchCard(NewsItem item) {
-    final reads = _fmtCount(item.likeCount + item.commentCount + item.shareCount);
-    return Container(
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 12)],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // cover graphic (gradient placeholder for the HTML image)
-          Container(
-            height: 176,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF32353C),
-                  Color(0xFF1D2026),
-                  Color(0xFF10131A),
-                ],
-              ),
-            ),
-            child: Stack(
-              children: [
-                // 真实封面图, 加载失败保持渐变占位
-                if (item.coverUrl != null && item.coverUrl!.isNotEmpty)
-                  Positioned.fill(
-                    child: Image.network(
-                      item.coverUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) =>
-                          const SizedBox.shrink(),
-                      loadingBuilder: (context, child, progress) =>
-                          progress == null ? child : const SizedBox.shrink(),
-                    ),
-                  ),
-                Positioned(
-                  right: -20,
-                  top: -20,
-                  child: Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          NewsPage._gold.withValues(alpha: 0.25),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 6,
-                  top: 6,
-                  child: Row(
-                    children: [
-                      _bannerBadge('重磅深度', NewsPage._goldBright, bold: true),
-                      const SizedBox(width: 6),
-                      _bannerBadge('研报编号 #MC-${item.id}', const Color(0xFF93C5FD)),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color:
-                          McColors.surfaceContainerLowest.withValues(alpha: 0.8),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.bookmark_border,
-                        size: 16, color: McColors.onSurface),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // research content body
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: McText.display(
-                      size: 20, weight: FontWeight.w700, height: 1.25),
-                ),
-                if (item.summary.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    item.summary,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: McText.mono(
-                        size: 12, color: NewsPage._onSurfaceVariant, height: 1.5),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.verified, size: 14, color: NewsPage._gold),
-                    const SizedBox(width: 4),
-                    Text(item.source.isNotEmpty ? item.source : '明策研究院',
-                        style: McText.mono(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: McColors.onSurface)),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.visibility,
-                        size: 14, color: NewsPage._onSurfaceVariant),
-                    const SizedBox(width: 4),
-                    Text('阅读 $reads',
-                        style:
-                            McText.mono(size: 12, color: NewsPage._onSurfaceVariant)),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(_relativeTime(item.publishAt),
-                          style:
-                              McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _featurePill(
-                          Icons.picture_as_pdf, '包含完整 PDF 研报', NewsPage._gold),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _featurePill(
-                          Icons.account_tree, '附核心逻辑结构脑图', NewsPage._cyan),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _tagChip('#宏观周期'),
-                    _tagChip('#BTC目标价'),
-                    _tagChip('#链上筹码分布'),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: NewsPage._gold,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                                color: NewsPage._gold.withValues(alpha: 0.35),
-                                blurRadius: 16)
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.menu_book,
-                                size: 16, color: Color(0xFFFFFFFF)),
-                            const SizedBox(width: 6),
-                            Text(
-                              '在线研读全文',
-                              style: McText.mono(
-                                  size: 12,
-                                  weight: FontWeight.w700,
-                                  color: const Color(0xFFFFFFFF)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: McColors.surfaceContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.download,
-                          size: 18, color: McColors.onSurface),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bannerBadge(String text, Color color, {bool bold = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerLowest.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        text,
-        style: McText.mono(
-            size: 12,
-            weight: bold ? FontWeight.w700 : FontWeight.w500,
-            color: color,
-            letterSpacing: 1),
-      ),
-    );
-  }
-
-  Widget _featurePill(IconData icon, String text, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: iconColor),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: McText.mono(size: 12, color: McColors.onSurface),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _tagChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
-      ),
     );
   }
 
