@@ -533,7 +533,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         iconTheme: const IconThemeData(color: McColors.onSurface),
         title: Row(
           children: [
-            _avatar(widget.conversation.displayName, size: 32),
+            _avatar(widget.conversation.displayName, size: 32,
+                url: widget.conversation.otherUser?.avatarUrl),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -822,7 +823,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!mine) ...[
-            _avatar(msg.senderName, size: 30),
+            _avatar(msg.senderName, size: 30, url: msg.senderAvatar),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -846,7 +847,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           ),
           if (mine) ...[
             const SizedBox(width: 8),
-            _avatar(msg.senderName.isEmpty ? '我' : msg.senderName, size: 30),
+            _avatar(msg.senderName.isEmpty ? '我' : msg.senderName,
+                size: 30, url: AuthStore.instance.avatarUrl),
           ],
         ],
       ),
@@ -1434,25 +1436,16 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         _ => '消息',
       };
 
-  Widget _avatar(String name, {double size = 32}) {
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+  Widget _avatar(String name, {double size = 32, String? url}) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: McColors.primarySoft.withValues(alpha: 0.16),
         shape: BoxShape.circle,
         border:
             Border.all(color: McColors.primarySoft.withValues(alpha: 0.3)),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: McText.display(
-            size: size * 0.42,
-            weight: FontWeight.w700,
-            color: McColors.primarySoft),
-      ),
+      child: McAvatar(name: name, url: url, size: size, radius: size / 2),
     );
   }
 

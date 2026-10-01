@@ -23,6 +23,7 @@ _MSG_MIGRATIONS = (
     "ALTER TABLE hk_chat_messages ADD COLUMN IF NOT EXISTS msg_type VARCHAR(16) NOT NULL DEFAULT 'text'",
     "ALTER TABLE hk_chat_messages ADD COLUMN IF NOT EXISTS file_url VARCHAR(512)",
     "ALTER TABLE hk_chat_messages ADD COLUMN IF NOT EXISTS duration INTEGER",
+    "ALTER TABLE hk_users ADD COLUMN IF NOT EXISTS nickname VARCHAR(32)",
 )
 
 # 消息留存: 服务端仅做中继, 7 天清理, 每 6h 一轮

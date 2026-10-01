@@ -333,8 +333,8 @@ class _FriendsPageState extends State<FriendsPage> {
           final u = _friends[i];
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: _avatar(u.username),
-            title: Text(u.username,
+            leading: _avatar(u.displayName, url: u.avatarUrl),
+            title: Text(u.displayName,
                 style:
                     McText.sans(size: 14, weight: FontWeight.w600)),
             onTap: () => _openDirect(u),
@@ -457,10 +457,10 @@ class _FriendsPageState extends State<FriendsPage> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             children: [
-              _avatar(u.username),
+              _avatar(u.displayName, url: u.avatarUrl),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(u.username,
+                child: Text(u.displayName,
                     style: McText.sans(size: 14, weight: FontWeight.w600)),
               ),
               _relationButton(u),
@@ -516,20 +516,15 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Widget _avatar(String name) {
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+  Widget _avatar(String name, {String? url}) {
     return Container(
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: McColors.primarySoft.withValues(alpha: 0.16),
         shape: BoxShape.circle,
         border: Border.all(color: McColors.primarySoft.withValues(alpha: 0.3)),
       ),
-      alignment: Alignment.center,
-      child: Text(initial,
-          style: McText.display(
-              size: 15, weight: FontWeight.w700, color: McColors.primarySoft)),
+      child: McAvatar(name: name, url: url, size: 42, radius: 21),
     );
   }
 

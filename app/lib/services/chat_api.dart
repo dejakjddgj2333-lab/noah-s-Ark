@@ -212,18 +212,30 @@ class ChatUser {
   const ChatUser({
     required this.id,
     required this.username,
+    this.nickname,
+    this.avatarUrl,
     this.relation = 'none',
   });
 
   final int id;
   final String username;
+  final String? nickname;
+  final String? avatarUrl; // 相对路径, 加载时前缀 McApi.baseUrl
   final String relation; // self|friend|outgoing|incoming|none
+
+  /// 展示名: 昵称优先.
+  String get displayName =>
+      (nickname != null && nickname!.isNotEmpty) ? nickname! : username;
 
   factory ChatUser.fromJson(dynamic raw) {
     final m = raw is Map ? raw : const <String, dynamic>{};
+    final nick = (m['nickname'] ?? '').toString();
+    final av = (m['avatar_url'] ?? '').toString();
     return ChatUser(
       id: _toInt(m['id']),
       username: (m['username'] ?? '').toString(),
+      nickname: nick.isEmpty ? null : nick,
+      avatarUrl: av.isEmpty ? null : av,
       relation: (m['relation'] ?? 'none').toString(),
     );
   }
@@ -296,7 +308,7 @@ class Conversation {
   /// 显示名: 群用 name, 私聊优先对方用户名.
   String get displayName {
     if (isGroup) return name.isEmpty ? '群聊' : name;
-    final other = otherUser?.username ?? '';
+    final other = otherUser?.displayName ?? '';
     if (other.isNotEmpty) return other;
     return name.isEmpty ? '私聊' : name;
   }
@@ -400,6 +412,7 @@ class ChatMessage {
     required this.id,
     required this.senderId,
     required this.senderName,
+    this.senderAvatar,
     required this.content,
     this.msgType = 'text',
     this.fileUrl,
@@ -412,6 +425,7 @@ class ChatMessage {
   final int id;
   final int senderId;
   final String senderName;
+  final String? senderAvatar; // 发送者头像相对路径
   final String content;
 
   /// 消息类型: text|image|audio|video.
@@ -437,6 +451,7 @@ class ChatMessage {
         id: id,
         senderId: senderId,
         senderName: senderName,
+        senderAvatar: senderAvatar,
         content: content,
         msgType: msgType,
         fileUrl: fileUrl,
@@ -476,7 +491,11 @@ class ChatMessage {
     return ChatMessage(
       id: _toInt(m['id']),
       senderId: _toInt(senderMap['id']),
-      senderName: (senderMap['username'] ?? '').toString(),
+      senderName: (senderMap['nickname'] ?? senderMap['username'] ?? '')
+          .toString(),
+      senderAvatar: (senderMap['avatar_url'] ?? '').toString().isEmpty
+          ? null
+          : senderMap['avatar_url'].toString(),
       content: (m['content'] ?? '').toString(),
       msgType: (m['msg_type'] ?? 'text').toString(),
       fileUrl: m['file_url']?.toString(),
@@ -493,20 +512,32 @@ class GroupMember {
   const GroupMember({
     required this.id,
     required this.username,
+    this.nickname,
+    this.avatarUrl,
     this.role = 'member',
   });
 
   final int id;
   final String username;
+  final String? nickname;
+  final String? avatarUrl;
   final String role; // owner|member
 
   bool get isOwner => role == 'owner';
 
+  /// 展示名: 昵称优先.
+  String get displayName =>
+      (nickname != null && nickname!.isNotEmpty) ? nickname! : username;
+
   factory GroupMember.fromJson(dynamic raw) {
     final m = raw is Map ? raw : const <String, dynamic>{};
+    final nick = (m['nickname'] ?? '').toString();
+    final av = (m['avatar_url'] ?? '').toString();
     return GroupMember(
       id: _toInt(m['id']),
       username: (m['username'] ?? '').toString(),
+      nickname: nick.isEmpty ? null : nick,
+      avatarUrl: av.isEmpty ? null : av,
       role: (m['role'] ?? 'member').toString(),
     );
   }

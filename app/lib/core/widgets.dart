@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/api.dart';
 import 'theme.dart';
 
 /// Panel card: surface-container-low bg, 1px hairline border, radius 12.
@@ -291,6 +292,69 @@ class McDeltaBadge extends StatelessWidget {
       child: Text(
         text,
         style: McText.mono(size: 12, weight: FontWeight.w700, color: c),
+      ),
+    );
+  }
+}
+
+/// 头像: 有图显示网络图, 无图/加载失败回退首字母. url 为相对路径时自动补 baseUrl.
+class McAvatar extends StatelessWidget {
+  const McAvatar({
+    super.key,
+    required this.name,
+    this.url,
+    this.size = 46,
+    this.radius = 10,
+    this.bg,
+    this.fg = McColors.primarySoft,
+  });
+
+  final String name;
+  final String? url;
+  final double size;
+  final double radius;
+  final Color? bg;
+  final Color fg;
+
+  String get _fullUrl {
+    final u = url ?? '';
+    if (u.isEmpty) return '';
+    if (u.startsWith('http')) return u;
+    return '${McApi.baseUrl}$u';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+    final fallback = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: bg ?? fg.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: McText.display(
+          size: size * 0.38,
+          weight: FontWeight.w700,
+          color: fg,
+        ),
+      ),
+    );
+    final u = _fullUrl;
+    if (u.isEmpty) return fallback;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.network(
+        u,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback,
+        loadingBuilder: (_, child, progress) =>
+            progress == null ? child : fallback,
       ),
     );
   }

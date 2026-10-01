@@ -30,6 +30,7 @@ class HkUser(HkBase):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(32), unique=True, nullable=False, index=True)
+    nickname = Column(String(32), nullable=True)  # 展示昵称, 空=显示 username
     password_hash = Column(String(128), nullable=False)
     email = Column(String(128), unique=True, nullable=False, index=True)
     email_verified = Column(Boolean, nullable=False, default=True)  # 注册即验证

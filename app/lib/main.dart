@@ -17,6 +17,7 @@ import 'pages/home_whale_page.dart';
 import 'pages/invite_page.dart';
 import 'pages/login_page.dart';
 import 'pages/news_page.dart';
+import 'pages/profile_page.dart';
 import 'services/auth.dart';
 import 'services/call_service.dart';
 import 'services/chat_api.dart';
@@ -93,6 +94,8 @@ class _McShellState extends State<McShell> {
     // 通话服务一次性提示 → toast.
     CallService.instance.notice.addListener(_onCallNotice);
     _seedChatBadges();
+    // 静默同步服务端昵称/头像 (可能在他端改过).
+    AuthStore.instance.refreshProfile();
   }
 
   Future<void> _seedChatBadges() async {
@@ -372,6 +375,9 @@ class McAppHeader extends StatelessWidget {
                   onTap: () {
                     if (!AuthStore.instance.loggedIn) {
                       Navigator.pushNamed(context, '/login');
+                    } else {
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => const ProfilePage()));
                     }
                   },
                   child: Container(
@@ -386,21 +392,22 @@ class McAppHeader extends StatelessWidget {
                     child: ListenableBuilder(
                       listenable: AuthStore.instance,
                       builder: (context, _) {
-                        final name = AuthStore.instance.username;
-                        return CircleAvatar(
+                        final name = AuthStore.instance.displayName;
+                        if (name.isEmpty) {
+                          return const CircleAvatar(
+                            radius: 14,
+                            backgroundColor: McColors.surfaceContainerHigh,
+                            child: Icon(Icons.person,
+                                size: 18, color: McColors.primary),
+                          );
+                        }
+                        return McAvatar(
+                          name: name,
+                          url: AuthStore.instance.avatarUrl,
+                          size: 28,
                           radius: 14,
-                          backgroundColor: McColors.surfaceContainerHigh,
-                          child: name != null
-                              ? Text(
-                                  name[0].toUpperCase(),
-                                  style: McText.mono(
-                                    size: 12,
-                                    weight: FontWeight.w700,
-                                    color: McColors.primary,
-                                  ),
-                                )
-                              : const Icon(Icons.person,
-                                  size: 18, color: McColors.primary),
+                          bg: McColors.surfaceContainerHigh,
+                          fg: McColors.primary,
                         );
                       },
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
+import '../core/widgets.dart';
 import '../services/auth.dart';
 import '../services/chat_api.dart';
 
@@ -160,25 +161,11 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               onPressed: () => Navigator.pop(ctx, f),
               child: Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: McColors.primarySoft.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      f.username.isEmpty ? '?' : f.username[0].toUpperCase(),
-                      style: McText.display(
-                          size: 14,
-                          weight: FontWeight.w700,
-                          color: McColors.primarySoft),
-                    ),
-                  ),
+                  McAvatar(
+                      name: f.displayName, url: f.avatarUrl, size: 32, radius: 8),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(f.username,
+                    child: Text(f.displayName,
                         style: McText.sans(size: 14, color: Colors.white)),
                   ),
                 ],
@@ -355,7 +342,6 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   Widget _memberCell(GroupMember m) {
-    final initial = m.username.isEmpty ? '?' : m.username[0].toUpperCase();
     final canRemove = _isOwner && !m.isOwner;
     return GestureDetector(
       // 群主可长按非群主成员触发移除.
@@ -370,17 +356,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: McColors.primarySoft.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                       color: McColors.primarySoft.withValues(alpha: 0.3)),
                 ),
-                alignment: Alignment.center,
-                child: Text(initial,
-                    style: McText.display(
-                        size: 17,
-                        weight: FontWeight.w700,
-                        color: McColors.primarySoft)),
+                child: McAvatar(
+                    name: m.displayName, url: m.avatarUrl, size: 46),
               ),
               if (canRemove)
                 Positioned(
@@ -404,7 +385,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            m.username,
+            m.displayName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,

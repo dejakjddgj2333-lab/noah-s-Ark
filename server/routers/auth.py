@@ -1,11 +1,22 @@
-"""认证路由: 邮箱验证码、注册、登录、当前用户."""
+"""认证路由: 邮箱验证码、注册、登录、当前用户、个人资料 (昵称/头像)."""
 from __future__ import annotations
 
 import random
 import re
 from datetime import timedelta
+from pathlib import Path
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,8 +68,14 @@ class UserOut(BaseModel):
     id: int
     username: str
     email: str
+    nickname: str | None = None
+    avatar_url: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ProfileIn(BaseModel):
+    nickname: str | None = Field(default=None, max_length=32)
 
 
 class TokenOut(BaseModel):
@@ -210,3 +227,85 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 async def me(user: HkUser = Depends(auth_service.get_current_user)):
     return UserOut.model_validate(user)
+
+
+# ---------- 个人资料 (昵称/头像) ----------
+
+AVATAR_DIR = Path(config.upload_dir) / "avatars"
+_AVATAR_EXTS = {"jpg", "jpeg", "png", "webp", "gif"}
+_AVATAR_MAX = 10 * 1024 * 1024
+
+
+@router.put("/profile", response_model=UserOut)
+async def update_profile(
+    data: ProfileIn,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """改昵称: 传 None/空串 = 清除昵称回退 username."""
+    if data.nickname is not None:
+        me.nickname = data.nickname.strip() or None
+    await db.commit()
+    await db.refresh(me)
+    return UserOut.model_validate(me)
+
+
+@router.post("/avatar", status_code=201)
+async def upload_avatar(
+    request: Request,
+    file: UploadFile = File(...),
+    me: HkUser = Depends(auth_service.get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """头像上传: multipart 字段名 file, 10MB, 仅图片. 独立目录, 不走聊天 7 天清理."""
+    cl = request.headers.get("content-length")
+    if cl and cl.isdigit() and int(cl) > _AVATAR_MAX:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="图片超过 10MB",
+        )
+    ext = ""
+    if file.filename and "." in file.filename:
+        ext = file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in _AVATAR_EXTS:
+        raise HTTPException(status_code=400, detail="仅支持 jpg/png/webp/gif")
+    name = f"{uuid4().hex}.{ext}"
+    AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+    dest = AVATAR_DIR / name
+    size = 0
+    try:
+        with open(dest, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > _AVATAR_MAX:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="图片超过 10MB",
+                    )
+                f.write(chunk)
+    except Exception:
+        dest.unlink(missing_ok=True)
+        raise
+    # 旧头像文件顺手清掉 (仅本服务生成的无扩展名引用)
+    old = me.avatar_url or ""
+    if old.startswith("/api/auth/avatars/"):
+        old_name = old.rsplit("/", 1)[-1]
+        if re.fullmatch(r"[A-Za-z0-9]+", old_name):
+            for p in AVATAR_DIR.glob(f"{old_name}.*"):
+                p.unlink(missing_ok=True)
+    # URL 不带扩展名: 宝塔/nginx 按 .png 等后缀拦截静态请求, 会绕过代理 404
+    me.avatar_url = f"/api/auth/avatars/{name.split('.')[0]}"
+    await db.commit()
+    return {"avatar_url": me.avatar_url}
+
+
+@router.get("/avatars/{name}")
+async def get_avatar(name: str):
+    """头像读取: URL 无扩展名, 按 glob 找回磁盘文件."""
+    safe = name.rsplit("/", 1)[-1]
+    if not re.fullmatch(r"[A-Za-z0-9]+", safe):
+        raise HTTPException(status_code=400, detail="非法文件名")
+    matches = sorted(AVATAR_DIR.glob(f"{safe}.*"))
+    if not matches:
+        raise HTTPException(status_code=404, detail="头像不存在")
+    return FileResponse(matches[0])

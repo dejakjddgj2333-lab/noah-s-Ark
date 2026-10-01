@@ -208,6 +208,8 @@ async def _message_out(
         "sender": {
             "id": msg.sender_id,
             "username": sender.username if sender else "",
+            "nickname": sender.nickname if sender else None,
+            "avatar_url": sender.avatar_url if sender else None,
         },
         "content": msg.content,
         "msg_type": msg.msg_type,
@@ -237,8 +239,13 @@ async def _conv_out(
         if other_id is not None:
             u = await db.get(HkUser, other_id)
             if u is not None:
-                other_user = {"id": u.id, "username": u.username}
-                name = u.username
+                other_user = {
+                    "id": u.id,
+                    "username": u.username,
+                    "nickname": u.nickname,
+                    "avatar_url": u.avatar_url,
+                }
+                name = u.nickname or u.username
     last = (
         await db.scalars(
             select(HkChatMessage)
@@ -267,7 +274,7 @@ async def _conv_out(
             "id": last.id,  # 前端 WS read 事件按 id 比对回执
             "msg_type": last.msg_type,  # 列表预览 [图片]/[语音]/[视频]
             "content": last.content,
-            "sender_name": lsender.username if lsender else "",
+            "sender_name": (lsender.nickname or lsender.username) if lsender else "",
             "created_at": last.created_at,
             "is_mine": is_mine,
             "read": read,
@@ -365,7 +372,13 @@ async def search_users(
         return "none"
 
     return [
-        {"id": u.id, "username": u.username, "relation": _relation(u.id)}
+        {
+            "id": u.id,
+            "username": u.username,
+            "nickname": u.nickname,
+            "avatar_url": u.avatar_url,
+            "relation": _relation(u.id),
+        }
         for u in users
     ]
 
@@ -502,13 +515,21 @@ async def list_friends(
 ):
     rows = (
         await db.execute(
-            select(HkUser.id, HkUser.username)
+            select(HkUser.id, HkUser.username, HkUser.nickname, HkUser.avatar_url)
             .join(HkFriendship, HkFriendship.friend_id == HkUser.id)
             .where(HkFriendship.user_id == me.id)
             .order_by(HkUser.id)
         )
     ).all()
-    return [{"id": r.id, "username": r.username} for r in rows]
+    return [
+        {
+            "id": r.id,
+            "username": r.username,
+            "nickname": r.nickname,
+            "avatar_url": r.avatar_url,
+        }
+        for r in rows
+    ]
 
 
 @router.get("/friends/online")
@@ -701,7 +722,7 @@ async def list_members(
     conv = await db.get(HkConversation, conversation_id)
     rows = (
         await db.execute(
-            select(HkUser.id, HkUser.username)
+            select(HkUser.id, HkUser.username, HkUser.nickname, HkUser.avatar_url)
             .join(
                 HkConversationMember,
                 HkConversationMember.user_id == HkUser.id,
@@ -714,6 +735,8 @@ async def list_members(
         {
             "id": r.id,
             "username": r.username,
+            "nickname": r.nickname,
+            "avatar_url": r.avatar_url,
             "role": "owner" if conv and r.id == conv.created_by else "member",
         }
         for r in rows

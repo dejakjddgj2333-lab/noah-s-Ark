@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
+import '../core/widgets.dart';
 import '../services/chat_api.dart';
 import '../services/auth.dart';
 import '../services/chat_db.dart';
@@ -706,7 +707,6 @@ class _ChatPageState extends State<ChatPage> {
   /// 圆角方形头像 (48px, r12): 名字哈希选配色, 私聊在线时右下绿点.
   Widget _avatar(Conversation c, {required bool online}) {
     final name = c.displayName;
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
     // 小调色板: 主蓝 / 青 / 绿 / 金, 按名字哈希稳定取色.
     const palette = [
       McColors.primarySoft,
@@ -729,15 +729,16 @@ class _ChatPageState extends State<ChatPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style:
-                  McText.display(size: 17, weight: FontWeight.w700, color: color),
+            child: McAvatar(
+              name: name,
+              url: c.isGroup ? null : c.otherUser?.avatarUrl,
+              size: 48,
+              radius: 12,
+              bg: color.withValues(alpha: 0.16),
+              fg: color,
             ),
           ),
           if (online)
