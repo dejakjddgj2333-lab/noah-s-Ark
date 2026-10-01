@@ -162,6 +162,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         _loadFailed = false;
       });
       _markRead();
+      _jumpToBottom(); // 初始定位到最新消息
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -172,9 +173,10 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   }
 
   void _maybeLoadMore() {
-    // reverse 列表: 滚动到顶端 (最大偏移) 即最旧消息处.
+    // 正序列表: 滚动到顶部 (小偏移) 即最旧消息处. 内容不足一屏时不触发 (maxScrollExtent=0).
     if (!_hasMore || _loadingMore || _loading) return;
-    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 80) {
+    if (_scroll.position.maxScrollExtent > 0 &&
+        _scroll.position.pixels <= 80) {
       _loadMore();
     }
   }
@@ -182,6 +184,9 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   Future<void> _loadMore() async {
     if (_messages.isEmpty) return;
     setState(() => _loadingMore = true);
+    // 记录旧滚动位置, 顶部插入后补偿保持视觉不动.
+    final oldPixels = _scroll.position.pixels;
+    final oldMax = _scroll.position.maxScrollExtent;
     try {
       final older = await ChatApi.messages(widget.conversation.id,
           beforeId: _messages.last.id);
@@ -195,6 +200,11 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         _messages.addAll(fresh);
         _hasMore = older.length >= 50;
         _loadingMore = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scroll.hasClients) return;
+        final delta = _scroll.position.maxScrollExtent - oldMax;
+        if (delta > 0) _scroll.jumpTo(oldPixels + delta);
       });
     } catch (_) {
       if (!mounted) return;
@@ -222,7 +232,9 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       final msg = ChatMessage.fromJson(e['message']);
       if (msg.id == 0) return;
       if (_messages.any((m) => m.id == msg.id)) return;
+      final stick = _nearBottom; // 插入前判定是否贴底
       setState(() => _messages.insert(0, msg));
+      if (stick) _jumpToBottom(); // 贴底才跟滚, 翻历史时不拽动
       ChatDb.saveMessage(widget.conversation.id, msg.toMap());
       _markRead();
     } else if (type == 'reaction') {
@@ -247,6 +259,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       _replyingTo = null;
     });
     _controller.clear();
+    _jumpToBottom(); // 自己发的乐观气泡顶到可视区
     await _deliver(pending);
   }
 
@@ -393,7 +406,11 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   // ---------- 语音 (按住说话, Web 不支持隐藏) ----------
 
   Future<void> _startRecord() async {
-    if (kIsWeb || _recording) return;
+    if (kIsWeb) {
+      _toast('网页版暂不支持语音, 请用 App');
+      return;
+    }
+    if (_recording) return;
     try {
       if (!await _recorder.hasPermission()) {
         _toast('需要麦克风权限');
@@ -567,7 +584,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     }
 
     final loaderCount = (_hasMore || _loadingMore) ? 1 : 0;
-    final total = _pending.length + _messages.length + loaderCount;
+    final total = loaderCount + _messages.length + _pending.length;
 
     return RefreshIndicator(
       onRefresh: _loadInitial,
@@ -575,51 +592,64 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       backgroundColor: McColors.surfaceContainerHigh,
       child: ListView.builder(
         controller: _scroll,
-        reverse: true,
+        // 正序展示: 内容从顶部开始排 (旧->新), 初始/新消息自动滚到底.
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         itemCount: total,
         itemBuilder: (context, index) {
-          if (index < _pending.length) {
-            return _buildPending(_pending[index]);
-          }
-          final mi = index - _pending.length;
-          if (mi < _messages.length) {
-            return _buildMessage(mi);
-          }
           // 顶部加载指示.
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: McColors.onSurfaceVariant),
+          if (loaderCount == 1 && index == 0) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: McColors.onSurfaceVariant),
+                ),
               ),
-            ),
-          );
+            );
+          }
+          final mi0 = index - loaderCount;
+          if (mi0 < _messages.length) {
+            // _messages 内部最新在前, 展示翻转为旧->新.
+            return _buildMessage(_messages.length - 1 - mi0);
+          }
+          return _buildPending(_pending[mi0 - _messages.length]);
         },
       ),
     );
   }
 
+  /// 滚到底部 (等帧结束列表布局完).
+  void _jumpToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
+  }
+
+  bool get _nearBottom =>
+      !_scroll.hasClients ||
+      _scroll.position.maxScrollExtent - _scroll.position.pixels < 240;
+
   Widget _buildMessage(int index) {
     final msg = _messages[index];
     final mine = msg.senderId == _myId;
 
-    // 5 分钟间隔时间分隔条 (与上一条更新消息比较, index-1 即更新的).
+    // 5 分钟间隔时间分隔条 (与更旧一条比较, _messages 最新在前, index+1 即更旧的).
     Widget? divider;
     final created = msg.createdAt;
-    if (index > 0) {
-      final newer = _messages[index - 1];
-      final b = newer.createdAt;
+    if (index < _messages.length - 1) {
+      final older = _messages[index + 1];
+      final b = older.createdAt;
       if (created != null && b != null &&
-          b.difference(created).inMinutes.abs() >= 5) {
+          created.difference(b).inMinutes.abs() >= 5) {
         divider = _timeDivider(created);
       }
     } else if (created != null) {
-      divider = _timeDivider(created);
+      divider = _timeDivider(created); // 最旧一条总带时间
     }
 
     return Column(
@@ -1180,22 +1210,21 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // 语音/键盘切换 (Web 不支持录音, 隐藏).
-                  if (!kIsWeb)
-                    _roundIconBtn(
-                      _voiceMode ? Icons.keyboard : Icons.mic_none,
-                      () {
-                        setState(() {
-                          _voiceMode = !_voiceMode;
-                          _attachOpen = false;
-                        });
-                        if (!_voiceMode) _focus.requestFocus();
-                      },
-                    ),
-                  if (!kIsWeb) const SizedBox(width: 8),
+                  // 语音/键盘切换 (输入框左侧; web 也可点, 按住时提示不支持).
+                  _roundIconBtn(
+                    _voiceMode ? Icons.keyboard : Icons.mic_none,
+                    () {
+                      setState(() {
+                        _voiceMode = !_voiceMode;
+                        _attachOpen = false;
+                      });
+                      if (!_voiceMode) _focus.requestFocus();
+                    },
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(child: _voiceMode ? _holdToTalk() : _textInput()),
                   const SizedBox(width: 8),
-                  // + 附件面板.
+                  // + 附件面板. 发送走键盘 send 键 / web 回车, 无独立发送钮.
                   _roundIconBtn(
                     _attachOpen ? Icons.close : Icons.add_circle_outline,
                     () {
@@ -1207,27 +1236,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                         }
                       });
                     },
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _send,
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: McColors.primaryContainer,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: McColors.primaryContainer
-                                .withValues(alpha: 0.4),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.send_rounded,
-                          size: 20, color: Colors.white),
-                    ),
                   ),
                 ],
               ),
@@ -1270,6 +1278,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         focusNode: _focus,
         minLines: 1,
         maxLines: 5,
+        // 手机键盘显示发送键; web/桌面回车发送 (换行 Shift+Enter).
+        textInputAction: TextInputAction.send,
         style: McText.sans(size: 14),
         decoration: InputDecoration(
           hintText: '发消息...',
