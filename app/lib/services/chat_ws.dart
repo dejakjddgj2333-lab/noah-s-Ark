@@ -26,6 +26,17 @@ class ChatWs {
 
   bool get isConnected => _connected;
 
+  /// 发送 JSON 消息到服务器 (语音通话信令). 未连接时静默 no-op, 返回是否已发送.
+  bool send(Map<String, dynamic> payload) {
+    if (!_connected || _channel == null) return false;
+    try {
+      _channel!.sink.add(jsonEncode(payload));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// 由 McApi.baseUrl 推导 ws(s) 地址. http→ws, https→wss.
   static String wsUrl(String token) {
     final base = McApi.baseUrl.replaceFirst('http', 'ws');

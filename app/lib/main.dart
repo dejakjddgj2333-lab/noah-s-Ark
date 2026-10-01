@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'core/theme.dart';
 import 'core/widgets.dart';
 import 'pages/assets_page.dart';
+import 'pages/call_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/commission_page.dart';
 import 'pages/deposit_page.dart';
@@ -17,6 +18,7 @@ import 'pages/invite_page.dart';
 import 'pages/login_page.dart';
 import 'pages/news_page.dart';
 import 'services/auth.dart';
+import 'services/call_service.dart';
 import 'services/chat_api.dart';
 import 'services/chat_db.dart';
 import 'services/chat_ws.dart';
@@ -72,6 +74,7 @@ class McShell extends StatefulWidget {
 class _McShellState extends State<McShell> {
   int _index = 0;
   StreamSubscription<Map<String, dynamic>>? _chatSub;
+  bool _callPageShown = false; // CallPage 是否已 push (root navigator)
 
   final _pages = const [
     HomePage(),
@@ -83,8 +86,12 @@ class _McShellState extends State<McShell> {
   @override
   void initState() {
     super.initState();
-    // 全局监听好友请求: 任何页面都弹通知 + 角标 (聊天页外也能感知).
+    // 全局监听好友请求 + 来电邀请: 任何页面都弹通知/通话页.
     _chatSub = ChatWs.instance.events.listen(_onChatEvent);
+    // 通话阶段变化: 主叫接通/来电 → push CallPage; 空闲 → pop.
+    CallService.instance.activeCall.addListener(_onCallState);
+    // 通话服务一次性提示 → toast.
+    CallService.instance.notice.addListener(_onCallNotice);
     _seedChatBadges();
   }
 
@@ -96,7 +103,12 @@ class _McShellState extends State<McShell> {
   }
 
   void _onChatEvent(Map<String, dynamic> e) {
-    if (!mounted || e['type'] != 'friend_request') return;
+    if (!mounted) return;
+    if (e['type'] == 'call_invite') {
+      _onIncomingCall(e);
+      return;
+    }
+    if (e['type'] != 'friend_request') return;
     final from = e['from_user'];
     final name = from is Map ? (from['username'] ?? '对方') : '对方';
     ChatApi.friendRequestCount.value++;
@@ -116,9 +128,74 @@ class _McShellState extends State<McShell> {
       ));
   }
 
+  /// 来电邀请: 转发给 CallService (占线自动拒绝), 成功振铃则 push 通话页.
+  void _onIncomingCall(Map<String, dynamic> e) {
+    final callId = e['call_id']?.toString();
+    final from = e['from_user'];
+    if (callId == null || from is! Map) return;
+    final fromId = from['id'] is int
+        ? from['id'] as int
+        : int.tryParse(from['id']?.toString() ?? '') ?? 0;
+    final fromName = (from['username'] ?? '对方').toString();
+    CallService.instance.ringIncoming(callId, fromId, fromName);
+    // ringIncoming 占线时会自动拒绝并保持空闲, 只在真正振铃时弹页.
+    final call = CallService.instance.activeCall.value;
+    if (call != null &&
+        call.callId == callId &&
+        call.phase == CallPhase.incoming) {
+      _showCallPage();
+    }
+  }
+
+  /// 通话阶段驱动页面进出 (主叫 startCall 后 phase→outgoing 在此弹页).
+  void _onCallState() {
+    if (!mounted) return;
+    final call = CallService.instance.activeCall.value;
+    if (call != null &&
+        (call.phase == CallPhase.outgoing ||
+            call.phase == CallPhase.connected) &&
+        !_callPageShown) {
+      _showCallPage();
+    } else if (call == null && _callPageShown) {
+      // 本地 teardown (对端未显示结束页, 直接退出).
+      final nav = Navigator.of(context, rootNavigator: true);
+      if (nav.canPop()) nav.pop();
+      _callPageShown = false;
+    }
+  }
+
+  void _showCallPage() {
+    if (_callPageShown) return;
+    _callPageShown = true;
+    Navigator.of(context, rootNavigator: true)
+        .push(MaterialPageRoute<void>(
+          builder: (_) => const CallPage(),
+          fullscreenDialog: true,
+        ))
+        .then((_) => _callPageShown = false);
+  }
+
+  void _onCallNotice() {
+    if (!mounted) return;
+    final msg = CallService.instance.notice.value;
+    if (msg == null || msg.isEmpty) return;
+    CallService.instance.notice.value = null;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: McColors.surfaceContainerHigh,
+        content:
+            Text(msg, style: McText.sans(size: 13, color: McColors.onSurface)),
+        duration: const Duration(seconds: 3),
+      ));
+  }
+
   @override
   void dispose() {
     _chatSub?.cancel();
+    CallService.instance.activeCall.removeListener(_onCallState);
+    CallService.instance.notice.removeListener(_onCallNotice);
     super.dispose();
   }
 

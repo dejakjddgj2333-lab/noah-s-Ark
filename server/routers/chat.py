@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 import re
 from pathlib import Path
 from uuid import uuid4
@@ -40,6 +42,8 @@ from services import auth_service
 from services.chat_ws import chat_ws
 
 router = APIRouter(prefix="/chat", tags=["聊天"])
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_EMOJIS = ("👍", "❤️", "🔥", "😂", "😮", "😢")
 
@@ -985,10 +989,45 @@ async def get_chat_file(name: str):
 
 # ---------- WebSocket ----------
 
+# WebRTC 通话信令中继: 仅转发, 无状态/不存储/不管媒体
+CALL_TYPES = ("call_invite", "call_accept", "call_reject", "call_end", "call_signal")
+
+
+async def _relay_call(me: HkUser, frame: dict) -> None:
+    """校验好友关系 + 在线状态后转发信令给目标; 异常帧静默忽略."""
+    to_user_id = frame.get("to_user_id")
+    if not isinstance(to_user_id, int):
+        return
+    call_id = frame.get("call_id")
+    async with SessionLocal() as db:
+        if not await _are_friends(db, me.id, to_user_id):
+            # 非好友: 回错误给主叫, 不转发
+            await chat_ws.deliver_to_user(
+                me.id,
+                {"type": "call_error", "call_id": call_id, "reason": "not_friend"},
+            )
+            return
+    if to_user_id not in await chat_ws.online_user_ids():
+        # 目标离线: 告知主叫不可达
+        await chat_ws.deliver_to_user(
+            me.id,
+            {"type": "call_unavailable", "call_id": call_id, "to_user_id": to_user_id},
+        )
+        return
+    if frame.get("type") in ("call_invite", "call_end"):
+        logger.info(
+            "call_relay",
+            extra={"type": frame["type"], "call_id": call_id,
+                   "from": me.id, "to": to_user_id},
+        )
+    # 注入主叫身份后原样转发
+    frame["from_user"] = {"id": me.id, "username": me.username}
+    await chat_ws.deliver_to_user(to_user_id, frame)
+
 
 @router.websocket("/ws")
 async def chat_websocket(websocket: WebSocket, token: str = Query(default="")):
-    """JWT 鉴权 + 心跳; 入站消息一律忽略 (已读走 REST)."""
+    """JWT 鉴权 + 心跳; 通话信令中继, 其余入站帧忽略 (已读走 REST)."""
     payload = auth_service.decode_token(token)
     user_id = None
     if payload and payload.get("sub"):
@@ -1020,7 +1059,13 @@ async def chat_websocket(websocket: WebSocket, token: str = Query(default="")):
     hb = asyncio.create_task(_heartbeat())
     try:
         while True:
-            await websocket.receive_text()  # pong 等入站帧直接忽略
+            raw = await websocket.receive_text()
+            try:
+                frame = json.loads(raw)
+            except (TypeError, ValueError):
+                continue  # 非 JSON: pong 等, 忽略
+            if isinstance(frame, dict) and frame.get("type") in CALL_TYPES:
+                await _relay_call(user, frame)
     except WebSocketDisconnect:
         pass
     finally:

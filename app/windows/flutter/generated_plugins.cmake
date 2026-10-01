@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   file_selector_windows
+  flutter_webrtc
   record_windows
   url_launcher_windows
 )

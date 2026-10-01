@@ -11,9 +11,11 @@ import 'package:record/record.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
+import '../services/call_service.dart';
 import '../services/chat_api.dart';
 import '../services/chat_db.dart';
 import '../services/chat_ws.dart';
+import 'call_page.dart';
 import 'group_info_page.dart';
 import 'market_detail_page.dart';
 import 'media_viewer_page.dart';
@@ -506,6 +508,24 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     if (_attachOpen) setState(() => _attachOpen = false);
   }
 
+  /// 发起 1:1 语音通话 (私聊). 断线/占用由 CallService toast, 这里仅成功时弹页.
+  Future<void> _startVoiceCall() async {
+    final other = widget.conversation.otherUser;
+    if (other == null) return;
+    final ok = await CallService.instance.startCall(
+      other.id,
+      other.username,
+      conversationId: widget.conversation.id,
+    );
+    if (!ok || !mounted) return;
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CallPage(),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
   // ---------- UI ----------
 
   @override
@@ -544,6 +564,11 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           ],
         ),
         actions: [
+          if (!_isGroup && widget.conversation.otherUser != null)
+            IconButton(
+              icon: const Icon(Icons.call_outlined, color: McColors.onSurface),
+              onPressed: _startVoiceCall,
+            ),
           if (_isGroup)
             IconButton(
               icon: const Icon(Icons.more_horiz, color: McColors.onSurface),
