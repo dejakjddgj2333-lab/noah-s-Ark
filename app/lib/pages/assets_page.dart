@@ -752,6 +752,43 @@ class _AssetsPageState extends State<AssetsPage> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                // 直达邀请好友
+                Material(
+                  color: McColors.surfaceContainerHigh.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => Navigator.pushNamed(context, '/invite'),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: McColors.surfaceContainerHigh),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.card_giftcard,
+                              size: 16, color: McColors.primarySoft),
+                          const SizedBox(width: 6),
+                          Text(
+                            '邀请好友 · 邀请码与补填',
+                            style: McText.display(
+                                size: 13,
+                                weight: FontWeight.w600,
+                                color: McColors.onSurface),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward,
+                              size: 16, color: McColors.onSurfaceVariant),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 // 直达分佣中心
                 Material(
                   color: cobalt.withValues(alpha: 0.15),

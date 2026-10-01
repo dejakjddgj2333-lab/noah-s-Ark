@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import config
 from database import get_db
 from models.hk import HkEmailCode, HkUser, utc_now
-from services import auth_service, email_service
+from services import auth_service, email_service, invite_service
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -43,6 +43,7 @@ class RegisterIn(BaseModel):
     password: str = Field(min_length=8)
     email: str
     code: str
+    invite_code: str | None = None  # 可选: 注册时绑定上级
 
     _check_email = field_validator("email")(_valid_email)
 
@@ -172,6 +173,13 @@ async def register(data: RegisterIn, db: AsyncSession = Depends(get_db)):
         status="active",
     )
     db.add(user)
+    await db.flush()
+
+    # 每名用户注册即拥有专属邀请码; 填写了邀请码则当场绑定上级 (约束校验在 service 内)
+    await invite_service.get_or_create_invite(db, user.id)
+    if data.invite_code:
+        await invite_service.bind_inviter(db, user.id, data.invite_code)
+
     await db.commit()
     await db.refresh(user)
 

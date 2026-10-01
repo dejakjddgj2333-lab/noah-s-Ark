@@ -4,23 +4,12 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-# bcrypt 4.1+ 不再暴露 __about__, passlib 1.7.4 初始化会误报; 做兼容补丁
-try:
-    import bcrypt
-
-    if not hasattr(bcrypt, "__about__"):
-        bcrypt.__about__ = type(
-            "about", (), {"__version__": bcrypt.__version__}
-        )()
-except Exception:
-    pass
 
 from config import config
 from database import get_db
@@ -28,18 +17,23 @@ from models.hk import HkUser
 
 logger = logging.getLogger(__name__)
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def hash_password(password: str) -> str:
-    return _pwd_context.hash(password)
+    # 直接用 bcrypt: passlib 1.7.4 与 bcrypt 4.1+ 版本解析有兼容问题
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return _pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        )
+    except ValueError:
+        return False
 
 
 def create_access_token(user: HkUser) -> str:
