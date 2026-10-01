@@ -427,13 +427,15 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  // Breaking news ticker
+  // Breaking news ticker: 真实快讯第一条, 可点击进详情; 无数据显示真实状态.
   Widget _breakingTicker() {
-    final headline = _flash.isNotEmpty
-        ? _flash.first.title
-        : 'SEC 主席关于数字资产监管框架发表最新利好言论';
-    final since = _flash.isNotEmpty ? _relativeTime(_flash.first.publishAt) : '10分钟前';
-    return Container(
+    final latest = _flash.isNotEmpty ? _flash.first : null;
+    final headline = latest?.title ?? '暂无最新快讯';
+    final since =
+        latest != null ? _relativeTime(latest.publishAt) : '数据采集中';
+    return GestureDetector(
+      onTap: latest == null ? null : () => _openDetail(latest.id),
+      child: Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: McColors.surfaceContainerHigh,
@@ -500,12 +502,13 @@ class _NewsPageState extends State<NewsPage> {
           ),
         ],
       ),
+      ),
     );
   }
 
   String _relativeTime(DateTime utc) {
     final diff = DateTime.now().difference(utc.toLocal());
-    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.isNegative || diff.inMinutes < 1) return '刚刚';
     if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
     if (diff.inHours < 24) return '${diff.inHours}小时前';
     return '${diff.inDays}天前';
