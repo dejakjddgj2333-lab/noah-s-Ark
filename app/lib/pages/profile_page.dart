@@ -263,16 +263,17 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(label,
                 style: McText.sans(
                     size: 13, color: McColors.onSurfaceVariant)),
-            const Spacer(),
-            Flexible(
+            const SizedBox(width: 16),
+            Expanded(
               child: Text(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
                 style: McText.sans(size: 14, color: Colors.white),
               ),
             ),
-            if (trailing != null) ...[const SizedBox(width: 6), trailing],
+            if (trailing != null) ...[const SizedBox(width: 4), trailing],
           ],
         ),
       ),
