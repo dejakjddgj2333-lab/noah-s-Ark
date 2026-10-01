@@ -142,13 +142,21 @@ class _AssetsPageState extends State<AssetsPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
-                                  'ID: ${auth.userId ?? '-'}',
-                                  style: McText.mono(
-                                    size: 12,
-                                    weight: FontWeight.w700,
-                                    color: McColors.onSurfaceVariant,
-                                    letterSpacing: 1,
+                                // ID + 邀请码 (点击复制).
+                                GestureDetector(
+                                  onTap: _inviteCode == null
+                                      ? null
+                                      : () =>
+                                          _copy(_inviteCode!, '已复制邀请码'),
+                                  child: Text(
+                                    'ID: ${auth.userId ?? '-'}'
+                                    '${_inviteCode == null ? '' : ' · 邀请码: $_inviteCode'}',
+                                    style: McText.mono(
+                                      size: 12,
+                                      weight: FontWeight.w700,
+                                      color: McColors.onSurfaceVariant,
+                                      letterSpacing: 1,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -160,42 +168,37 @@ class _AssetsPageState extends State<AssetsPage> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // 邀请码 chip: 点击复制.
-                    GestureDetector(
-                      onTap: _inviteCode == null
-                          ? null
-                          : () => _copy(_inviteCode!, '已复制邀请码'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: cobalt.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border:
-                              Border.all(color: cobalt.withValues(alpha: 0.4)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: cobalt.withValues(alpha: 0.25),
-                              blurRadius: 12,
+                    // 返佣等级徽章 (占位, 待返佣系统上线后对接真实等级).
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: cobalt.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border:
+                            Border.all(color: cobalt.withValues(alpha: 0.4)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: cobalt.withValues(alpha: 0.25),
+                            blurRadius: 12,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.diamond,
+                              size: 14, color: cobaltSoft),
+                          const SizedBox(width: 6),
+                          Text(
+                            '钻石合伙人 45%',
+                            style: McText.mono(
+                              size: 12,
+                              weight: FontWeight.w700,
+                              color: cobaltSoft,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.card_giftcard,
-                                size: 14, color: cobaltSoft),
-                            const SizedBox(width: 6),
-                            Text(
-                              _inviteCode ?? '邀请码',
-                              style: McText.mono(
-                                size: 12,
-                                weight: FontWeight.w700,
-                                color: cobaltSoft,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
