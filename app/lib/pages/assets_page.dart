@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
+import '../services/auth.dart';
+import '../services/invite_api.dart';
+import 'profile_page.dart';
 
 /// 我的 / 资产 — bottom-nav tab content body (header + bottom nav live in shell).
 /// Content body only: scrollable, h-pad 14, top 16, bottom 32.
@@ -19,6 +22,22 @@ class _AssetsPageState extends State<AssetsPage> {
 
   bool _whaleAlert = true;
   bool _liquidationAudio = true;
+  String? _inviteCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInvite();
+  }
+
+  /// 邀请码 (身份卡 chip 展示, 点击复制). 静默容错.
+  Future<void> _loadInvite() async {
+    try {
+      final info = await InviteApi.me();
+      if (!mounted) return;
+      setState(() => _inviteCode = info.inviteCode);
+    } catch (_) {/* 静默 */}
+  }
 
   void _copy(String text, String toast) {
     Clipboard.setData(ClipboardData(text: text));
@@ -55,108 +74,134 @@ class _AssetsPageState extends State<AssetsPage> {
       decoration: _cardDeco(),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Row(
+          // 头像/昵称/ID: 真实账号数据, 点按进个人信息页.
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ProfilePage())),
+            behavior: HitTestBehavior.opaque,
+            child: ListenableBuilder(
+              listenable: AuthStore.instance,
+              builder: (context, _) {
+                final auth = AuthStore.instance;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: cobalt.withValues(alpha: 0.5),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: const CircleAvatar(
-                            radius: 24,
-                            backgroundColor: McColors.surfaceContainerHighest,
-                            child: Icon(Icons.person,
-                                size: 28, color: McColors.primary),
-                          ),
-                        ),
-                        const Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: McGlowDot(color: McColors.tertiary, size: 12),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Row(
+                          Stack(
                             children: [
-                              Flexible(
-                                child: Text(
-                                  'Satoshi_Trader',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: McText.display(
-                                      size: 16, weight: FontWeight.w700),
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: cobalt.withValues(alpha: 0.5),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: McAvatar(
+                                  name: auth.displayName,
+                                  url: auth.avatarUrl,
+                                  size: 48,
+                                  radius: 24,
+                                  bg: McColors.surfaceContainerHighest,
+                                  fg: McColors.primary,
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.verified,
-                                  size: 16, color: cobalt),
+                              const Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: McGlowDot(
+                                    color: McColors.tertiary, size: 12),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'ID: MC-892104',
-                            style: McText.mono(
-                              size: 12,
-                              weight: FontWeight.w700,
-                              color: McColors.onSurfaceVariant,
-                              letterSpacing: 1,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        auth.displayName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: McText.display(
+                                            size: 16,
+                                            weight: FontWeight.w700),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.verified,
+                                        size: 16, color: cobalt),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'ID: ${auth.userId ?? '-'}',
+                                  style: McText.mono(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: McColors.onSurfaceVariant,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          const Icon(Icons.chevron_right,
+                              size: 18, color: McColors.onSurfaceVariant),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: cobalt.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: cobalt.withValues(alpha: 0.4)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: cobalt.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.diamond, size: 14, color: cobaltSoft),
-                    const SizedBox(width: 6),
-                    Text(
-                      '钻石合伙人 45%',
-                      style: McText.mono(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: cobaltSoft,
+                    const SizedBox(width: 8),
+                    // 邀请码 chip: 点击复制.
+                    GestureDetector(
+                      onTap: _inviteCode == null
+                          ? null
+                          : () => _copy(_inviteCode!, '已复制邀请码'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: cobalt.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border:
+                              Border.all(color: cobalt.withValues(alpha: 0.4)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: cobalt.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.card_giftcard,
+                                size: 14, color: cobaltSoft),
+                            const SizedBox(width: 6),
+                            Text(
+                              _inviteCode ?? '邀请码',
+                              style: McText.mono(
+                                size: 12,
+                                weight: FontWeight.w700,
+                                color: cobaltSoft,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
           // Web3 wallet address pill
