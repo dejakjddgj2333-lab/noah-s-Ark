@@ -75,6 +75,7 @@ class CallService {
   MediaStream? _localStream;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
   Timer? _endReset; // 结束态自动回 idle 的延迟清理
+  Timer? _ringTimeout; // 主叫响铃超时 (对方无应答自动取消)
   bool _accepting = false; // accept 异步建 PC 期间防连点
   bool _wsSubscribed = true;
 
@@ -158,6 +159,23 @@ class CallService {
       'call_id': callId,
       'to_user_id': peerUserId,
       'conversation_id': ?conversationId,
+    });
+
+    // 响铃超时: 45s 无应答自动取消, 避免永远卡在呼叫页.
+    _ringTimeout?.cancel();
+    _ringTimeout = Timer(const Duration(seconds: 45), () {
+      final cur = activeCall.value;
+      if (cur != null &&
+          cur.callId == callId &&
+          cur.phase == CallPhase.outgoing) {
+        ChatWs.instance.send({
+          'type': 'call_cancel',
+          'call_id': callId,
+          'to_user_id': peerUserId,
+        });
+        _teardown();
+        _toast('对方无应答');
+      }
     });
     return true;
   }
@@ -306,6 +324,7 @@ class CallService {
   Future<void> _onAccepted() async {
     final call = activeCall.value;
     if (call == null || call.phase != CallPhase.outgoing) return;
+    _ringTimeout?.cancel();
     // 被叫已建 PC, 现在发 offer 不会丢.
     try {
       final offer = await _pc!.createOffer();
@@ -455,6 +474,7 @@ class CallService {
 
   /// 本地结束 (hangup/reject 后): 直接清空回 idle.
   void _teardown() {
+    _ringTimeout?.cancel();
     _cleanupRtc();
     activeCall.value = null;
     _setPhase(CallPhase.idle);
@@ -463,6 +483,7 @@ class CallService {
   /// 应用退出/登出清理.
   void dispose() {
     _endReset?.cancel();
+    _ringTimeout?.cancel();
     if (_wsSubscribed) {
       _wsSub?.cancel();
       _wsSubscribed = false;
