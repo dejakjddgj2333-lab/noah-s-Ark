@@ -92,6 +92,106 @@ class HkLike(HkBase):
     created_at = Column(DateTime, default=utc_now)
 
 
+# ---------- IM (聊天) ----------
+
+
+class HkFriendRequest(HkBase):
+    """好友申请: pending/accepted/rejected."""
+
+    __tablename__ = "hk_friend_requests"
+    __table_args__ = (
+        Index("ix_hk_friend_requests_to_status", "to_user_id", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    from_user_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    to_user_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    status = Column(String(16), nullable=False, default="pending")
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkFriendship(HkBase):
+    """好友关系: 通过后双向各存一行."""
+
+    __tablename__ = "hk_friendships"
+    __table_args__ = (
+        UniqueConstraint("user_id", "friend_id", name="uq_hk_friendship_pair"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False, index=True)
+    friend_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkConversation(HkBase):
+    """会话: direct 单聊 / group 群聊 (name 仅群聊有)."""
+
+    __tablename__ = "hk_conversations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String(16), nullable=False)  # direct/group
+    name = Column(String(32), nullable=True)
+    created_by = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkConversationMember(HkBase):
+    """会话成员: last_read_message_id 用于未读数."""
+
+    __tablename__ = "hk_conversation_members"
+    __table_args__ = (
+        UniqueConstraint(
+            "conversation_id", "user_id", name="uq_hk_conv_member"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(
+        Integer, ForeignKey("hk_conversations.id"), nullable=False, index=True
+    )
+    user_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False, index=True)
+    last_read_message_id = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkChatMessage(HkBase):
+    """聊天消息: reply_to_id 自引用, status visible/deleted."""
+
+    __tablename__ = "hk_chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(
+        Integer, ForeignKey("hk_conversations.id"), nullable=False, index=True
+    )
+    sender_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    reply_to_id = Column(
+        Integer, ForeignKey("hk_chat_messages.id"), nullable=True
+    )
+    status = Column(String(16), nullable=False, default="visible")
+    created_at = Column(DateTime, default=utc_now, index=True)
+
+
+class HkMessageReaction(HkBase):
+    """消息表情回应: (message, user, emoji) 唯一, 重复即取消."""
+
+    __tablename__ = "hk_message_reactions"
+    __table_args__ = (
+        UniqueConstraint(
+            "message_id", "user_id", "emoji", name="uq_hk_reaction_m_u_e"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(
+        Integer, ForeignKey("hk_chat_messages.id"), nullable=False, index=True
+    )
+    user_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    emoji = Column(String(16), nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+
+
 class HkFavorite(HkBase):
     """通用收藏 (幂等, 唯一约束防重)."""
 

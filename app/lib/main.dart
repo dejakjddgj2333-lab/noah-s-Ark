@@ -16,10 +16,14 @@ import 'pages/invite_page.dart';
 import 'pages/login_page.dart';
 import 'pages/news_page.dart';
 import 'services/auth.dart';
+import 'services/chat_api.dart';
+import 'services/chat_ws.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthStore.instance.load();
+  // 已登录则启动聊天长连接.
+  if (AuthStore.instance.loggedIn) ChatWs.instance.connect();
   runApp(const MingceApp());
 }
 
@@ -83,9 +87,9 @@ class _McShellState extends State<McShell> {
               listenable: AuthStore.instance,
               builder: (context, _) {
                 final loggedIn = AuthStore.instance.loggedIn;
-                // 社区/我的 需登录
+                // 聊天/我的 需登录
                 final gated = {
-                  2: loggedIn ? const ChatPage() : const _LoginGate('社区'),
+                  2: loggedIn ? const ChatPage() : const _LoginGate('聊天'),
                   3: loggedIn ? const AssetsPage() : const _LoginGate('我的'),
                 };
                 return IndexedStack(
@@ -288,7 +292,7 @@ class McAppHeader extends StatelessWidget {
   }
 }
 
-/// Bottom nav: 首页 / 资讯 / 社区(badge 3) / 我的. h=56, blur dark bar.
+/// Bottom nav: 首页 / 资讯 / 聊天(动态未读角标) / 我的. h=56, blur dark bar.
 class McBottomNav extends StatelessWidget {
   const McBottomNav({super.key, required this.current, required this.onTap});
 
@@ -316,7 +320,15 @@ class McBottomNav extends StatelessWidget {
             children: [
               _item(0, Icons.radar, '首页'),
               _item(1, Icons.query_stats, '资讯', dot: true),
-              _item(2, Icons.forum, '社区', badge: '3'),
+              ValueListenableBuilder<int>(
+                valueListenable: ChatApi.unreadCount,
+                builder: (context, count, _) => _item(
+                  2,
+                  Icons.chat_bubble_outline,
+                  '聊天',
+                  badge: count > 0 ? (count > 99 ? '99+' : '$count') : null,
+                ),
+              ),
               _item(3, Icons.account_balance_wallet, '我的'),
             ],
           ),

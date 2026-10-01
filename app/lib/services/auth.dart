@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
+import 'chat_api.dart';
+import 'chat_ws.dart';
 
 /// 登录状态: token + 用户信息, 持久化到 SharedPreferences.
 class AuthStore extends ChangeNotifier {
@@ -85,6 +87,8 @@ class AuthStore extends ChangeNotifier {
     email = user['email'] as String?;
     await _save();
     notifyListeners();
+    // 登录/注册成功后启动聊天长连接.
+    ChatWs.instance.connect();
   }
 
   Future<void> logout() async {
@@ -93,6 +97,9 @@ class AuthStore extends ChangeNotifier {
     username = null;
     email = null;
     await _save();
+    // 登出断开聊天长连接, 清空未读角标.
+    ChatWs.instance.disconnect();
+    ChatApi.unreadCount.value = 0;
     notifyListeners();
   }
 }

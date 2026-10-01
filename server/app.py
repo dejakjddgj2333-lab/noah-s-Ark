@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import config
 from database import engine
 from models.hk import HkBase
-from routers import auth, interaction, invite, market, news, overview
+from routers import auth, chat, interaction, invite, market, news, overview
 
 
 @asynccontextmanager
@@ -44,6 +44,7 @@ app.include_router(news.router, prefix="/api")
 app.include_router(interaction.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
 app.include_router(overview.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 
 @app.get("/health")

@@ -1,618 +1,537 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
-import '../core/widgets.dart';
+import '../services/chat_api.dart';
+import '../services/chat_ws.dart';
+import 'chat_conversation_page.dart';
+import 'friends_page.dart';
+import 'group_create_page.dart';
 
-/// 社区交流 (Telegram-style chat hub). Body-only tab inside the app shell:
-/// search bar, quick-action pills, folder tabs, pinned + conversation lists.
-class ChatPage extends StatelessWidget {
+/// 聊天 (社区 Tab): 会话列表 + 搜索 + 全部/私聊/群聊 过滤,
+/// 右上角 新朋友 / 发起群聊, 长按删除/退群, WS 实时更新.
+class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  final _search = TextEditingController();
+
+  List<Conversation> _conversations = [];
+  bool _loading = true;
+  bool _failed = false;
+  int _tab = 0; // 0 全部 1 私聊 2 群聊
+  int _friendReqCount = 0;
+
+  StreamSubscription<Map<String, dynamic>>? _wsSub;
+
+  @override
+  void initState() {
+    super.initState();
+    ChatWs.instance.connect();
+    _load();
+    _wsSub = ChatWs.instance.events.listen(_onWsEvent);
+  }
+
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await ChatApi.conversations();
+      if (!mounted) return;
+      setState(() {
+        _conversations = list;
+        _loading = false;
+        _failed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _failed = true;
+      });
+    }
+  }
+
+  void _syncUnreadBadge() {
+    var sum = 0;
+    for (final c in _conversations) {
+      sum += c.unreadCount;
+    }
+    ChatApi.unreadCount.value = sum;
+  }
+
+  void _onWsEvent(Map<String, dynamic> e) {
+    if (!mounted) return;
+    final type = e['type'];
+    if (type == 'friend_request') {
+      setState(() => _friendReqCount++);
+      return;
+    }
+    if (type != 'message') return;
+    final convId = e['conversation_id'];
+    final idx = _conversations.indexWhere((c) => c.id == convId);
+    if (idx < 0) {
+      // 新会话 -> 整体刷新.
+      _load();
+      return;
+    }
+    final msg = ChatMessage.fromJson(e['message']);
+    setState(() {
+      final c = _conversations[idx];
+      final updated = c.copyWith(
+        lastMessage: LastMessage(
+          content: msg.content,
+          senderName: msg.senderName,
+          createdAt: msg.createdAt,
+        ),
+        unreadCount: c.unreadCount + 1,
+      );
+      _conversations
+        ..removeAt(idx)
+        ..insert(0, updated); // 顶到最前
+      _syncUnreadBadge();
+    });
+  }
+
+  // ---------- 过滤 ----------
+
+  List<Conversation> get _filtered {
+    var list = _conversations;
+    if (_tab == 1) {
+      list = list.where((c) => !c.isGroup).toList();
+    } else if (_tab == 2) {
+      list = list.where((c) => c.isGroup).toList();
+    }
+    final q = _search.text.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where((c) => c.displayName.toLowerCase().contains(q))
+          .toList();
+    }
+    return list;
+  }
+
+  // ---------- 导航 ----------
+
+  Future<void> _openConversation(Conversation c) async {
+    // 进入房间即清零本地未读.
+    final idx = _conversations.indexWhere((x) => x.id == c.id);
+    if (idx >= 0 && _conversations[idx].unreadCount > 0) {
+      setState(() {
+        _conversations[idx] = _conversations[idx].copyWith(unreadCount: 0);
+        _syncUnreadBadge();
+      });
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+          builder: (_) => ChatConversationPage(conversation: c)),
+    );
+    // 返回后重新同步 (已读状态/最后消息可能已变).
+    _load();
+  }
+
+  Future<void> _openFriends() async {
+    setState(() => _friendReqCount = 0);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const FriendsPage()),
+    );
+    _load();
+  }
+
+  Future<void> _openGroupCreate() async {
+    final created = await Navigator.of(context).push<Conversation>(
+      MaterialPageRoute<Conversation>(builder: (_) => const GroupCreatePage()),
+    );
+    if (created != null && mounted) {
+      _load();
+      _openConversation(created);
+    }
+  }
+
+  // ---------- 删除 / 退群 ----------
+
+  Future<void> _confirmDelete(Conversation c) async {
+    final isGroup = c.isGroup;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: McColors.surfaceContainerLow,
+        title: Text(isGroup ? '退出群聊' : '删除会话',
+            style: McText.sans(size: 15, weight: FontWeight.w700)),
+        content: Text(
+          isGroup ? '退出后将不再接收该群消息' : '删除后聊天记录将从列表隐藏',
+          style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('取消',
+                style: McText.sans(color: McColors.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                Text('确定', style: McText.sans(color: McColors.bear)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ChatApi.deleteConversation(c.id);
+      if (!mounted) return;
+      setState(() {
+        _conversations.removeWhere((x) => x.id == c.id);
+        _syncUnreadBadge();
+      });
+    } catch (_) {
+      _toast(isGroup ? '退群失败' : '删除失败');
+    }
+  }
+
+  void _toast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text(msg, style: McText.sans(size: 13)),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: McColors.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  // ---------- UI ----------
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: McColors.surfaceContainerLowest,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
-        children: [
-          _SearchBar(),
-          const SizedBox(height: 10),
-          const _QuickActions(),
-          const SizedBox(height: 10),
-          const _FolderTabs(),
-          const SizedBox(height: 8),
-          _sectionDivider(
-            icon: Icons.push_pin,
-            iconColor: McColors.primaryContainer,
-            title: '置顶交流组与核心信号 (Pinned)',
-            trailing: '实时推送',
-          ),
-          const _ChatTile(
-            title: '明策 VIP Alpha 策略交流群',
-            badge: '官方群',
-            badgeColor: McColors.primarySoft,
-            time: '14:58',
-            timeColor: McColors.bull,
-            previewPrefix: '巨鲸异动监测:',
-            prefixColor: McColors.secondary,
-            preview: ' 币安 \$25M 买单支撑墙已挂出，多军准备冲锋突破...',
-            unread: '99+',
-            pinned: true,
-            highlighted: true,
-            avatar: _Avatar.verified(),
-          ),
-          const Divider(height: 1, color: Color(0x0AFFFFFF)),
-          const _ChatTile(
-            title: '明策清算机器人 BOT',
-            badge: 'BOT',
-            badgeColor: McColors.error,
-            time: '14:50',
-            previewPrefix: '全网高频爆仓预警:',
-            prefixColor: McColors.error,
-            preview: ' BTC 现价突破 \$96,520，空头清算达 \$12.8M',
-            unread: '12',
-            pinned: true,
-            highlighted: true,
-            avatar: _Avatar.icon(
-              Icons.warning_amber_rounded,
-              fg: McColors.error,
-              bg: Color(0xFF2B1216),
-              badgeIcon: Icons.bolt,
-              badgeColor: McColors.error,
-            ),
-          ),
-          const SizedBox(height: 4),
-          _sectionDivider(
-            title: '全部交流消息 (Conversations)',
-            trailing: '4 位好友在线',
-          ),
-          const _ChatTile(
-            title: 'Crypto_Ghost_0x',
-            badge: '钻石合伙人',
-            badgeColor: McColors.secondary,
-            time: '14:52',
-            preview: '你刚才看链上那笔 1,500 BTC 的大额提现了吗？主力洗盘动作明显。',
-            readIcon: Icons.done_all,
-            readColor: McColors.secondary,
-            avatar: _Avatar.initials('CG', online: true),
-          ),
-          const Divider(height: 1, color: Color(0x0AFFFFFF)),
-          const _ChatTile(
-            title: '以太坊与 L2 生态研讨组',
-            subtitle: '(1,840 人)',
-            time: '13:20',
-            previewPrefix: 'SatoshiSniper:',
-            prefixColor: Colors.white,
-            preview: ' 资金费率回落，准备看第二轮轧空机会。',
-            unread: '5',
-            avatar: _Avatar.icon(
-              Icons.token,
-              fg: McColors.primarySoft,
-              bg: Color(0xFF16213E),
-            ),
-          ),
-          const Divider(height: 1, color: Color(0x0AFFFFFF)),
-          const _ChatTile(
-            title: 'Alex_Macro_Alpha',
-            badge: '量化导师',
-            badgeColor: McColors.bull,
-            time: '昨天',
-            preview: '今晚美联储鲍威尔讲话要特别注意波动率，期权隐含波动已到 68%。',
-            readIcon: Icons.done,
-            readColor: McColors.onSurfaceVariant,
-            avatar: _Avatar.initials('AM'),
-          ),
-          const Divider(height: 1, color: Color(0x0AFFFFFF)),
-          const _ChatTile(
-            title: '巨鲸异动智能雷达广播',
-            badge: '频道',
-            badgeColor: McColors.onSurfaceVariant,
-            time: '昨天',
-            preview: '[大额转账] 2,400 ETH (约 \$8.2M) 从 Coinbase 提出至匿名多签金库。',
-            readIcon: Icons.volume_off,
-            readColor: McColors.onSurfaceVariant,
-            avatar: _Avatar.icon(
-              Icons.radar,
-              fg: McColors.secondary,
-              bg: Color(0xFF0E2230),
-              badgeIcon: Icons.podcasts,
-              badgeColor: McColors.secondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionDivider({
-    IconData? icon,
-    Color iconColor = McColors.primaryContainer,
-    required String title,
-    required String trailing,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-      child: Row(
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 14, color: iconColor),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            title,
-            style: McText.mono(
-              size: 12,
-              color: McColors.onSurfaceVariant.withValues(alpha: 0.7),
-              letterSpacing: 0.5,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            trailing,
-            style: McText.mono(
-              size: 12,
-              color: McColors.onSurfaceVariant.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Telegram-style global search bar.
-class _SearchBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171A22),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 18, color: Color(0xFF8E90A2)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '搜索用户、群组、公链频道或消息 (@username / Group)',
-              style: McText.sans(size: 13, color: const Color(0xFF6A6D7F)),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Icon(Icons.filter_list, size: 17, color: Color(0xFF8E90A2)),
-        ],
-      ),
-    );
-  }
-}
-
-/// Quick-action shortcut pill strip.
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _pill(Icons.person_add, '添加好友', McColors.primaryContainer,
-              primary: true),
-          const SizedBox(width: 8),
-          _pill(Icons.group_add, '加入群组', McColors.secondary),
-          const SizedBox(width: 8),
-          _pill(Icons.radar, '巨鲸信号频道', McColors.bull),
-          const SizedBox(width: 8),
-          _pill(Icons.query_stats, '量化策略社群', McColors.primary),
-        ],
-      ),
-    );
-  }
-
-  Widget _pill(IconData icon, String label, Color iconColor,
-      {bool primary = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: primary
-            ? McColors.primaryContainer.withValues(alpha: 0.15)
-            : McColors.surfaceContainerHigh.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: primary
-              ? McColors.primaryContainer.withValues(alpha: 0.4)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: McText.sans(
-              size: 12,
-              weight: primary ? FontWeight.w600 : FontWeight.w500,
-              color: primary ? McColors.primary : McColors.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Horizontal chat folder tabs.
-class _FolderTabs extends StatelessWidget {
-  const _FolderTabs();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D1017),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          children: [
-            _tab('全部', count: '12', active: true),
-            _tab('群聊', count: '8'),
-            _tab('私聊/好友', count: '4'),
-            _tab('机器人/BOT', count: '3'),
-            _tab('频道/公告'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tab(String label, {String? count, bool active = false}) {
-    final color = active ? Colors.white : McColors.onSurfaceVariant;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: McText.sans(
-                  size: 12,
-                  weight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
-                ),
-              ),
-              if (count != null) ...[
-                const SizedBox(width: 6),
-                Container(
+          _buildHeader(),
+          _buildSearch(),
+          _buildTabs(),
+          const SizedBox(height: 6),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
+      child: Row(
+        children: [
+          Text('聊天', style: McText.display(size: 18, weight: FontWeight.w700)),
+          const Spacer(),
+          // 新朋友 (好友请求角标).
+          _headerAction(
+            icon: Icons.person_add_alt,
+            badge: _friendReqCount,
+            onTap: _openFriends,
+          ),
+          _headerAction(
+            icon: Icons.group_add_outlined,
+            badge: 0,
+            onTap: _openGroupCreate,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerAction(
+      {required IconData icon, required int badge, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(icon, size: 22, color: McColors.onSurface),
+            if (badge > 0)
+              Positioned(
+                top: -4,
+                right: -6,
+                child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
-                    color: active
-                        ? McColors.primaryContainer
-                        : McColors.surfaceContainerHighest,
+                    color: McColors.bear,
                     borderRadius: BorderRadius.circular(999),
                   ),
+                  constraints: const BoxConstraints(minWidth: 14),
                   child: Text(
-                    count,
+                    badge > 99 ? '99+' : '$badge',
+                    textAlign: TextAlign.center,
                     style: McText.mono(
-                      size: 12,
-                      weight: active ? FontWeight.w700 : FontWeight.w400,
-                      color: active ? Colors.white : McColors.onSurfaceVariant,
-                      height: 1,
-                    ),
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1),
                   ),
                 ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(
-            height: 2,
-            width: 28,
-            decoration: BoxDecoration(
-              color: active ? McColors.primaryContainer : Colors.transparent,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                        color: McColors.primaryContainer.withValues(alpha: 0.8),
-                        blurRadius: 8,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-        ],
+              ),
+          ],
+        ),
       ),
     );
   }
-}
 
-/// Avatar variants (no network images — icon / initials placeholders).
-class _Avatar extends StatelessWidget {
-  const _Avatar.icon(
-    this.icon, {
-    required this.fg,
-    required this.bg,
-    this.badgeIcon,
-    this.badgeColor,
-  })  : initials = null,
-        online = false,
-        verified = false;
-
-  const _Avatar.initials(
-    this.initials, {
-    this.online = false,
-  })  : icon = null,
-        fg = McColors.primary,
-        bg = McColors.surfaceContainerHigh,
-        badgeIcon = null,
-        badgeColor = null,
-        verified = false;
-
-  const _Avatar.verified()
-      : icon = null,
-        initials = 'M',
-        online = false,
-        fg = Colors.white,
-        bg = McColors.primaryContainer,
-        badgeIcon = Icons.verified,
-        badgeColor = McColors.primaryContainer,
-        verified = true;
-
-  final IconData? icon;
-  final String? initials;
-  final Color fg;
-  final Color bg;
-  final IconData? badgeIcon;
-  final Color? badgeColor;
-  final bool online;
-  final bool verified;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: verified
-                    ? McColors.primaryContainer.withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.1),
-                width: verified ? 2 : 1,
-              ),
-              boxShadow: verified
-                  ? [
-                      BoxShadow(
-                        color: McColors.primaryContainer.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                      ),
-                    ]
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: icon != null
-                ? Icon(icon, size: 24, color: fg)
-                : Text(
-                    initials!,
-                    style: McText.display(size: 16, weight: FontWeight.w700, color: fg),
-                  ),
+  Widget _buildSearch() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: McColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(10),
+          border:
+              Border.all(color: McColors.outlineVariant.withValues(alpha: 0.6)),
+        ),
+        child: TextField(
+          controller: _search,
+          onChanged: (_) => setState(() {}),
+          style: McText.sans(size: 13),
+          decoration: InputDecoration(
+            icon: const Icon(Icons.search,
+                size: 18, color: McColors.onSurfaceVariant),
+            hintText: '搜索会话',
+            hintStyle:
+                McText.sans(size: 13, color: McColors.onSurfaceVariant),
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
           ),
-          if (badgeIcon != null)
-            Positioned(
-              bottom: -4,
-              right: -4,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: McColors.surfaceContainerLowest, width: 2),
-                ),
-                child: Icon(badgeIcon, size: 12, color: Colors.white),
-              ),
-            ),
-          if (online)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: McColors.bull,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: McColors.surfaceContainerLowest, width: 2),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
-}
 
-/// A single conversation row.
-class _ChatTile extends StatelessWidget {
-  const _ChatTile({
-    required this.title,
-    required this.time,
-    required this.preview,
-    required this.avatar,
-    this.badge,
-    this.badgeColor = McColors.primarySoft,
-    this.subtitle,
-    this.timeColor = McColors.onSurfaceVariant,
-    this.previewPrefix,
-    this.prefixColor = McColors.secondary,
-    this.unread,
-    this.pinned = false,
-    this.highlighted = false,
-    this.readIcon,
-    this.readColor = McColors.onSurfaceVariant,
-  });
-
-  final String title;
-  final String? badge;
-  final Color badgeColor;
-  final String? subtitle;
-  final String time;
-  final Color timeColor;
-  final String? previewPrefix;
-  final Color prefixColor;
-  final String preview;
-  final String? unread;
-  final bool pinned;
-  final bool highlighted;
-  final IconData? readIcon;
-  final Color readColor;
-  final Widget avatar;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: highlighted ? const Color(0xFF11151F).withValues(alpha: 0.85) : null,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+  Widget _buildTabs() {
+    const tabs = ['全部', '私聊', '群聊'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          avatar,
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          for (var i = 0; i < tabs.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            _tabChip(i, tabs[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _tabChip(int i, String label) {
+    final active = _tab == i;
+    return GestureDetector(
+      onTap: () => setState(() => _tab = i),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active
+              ? McColors.primaryContainer.withValues(alpha: 0.18)
+              : McColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active
+                ? McColors.primaryContainer.withValues(alpha: 0.5)
+                : McColors.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Text(
+          label,
+          style: McText.sans(
+            size: 12,
+            weight: active ? FontWeight.w700 : FontWeight.w500,
+            color: active ? McColors.primary : McColors.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: McColors.primarySoft),
+        ),
+      );
+    }
+    if (_failed) {
+      return _empty('加载失败, 下拉重试');
+    }
+    final list = _filtered;
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: McColors.primarySoft,
+      backgroundColor: McColors.surfaceContainerHigh,
+      child: list.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: McText.sans(
-                          size: 14,
-                          weight: badge != null ? FontWeight.w700 : FontWeight.w600,
-                          color: Colors.white,
+                const SizedBox(height: 120),
+                _empty(_search.text.isEmpty ? '暂无会话, 去添加好友聊聊吧' : '没有匹配的会话'),
+              ],
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+              itemCount: list.length,
+              separatorBuilder: (_, _) => Divider(
+                  height: 1,
+                  color: McColors.outlineVariant.withValues(alpha: 0.3)),
+              itemBuilder: (context, i) => _tile(list[i]),
+            ),
+    );
+  }
+
+  Widget _tile(Conversation c) {
+    final last = c.lastMessage;
+    final preview = last == null
+        ? '暂无消息'
+        : (c.isGroup && last.senderName.isNotEmpty
+            ? '${last.senderName}: ${last.content}'
+            : last.content);
+    return InkWell(
+      onTap: () => _openConversation(c),
+      onLongPress: () => _confirmDelete(c),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        child: Row(
+          children: [
+            _avatar(c.displayName),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          c.displayName,
+                          style: McText.sans(
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (badge != null) ...[
-                      const SizedBox(width: 6),
-                      McPill(badge!, color: badgeColor, fontSize: 12),
-                    ],
-                    if (subtitle != null) ...[
-                      const SizedBox(width: 6),
+                      if (c.isGroup) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '(${c.memberCount})',
+                          style: McText.mono(
+                              size: 12, color: McColors.onSurfaceVariant),
+                        ),
+                      ],
+                      const Spacer(),
                       Text(
-                        subtitle!,
+                        chatTimeLabel(last?.createdAt),
                         style: McText.mono(
                           size: 12,
-                          color: McColors.onSurfaceVariant.withValues(alpha: 0.8),
+                          color: c.unreadCount > 0
+                              ? McColors.bull
+                              : McColors.onSurfaceVariant,
                         ),
                       ),
                     ],
-                    const Spacer(),
-                    Text(
-                      time,
-                      style: McText.mono(
-                        size: 12,
-                        weight: FontWeight.w600,
-                        color: timeColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            if (previewPrefix != null)
-                              TextSpan(
-                                text: previewPrefix,
-                                style: McText.sans(
-                                  size: 12,
-                                  weight: FontWeight.w500,
-                                  color: prefixColor,
-                                ),
-                              ),
-                            TextSpan(
-                              text: preview,
-                              style: McText.sans(
-                                size: 12,
-                                color: McColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    if (pinned)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 6),
-                        child: Icon(Icons.push_pin,
-                            size: 13, color: McColors.primaryContainer),
-                      ),
-                    if (unread != null)
-                      Container(
-                        constraints: const BoxConstraints(minWidth: 18),
-                        height: 18,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: McColors.primaryContainer,
-                          borderRadius: BorderRadius.circular(999),
-                          boxShadow: [
-                            BoxShadow(
-                              color: McColors.primaryContainer
-                                  .withValues(alpha: 0.7),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
                         child: Text(
-                          unread!,
-                          style: McText.mono(
-                            size: 12,
-                            weight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                          preview,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: McText.sans(
+                              size: 12, color: McColors.onSurfaceVariant),
                         ),
-                      )
-                    else if (readIcon != null)
-                      Icon(readIcon, size: 15, color: readColor),
-                  ],
-                ),
-              ],
+                      ),
+                      if (c.unreadCount > 0) ...[
+                        const SizedBox(width: 10),
+                        _unreadBadge(c.unreadCount),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _unreadBadge(int count) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 18),
+      height: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration: BoxDecoration(
+        color: McColors.bear,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(color: McColors.bear.withValues(alpha: 0.5), blurRadius: 6),
         ],
       ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: McText.mono(
+            size: 12, weight: FontWeight.w700, color: Colors.white, height: 1),
+      ),
+    );
+  }
+
+  Widget _avatar(String name) {
+    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: McColors.primarySoft.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: McColors.primarySoft.withValues(alpha: 0.3)),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: McText.display(
+            size: 17, weight: FontWeight.w700, color: McColors.primarySoft),
+      ),
+    );
+  }
+
+  Widget _empty(String text) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.forum_outlined, size: 40, color: McColors.outline),
+        const SizedBox(height: 12),
+        Text(text,
+            style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
+      ],
     );
   }
 }
