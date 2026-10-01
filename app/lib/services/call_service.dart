@@ -75,6 +75,7 @@ class CallService {
   MediaStream? _localStream;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
   Timer? _endReset; // 结束态自动回 idle 的延迟清理
+  bool _accepting = false; // accept 异步建 PC 期间防连点
   bool _wsSubscribed = true;
 
   static const _uuid = Uuid();
@@ -186,28 +187,36 @@ class CallService {
   /// 接听. 先建 PC (含麦克风授权), 再发 call_accept —— 主叫收到 accept 才发 offer.
   Future<void> accept() async {
     final call = activeCall.value;
-    if (call == null || call.phase != CallPhase.incoming) return;
-    final ok = await _setupPeerConnection(isCaller: false);
-    if (!ok) {
-      _sendControl('call_end');
-      _teardown();
-      _toast('无法访问麦克风');
-      return;
+    if (call == null || call.phase != CallPhase.incoming || _accepting) return;
+    _accepting = true;
+    try {
+      final ok = await _setupPeerConnection(isCaller: false);
+      if (!ok) {
+        _sendControl('call_end');
+        _teardown();
+        _toast('无法访问麦克风');
+        return;
+      }
+      ChatWs.instance.send({
+        'type': 'call_accept',
+        'call_id': call.callId,
+        'to_user_id': call.peerId,
+      });
+      // 远端 offer 会在 call_signal 中到达, 在 _onRemoteSdp 里应答.
+    } finally {
+      _accepting = false;
     }
-    ChatWs.instance.send({
-      'type': 'call_accept',
-      'call_id': call.callId,
-      'to_user_id': call.peerId,
-    });
-    // 远端 offer 会在 call_signal 中到达, 在 _onRemoteSdp 里应答.
   }
 
   /// 拒接 (被叫) / 取消 (主叫 ringing).
   void reject() {
     final call = activeCall.value;
     if (call == null) return;
+    // 主叫取消与被叫拒接用不同信令, 对端提示文案区分.
+    final type =
+        call.phase == CallPhase.outgoing ? 'call_cancel' : 'call_reject';
     ChatWs.instance.send({
-      'type': 'call_reject',
+      'type': type,
       'call_id': call.callId,
       'to_user_id': call.peerId,
     });
@@ -283,6 +292,8 @@ class CallService {
         if (data is Map) _onSignal(Map<String, dynamic>.from(data));
       case 'call_reject':
         _endByRemote('对方已拒绝');
+      case 'call_cancel':
+        _endByRemote('对方已取消');
       case 'call_end':
         _endByRemote('通话已结束');
       case 'call_unavailable':

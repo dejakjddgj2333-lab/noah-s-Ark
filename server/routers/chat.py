@@ -1008,7 +1008,8 @@ async def get_chat_file(name: str):
 # ---------- WebSocket ----------
 
 # WebRTC 通话信令中继: 仅转发, 无状态/不存储/不管媒体
-CALL_TYPES = ("call_invite", "call_accept", "call_reject", "call_end", "call_signal")
+CALL_TYPES = ("call_invite", "call_accept", "call_reject", "call_cancel",
+              "call_end", "call_signal")
 
 
 async def _relay_call(me: HkUser, frame: dict) -> None:
