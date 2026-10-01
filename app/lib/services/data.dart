@@ -59,6 +59,7 @@ class OkxTicker {
 
 double? _toDouble(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v');
 
+
 /// 全网全景横幅数据 (CoinGecko /global). 上游失败时字段为 null.
 class GlobalStats {
   GlobalStats.fromJson(Map<String, dynamic> j)

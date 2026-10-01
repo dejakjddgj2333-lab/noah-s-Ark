@@ -237,7 +237,7 @@ class FriendRequest {
     return FriendRequest(
       id: _toInt(m['id']),
       username: (m['username'] ?? '').toString(),
-      createdAt: DateTime.tryParse((m['created_at'] ?? '').toString()),
+      createdAt: parseServerTime(m['created_at']),
     );
   }
 }
@@ -378,7 +378,7 @@ class LastMessage {
       content: (m['content'] ?? '').toString(),
       senderName: (m['sender_name'] ?? '').toString(),
       msgType: (m['msg_type'] ?? 'text').toString(),
-      createdAt: DateTime.tryParse((m['created_at'] ?? '').toString()),
+      createdAt: parseServerTime(m['created_at']),
       isMine: m['is_mine'] == true,
       read: readRaw is bool ? readRaw : null,
     );
@@ -473,7 +473,7 @@ class ChatMessage {
       fileUrl: m['file_url']?.toString(),
       duration: dur == null ? null : _toInt(dur),
       replyTo: reply is Map ? ReplyRef.fromJson(reply) : null,
-      createdAt: DateTime.tryParse((m['created_at'] ?? '').toString()),
+      createdAt: parseServerTime(m['created_at']),
       reactions: Reaction.parseList(m['reactions']),
     );
   }
@@ -559,22 +559,35 @@ int _toInt(dynamic v) {
 
 String _two(int v) => v.toString().padLeft(2, '0');
 
-/// 会话列表时间: 今天 HH:mm, 昨天 '昨天', 更早 MM-dd.
+/// 服务器时间为 UTC 裸值 (无时区后缀): 补 Z 按 UTC 解析.
+DateTime? parseServerTime(dynamic raw) {
+  var s = (raw ?? '').toString();
+  if (s.isEmpty) return null;
+  if (!s.endsWith('Z') && !RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(s)) {
+    s = '${s}Z';
+  }
+  return DateTime.tryParse(s);
+}
+
+/// 转东八区时钟值 (无论设备时区; 返回仍是 UTC 实例, 读字段即为北京时间).
+DateTime toBeijingClock(DateTime dt) => dt.toUtc().add(const Duration(hours: 8));
+
+/// 会话列表时间: 今天 HH:mm, 昨天 '昨天', 更早 MM-dd. 统一东八区.
 String chatTimeLabel(DateTime? dt) {
   if (dt == null) return '';
-  final local = dt.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(local.year, local.month, local.day);
+  final local = toBeijingClock(dt);
+  final nowBj = toBeijingClock(DateTime.now());
+  final today = DateTime.utc(nowBj.year, nowBj.month, nowBj.day);
+  final day = DateTime.utc(local.year, local.month, local.day);
   final diff = today.difference(day).inDays;
   if (diff <= 0) return '${_two(local.hour)}:${_two(local.minute)}';
   if (diff == 1) return '昨天';
   return '${_two(local.month)}-${_two(local.day)}';
 }
 
-/// 消息气泡时间 (HH:mm).
+/// 消息气泡时间 (HH:mm, 东八区).
 String chatBubbleTime(DateTime? dt) {
   if (dt == null) return '';
-  final local = dt.toLocal();
+  final local = toBeijingClock(dt);
   return '${_two(local.hour)}:${_two(local.minute)}';
 }
