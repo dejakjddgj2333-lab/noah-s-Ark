@@ -99,6 +99,10 @@ class ConvRenameIn(BaseModel):
     name: str = Field(min_length=1, max_length=32)
 
 
+class MemberAddIn(BaseModel):
+    user_id: int
+
+
 class ReadIn(BaseModel):
     message_id: int
 
@@ -746,6 +750,52 @@ async def rename_conversation(
     )
     out, _ = await _conv_out(db, conv, me)
     return out
+
+
+@router.post("/conversations/{conversation_id}/members", status_code=201)
+async def add_member(
+    conversation_id: int,
+    data: MemberAddIn,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """拉人进群: 群内任一成员均可添加 (微信式), 无需群主."""
+    await _require_member(db, conversation_id, me.id)
+    conv = await db.get(HkConversation, conversation_id)
+    if conv is None or conv.type != "group":
+        raise HTTPException(status_code=400, detail="仅群聊可添加成员")
+    target = await db.get(HkUser, data.user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    exists = (
+        await db.scalars(
+            select(HkConversationMember).where(
+                HkConversationMember.conversation_id == conversation_id,
+                HkConversationMember.user_id == data.user_id,
+            )
+        )
+    ).first()
+    if exists is not None:
+        raise HTTPException(status_code=400, detail="对方已在群内")
+    db.add(
+        HkConversationMember(
+            conversation_id=conversation_id, user_id=data.user_id
+        )
+    )
+    await db.commit()
+    # 含新成员在内的全员广播: 老成员更新人数, 新成员刷新会话列表出现该群.
+    member_ids = await _member_ids(db, conversation_id)
+    await chat_ws.deliver_to_users(
+        member_ids,
+        {
+            "type": "member_added",
+            "conversation_id": conversation_id,
+            "user_id": target.id,
+            "username": target.username,
+            "member_count": len(member_ids),
+        },
+    )
+    return {"ok": True, "member_count": len(member_ids)}
 
 
 @router.delete("/conversations/{conversation_id}/members/{user_id}", status_code=204)

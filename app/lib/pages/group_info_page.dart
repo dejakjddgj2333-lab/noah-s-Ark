@@ -131,6 +131,73 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     }
   }
 
+  // ---------- 全员: 拉人进群 ----------
+
+  Future<void> _addMember() async {
+    List<ChatUser> candidates;
+    try {
+      final friends = await ChatApi.friends();
+      final ids = _members.map((m) => m.id).toSet();
+      candidates = [for (final f in friends) if (!ids.contains(f.id)) f];
+    } catch (_) {
+      _toast('加载好友失败');
+      return;
+    }
+    if (!mounted) return;
+    if (candidates.isEmpty) {
+      _toast('没有可添加的好友');
+      return;
+    }
+    final picked = await showDialog<ChatUser>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: McColors.surfaceContainerLow,
+        title: Text('选择好友加入群聊',
+            style: McText.sans(size: 15, weight: FontWeight.w700)),
+        children: [
+          for (final f in candidates)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, f),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: McColors.primarySoft.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      f.username.isEmpty ? '?' : f.username[0].toUpperCase(),
+                      style: McText.display(
+                          size: 14,
+                          weight: FontWeight.w700,
+                          color: McColors.primarySoft),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(f.username,
+                        style: McText.sans(size: 14, color: Colors.white)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    try {
+      await ChatApi.addGroupMember(widget.conversation.id, picked.id);
+      if (!mounted) return;
+      _toast('已添加 ${picked.username}');
+      _load();
+    } catch (_) {
+      _toast('添加失败');
+    }
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -250,8 +317,40 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
         crossAxisSpacing: 6,
         childAspectRatio: 0.66,
       ),
-      itemCount: _members.length,
-      itemBuilder: (context, i) => _memberCell(_members[i]),
+      itemCount: _members.length + 1, // 末尾 "+" 拉人
+      itemBuilder: (context, i) =>
+          i == _members.length ? _addCell() : _memberCell(_members[i]),
+    );
+  }
+
+  /// 拉人格子 (任一成员可用).
+  Widget _addCell() {
+    return GestureDetector(
+      onTap: _addMember,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: McColors.outlineVariant.withValues(alpha: 0.8)),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.add,
+                size: 24, color: McColors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '添加',
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 

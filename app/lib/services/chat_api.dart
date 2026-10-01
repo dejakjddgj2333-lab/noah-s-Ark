@@ -184,6 +184,15 @@ class ChatApi {
       McApi.del('$_prefix/conversations/$conversationId/members/$userId',
           token: _token);
 
+  /// 拉人进群: 任一成员可用. 返回最新 member_count.
+  static Future<int> addGroupMember(int conversationId, int userId) async {
+    final resp = await McApi.post(
+        '$_prefix/conversations/$conversationId/members',
+        {'user_id': userId},
+        token: _token);
+    return (resp['member_count'] as num?)?.toInt() ?? 0;
+  }
+
   static Future<void> markRead(int conversationId, int messageId) =>
       McApi.post('$_prefix/conversations/$conversationId/read',
           {'message_id': messageId},

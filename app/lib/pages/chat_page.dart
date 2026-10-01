@@ -157,6 +157,20 @@ class _ChatPageState extends State<ChatPage> {
       });
       return;
     }
+    if (type == 'member_added') {
+      final convId = e['conversation_id'];
+      final idx = _conversations.indexWhere((c) => c.id == convId);
+      if (idx < 0) {
+        // 我被拉进新群 -> 整体刷新让群出现.
+        _load();
+        return;
+      }
+      // 他人进群 -> 成员数 +1 (优先用服务端计数).
+      final c = _conversations[idx];
+      final cnt = (e['member_count'] as num?)?.toInt() ?? c.memberCount + 1;
+      setState(() => _conversations[idx] = c.copyWith(memberCount: cnt));
+      return;
+    }
     if (type != 'message') return;
     final convId = e['conversation_id'];
     final idx = _conversations.indexWhere((c) => c.id == convId);
