@@ -60,3 +60,6 @@ shots2/
 *.bak
 *.swp
 *~
+
+# 聊天上传文件 (运行时产物)
+server/uploads/
