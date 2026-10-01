@@ -74,6 +74,7 @@ class CallService {
   RTCPeerConnection? _pc;
   MediaStream? _localStream;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
+  Timer? _endReset; // 结束态自动回 idle 的延迟清理
   bool _wsSubscribed = true;
 
   static const _uuid = Uuid();
@@ -366,6 +367,15 @@ class CallService {
     activeCall.value = call.copyWith(phase: CallPhase.ended, endReason: reason);
     _setPhase(CallPhase.ended);
     _cleanupRtc();
+    // 结束页展示 1.5s 后清空状态回 idle, 否则 _inCall 一直 true 无法再拨打.
+    _endReset?.cancel();
+    _endReset = Timer(const Duration(seconds: 2), () {
+      final cur = activeCall.value;
+      if (cur != null && cur.callId == call.callId && cur.phase == CallPhase.ended) {
+        activeCall.value = null;
+        _setPhase(CallPhase.idle);
+      }
+    });
   }
 
   // ---------- RTC 生命周期 ----------
@@ -441,6 +451,7 @@ class CallService {
 
   /// 应用退出/登出清理.
   void dispose() {
+    _endReset?.cancel();
     if (_wsSubscribed) {
       _wsSub?.cancel();
       _wsSubscribed = false;
