@@ -57,6 +57,7 @@ jobs:
 
             # 敏感 key 从 GitHub Secrets 写入运行目录 (不入库, push protection 拦 sk- 类 key)
             if [ "$BACKEND" = "true" ] || [ "$ALL" = "true" ]; then
+              echo "secrets 长度: APITUBE=${#APITUBE_API_KEY} DEEPSEEK=${#DEEPSEEK_API_KEY}"
               umask 077
               cat > /www/wwwroot/shipapi.bdxapi.com/.env.secrets <<EOF
             APITUBE_API_KEY=$APITUBE_API_KEY
