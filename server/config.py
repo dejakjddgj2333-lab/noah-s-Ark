@@ -50,6 +50,11 @@ class Config:
     email_code_ttl_sec: int = int(os.getenv("EMAIL_CODE_TTL_SEC", "600"))
     email_code_interval_sec: int = int(os.getenv("EMAIL_CODE_INTERVAL_SEC", "60"))
 
+    # WebRTC TURN (与 okx 共用 coturn; 空 = 仅 STUN)
+    turn_urls: str = os.getenv("TURN_URLS", "")  # 逗号分隔
+    turn_username: str = os.getenv("TURN_USERNAME", "")
+    turn_credential: str = os.getenv("TURN_CREDENTIAL", "")
+
 
 def load_config() -> Config:
     cfg = Config()

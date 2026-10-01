@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:uuid/uuid.dart';
 
+import 'api.dart';
+import 'auth.dart';
 import 'chat_ws.dart';
 
 /// 通话阶段.
@@ -76,18 +78,29 @@ class CallService {
 
   static const _uuid = Uuid();
 
-  // STUN 配置; 生产建议补 TURN (对称 NAT 下 relay).
-  static const _iceServers = <String, dynamic>{
-    'iceServers': [
+  /// 拉取 TURN 配置并合并到 STUN. 失败/未配置时回退仅 STUN.
+  Future<Map<String, dynamic>> _buildIceServers() async {
+    final servers = <dynamic>[
       {'urls': 'stun:stun.l.google.com:19302'},
-      // TURN 模板 (按需启用):
-      // {
-      //   'urls': 'turn:turn.example.com:3478',
-      //   'username': 'user',
-      //   'credential': 'pass',
-      // },
-    ],
-  };
+    ];
+    try {
+      final resp = await McApi.get('/api/chat/turn-servers',
+          token: AuthStore.instance.token);
+      final list = resp['servers'];
+      if (list is List) {
+        for (final s in list) {
+          if (s is Map && s['urls'] != null) {
+            servers.add({
+              'urls': s['urls'],
+              if (s['username'] != null) 'username': s['username'],
+              if (s['credential'] != null) 'credential': s['credential'],
+            });
+          }
+        }
+      }
+    } catch (_) {/* TURN 拉取失败静默回退 STUN */}
+    return {'iceServers': servers};
+  }
 
   static const _mediaConstraints = <String, dynamic>{
     'audio': {
@@ -358,7 +371,8 @@ class CallService {
     try {
       _localStream = await navigator.mediaDevices
           .getUserMedia(_mediaConstraints);
-      _pc = await createPeerConnection(_iceServers);
+      final iceServers = await _buildIceServers();
+      _pc = await createPeerConnection(iceServers);
 
       // 本地音轨全部加入.
       for (final track in _localStream!.getAudioTracks()) {

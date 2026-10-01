@@ -526,6 +526,24 @@ async def list_online_friends(
     return {"online_ids": sorted(friend_ids & online)}
 
 
+@router.get("/turn-servers")
+async def get_turn_servers(
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """通话 TURN 配置下发 (与 okx 共用 coturn; 未配置返回空列表, 前端退回仅 STUN)."""
+    if not config.turn_urls or not config.turn_username:
+        return {"servers": []}
+    return {
+        "servers": [
+            {
+                "urls": [u.strip() for u in config.turn_urls.split(",") if u.strip()],
+                "username": config.turn_username,
+                "credential": config.turn_credential,
+            }
+        ]
+    }
+
+
 @router.get("/friends/requests")
 async def list_friend_requests(
     db: AsyncSession = Depends(get_db),
