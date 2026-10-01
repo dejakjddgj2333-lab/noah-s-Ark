@@ -52,10 +52,15 @@ class ChatApi {
     return [for (final e in raw) ChatUser.fromJson(e)];
   }
 
-  /// 好友请求: incoming + outgoing 两组.
+  /// 待处理好友请求数 (聊天页新朋友图标 + 底部导航角标共用).
+  static final ValueNotifier<int> friendRequestCount = ValueNotifier<int>(0);
+
+  /// 好友请求: incoming + outgoing 两组. 顺带刷新请求角标.
   static Future<FriendRequests> friendRequests() async {
     final resp = await McApi.get('$_prefix/friends/requests', token: _token);
-    return FriendRequests.fromJson(resp);
+    final r = FriendRequests.fromJson(resp);
+    friendRequestCount.value = r.incoming.length;
+    return r;
   }
 
   // ---------- 会话 ----------
@@ -86,6 +91,18 @@ class ChatApi {
   /// 删除/退出会话 (direct: 隐藏; group: 退群). 204.
   static Future<void> deleteConversation(int id) =>
       McApi.del('$_prefix/conversations/$id', token: _token);
+
+  /// 当前在线好友 id 集合 (经 WS 连接). 失败静默返回空集, 不影响列表渲染.
+  static Future<Set<int>> friendsOnline() async {
+    try {
+      final resp = await McApi.get('$_prefix/friends/online', token: _token);
+      final raw = resp['online_ids'];
+      if (raw is! List) return const {};
+      return {for (final e in raw) _toInt(e)};
+    } catch (_) {
+      return const {};
+    }
+  }
 
   // ---------- 消息 ----------
 
@@ -254,18 +271,29 @@ class LastMessage {
     required this.content,
     required this.senderName,
     this.createdAt,
+    this.isMine = false,
+    this.read,
   });
 
   final String content;
   final String senderName;
   final DateTime? createdAt;
 
+  /// 是否我发送 (决定私聊预览是否显示已读回执).
+  final bool isMine;
+
+  /// 私聊且 isMine 时: 对方是否已读; 其他情况为 null.
+  final bool? read;
+
   factory LastMessage.fromJson(dynamic raw) {
     final m = raw is Map ? raw : const <String, dynamic>{};
+    final readRaw = m['read'];
     return LastMessage(
       content: (m['content'] ?? '').toString(),
       senderName: (m['sender_name'] ?? '').toString(),
       createdAt: DateTime.tryParse((m['created_at'] ?? '').toString()),
+      isMine: m['is_mine'] == true,
+      read: readRaw is bool ? readRaw : null,
     );
   }
 }

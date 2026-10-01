@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 /// 明策 MINGCE design tokens — extracted from Stitch screens (cobalt terminal theme).
 /// Reference: stitch_ref/*.html tailwind configs.
 class McColors {
@@ -44,6 +42,7 @@ class McColors {
 }
 
 /// Text styles. display = Space Grotesk, mono = JetBrains Mono, sans = Inter.
+/// 字体文件本地化 (assets/fonts), 不再运行时联网下载; 中文回退系统字体.
 class McText {
   McText._();
 
@@ -57,7 +56,8 @@ class McText {
     double? height,
     double? letterSpacing,
   }) =>
-      GoogleFonts.spaceGrotesk(
+      TextStyle(
+        fontFamily: 'SpaceGrotesk',
         fontSize: _fs(size),
         fontWeight: weight,
         color: color,
@@ -72,7 +72,8 @@ class McText {
     double? height,
     double? letterSpacing,
   }) =>
-      GoogleFonts.jetBrainsMono(
+      TextStyle(
+        fontFamily: 'JetBrainsMono',
         fontSize: _fs(size),
         fontWeight: weight,
         color: color,
@@ -87,7 +88,8 @@ class McText {
     double? height,
     double? letterSpacing,
   }) =>
-      GoogleFonts.inter(
+      TextStyle(
+        fontFamily: 'Inter',
         fontSize: _fs(size),
         fontWeight: weight,
         color: color,
@@ -117,7 +119,8 @@ ThemeData buildMcTheme() {
       surfaceContainerHigh: McColors.surfaceContainerHigh,
       surfaceContainerHighest: McColors.surfaceContainerHighest,
     ),
-    textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
+    textTheme: base.textTheme.apply(
+      fontFamily: 'Inter',
       bodyColor: McColors.onSurface,
       displayColor: McColors.onSurface,
     ),

@@ -209,10 +209,21 @@ async def _conv_out(
     sort_ts = None
     if last is not None:
         lsender = await db.get(HkUser, last.sender_id)
+        is_mine = last.sender_id == me.id
+        # 已读回执: 仅单聊且最后一条是我发的才有意义
+        read = None
+        if conv.type == "direct" and is_mine:
+            other_member = next(
+                (m for m in members if m.user_id != me.id), None
+            )
+            if other_member is not None:
+                read = other_member.last_read_message_id >= last.id
         last_message = {
             "content": last.content,
             "sender_name": lsender.username if lsender else "",
             "created_at": last.created_at,
+            "is_mine": is_mine,
+            "read": read,
         }
         sort_ts = last.created_at.timestamp()
     my = next((m for m in members if m.user_id == me.id), None)
@@ -451,6 +462,25 @@ async def list_friends(
         )
     ).all()
     return [{"id": r.id, "username": r.username} for r in rows]
+
+
+@router.get("/friends/online")
+async def list_online_friends(
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """我的好友中当前在线 (有 WS 连接) 的用户 id 列表."""
+    friend_ids = set(
+        (
+            await db.scalars(
+                select(HkFriendship.friend_id).where(
+                    HkFriendship.user_id == me.id
+                )
+            )
+        ).all()
+    )
+    online = await chat_ws.online_user_ids()
+    return {"online_ids": sorted(friend_ids & online)}
 
 
 @router.get("/friends/requests")

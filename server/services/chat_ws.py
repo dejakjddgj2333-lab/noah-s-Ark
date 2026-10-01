@@ -40,6 +40,11 @@ class ChatWsManager:
                 for ws in dead:
                     self._conns.get(user_id, set()).discard(ws)
 
+    async def online_user_ids(self) -> set[int]:
+        """当前在线 (有活跃连接) 的用户 id 集合."""
+        async with self._lock:
+            return set(self._conns.keys())
+
     async def deliver_to_users(
         self, user_ids: list[int], payload: dict[str, Any]
     ) -> None:

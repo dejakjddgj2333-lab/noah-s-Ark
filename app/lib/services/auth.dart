@@ -97,9 +97,10 @@ class AuthStore extends ChangeNotifier {
     username = null;
     email = null;
     await _save();
-    // 登出断开聊天长连接, 清空未读角标.
+    // 登出断开聊天长连接, 清空未读与好友请求角标.
     ChatWs.instance.disconnect();
     ChatApi.unreadCount.value = 0;
+    ChatApi.friendRequestCount.value = 0;
     notifyListeners();
   }
 }

@@ -25,16 +25,34 @@ class _ChatPageState extends State<ChatPage> {
   bool _loading = true;
   bool _failed = false;
   int _tab = 0; // 0 全部 1 私聊 2 群聊
-  int _friendReqCount = 0;
+  // 好友请求角标用全局 ChatApi.friendRequestCount (底部导航也读它).
+  Set<int> _onlineIds = const {};
 
   StreamSubscription<Map<String, dynamic>>? _wsSub;
+  bool _autoRetried = false;
 
   @override
   void initState() {
     super.initState();
     ChatWs.instance.connect();
     _load();
+    _loadOnline();
     _wsSub = ChatWs.instance.events.listen(_onWsEvent);
+    // 同步好友请求角标 (静默失败)
+    _syncFriendRequests();
+  }
+
+  Future<void> _syncFriendRequests() async {
+    try {
+      await ChatApi.friendRequests();
+    } catch (_) {/* 静默 */}
+  }
+
+  /// 拉在线好友集合 (静默, 失败不影响列表).
+  Future<void> _loadOnline() async {
+    final ids = await ChatApi.friendsOnline();
+    if (!mounted) return;
+    setState(() => _onlineIds = ids);
   }
 
   @override
@@ -45,6 +63,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _load() async {
+    _loadOnline(); // 下拉刷新顺带更新在线状态
     try {
       final list = await ChatApi.conversations();
       if (!mounted) return;
@@ -59,6 +78,13 @@ class _ChatPageState extends State<ChatPage> {
         _loading = false;
         _failed = true;
       });
+      // 静默自动重试一次 (如赶上后端重启), 不打扰用户
+      if (!_autoRetried) {
+        _autoRetried = true;
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted && _failed) _load();
+        });
+      }
     }
   }
 
@@ -74,7 +100,8 @@ class _ChatPageState extends State<ChatPage> {
     if (!mounted) return;
     final type = e['type'];
     if (type == 'friend_request') {
-      setState(() => _friendReqCount++);
+      ChatApi.friendRequestCount.value++;
+      _loadOnline();
       return;
     }
     if (type != 'message') return;
@@ -141,7 +168,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _openFriends() async {
-    setState(() => _friendReqCount = 0);
+    ChatApi.friendRequestCount.value = 0;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const FriendsPage()),
     );
@@ -222,6 +249,7 @@ class _ChatPageState extends State<ChatPage> {
           _buildHeader(),
           _buildSearch(),
           _buildTabs(),
+          _buildSectionHeader(),
           const SizedBox(height: 6),
           Expanded(child: _buildBody()),
         ],
@@ -236,11 +264,14 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Text('聊天', style: McText.display(size: 18, weight: FontWeight.w700)),
           const Spacer(),
-          // 新朋友 (好友请求角标).
-          _headerAction(
-            icon: Icons.person_add_alt,
-            badge: _friendReqCount,
-            onTap: _openFriends,
+          // 新朋友 (好友请求角标, 全局 notifier 驱动).
+          ValueListenableBuilder<int>(
+            valueListenable: ChatApi.friendRequestCount,
+            builder: (context, count, _) => _headerAction(
+              icon: Icons.person_add_alt,
+              badge: count,
+              onTap: _openFriends,
+            ),
           ),
           _headerAction(
             icon: Icons.group_add_outlined,
@@ -365,6 +396,27 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// 列表区小节头: 左侧标签 + 右侧在线好友计数.
+  Widget _buildSectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Row(
+        children: [
+          Text('会话',
+              style: McText.sans(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  color: McColors.onSurfaceVariant,
+                  letterSpacing: 0.4)),
+          const Spacer(),
+          if (_onlineIds.isNotEmpty)
+            Text('${_onlineIds.length} 位好友在线',
+                style: McText.sans(size: 12, color: McColors.outline)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (_loading) {
       return const Center(
@@ -376,8 +428,20 @@ class _ChatPageState extends State<ChatPage> {
         ),
       );
     }
-    if (_failed) {
-      return _empty('加载失败, 下拉重试');
+    // 失败且本地无会话: 按空态展示 (不吓用户), 点击/下拉重试; 有缓存则保留列表
+    if (_failed && _conversations.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _load,
+        color: McColors.primarySoft,
+        backgroundColor: McColors.surfaceContainerHigh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            _empty('暂无会话, 去添加好友聊聊吧', retry: true),
+          ],
+        ),
+      );
     }
     final list = _filtered;
     return RefreshIndicator(
@@ -398,6 +462,7 @@ class _ChatPageState extends State<ChatPage> {
               itemCount: list.length,
               separatorBuilder: (_, _) => Divider(
                   height: 1,
+                  indent: 72,
                   color: McColors.outlineVariant.withValues(alpha: 0.3)),
               itemBuilder: (context, i) => _tile(list[i]),
             ),
@@ -406,31 +471,29 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _tile(Conversation c) {
     final last = c.lastMessage;
-    final preview = last == null
-        ? '暂无消息'
-        : (c.isGroup && last.senderName.isNotEmpty
-            ? '${last.senderName}: ${last.content}'
-            : last.content);
+    final online =
+        !c.isGroup && c.otherUser != null && _onlineIds.contains(c.otherUser!.id);
     return InkWell(
       onTap: () => _openConversation(c),
       onLongPress: () => _confirmDelete(c),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            _avatar(c.displayName),
+            _avatar(c, online: online),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 顶行: 名称 + 群组胶囊 ... 右端时间.
                   Row(
                     children: [
                       Flexible(
                         child: Text(
                           c.displayName,
                           style: McText.sans(
-                              size: 14,
+                              size: 15,
                               weight: FontWeight.w600,
                               color: Colors.white),
                           overflow: TextOverflow.ellipsis,
@@ -438,39 +501,27 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                       if (c.isGroup) ...[
                         const SizedBox(width: 6),
-                        Text(
-                          '(${c.memberCount})',
-                          style: McText.mono(
-                              size: 12, color: McColors.onSurfaceVariant),
-                        ),
+                        _groupPill(c.memberCount),
                       ],
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Text(
                         chatTimeLabel(last?.createdAt),
-                        style: McText.mono(
-                          size: 12,
-                          color: c.unreadCount > 0
-                              ? McColors.bull
-                              : McColors.onSurfaceVariant,
-                        ),
+                        style:
+                            McText.mono(size: 12, color: McColors.outline),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
+                  // 底行: 预览 ... 右端 回执/未读角标 (互斥).
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          preview,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: McText.sans(
-                              size: 12, color: McColors.onSurfaceVariant),
-                        ),
-                      ),
+                      Expanded(child: _preview(c)),
                       if (c.unreadCount > 0) ...[
                         const SizedBox(width: 10),
                         _unreadBadge(c.unreadCount),
+                      ] else if (!c.isGroup && last != null && last.isMine) ...[
+                        const SizedBox(width: 10),
+                        _receipt(last.read),
                       ],
                     ],
                   ),
@@ -481,6 +532,78 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
     );
+  }
+
+  /// 群组胶囊: '群组 1,840'.
+  Widget _groupPill(int memberCount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: McColors.primarySoft.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border:
+            Border.all(color: McColors.primarySoft.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        '群组 ${_fmtCount(memberCount)}',
+        style: McText.sans(
+            size: 12, weight: FontWeight.w500, color: McColors.primarySoft),
+      ),
+    );
+  }
+
+  /// 最后消息预览: 群带发送者前缀 (青), 自己消息带 '我: '.
+  Widget _preview(Conversation c) {
+    final last = c.lastMessage;
+    if (last == null) {
+      return Text('暂无消息',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: McText.sans(size: 12, color: McColors.onSurfaceVariant));
+    }
+    final base = McText.sans(size: 12, color: McColors.onSurfaceVariant);
+    final prefix = last.isMine
+        ? '我: '
+        : (c.isGroup && last.senderName.isNotEmpty
+            ? '${last.senderName}: '
+            : '');
+    if (prefix.isEmpty) {
+      return Text(last.content,
+          maxLines: 1, overflow: TextOverflow.ellipsis, style: base);
+    }
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+              text: prefix,
+              style: McText.sans(size: 12, color: McColors.secondary)),
+          TextSpan(text: last.content, style: base),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// 私聊已读回执: 未读单勾 (暗), 已读双勾 (青绿).
+  Widget _receipt(bool? read) {
+    final seen = read == true;
+    return Icon(
+      seen ? Icons.done_all : Icons.check,
+      size: 14,
+      color: seen ? McColors.secondary : McColors.outline,
+    );
+  }
+
+  static String _fmtCount(int n) {
+    final s = n.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      final fromEnd = s.length - i;
+      buf.write(s[i]);
+      if (fromEnd > 1 && fromEnd % 3 == 1) buf.write(',');
+    }
+    return buf.toString();
   }
 
   Widget _unreadBadge(int count) {
@@ -504,26 +627,64 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _avatar(String name) {
+  /// 圆角方形头像 (48px, r12): 名字哈希选配色, 私聊在线时右下绿点.
+  Widget _avatar(Conversation c, {required bool online}) {
+    final name = c.displayName;
     final initial = name.isEmpty ? '?' : name[0].toUpperCase();
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: McColors.primarySoft.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: McColors.primarySoft.withValues(alpha: 0.3)),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: McText.display(
-            size: 17, weight: FontWeight.w700, color: McColors.primarySoft),
+    // 小调色板: 主蓝 / 青 / 绿 / 金, 按名字哈希稳定取色.
+    const palette = [
+      McColors.primarySoft,
+      McColors.secondary,
+      McColors.tertiary,
+      McColors.goldBright,
+    ];
+    var hash = 0;
+    for (final ch in name.codeUnits) {
+      hash = (hash * 31 + ch) & 0x7fffffff;
+    }
+    final color = palette[hash % palette.length];
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initial,
+              style:
+                  McText.display(size: 17, weight: FontWeight.w700, color: color),
+            ),
+          ),
+          if (online)
+            Positioned(
+              right: -1,
+              bottom: -1,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: McColors.bull,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: McColors.surfaceContainerLowest, width: 2),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _empty(String text) {
+  Widget _empty(String text, {bool retry = false}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -531,6 +692,22 @@ class _ChatPageState extends State<ChatPage> {
         const SizedBox(height: 12),
         Text(text,
             style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
+        if (retry) ...[
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: _load,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: McColors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: McColors.outlineVariant),
+              ),
+              child: Text('重新加载',
+                  style: McText.sans(size: 12, color: McColors.primarySoft)),
+            ),
+          ),
+        ],
       ],
     );
   }

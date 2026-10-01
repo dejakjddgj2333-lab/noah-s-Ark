@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
@@ -68,6 +69,7 @@ class McShell extends StatefulWidget {
 
 class _McShellState extends State<McShell> {
   int _index = 0;
+  StreamSubscription<Map<String, dynamic>>? _chatSub;
 
   final _pages = const [
     HomePage(),
@@ -75,6 +77,48 @@ class _McShellState extends State<McShell> {
     ChatPage(),
     AssetsPage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 全局监听好友请求: 任何页面都弹通知 + 角标 (聊天页外也能感知).
+    _chatSub = ChatWs.instance.events.listen(_onChatEvent);
+    _seedChatBadges();
+  }
+
+  Future<void> _seedChatBadges() async {
+    if (!AuthStore.instance.loggedIn) return;
+    try {
+      await ChatApi.friendRequests();
+    } catch (_) {/* 静默 */}
+  }
+
+  void _onChatEvent(Map<String, dynamic> e) {
+    if (!mounted || e['type'] != 'friend_request') return;
+    final from = e['from_user'];
+    final name = from is Map ? (from['username'] ?? '对方') : '对方';
+    ChatApi.friendRequestCount.value++;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: McColors.surfaceContainerHigh,
+        content: Text('$name 请求添加你为好友',
+            style: McText.sans(size: 13, color: McColors.onSurface)),
+        action: SnackBarAction(
+          label: '查看',
+          textColor: McColors.primarySoft,
+          onPressed: () => setState(() => _index = 2),
+        ),
+        duration: const Duration(seconds: 4),
+      ));
+  }
+
+  @override
+  void dispose() {
+    _chatSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,11 +366,17 @@ class McBottomNav extends StatelessWidget {
               _item(1, Icons.query_stats, '资讯', dot: true),
               ValueListenableBuilder<int>(
                 valueListenable: ChatApi.unreadCount,
-                builder: (context, count, _) => _item(
-                  2,
-                  Icons.chat_bubble_outline,
-                  '聊天',
-                  badge: count > 0 ? (count > 99 ? '99+' : '$count') : null,
+                builder: (context, unread, _) => ValueListenableBuilder<int>(
+                  valueListenable: ChatApi.friendRequestCount,
+                  builder: (context, reqs, _) {
+                    final count = unread + reqs; // 未读消息 + 待处理好友请求
+                    return _item(
+                      2,
+                      Icons.chat_bubble_outline,
+                      '聊天',
+                      badge: count > 0 ? (count > 99 ? '99+' : '$count') : null,
+                    );
+                  },
                 ),
               ),
               _item(3, Icons.account_balance_wallet, '我的'),
