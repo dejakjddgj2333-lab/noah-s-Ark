@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 load_dotenv()
+# 本地敏感 key (APITUBE/DEEPSEEK 等) 放 .env.local, gitignored 不入库
+load_dotenv(".env.local", override=True)
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,16 @@ class Config:
     turn_urls: str = os.getenv("TURN_URLS", "")  # 逗号分隔
     turn_username: str = os.getenv("TURN_USERNAME", "")
     turn_credential: str = os.getenv("TURN_CREDENTIAL", "")
+
+    # 资讯采集 (hk 侧接管, 为两项目分离做准备)
+    apitube_api_key: str = os.getenv("APITUBE_API_KEY", "")
+    deepseek_api_key: str = os.getenv("DEEPSEEK_API_KEY", "")
+    news_collect_enabled: bool = (
+        os.getenv("NEWS_COLLECT_ENABLED", "true").lower() == "true"
+    )
+    news_collect_interval_sec: int = int(
+        os.getenv("NEWS_COLLECT_INTERVAL_SEC", "1800")  # 30 分钟
+    )
 
 
 def load_config() -> Config:

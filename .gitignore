@@ -63,3 +63,5 @@ shots2/
 
 # 聊天上传文件 (运行时产物)
 server/uploads/
+.env.secrets
+server/.env.local

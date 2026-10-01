@@ -31,11 +31,13 @@ jobs:
           BACKEND: ${{ steps.changes.outputs.backend }}
           ADMIN: ${{ steps.changes.outputs.admin }}
           ALL: ${{ steps.changes.outputs.all }}
+          APITUBE_API_KEY: ${{ secrets.APITUBE_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: BACKEND,ADMIN,ALL
+          envs: BACKEND,ADMIN,ALL,APITUBE_API_KEY,DEEPSEEK_API_KEY
           script: |
             cd /www/wwwroot/hk/repo
             git fetch origin master
@@ -52,4 +54,14 @@ jobs:
               echo "无相关改动,跳过部署"
               exit 0
             fi
+
+            # 敏感 key 从 GitHub Secrets 写入运行目录 (不入库, push protection 拦 sk- 类 key)
+            if [ "$BACKEND" = "true" ] || [ "$ALL" = "true" ]; then
+              umask 077
+              cat > /www/wwwroot/shipapi.bdxapi.com/.env.secrets <<EOF
+            APITUBE_API_KEY=$APITUBE_API_KEY
+            DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY
+            EOF
+            fi
+
             bash deploy/deploy.sh $TARGETS

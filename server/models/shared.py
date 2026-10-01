@@ -1,4 +1,5 @@
-"""共享库中的 okx 表 — hk 只读映射. 建表/写入归 okx 后端, 勿动."""
+"""共享库中的 okx 表 — hk 映射. 建表/迁移归 okx 后端, 勿动表结构.
+资讯采集已由 hk 接管 (news_collector), hk 会写 news_articles/news_sync_state 数据行."""
 from __future__ import annotations
 
 from sqlalchemy import Column, DateTime, Integer, String, Text
@@ -30,6 +31,19 @@ class NewsArticle(SharedBase):
     comment_count = Column(Integer, default=0)
     favorite_count = Column(Integer, default=0)
     share_count = Column(Integer, default=0)
+
+
+class NewsSyncState(SharedBase):
+    """采集游标 (每来源一行, 断点续抓). hk 采集器读写."""
+
+    __tablename__ = "news_sync_state"
+
+    id = Column(Integer, primary_key=True)
+    source = Column(String(32), nullable=False, unique=True)
+    last_cursor = Column(String(255))
+    last_run_at = Column(DateTime)
+    last_status = Column(String(16))  # ok/error
+    last_error = Column(String(512))
 
 
 class MacroEvent(SharedBase):

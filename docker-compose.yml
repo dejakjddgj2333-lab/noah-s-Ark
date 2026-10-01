@@ -10,6 +10,7 @@ services:
     network_mode: host   # 直接使用宿主机网络，127.0.0.1 即可访问共享 PG
     env_file:
       - .env.prod
+      - .env.secrets   # GitHub Secrets 下发 (API key 等), 不入库; deploy.sh 保证存在
     restart: unless-stopped
     deploy:
       resources:

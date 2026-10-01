@@ -18,6 +18,8 @@ deploy_backend() {
   rsync -a --delete "$REPO/server/" "$APP_DIR/server/"
   rsync -a "$REPO/docker-compose.yml" "$REPO/.env.prod" "$APP_DIR/"
   cd "$APP_DIR"
+  # .env.secrets 由 GitHub Secrets 在 workflow 里写入; 手动部署兜底建空文件防 compose 报错
+  touch .env.secrets
   docker compose up -d --build
   docker image prune -f
 }

@@ -76,6 +76,23 @@ async def _retention_loop() -> None:
         await asyncio.sleep(RETENTION_INTERVAL_SEC)
 
 
+async def _news_collect_loop() -> None:
+    """资讯采集常驻循环 (hk 接管, 两项目分离准备). 启动 30s 后首轮."""
+    from services.news_collector import run_collect
+
+    await asyncio.sleep(30)  # 启动先稳数据库连接
+    while True:
+        try:
+            n = await run_collect()
+            if n:
+                logger.info("news_collect_run", extra={"inserted": n})
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("news_collect_error")
+        await asyncio.sleep(config.news_collect_interval_sec)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # hk 自有表不存在则建 (共享表由 okx 侧 Alembic 管理, hk 不建不改)
@@ -91,8 +108,17 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text(stmt))
     CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     retention = asyncio.create_task(_retention_loop())
+    collector = None
+    if config.news_collect_enabled and not config.database_url.startswith("sqlite"):
+        collector = asyncio.create_task(_news_collect_loop())
     yield
     retention.cancel()
+    if collector is not None:
+        collector.cancel()
+        try:
+            await collector
+        except asyncio.CancelledError:
+            pass
     try:
         await retention
     except asyncio.CancelledError:
