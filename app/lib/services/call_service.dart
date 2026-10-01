@@ -149,26 +149,14 @@ class CallService {
       return false;
     }
 
-    // 先邀请 (带 conversation_id 可选), 再发 SDP offer.
+    // 先邀请 (带 conversation_id 可选); offer 等对方 call_accept 后再发,
+    // 否则被叫 PC 未建, offer 会被丢弃 (信令竞争).
     ChatWs.instance.send({
       'type': 'call_invite',
       'call_id': callId,
       'to_user_id': peerUserId,
       'conversation_id': ?conversationId,
     });
-
-    try {
-      final offer = await _pc!.createOffer();
-      await _pc!.setLocalDescription(offer);
-      _sendSignal(peerUserId, {
-        'type': 'sdp',
-        'sdp': {'type': offer.type, 'sdp': offer.sdp},
-      });
-    } catch (_) {
-      _teardown();
-      _toast('呼叫失败');
-      return false;
-    }
     return true;
   }
 
@@ -194,21 +182,22 @@ class CallService {
     _setPhase(CallPhase.incoming);
   }
 
-  /// 接听.
+  /// 接听. 先建 PC (含麦克风授权), 再发 call_accept —— 主叫收到 accept 才发 offer.
   Future<void> accept() async {
     final call = activeCall.value;
     if (call == null || call.phase != CallPhase.incoming) return;
-    ChatWs.instance.send({
-      'type': 'call_accept',
-      'call_id': call.callId,
-      'to_user_id': call.peerId,
-    });
     final ok = await _setupPeerConnection(isCaller: false);
     if (!ok) {
       _sendControl('call_end');
       _teardown();
       _toast('无法访问麦克风');
+      return;
     }
+    ChatWs.instance.send({
+      'type': 'call_accept',
+      'call_id': call.callId,
+      'to_user_id': call.peerId,
+    });
     // 远端 offer 会在 call_signal 中到达, 在 _onRemoteSdp 里应答.
   }
 
@@ -305,6 +294,20 @@ class CallService {
   Future<void> _onAccepted() async {
     final call = activeCall.value;
     if (call == null || call.phase != CallPhase.outgoing) return;
+    // 被叫已建 PC, 现在发 offer 不会丢.
+    try {
+      final offer = await _pc!.createOffer();
+      await _pc!.setLocalDescription(offer);
+      _sendSignal(call.peerId, {
+        'type': 'sdp',
+        'sdp': {'type': offer.type, 'sdp': offer.sdp},
+      });
+    } catch (_) {
+      _sendControl('call_end');
+      _teardown();
+      _toast('呼叫失败');
+      return;
+    }
     final now = DateTime.now();
     activeCall.value = call.copyWith(phase: CallPhase.connected, startedAt: now);
     _setPhase(CallPhase.connected);
