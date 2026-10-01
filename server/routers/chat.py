@@ -1,23 +1,30 @@
-"""聊天路由: 好友 / 会话 / 消息 / 表情回应 / WebSocket 实时推送."""
+"""聊天路由: 好友 / 会话 / 消息 / 表情回应 / 文件 / WebSocket 实时推送."""
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
     Depends,
+    File,
     HTTPException,
     Query,
+    Request,
     Response,
+    UploadFile,
     WebSocket,
     WebSocketDisconnect,
     status,
 )
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import config
 from database import SessionLocal, get_db
 from models.hk import (
     HkChatMessage,
@@ -34,6 +41,16 @@ from services.chat_ws import chat_ws
 router = APIRouter(prefix="/chat", tags=["聊天"])
 
 ALLOWED_EMOJIS = ("👍", "❤️", "🔥", "😂", "😮", "😢")
+
+# 富媒体消息
+MSG_TYPES = ("text", "image", "audio", "video")
+# 文件上传: 50MB, 扩展名白名单
+MAX_FILE_SIZE = 50 * 1024 * 1024
+ALLOWED_EXTS = {
+    "jpg", "jpeg", "png", "webp", "gif",
+    "mp4", "mov", "m4a", "aac", "mp3", "wav", "opus",
+}
+CHAT_UPLOAD_DIR = Path(config.upload_dir) / "chat"
 
 
 # ---------- Schemas ----------
@@ -57,8 +74,24 @@ class GroupConvIn(BaseModel):
 
 
 class MessageIn(BaseModel):
-    content: str = Field(min_length=1, max_length=2000)
+    # 非文本消息 content 可省略 (默认 ''); 文本仍 1..2000, 由 validator 保证 422
+    content: str = Field(default="", max_length=2000)
     reply_to_id: int | None = None
+    msg_type: str = Field(default="text", max_length=16)
+    file_url: str | None = Field(default=None, max_length=512)
+    duration: int | None = None
+
+    @model_validator(mode="after")
+    def _check(self) -> "MessageIn":
+        if self.msg_type not in MSG_TYPES:
+            raise ValueError("不支持的消息类型")
+        if self.msg_type == "text" and not 1 <= len(self.content) <= 2000:
+            raise ValueError("文本内容长度需 1..2000")
+        return self
+
+
+class ConvRenameIn(BaseModel):
+    name: str = Field(min_length=1, max_length=32)
 
 
 class ReadIn(BaseModel):
@@ -168,6 +201,9 @@ async def _message_out(
             "username": sender.username if sender else "",
         },
         "content": msg.content,
+        "msg_type": msg.msg_type,
+        "file_url": msg.file_url,
+        "duration": msg.duration,
         "reply_to": reply_to,
         "created_at": msg.created_at,
         "reactions": reactions,
@@ -219,6 +255,8 @@ async def _conv_out(
             if other_member is not None:
                 read = other_member.last_read_message_id >= last.id
         last_message = {
+            "id": last.id,  # 前端 WS read 事件按 id 比对回执
+            "msg_type": last.msg_type,  # 列表预览 [图片]/[语音]/[视频]
             "content": last.content,
             "sender_name": lsender.username if lsender else "",
             "created_at": last.created_at,
@@ -625,6 +663,112 @@ async def delete_conversation(
     return Response(status_code=204)
 
 
+@router.get("/conversations/{conversation_id}/members")
+async def list_members(
+    conversation_id: int,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """成员列表: owner(创建者) 在前, role owner/member."""
+    await _require_member(db, conversation_id, me.id)
+    conv = await db.get(HkConversation, conversation_id)
+    rows = (
+        await db.execute(
+            select(HkUser.id, HkUser.username)
+            .join(
+                HkConversationMember,
+                HkConversationMember.user_id == HkUser.id,
+            )
+            .where(HkConversationMember.conversation_id == conversation_id)
+            .order_by(HkConversationMember.id)
+        )
+    ).all()
+    members = [
+        {
+            "id": r.id,
+            "username": r.username,
+            "role": "owner" if conv and r.id == conv.created_by else "member",
+        }
+        for r in rows
+    ]
+    members.sort(key=lambda m: 0 if m["role"] == "owner" else 1)
+    return members
+
+
+@router.put("/conversations/{conversation_id}")
+async def rename_conversation(
+    conversation_id: int,
+    data: ConvRenameIn,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """改群名: 仅群聊群主."""
+    await _require_member(db, conversation_id, me.id)
+    conv = await db.get(HkConversation, conversation_id)
+    if conv is None or conv.type != "group" or conv.created_by != me.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="仅群主可修改群信息"
+        )
+    conv.name = data.name
+    await db.commit()
+    await db.refresh(conv)
+    member_ids = await _member_ids(db, conversation_id)
+    await chat_ws.deliver_to_users(
+        member_ids,
+        {
+            "type": "group_updated",
+            "conversation_id": conversation_id,
+            "name": conv.name,
+        },
+    )
+    out, _ = await _conv_out(db, conv, me)
+    return out
+
+
+@router.delete("/conversations/{conversation_id}/members/{user_id}", status_code=204)
+async def remove_member(
+    conversation_id: int,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """踢人: 仅群聊群主; 不能移除群主."""
+    await _require_member(db, conversation_id, me.id)
+    conv = await db.get(HkConversation, conversation_id)
+    if conv is None or conv.type != "group" or conv.created_by != me.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="仅群主可移除成员"
+        )
+    if user_id == conv.created_by:
+        raise HTTPException(status_code=400, detail="不能移除群主")
+    target = (
+        await db.scalars(
+            select(HkConversationMember).where(
+                HkConversationMember.conversation_id == conversation_id,
+                HkConversationMember.user_id == user_id,
+            )
+        )
+    ).first()
+    if target is None:
+        raise HTTPException(status_code=404, detail="成员不存在")
+    target_user = await db.get(HkUser, user_id)
+    username = target_user.username if target_user else ""
+    # 推给所有当前成员 + 被踢者 (删除前先取名单)
+    member_ids = await _member_ids(db, conversation_id)
+    await db.delete(target)
+    await db.commit()
+    await chat_ws.deliver_to_users(
+        member_ids,
+        {
+            "type": "member_removed",
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "username": username,
+        },
+    )
+    return Response(status_code=204)
+
+
 @router.post("/conversations/{conversation_id}/read")
 async def mark_read(
     conversation_id: int,
@@ -636,6 +780,24 @@ async def mark_read(
     if data.message_id > member.last_read_message_id:
         member.last_read_message_id = data.message_id
         await db.commit()
+        # 推已读事件给其他成员: 发送方列表回执实时变双勾
+        others = (
+            await db.scalars(
+                select(HkConversationMember.user_id).where(
+                    HkConversationMember.conversation_id == conversation_id,
+                    HkConversationMember.user_id != me.id,
+                )
+            )
+        ).all()
+        await chat_ws.deliver_to_users(
+            list(others),
+            {
+                "type": "read",
+                "conversation_id": conversation_id,
+                "reader_id": me.id,
+                "message_id": data.message_id,
+            },
+        )
     return {"ok": True}
 
 
@@ -686,6 +848,9 @@ async def send_message(
         sender_id=me.id,
         content=data.content,
         reply_to_id=data.reply_to_id,
+        msg_type=data.msg_type,
+        file_url=data.file_url,
+        duration=data.duration,
         status="visible",
     )
     db.add(msg)
@@ -753,6 +918,59 @@ async def toggle_reaction(
         },
     )
     return {"reactions": reactions}
+
+
+# ---------- 文件 ----------
+
+
+@router.post("/files", status_code=201)
+async def upload_chat_file(
+    request: Request,
+    file: UploadFile = File(...),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """聊天附件上传: multipart 字段名 file, 50MB 上限, 扩展名白名单."""
+    cl = request.headers.get("content-length")
+    if cl and cl.isdigit() and int(cl) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="文件超过 50MB",
+        )
+    ext = ""
+    if file.filename and "." in file.filename:
+        ext = file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ALLOWED_EXTS:
+        raise HTTPException(status_code=400, detail="不支持的文件类型")
+    name = f"{uuid4().hex}.{ext}"
+    dest = CHAT_UPLOAD_DIR / name
+    CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    size = 0
+    try:
+        with open(dest, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="文件超过 50MB",
+                    )
+                f.write(chunk)
+    except Exception:
+        dest.unlink(missing_ok=True)  # 失败清理半成品
+        raise
+    return {"file_url": f"/api/chat/files/{name}"}
+
+
+@router.get("/files/{name}")
+async def get_chat_file(name: str):
+    """按文件名回源; 仅取 basename 防路径穿越. 无需鉴权 (前端直接 <img>/<audio>)."""
+    safe = Path(name).name
+    if not safe or safe != name:
+        raise HTTPException(status_code=404, detail="文件不存在")
+    path = CHAT_UPLOAD_DIR / safe
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="文件不存在")
+    return FileResponse(path)
 
 
 # ---------- WebSocket ----------

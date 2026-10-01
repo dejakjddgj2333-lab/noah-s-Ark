@@ -18,10 +18,12 @@ import 'pages/login_page.dart';
 import 'pages/news_page.dart';
 import 'services/auth.dart';
 import 'services/chat_api.dart';
+import 'services/chat_db.dart';
 import 'services/chat_ws.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ChatDb.init(); // 本地消息库 (先于 runApp, 聊天页秒开)
   await AuthStore.instance.load();
   // 已登录则启动聊天长连接.
   if (AuthStore.instance.loggedIn) ChatWs.instance.connect();

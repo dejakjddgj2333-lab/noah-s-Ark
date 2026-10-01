@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import 'api.dart';
 import 'auth.dart';
@@ -116,16 +119,70 @@ class ChatApi {
   }
 
   static Future<ChatMessage> sendMessage(int conversationId, String content,
-      {int? replyToId}) async {
+      {int? replyToId, String? msgType, String? fileUrl, int? duration}) async {
     final resp = await McApi.post(
         '$_prefix/conversations/$conversationId/messages',
         {
           'content': content,
           'reply_to_id': ?replyToId,
+          'msg_type': ?msgType,
+          'file_url': ?fileUrl,
+          'duration': ?duration,
         },
         token: _token);
     return ChatMessage.fromJson(resp);
   }
+
+  /// 上传文件 (图片/语音/视频). multipart 字段 'file', Bearer 鉴权.
+  /// 返回相对路径 file_url (如 `/api/chat/files/<uuid>.jpg`), 加载时前缀 McApi.baseUrl.
+  /// 全平台通用: 传字节而非路径, Web 无 File 也可用.
+  static Future<String> uploadFile(Uint8List bytes, String filename) async {
+    final req = http.MultipartRequest(
+        'POST', Uri.parse('${McApi.baseUrl}$_prefix/files'));
+    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final streamed = await req.send().timeout(const Duration(seconds: 60));
+    final body = await streamed.stream.bytesToString();
+    if (streamed.statusCode >= 400) {
+      String msg = '上传失败 (${streamed.statusCode})';
+      try {
+        final data = jsonDecode(body);
+        final detail = data is Map ? data['detail'] : null;
+        if (detail is String) msg = detail;
+      } catch (_) {/* 用默认 */}
+      throw ApiException(streamed.statusCode, msg);
+    }
+    final data = jsonDecode(body);
+    final url = data is Map ? data['file_url'] : null;
+    if (url is! String || url.isEmpty) {
+      throw ApiException(streamed.statusCode, '上传响应缺少 file_url');
+    }
+    return url;
+  }
+
+  // ---------- 群管理 ----------
+
+  /// 群成员列表 (群主在前). role: owner|member.
+  static Future<List<GroupMember>> members(int conversationId) async {
+    final raw =
+        await McApi.getList('$_prefix/conversations/$conversationId/members',
+            token: _token);
+    return [for (final e in raw) GroupMember.fromJson(e)];
+  }
+
+  /// 群主重命名群.
+  static Future<Conversation> renameConversation(
+      int conversationId, String name) async {
+    final resp = await McApi.put(
+        '$_prefix/conversations/$conversationId', {'name': name},
+        token: _token);
+    return Conversation.fromJson(resp);
+  }
+
+  /// 群主移除成员. 204.
+  static Future<void> removeMember(int conversationId, int userId) =>
+      McApi.del('$_prefix/conversations/$conversationId/members/$userId',
+          token: _token);
 
   static Future<void> markRead(int conversationId, int messageId) =>
       McApi.post('$_prefix/conversations/$conversationId/read',
@@ -236,14 +293,16 @@ class Conversation {
   }
 
   Conversation copyWith({
+    String? name,
+    int? memberCount,
     LastMessage? lastMessage,
     int? unreadCount,
   }) =>
       Conversation(
         id: id,
         type: type,
-        name: name,
-        memberCount: memberCount,
+        name: name ?? this.name,
+        memberCount: memberCount ?? this.memberCount,
         otherUser: otherUser,
         lastMessage: lastMessage ?? this.lastMessage,
         unreadCount: unreadCount ?? this.unreadCount,
@@ -268,15 +327,20 @@ class Conversation {
 /// 会话最后一条消息预览.
 class LastMessage {
   const LastMessage({
+    this.id = 0,
     required this.content,
     required this.senderName,
+    this.msgType = 'text',
     this.createdAt,
     this.isMine = false,
     this.read,
   });
 
+  /// 消息 id (WS read 事件按它比对回执).
+  final int id;
   final String content;
   final String senderName;
+  final String msgType; // text|image|audio|video
   final DateTime? createdAt;
 
   /// 是否我发送 (决定私聊预览是否显示已读回执).
@@ -285,12 +349,35 @@ class LastMessage {
   /// 私聊且 isMine 时: 对方是否已读; 其他情况为 null.
   final bool? read;
 
+  /// 预览文本: 媒体消息显示 [图片]/[视频]/[语音] 占位.
+  String get previewText {
+    if (msgType == 'text') return content;
+    return switch (msgType) {
+      'image' => '[图片]',
+      'video' => '[视频]',
+      'audio' => '[语音]',
+      _ => content,
+    };
+  }
+
+  LastMessage copyWith({bool? read}) => LastMessage(
+        id: id,
+        content: content,
+        senderName: senderName,
+        msgType: msgType,
+        createdAt: createdAt,
+        isMine: isMine,
+        read: read ?? this.read,
+      );
+
   factory LastMessage.fromJson(dynamic raw) {
     final m = raw is Map ? raw : const <String, dynamic>{};
     final readRaw = m['read'];
     return LastMessage(
+      id: _toInt(m['id']),
       content: (m['content'] ?? '').toString(),
       senderName: (m['sender_name'] ?? '').toString(),
+      msgType: (m['msg_type'] ?? 'text').toString(),
       createdAt: DateTime.tryParse((m['created_at'] ?? '').toString()),
       isMine: m['is_mine'] == true,
       read: readRaw is bool ? readRaw : null,
@@ -305,6 +392,9 @@ class ChatMessage {
     required this.senderId,
     required this.senderName,
     required this.content,
+    this.msgType = 'text',
+    this.fileUrl,
+    this.duration,
     this.replyTo,
     this.createdAt,
     this.reactions = const [],
@@ -314,33 +404,101 @@ class ChatMessage {
   final int senderId;
   final String senderName;
   final String content;
+
+  /// 消息类型: text|image|audio|video.
+  final String msgType;
+
+  /// 媒体相对路径 (image/audio/video 才有). 加载时前缀 McApi.baseUrl.
+  final String? fileUrl;
+
+  /// 音/视频时长 (秒).
+  final int? duration;
+
   final ReplyRef? replyTo;
   final DateTime? createdAt;
   final List<Reaction> reactions;
+
+  bool get isMedia => msgType != 'text' && fileUrl != null;
+
+  /// 媒体完整 URL (相对 file_url + baseUrl).
+  String? get mediaUrl =>
+      fileUrl == null ? null : '${McApi.baseUrl}$fileUrl';
 
   ChatMessage copyWith({List<Reaction>? reactions}) => ChatMessage(
         id: id,
         senderId: senderId,
         senderName: senderName,
         content: content,
+        msgType: msgType,
+        fileUrl: fileUrl,
+        duration: duration,
         replyTo: replyTo,
         createdAt: createdAt,
         reactions: reactions ?? this.reactions,
       );
+
+  /// 序列化为与 fromJson 同构的 Map, 供本地存储 (ChatDb).
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'sender': {'id': senderId, 'username': senderName},
+        'content': content,
+        'msg_type': msgType,
+        if (fileUrl != null) 'file_url': fileUrl,
+        if (duration != null) 'duration': duration,
+        if (replyTo != null)
+          'reply_to': {
+            'id': replyTo!.id,
+            'sender_name': replyTo!.senderName,
+            'content': replyTo!.content,
+          },
+        if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+        'reactions': [
+          for (final r in reactions)
+            {'emoji': r.emoji, 'count': r.count, 'mine': r.mine},
+        ],
+      };
 
   factory ChatMessage.fromJson(dynamic raw) {
     final m = raw is Map ? raw : const <String, dynamic>{};
     final sender = m['sender'];
     final senderMap = sender is Map ? sender : const <String, dynamic>{};
     final reply = m['reply_to'];
+    final dur = m['duration'];
     return ChatMessage(
       id: _toInt(m['id']),
       senderId: _toInt(senderMap['id']),
       senderName: (senderMap['username'] ?? '').toString(),
       content: (m['content'] ?? '').toString(),
+      msgType: (m['msg_type'] ?? 'text').toString(),
+      fileUrl: m['file_url']?.toString(),
+      duration: dur == null ? null : _toInt(dur),
       replyTo: reply is Map ? ReplyRef.fromJson(reply) : null,
       createdAt: DateTime.tryParse((m['created_at'] ?? '').toString()),
       reactions: Reaction.parseList(m['reactions']),
+    );
+  }
+}
+
+/// 群成员.
+class GroupMember {
+  const GroupMember({
+    required this.id,
+    required this.username,
+    this.role = 'member',
+  });
+
+  final int id;
+  final String username;
+  final String role; // owner|member
+
+  bool get isOwner => role == 'owner';
+
+  factory GroupMember.fromJson(dynamic raw) {
+    final m = raw is Map ? raw : const <String, dynamic>{};
+    return GroupMember(
+      id: _toInt(m['id']),
+      username: (m['username'] ?? '').toString(),
+      role: (m['role'] ?? 'member').toString(),
     );
   }
 }

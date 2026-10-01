@@ -69,6 +69,25 @@ class McApi {
     return _decode(resp);
   }
 
+  /// PUT 请求 (JSON body).
+  static Future<Map<String, dynamic>> put(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final resp = await http
+        .put(
+          Uri.parse('$baseUrl$path'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 10));
+    return _decode(resp);
+  }
+
   static Map<String, dynamic> _decode(http.Response resp) {
     if (resp.statusCode == 204 || resp.bodyBytes.isEmpty) {
       return <String, dynamic>{};

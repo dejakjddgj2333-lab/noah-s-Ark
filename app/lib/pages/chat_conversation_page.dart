@@ -1,17 +1,27 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
 import '../services/chat_api.dart';
+import '../services/chat_db.dart';
 import '../services/chat_ws.dart';
+import 'group_info_page.dart';
 import 'market_detail_page.dart';
+import 'media_viewer_page.dart';
 
-/// 聊天房间: 倒序消息流, 向上翻页, 回复 / 表情表态 / 复制, 币种标签跳转行情,
-/// 乐观发送 (pending → 成功/失败重试), WS 实时追加 + 已读上报.
+/// 聊天房间: 本地消息秒开 + 服务器合并 (微信式, 服务器仅relay),
+/// 倒序消息流, 向上翻页, 回复 / 表情表态 / 复制, 币种标签跳转行情,
+/// 图片/语音/视频媒体消息, 乐观发送 (pending → 成功/失败重试),
+/// WS 实时追加 + 已读上报. 群聊右上角进群信息页.
 class ChatConversationPage extends StatefulWidget {
   const ChatConversationPage({super.key, required this.conversation});
 
@@ -23,18 +33,28 @@ class ChatConversationPage extends StatefulWidget {
 
 enum _SendState { sending, failed }
 
-/// 本地乐观消息 (未确认).
+/// 本地乐观消息 (未确认). 支持文本与媒体.
 class _Pending {
   _Pending({
     required this.content,
+    this.msgType = 'text',
+    this.localBytes,
+    this.filename,
+    this.duration,
     this.replyTo,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   final String content;
+  final String msgType; // text|image|audio|video
+  final Uint8List? localBytes; // 媒体本地预览 + 上传源
+  final String? filename;
+  final int? duration;
   final ChatMessage? replyTo;
   _SendState state = _SendState.sending;
   final DateTime createdAt;
+
+  bool get isMedia => msgType != 'text';
 }
 
 class _ChatConversationPageState extends State<ChatConversationPage> {
@@ -54,6 +74,18 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   ChatMessage? _replyingTo;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
 
+  // 媒体
+  final _picker = ImagePicker();
+  final _recorder = AudioRecorder();
+  final _player = AudioPlayer();
+  int? _playingId; // 正在播放的语音消息 id
+  bool _voiceMode = false; // 语音输入模式 (替换输入框为 按住说话)
+  bool _recording = false;
+  bool _attachOpen = false; // + 附件面板
+  String? _recordPath;
+  DateTime? _recordStart;
+  StreamSubscription<PlayerState>? _playerSub;
+
   static final _coinTag = RegExp(r'\$([A-Za-z0-9]{2,10})');
   static const _emojis = ['👍', '❤️', '🔥', '😂', '😮', '😢'];
 
@@ -67,28 +99,63 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     _loadInitial();
     _wsSub = ChatWs.instance.events.listen(_onWsEvent);
     _scroll.addListener(_maybeLoadMore);
+    // 播放结束/停止后复位语音图标.
+    _playerSub = _player.onPlayerStateChanged.listen((s) {
+      if (!mounted) return;
+      if (s == PlayerState.completed || s == PlayerState.stopped) {
+        setState(() => _playingId = null);
+      }
+    });
   }
 
   @override
   void dispose() {
     _wsSub?.cancel();
+    _playerSub?.cancel();
+    _player.dispose();
+    if (_recording) _recorder.stop();
+    _recorder.dispose();
     _scroll.dispose();
     _controller.dispose();
     _focus.dispose();
     super.dispose();
   }
 
-  // ---------- 加载 ----------
+  // ---------- 加载 (本地优先 + 服务器合并) ----------
 
   Future<void> _loadInitial() async {
+    // 1. 本地消息立即渲染 (网络前).
+    final local = ChatDb.messagesFor(widget.conversation.id);
+    if (local.isNotEmpty) {
+      final localMsgs = [
+        for (final m in local) ChatMessage.fromJson(m),
+      ]..sort((a, b) => b.id.compareTo(a.id)); // 最新在前
+      if (mounted) {
+        setState(() {
+          _messages
+            ..clear()
+            ..addAll(localMsgs);
+          _loading = false;
+        });
+      }
+    }
+    // 2. 拉服务器最新, 合并去重 (保留本地独有的, 服务器retention后可能更少).
     try {
-      final list = await ChatApi.messages(widget.conversation.id);
+      final server = await ChatApi.messages(widget.conversation.id);
+      await ChatDb.saveMessages(
+          widget.conversation.id, server.map((m) => m.toMap()));
       if (!mounted) return;
       setState(() {
+        final byId = {for (final m in _messages) m.id: m};
+        for (final m in server) {
+          if (m.id != 0) byId[m.id] = m; // 服务器覆盖 (reactions 等最新)
+        }
+        final merged = byId.values.where((m) => m.id != 0).toList()
+          ..sort((a, b) => b.id.compareTo(a.id));
         _messages
           ..clear()
-          ..addAll(list);
-        _hasMore = list.length >= 50;
+          ..addAll(merged);
+        _hasMore = server.length >= 50;
         _loading = false;
         _loadFailed = false;
       });
@@ -97,7 +164,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _loadFailed = true;
+        _loadFailed = _messages.isEmpty; // 有本地缓存则不算失败
       });
     }
   }
@@ -116,9 +183,14 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     try {
       final older = await ChatApi.messages(widget.conversation.id,
           beforeId: _messages.last.id);
+      await ChatDb.saveMessages(
+          widget.conversation.id, older.map((m) => m.toMap()));
       if (!mounted) return;
       setState(() {
-        _messages.addAll(older);
+        final existing = {for (final m in _messages) m.id};
+        final fresh =
+            older.where((m) => m.id != 0 && !existing.contains(m.id)).toList();
+        _messages.addAll(fresh);
         _hasMore = older.length >= 50;
         _loadingMore = false;
       });
@@ -149,6 +221,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       if (msg.id == 0) return;
       if (_messages.any((m) => m.id == msg.id)) return;
       setState(() => _messages.insert(0, msg));
+      ChatDb.saveMessage(widget.conversation.id, msg.toMap());
       _markRead();
     } else if (type == 'reaction') {
       final mid = e['message_id'];
@@ -175,18 +248,34 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     await _deliver(pending);
   }
 
+  /// 统一投递: 文本直接发, 媒体先上传再发.
   Future<void> _deliver(_Pending pending) async {
     try {
-      final msg = await ChatApi.sendMessage(
-        widget.conversation.id,
-        pending.content,
-        replyToId: pending.replyTo?.id,
-      );
+      ChatMessage msg;
+      if (pending.isMedia) {
+        final url =
+            await ChatApi.uploadFile(pending.localBytes!, _uploadName(pending));
+        msg = await ChatApi.sendMessage(
+          widget.conversation.id,
+          pending.content,
+          replyToId: pending.replyTo?.id,
+          msgType: pending.msgType,
+          fileUrl: url,
+          duration: pending.duration,
+        );
+      } else {
+        msg = await ChatApi.sendMessage(
+          widget.conversation.id,
+          pending.content,
+          replyToId: pending.replyTo?.id,
+        );
+      }
       if (!mounted) return;
       setState(() {
         _pending.remove(pending);
         if (!_messages.any((m) => m.id == msg.id)) _messages.insert(0, msg);
       });
+      ChatDb.saveMessage(widget.conversation.id, msg.toMap());
       _markRead();
     } catch (_) {
       if (!mounted) return;
@@ -195,9 +284,175 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     }
   }
 
+  String _uploadName(_Pending p) {
+    final n = p.filename;
+    if (n != null && n.contains('.')) return n;
+    final ext = switch (p.msgType) {
+      'image' => 'jpg',
+      'video' => 'mp4',
+      'audio' => 'm4a',
+      _ => 'bin',
+    };
+    return 'file.$ext';
+  }
+
   void _retry(_Pending pending) {
     setState(() => pending.state = _SendState.sending);
     _deliver(pending);
+  }
+
+  // ---------- 媒体选择 ----------
+
+  Future<void> _pickImages() async {
+    _closeAttach();
+    try {
+      final files =
+          await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
+      for (final f in files) {
+        await _sendMedia(f, 'image');
+      }
+    } catch (_) {
+      _toast('选择图片失败');
+    }
+  }
+
+  Future<void> _pickCamera() async {
+    _closeAttach();
+    try {
+      final f = await _picker.pickImage(
+          source: ImageSource.camera, imageQuality: 70, maxWidth: 1600);
+      if (f != null) await _sendMedia(f, 'image');
+    } catch (_) {
+      _toast('拍摄失败');
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    _closeAttach();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: McColors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: McColors.onSurfaceVariant),
+              title: Text('从相册选择', style: McText.sans(size: 14)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined,
+                  color: McColors.onSurfaceVariant),
+              title: Text('拍摄', style: McText.sans(size: 14)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            const SizedBox(height: 4),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    try {
+      final f = await _picker.pickVideo(source: source);
+      if (f != null) await _sendMedia(f, 'video');
+    } catch (_) {
+      _toast('选择视频失败');
+    }
+  }
+
+  /// 选/拍好媒体 → 乐观气泡 → 上传 → 发送.
+  Future<void> _sendMedia(XFile file, String msgType, {int? duration}) async {
+    try {
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      final pending = _Pending(
+        content: '',
+        msgType: msgType,
+        localBytes: bytes,
+        filename: file.name,
+        duration: duration,
+        replyTo: _replyingTo,
+      );
+      setState(() {
+        _pending.insert(0, pending);
+        _replyingTo = null;
+      });
+      await _deliver(pending);
+    } catch (_) {
+      _toast('发送失败');
+    }
+  }
+
+  // ---------- 语音 (按住说话, Web 不支持隐藏) ----------
+
+  Future<void> _startRecord() async {
+    if (kIsWeb || _recording) return;
+    try {
+      if (!await _recorder.hasPermission()) {
+        _toast('需要麦克风权限');
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      _recordPath =
+          '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _recorder.start(
+          const RecordConfig(encoder: AudioEncoder.aacLc),
+          path: _recordPath!);
+      _recordStart = DateTime.now();
+      if (mounted) setState(() => _recording = true);
+    } catch (_) {
+      _toast('录音失败');
+    }
+  }
+
+  Future<void> _stopRecord({bool cancel = false}) async {
+    if (!_recording) return;
+    try {
+      final path = await _recorder.stop();
+      final started = _recordStart;
+      final dur = started == null
+          ? 1
+          : DateTime.now().difference(started).inSeconds.clamp(1, 3600);
+      if (mounted) setState(() => _recording = false);
+      if (cancel || path == null) return;
+      final bytes = await XFile(path).readAsBytes();
+      if (!mounted) return;
+      final pending = _Pending(
+        content: '',
+        msgType: 'audio',
+        localBytes: bytes,
+        filename: 'voice.m4a',
+        duration: dur,
+      );
+      setState(() => _pending.insert(0, pending));
+      await _deliver(pending);
+    } catch (_) {
+      if (mounted) setState(() => _recording = false);
+    }
+  }
+
+  // ---------- 语音播放 ----------
+
+  Future<void> _toggleAudio(ChatMessage msg) async {
+    final url = msg.mediaUrl;
+    if (url == null) return;
+    if (_playingId == msg.id) {
+      await _player.stop();
+      if (mounted) setState(() => _playingId = null);
+      return;
+    }
+    try {
+      await _player.stop(); // 新播放前停掉旧的
+      await _player.play(UrlSource(url));
+      if (mounted) setState(() => _playingId = msg.id);
+    } catch (_) {
+      _toast('播放失败');
+    }
   }
 
   // ---------- 表态 ----------
@@ -226,6 +481,10 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         backgroundColor: McColors.surfaceContainerHigh,
         duration: const Duration(seconds: 2),
       ));
+  }
+
+  void _closeAttach() {
+    if (_attachOpen) setState(() => _attachOpen = false);
   }
 
   // ---------- UI ----------
@@ -265,6 +524,18 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             ),
           ],
         ),
+        actions: [
+          if (_isGroup)
+            IconButton(
+              icon: const Icon(Icons.more_horiz, color: McColors.onSurface),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      GroupInfoPage(conversation: widget.conversation),
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -357,45 +628,65 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     );
   }
 
+  // ---------- 乐观消息 ----------
+
   Widget _buildPending(_Pending p) {
+    final failed = p.state == _SendState.failed;
+    final status = Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (failed)
+            const Icon(Icons.error_outline, size: 12, color: McColors.bear)
+          else
+            const Icon(Icons.schedule,
+                size: 12, color: McColors.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            failed ? '失败 · 点我重试' : '发送中',
+            style: McText.sans(
+                size: 12,
+                color: failed ? McColors.bear : McColors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+
+    Widget body;
+    if (p.isMedia) {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _pendingMedia(p),
+          status,
+        ],
+      );
+    } else {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (p.replyTo != null)
+            _quoteBlock(p.replyTo!.senderName, p.replyTo!.content),
+          _contentText(p.content, mine: true),
+          status,
+        ],
+      );
+    }
+
     final bubble = Container(
       constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.72),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: p.isMedia && p.msgType != 'audio'
+          ? const EdgeInsets.all(3)
+          : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: McColors.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
             color: McColors.primaryContainer.withValues(alpha: 0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (p.replyTo != null) _quoteBlock(p.replyTo!.senderName, p.replyTo!.content),
-          _contentText(p.content, mine: true),
-          const SizedBox(height: 3),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (p.state == _SendState.sending)
-                const Icon(Icons.schedule, size: 12,
-                    color: McColors.onSurfaceVariant)
-              else
-                const Icon(Icons.error_outline,
-                    size: 12, color: McColors.bear),
-              const SizedBox(width: 4),
-              Text(
-                p.state == _SendState.sending ? '发送中' : '失败 · 点我重试',
-                style: McText.sans(
-                    size: 12,
-                    color: p.state == _SendState.sending
-                        ? McColors.onSurfaceVariant
-                        : McColors.bear),
-              ),
-            ],
-          ),
-        ],
-      ),
+      child: body,
     );
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -403,7 +694,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           GestureDetector(
-            onTap: p.state == _SendState.failed ? () => _retry(p) : null,
+            onTap: failed ? () => _retry(p) : null,
             child: bubble,
           ),
         ],
@@ -411,13 +702,40 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     );
   }
 
+  /// 乐观媒体预览 (本地字节).
+  Widget _pendingMedia(_Pending p) {
+    switch (p.msgType) {
+      case 'image':
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(9),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200, maxHeight: 200),
+            child: p.localBytes != null
+                ? Image.memory(p.localBytes!, fit: BoxFit.cover)
+                : _mediaPlaceholder(Icons.image_outlined),
+          ),
+        );
+      case 'video':
+        return _videoThumb(null);
+      case 'audio':
+        return _audioContent(p.duration, false);
+      default:
+        return _mediaPlaceholder(Icons.insert_drive_file_outlined);
+    }
+  }
+
+  // ---------- 消息气泡 ----------
+
   Widget _bubbleRow(ChatMessage msg, bool mine) {
+    final media = msg.isMedia && msg.msgType != 'audio';
     final bubble = GestureDetector(
       onLongPress: () => _showActions(msg),
       child: Container(
         constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.72),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: media
+            ? const EdgeInsets.all(3)
+            : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: mine
               ? McColors.primaryContainer.withValues(alpha: 0.28)
@@ -440,7 +758,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           children: [
             if (msg.replyTo != null)
               _quoteBlock(msg.replyTo!.senderName, msg.replyTo!.content),
-            _contentText(msg.content, mine: mine),
+            _bubbleContent(msg, mine),
           ],
         ),
       ),
@@ -483,6 +801,149 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         ],
       ),
     );
+  }
+
+  /// 气泡正文: 按 msg_type 渲染 文本/图片/视频/语音.
+  Widget _bubbleContent(ChatMessage msg, bool mine) {
+    switch (msg.msgType) {
+      case 'image':
+        return _imageContent(msg);
+      case 'video':
+        return GestureDetector(
+          onTap: () => _openVideo(msg),
+          child: _videoThumb(msg.duration),
+        );
+      case 'audio':
+        return GestureDetector(
+          onTap: () => _toggleAudio(msg),
+          child: _audioContent(msg.duration, _playingId == msg.id,
+              mine: mine),
+        );
+      default:
+        return _contentText(msg.content, mine: mine);
+    }
+  }
+
+  Widget _imageContent(ChatMessage msg) {
+    final url = msg.mediaUrl;
+    return GestureDetector(
+      onTap: url == null ? null : () => _openImage(url),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 200, maxHeight: 200),
+          child: url == null
+              ? _mediaPlaceholder(Icons.image_outlined)
+              : Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      _mediaPlaceholder(Icons.broken_image_outlined),
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return _mediaPlaceholder(null, loading: true);
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+
+  /// 视频缩略: 深色盒 + 播放键 (+ 时长).
+  Widget _videoThumb(int? duration) {
+    return Container(
+      width: 200,
+      height: 120,
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(9),
+        border:
+            Border.all(color: McColors.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Icon(Icons.play_circle_outline,
+              size: 44, color: Colors.white70),
+          if (duration != null)
+            Positioned(
+              right: 6,
+              bottom: 4,
+              child: Text(
+                _fmtDuration(duration),
+                style: McText.mono(size: 12, color: Colors.white70),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 语音气泡: 播放/暂停图标 + 时长.
+  Widget _audioContent(int? duration, bool playing, {bool mine = true}) {
+    // 宽度随时长略增 (1s→80, 60s→180).
+    final sec = (duration ?? 1).clamp(1, 60);
+    final width = 80.0 + (sec - 1) * (100.0 / 59.0);
+    return SizedBox(
+      width: width,
+      child: Row(
+        mainAxisAlignment:
+            mine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          Icon(
+            playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
+            size: 26,
+            color: mine ? McColors.primarySoft : McColors.secondary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$sec″',
+            style: McText.sans(size: 14, color: McColors.onSurface),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mediaPlaceholder(IconData? icon, {bool loading = false}) {
+    return Container(
+      width: 200,
+      height: 140,
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      alignment: Alignment.center,
+      child: loading
+          ? const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: McColors.primarySoft),
+            )
+          : Icon(icon ?? Icons.image_outlined,
+              size: 34, color: McColors.outline),
+    );
+  }
+
+  void _openImage(String url) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ImageViewerPage(url: url)),
+    );
+  }
+
+  void _openVideo(ChatMessage msg) {
+    final url = msg.mediaUrl;
+    if (url == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => VideoPlayerPage(url: url)),
+    );
+  }
+
+  static String _fmtDuration(int sec) {
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   Widget _quoteBlock(String sender, String content) {
@@ -670,10 +1131,12 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                 setState(() => _replyingTo = msg);
                 _focus.requestFocus();
               }),
-              _actionTile(ctx, Icons.copy, '复制', () {
-                Clipboard.setData(ClipboardData(text: msg.content));
-                _toast('已复制');
-              }),
+              // 媒体消息无可复制文本, 跳过复制项.
+              if (msg.msgType == 'text')
+                _actionTile(ctx, Icons.copy, '复制', () {
+                  Clipboard.setData(ClipboardData(text: msg.content));
+                  _toast('已复制');
+                }),
               const SizedBox(height: 8),
             ],
           ),
@@ -694,6 +1157,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     );
   }
 
+  // ---------- 输入区 ----------
+
   Widget _buildComposer() {
     return Container(
       decoration: BoxDecoration(
@@ -709,38 +1174,37 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           children: [
             if (_replyingTo != null) _replyBar(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: McColors.surfaceContainer,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color:
-                                McColors.outlineVariant.withValues(alpha: 0.6)),
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focus,
-                        minLines: 1,
-                        maxLines: 5,
-                        style: McText.sans(size: 14),
-                        decoration: InputDecoration(
-                          hintText: '发消息...',
-                          hintStyle: McText.sans(
-                              size: 14, color: McColors.onSurfaceVariant),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        onSubmitted: (_) => _send(),
-                      ),
+                  // 语音/键盘切换 (Web 不支持录音, 隐藏).
+                  if (!kIsWeb)
+                    _roundIconBtn(
+                      _voiceMode ? Icons.keyboard : Icons.mic_none,
+                      () {
+                        setState(() {
+                          _voiceMode = !_voiceMode;
+                          _attachOpen = false;
+                        });
+                        if (!_voiceMode) _focus.requestFocus();
+                      },
                     ),
+                  if (!kIsWeb) const SizedBox(width: 8),
+                  Expanded(child: _voiceMode ? _holdToTalk() : _textInput()),
+                  const SizedBox(width: 8),
+                  // + 附件面板.
+                  _roundIconBtn(
+                    _attachOpen ? Icons.close : Icons.add_circle_outline,
+                    () {
+                      setState(() {
+                        _attachOpen = !_attachOpen;
+                        if (_attachOpen) {
+                          _voiceMode = false;
+                          _focus.unfocus();
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
@@ -766,8 +1230,130 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                 ],
               ),
             ),
+            if (_attachOpen) _attachPanel(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _roundIconBtn(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: McColors.surfaceContainer,
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: McColors.outlineVariant.withValues(alpha: 0.6)),
+        ),
+        child: Icon(icon, size: 20, color: McColors.onSurface),
+      ),
+    );
+  }
+
+  Widget _textInput() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: McColors.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: TextField(
+        controller: _controller,
+        focusNode: _focus,
+        minLines: 1,
+        maxLines: 5,
+        style: McText.sans(size: 14),
+        decoration: InputDecoration(
+          hintText: '发消息...',
+          hintStyle:
+              McText.sans(size: 14, color: McColors.onSurfaceVariant),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+        ),
+        onSubmitted: (_) => _send(),
+      ),
+    );
+  }
+
+  /// 按住说话 (语音录制).
+  Widget _holdToTalk() {
+    return GestureDetector(
+      onLongPressStart: (_) => _startRecord(),
+      onLongPressEnd: (_) => _stopRecord(),
+      onLongPressCancel: () => _stopRecord(cancel: true),
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: _recording
+              ? McColors.primaryContainer.withValues(alpha: 0.3)
+              : McColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _recording
+                ? McColors.primaryContainer
+                : McColors.outlineVariant.withValues(alpha: 0.6),
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          _recording ? '松开发送 · 上滑取消' : '按住 说话',
+          style: McText.sans(
+            size: 14,
+            weight: FontWeight.w600,
+            color:
+                _recording ? McColors.primarySoft : McColors.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// + 附件面板 (微信式 grid): 相册 / 拍摄 / 视频.
+  Widget _attachPanel() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          _attachItem(Icons.photo_library_outlined, '相册', _pickImages),
+          const SizedBox(width: 32),
+          _attachItem(Icons.photo_camera_outlined, '拍摄', _pickCamera),
+          const SizedBox(width: 32),
+          _attachItem(Icons.videocam_outlined, '视频', _pickVideo),
+        ],
+      ),
+    );
+  }
+
+  Widget _attachItem(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: McColors.outlineVariant.withValues(alpha: 0.6)),
+            ),
+            child: Icon(icon, size: 26, color: McColors.primarySoft),
+          ),
+          const SizedBox(height: 6),
+          Text(label,
+              style:
+                  McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+        ],
       ),
     );
   }
@@ -792,7 +1378,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                       color: McColors.secondary),
                 ),
                 Text(
-                  r.content,
+                  r.msgType == 'text' ? r.content : '[${_mediaLabel(r.msgType)}]',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: McText.sans(
@@ -810,6 +1396,13 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       ),
     );
   }
+
+  static String _mediaLabel(String msgType) => switch (msgType) {
+        'image' => '图片',
+        'video' => '视频',
+        'audio' => '语音',
+        _ => '消息',
+      };
 
   Widget _avatar(String name, {double size = 32}) {
     final initial = name.isEmpty ? '?' : name[0].toUpperCase();

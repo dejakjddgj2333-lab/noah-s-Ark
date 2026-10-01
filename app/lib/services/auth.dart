@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
 import 'chat_api.dart';
+import 'chat_db.dart';
 import 'chat_ws.dart';
 
 /// 登录状态: token + 用户信息, 持久化到 SharedPreferences.
@@ -97,10 +98,11 @@ class AuthStore extends ChangeNotifier {
     username = null;
     email = null;
     await _save();
-    // 登出断开聊天长连接, 清空未读与好友请求角标.
+    // 登出断开聊天长连接, 清空未读与好友请求角标, 清空本地消息库.
     ChatWs.instance.disconnect();
     ChatApi.unreadCount.value = 0;
     ChatApi.friendRequestCount.value = 0;
+    await ChatDb.clearAll();
     notifyListeners();
   }
 }

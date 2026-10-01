@@ -169,6 +169,10 @@ class HkChatMessage(HkBase):
     reply_to_id = Column(
         Integer, ForeignKey("hk_chat_messages.id"), nullable=True
     )
+    # 富媒体: text/image/audio/video; 非文本时 file_url 必填, duration 秒(音视频)
+    msg_type = Column(String(16), nullable=False, default="text")
+    file_url = Column(String(512), nullable=True)
+    duration = Column(Integer, nullable=True)
     status = Column(String(16), nullable=False, default="visible")
     created_at = Column(DateTime, default=utc_now, index=True)
 

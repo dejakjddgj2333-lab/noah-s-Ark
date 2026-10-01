@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../services/chat_api.dart';
+import '../services/auth.dart';
+import '../services/chat_db.dart';
 import '../services/chat_ws.dart';
 import 'chat_conversation_page.dart';
 import 'friends_page.dart';
@@ -104,6 +106,57 @@ class _ChatPageState extends State<ChatPage> {
       _loadOnline();
       return;
     }
+    if (type == 'read') {
+      // 对方已读 -> 私聊自己消息的回执实时变双勾.
+      final idx =
+          _conversations.indexWhere((c) => c.id == e['conversation_id']);
+      if (idx < 0) return;
+      final c = _conversations[idx];
+      final last = c.lastMessage;
+      if (c.isGroup || last == null || !last.isMine || last.read == true) {
+        return;
+      }
+      final mid = e['message_id'];
+      if (mid is int && mid < last.id) return; // 读的是更早的消息
+      setState(() {
+        _conversations[idx] =
+            c.copyWith(lastMessage: last.copyWith(read: true));
+      });
+      return;
+    }
+    if (type == 'group_updated') {
+      // 群改名 -> 更新列表中的群名.
+      final idx =
+          _conversations.indexWhere((c) => c.id == e['conversation_id']);
+      if (idx < 0) return;
+      final name = (e['name'] ?? '').toString();
+      if (name.isEmpty) return;
+      setState(() => _conversations[idx] = _conversations[idx].copyWith(name: name));
+      return;
+    }
+    if (type == 'member_removed') {
+      final convId = e['conversation_id'];
+      final userId = e['user_id'];
+      final idx = _conversations.indexWhere((c) => c.id == convId);
+      if (idx < 0) return;
+      // 我被移出 -> 移除会话 + 清本地缓存 + 提示.
+      if (userId == AuthStore.instance.userId) {
+        setState(() {
+          _conversations.removeAt(idx);
+          _syncUnreadBadge();
+        });
+        ChatDb.clearConversation(convId is int ? convId : 0);
+        _toast('你已被移出群聊');
+        return;
+      }
+      // 他人被移出 -> 成员数 -1.
+      final c = _conversations[idx];
+      setState(() {
+        _conversations[idx] =
+            c.copyWith(memberCount: (c.memberCount - 1).clamp(0, 1 << 31));
+      });
+      return;
+    }
     if (type != 'message') return;
     final convId = e['conversation_id'];
     final idx = _conversations.indexWhere((c) => c.id == convId);
@@ -113,15 +166,21 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     final msg = ChatMessage.fromJson(e['message']);
+    final mine = msg.senderId == AuthStore.instance.userId;
     setState(() {
       final c = _conversations[idx];
       final updated = c.copyWith(
         lastMessage: LastMessage(
+          id: msg.id,
           content: msg.content,
           senderName: msg.senderName,
+          msgType: msg.msgType,
           createdAt: msg.createdAt,
+          isMine: mine,
+          read: mine ? false : null, // 自己发的等对方已读事件翻双勾
         ),
-        unreadCount: c.unreadCount + 1,
+        // 自己发的 (多端同步) 不涨未读.
+        unreadCount: mine ? c.unreadCount : c.unreadCount + 1,
       );
       _conversations
         ..removeAt(idx)
@@ -221,6 +280,8 @@ class _ChatPageState extends State<ChatPage> {
         _conversations.removeWhere((x) => x.id == c.id);
         _syncUnreadBadge();
       });
+      // 删除/退群同时清空本地消息缓存.
+      ChatDb.clearConversation(c.id);
     } catch (_) {
       _toast(isGroup ? '退群失败' : '删除失败');
     }
@@ -486,7 +547,7 @@ class _ChatPageState extends State<ChatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 顶行: 名称 + 群组胶囊 ... 右端时间.
+                  // 顶行: 名称 + 群组胶囊.
                   Row(
                     children: [
                       Flexible(
@@ -503,30 +564,31 @@ class _ChatPageState extends State<ChatPage> {
                         const SizedBox(width: 6),
                         _groupPill(c.memberCount),
                       ],
-                      const SizedBox(width: 8),
-                      Text(
-                        chatTimeLabel(last?.createdAt),
-                        style:
-                            McText.mono(size: 12, color: McColors.outline),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 3),
-                  // 底行: 预览 ... 右端 回执/未读角标 (互斥).
-                  Row(
-                    children: [
-                      Expanded(child: _preview(c)),
-                      if (c.unreadCount > 0) ...[
-                        const SizedBox(width: 10),
-                        _unreadBadge(c.unreadCount),
-                      ] else if (!c.isGroup && last != null && last.isMine) ...[
-                        const SizedBox(width: 10),
-                        _receipt(last.read),
-                      ],
-                    ],
-                  ),
+                  // 底行: 预览整宽.
+                  _preview(c),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            // 右列: 上时间 / 下 未读角标或已读回执 — 钉死右缘.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  chatTimeLabel(last?.createdAt),
+                  style: McText.mono(size: 12, color: McColors.outline),
+                ),
+                const SizedBox(height: 6),
+                if (c.unreadCount > 0)
+                  _unreadBadge(c.unreadCount)
+                else if (!c.isGroup && last != null && last.isMine)
+                  _receipt(last.read)
+                else
+                  const SizedBox(height: 16),
+              ],
             ),
           ],
         ),
@@ -568,7 +630,7 @@ class _ChatPageState extends State<ChatPage> {
             ? '${last.senderName}: '
             : '');
     if (prefix.isEmpty) {
-      return Text(last.content,
+      return Text(last.previewText,
           maxLines: 1, overflow: TextOverflow.ellipsis, style: base);
     }
     return Text.rich(
@@ -577,7 +639,7 @@ class _ChatPageState extends State<ChatPage> {
           TextSpan(
               text: prefix,
               style: McText.sans(size: 12, color: McColors.secondary)),
-          TextSpan(text: last.content, style: base),
+          TextSpan(text: last.previewText, style: base),
         ],
       ),
       maxLines: 1,

@@ -19,6 +19,9 @@ class Config:
     secret_key: str = os.getenv("SECRET_KEY", "dev-only-change-me")
     jwt_expire_hours: int = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
 
+    # 聊天文件上传根目录 (实际存 <upload_dir>/chat/)
+    upload_dir: str = os.getenv("UPLOAD_DIR", "uploads")
+
     cors_origins: tuple[str, ...] = tuple(
         o.strip()
         for o in os.getenv(
