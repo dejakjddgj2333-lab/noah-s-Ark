@@ -197,6 +197,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       final usd = _num(m['position_value_usd'] ??
           m['positionValueUsd'] ??
           m['usd_value'] ??
+          m['positionSize'] ??
           m['positionValue']);
       final action = _num(m['position_action'] ?? m['action']);
       // position_action: 1 开仓/加仓, 2 平仓/减仓 (CoinGlass Hyperliquid).
