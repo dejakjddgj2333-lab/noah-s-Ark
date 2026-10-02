@@ -48,8 +48,9 @@ async def _binance_loop() -> None:
                         msg = json.loads(raw)
                         for item in msg if isinstance(msg, list) else [msg]:
                             o = item.get("o") or {}
-                            price = float(o.get("p") or 0)
-                            qty = float(o.get("q") or 0)
+                            # 强平成交价/量: ap(均价)*z(成交量) 优先, 市价单 ap 可能 0, 兜底 p*q
+                            price = float(o.get("ap") or 0) or float(o.get("p") or 0)
+                            qty = float(o.get("z") or 0) or float(o.get("q") or 0)
                             # SELL 平多 = 多头爆仓; BUY 平空 = 空头爆仓
                             side = "long" if o.get("S") == "SELL" else "short"
                             await _add(HkLiqEvent(
@@ -84,15 +85,15 @@ async def _bybit_loop() -> None:
                         data = msg.get("data")
                         if not isinstance(data, dict):
                             continue
-                        price = float(data.get("price") or 0)
-                        qty = float(data.get("size") or 0)
-                        # Bybit side=被强平仓位的持仓方向: Sell=空头持有? v5: side 为吃单方向
-                        # allLiquidation 推送 side=仓位方向: "Sell"=做空仓位被平 -> 空头爆仓
-                        side = "short" if data.get("side") == "Sell" else "long"
+                        # Bybit v5 allLiquidation 字段: s=symbol, S=仓位方向, v=量, p=价
+                        price = float(data.get("p") or 0)
+                        qty = float(data.get("v") or 0)
+                        # S=仓位方向: "Sell"=空头仓位被强平 -> 空头爆仓
+                        side = "short" if data.get("S") == "Sell" else "long"
                         await _add(HkLiqEvent(
                             ts=utc_now(),
                             exchange="Bybit",
-                            symbol=str(data.get("symbol") or ""),
+                            symbol=str(data.get("s") or ""),
                             side=side,
                             price=price,
                             qty=qty,
