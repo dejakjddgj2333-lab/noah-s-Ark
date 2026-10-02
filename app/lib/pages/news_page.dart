@@ -27,6 +27,7 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   List<NewsItem> _flash = const [];
+  NewsItem? _breaking; // 突发头条: 全站最新一条 (不限频道)
   bool _loading = true;
   bool _error = false;
 
@@ -66,7 +67,17 @@ class _NewsPageState extends State<NewsPage> {
       _loading = true;
       _error = false;
     });
+    _loadBreaking();
     await _loadTimeline(reset: true);
+  }
+
+  /// 突发头条: 全站最新一条 (flash 频道快讯源断更, 不能绑死 flash).
+  Future<void> _loadBreaking() async {
+    try {
+      final items = await McData.news(page: 1, pageSize: 1);
+      if (!mounted || items.isEmpty) return;
+      setState(() => _breaking = items.first);
+    } catch (_) {/* 静默, 保持旧值 */}
   }
 
   // 时间线列表 (当前分类). reset=true 从第一页重新拉.
@@ -427,10 +438,10 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  // Breaking news ticker: 真实快讯第一条, 可点击进详情; 无数据显示真实状态.
+  // Breaking news ticker: 全站最新一条, 可点击进详情; 无数据显示真实状态.
   Widget _breakingTicker() {
-    final latest = _flash.isNotEmpty ? _flash.first : null;
-    final headline = latest?.title ?? '暂无最新快讯';
+    final latest = _breaking;
+    final headline = latest?.title ?? '暂无最新资讯';
     final since =
         latest != null ? _relativeTime(latest.publishAt) : '数据采集中';
     return GestureDetector(
