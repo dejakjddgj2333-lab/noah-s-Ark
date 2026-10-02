@@ -26,7 +26,7 @@ _CODE_LEN = 8
 _DOWNLINE_PURCHASE_SQL = text(
     """
     WITH RECURSIVE downline AS (
-        SELECT :uid AS user_id
+        SELECT CAST(:uid AS INTEGER) AS user_id
         UNION
         SELECT i.user_id
         FROM hk_invites i
