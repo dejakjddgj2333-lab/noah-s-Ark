@@ -144,24 +144,27 @@ async def _okx_loop() -> None:
                         if not isinstance(data, list):
                             continue
                         for d in data:
-                            price = float(d.get("px") or 0)
                             inst_id = str(d.get("instId") or "")
-                            qty = float(d.get("sz") or 0) * ct_val.get(inst_id, 1.0)
-                            # posSide=被强平仓位方向; net 模式按吃单方向推: sell=平多
-                            pos = d.get("posSide") or "net"
-                            if pos in ("long", "short"):
-                                side = pos
-                            else:
-                                side = "long" if d.get("side") == "sell" else "short"
-                            await _add(HkLiqEvent(
-                                ts=utc_now(),
-                                exchange="OKX",
-                                symbol=inst_id.replace("-SWAP", ""),
-                                side=side,
-                                price=price,
-                                qty=qty,
-                                notional_usd=price * qty,
-                            ))
+                            ct = ct_val.get(inst_id, 1.0)
+                            # 强平明细在外层 details 数组: bkPx=破产价, sz=张数
+                            for det in (d.get("details") or []):
+                                price = float(det.get("bkPx") or 0)
+                                qty = float(det.get("sz") or 0) * ct
+                                # posSide=被强平仓位方向; net 按吃单方向推: sell=平多
+                                pos = det.get("posSide") or "net"
+                                if pos in ("long", "short"):
+                                    side = pos
+                                else:
+                                    side = "long" if det.get("side") == "sell" else "short"
+                                await _add(HkLiqEvent(
+                                    ts=utc_now(),
+                                    exchange="OKX",
+                                    symbol=inst_id.replace("-SWAP", ""),
+                                    side=side,
+                                    price=price,
+                                    qty=qty,
+                                    notional_usd=price * qty,
+                                ))
                     except Exception:
                         continue
         except Exception as exc:
