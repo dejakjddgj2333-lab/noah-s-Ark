@@ -12,6 +12,17 @@ class McApi {
     defaultValue: 'http://shipapi.bdxapi.com',
   );
 
+  /// 401 全局回调 (token 过期/失效). AuthStore 注册, 自动登出回登录页.
+  /// 仅在请求带了 token 时触发 — 登录接口 401 是密码错误, 不触发.
+  static Future<void> Function()? onUnauthorized;
+
+  static void _checkUnauthorized(http.Response resp, String? token) {
+    if (resp.statusCode == 401 && token != null) {
+      final cb = onUnauthorized;
+      if (cb != null) cb();
+    }
+  }
+
   static Future<Map<String, dynamic>> post(
     String path,
     Map<String, dynamic> body, {
@@ -27,6 +38,7 @@ class McApi {
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 10));
+    _checkUnauthorized(resp, token);
     return _decode(resp);
   }
 
@@ -35,6 +47,7 @@ class McApi {
       Uri.parse('$baseUrl$path'),
       headers: {if (token != null) 'Authorization': 'Bearer $token'},
     ).timeout(const Duration(seconds: 10));
+    _checkUnauthorized(resp, token);
     return _decode(resp);
   }
 
@@ -44,6 +57,7 @@ class McApi {
       Uri.parse('$baseUrl$path'),
       headers: {if (token != null) 'Authorization': 'Bearer $token'},
     ).timeout(const Duration(seconds: 10));
+    _checkUnauthorized(resp, token);
     if (resp.statusCode == 204 || resp.bodyBytes.isEmpty) {
       return const [];
     }
@@ -66,6 +80,7 @@ class McApi {
       Uri.parse('$baseUrl$path'),
       headers: {if (token != null) 'Authorization': 'Bearer $token'},
     ).timeout(const Duration(seconds: 10));
+    _checkUnauthorized(resp, token);
     return _decode(resp);
   }
 
@@ -85,6 +100,7 @@ class McApi {
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 10));
+    _checkUnauthorized(resp, token);
     return _decode(resp);
   }
 

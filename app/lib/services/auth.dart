@@ -11,7 +11,12 @@ import 'chat_ws.dart';
 
 /// 登录状态: token + 用户信息, 持久化到 SharedPreferences.
 class AuthStore extends ChangeNotifier {
-  AuthStore._();
+  AuthStore._() {
+    // token 过期/失效: 任一接口 401 即自动登出, 回到登录页.
+    McApi.onUnauthorized = () async {
+      if (token != null) await logout();
+    };
+  }
   static final AuthStore instance = AuthStore._();
 
   String? token;
