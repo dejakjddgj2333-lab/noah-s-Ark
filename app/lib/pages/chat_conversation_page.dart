@@ -859,18 +859,16 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                     ),
                   ),
                 bubble,
-                // 私聊自己气泡: 已读/未读 标记.
+                // 私聊自己气泡: 已读回执 (同列表: 未读单勾暗, 已读双勾青绿).
                 if (mine && !_isGroup)
                   Padding(
                     padding: const EdgeInsets.only(top: 2, right: 2),
-                    child: Text(
-                      msg.id <= _peerReadId ? '已读' : '未读',
-                      style: McText.sans(
-                        size: 12,
-                        color: msg.id <= _peerReadId
-                            ? McColors.primarySoft
-                            : McColors.onSurfaceVariant,
-                      ),
+                    child: Icon(
+                      msg.id <= _peerReadId ? Icons.done_all : Icons.check,
+                      size: 14,
+                      color: msg.id <= _peerReadId
+                          ? McColors.secondary
+                          : McColors.outline,
                     ),
                   ),
                 if (msg.reactions.isNotEmpty) _reactionRow(msg, mine),
