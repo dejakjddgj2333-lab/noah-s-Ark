@@ -438,14 +438,16 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  // Breaking news ticker: 全站最新一条, 可点击进详情; 无数据显示真实状态.
+  // Breaking news ticker: 全站最新一条, 仅 24 小时内显示, 超时整个隐藏.
   Widget _breakingTicker() {
     final latest = _breaking;
-    final headline = latest?.title ?? '暂无最新资讯';
-    final since =
-        latest != null ? _relativeTime(latest.publishAt) : '数据采集中';
+    if (latest == null) return const SizedBox.shrink();
+    final age = DateTime.now().difference(latest.publishAt.toLocal());
+    if (age.inHours >= 24) return const SizedBox.shrink();
+    final headline = latest.title;
+    final since = _relativeTime(latest.publishAt);
     return GestureDetector(
-      onTap: latest == null ? null : () => _openDetail(latest.id),
+      onTap: () => _openDetail(latest.id),
       child: Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
