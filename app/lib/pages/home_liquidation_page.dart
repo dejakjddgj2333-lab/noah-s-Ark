@@ -1488,8 +1488,19 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(s.longText, style: McText.mono(size: 12, weight: FontWeight.w500, color: _bull)),
-                      Text(s.shortText, style: McText.mono(size: 12, weight: FontWeight.w500, color: _bear)),
+                      Flexible(
+                        child: Text(s.longText,
+                            style: McText.mono(size: 12, weight: FontWeight.w500, color: _bull),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                      Flexible(
+                        child: Text(s.shortText,
+                            style: McText.mono(size: 12, weight: FontWeight.w500, color: _bear),
+                            maxLines: 1,
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis),
+                      ),
                     ],
                   ),
                 ],
