@@ -225,3 +225,14 @@ class HkMacroNameZh(HkBase):
     name = Column(String(300), unique=True, nullable=False, index=True)  # 英文原名
     name_zh = Column(String(300), nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class HkMacroDescZh(HkBase):
+    """宏观指标解读缓存 (DeepSeek 生成, 一次永久复用)."""
+
+    __tablename__ = "hk_macro_desc_zh"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(300), unique=True, nullable=False, index=True)  # 英文原名
+    desc_zh = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)

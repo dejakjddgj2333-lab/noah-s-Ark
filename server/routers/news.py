@@ -153,6 +153,71 @@ async def get_macro_calendar(
     }
 
 
+@router.get("/macro-calendar/{event_id}/detail")
+async def get_macro_event_detail(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """宏观事件详情: 中文名/解读/历史走势 (同名同币种近 12 期)."""
+    from datetime import timedelta
+
+    from services.macro_translate import zh_desc_map, zh_name_map
+
+    e = await db.get(MacroEvent, event_id)
+    if e is None:
+        raise HTTPException(status_code=404, detail="事件不存在")
+
+    try:
+        zh_name = (await zh_name_map(db, [e.name])).get(e.name) if e.name else None
+        desc = (await zh_desc_map(db, [e.name])).get(e.name) if e.name else None
+    except Exception:
+        await db.rollback()
+        zh_name = desc = None
+
+    # 历史: 同名同币种, 早于本期, 近 12 期 (走势用)
+    try:
+        history = (
+            await db.scalars(
+                select(MacroEvent)
+                .where(
+                    MacroEvent.name == e.name,
+                    MacroEvent.currency == e.currency,
+                    MacroEvent.event_at < e.event_at,
+                )
+                .order_by(MacroEvent.event_at.desc())
+                .limit(12)
+            )
+        ).all()
+    except Exception:
+        await db.rollback()
+        history = []
+
+    return {
+        "id": e.id,
+        "event_at": (e.event_at + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M"),
+        "country": e.country,
+        "currency": e.currency,
+        "name": zh_name or e.name,
+        "name_en": e.name,
+        "desc_zh": desc,
+        "importance": e.importance,
+        "previous": e.previous,
+        "forecast": e.forecast,
+        "actual": e.actual,
+        "unit": e.unit,
+        # 时间倒序 -> 前端反转为正序画图
+        "history": [
+            {
+                "date": (h.event_at + timedelta(hours=8)).strftime("%Y-%m-%d"),
+                "previous": h.previous,
+                "forecast": h.forecast,
+                "actual": h.actual,
+            }
+            for h in history
+        ],
+    }
+
+
 @router.get("/{news_id}")
 async def get_news(
     news_id: int,

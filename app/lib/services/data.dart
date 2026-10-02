@@ -165,6 +165,77 @@ class MacroEventItem {
       importance >= 3 ? '高' : importance == 2 ? '中' : '低';
 }
 
+/// 宏观事件详情: 中文解读 + 历史走势.
+class MacroEventDetail {
+  MacroEventDetail.fromJson(Map<String, dynamic> j)
+      : id = (j['id'] ?? 0) as int,
+        eventAt = (j['event_at'] ?? '') as String,
+        country = (j['country'] ?? '') as String,
+        currency = (j['currency'] ?? '') as String,
+        name = (j['name'] ?? '') as String,
+        nameEn = (j['name_en'] ?? '') as String,
+        descZh = j['desc_zh'] as String?,
+        importance = (j['importance'] ?? 1) as int,
+        previous = j['previous'] as String?,
+        forecast = j['forecast'] as String?,
+        actual = j['actual'] as String?,
+        unit = (j['unit'] ?? '') as String,
+        history = ((j['history'] as List? ?? [])
+            .map((h) => MacroHistoryPoint.fromJson(h as Map<String, dynamic>))
+            .toList())
+            .reversed
+            .toList(); // 接口倒序 -> 正序 (旧->新)
+
+  final int id;
+  final String eventAt; // 'YYYY-MM-DD HH:mm' 北京时间
+  final String country;
+  final String currency;
+  final String name;
+  final String nameEn;
+  final String? descZh;
+  final int importance;
+  final String? previous;
+  final String? forecast;
+  final String? actual;
+  final String unit;
+  final List<MacroHistoryPoint> history; // 时间正序
+}
+
+class MacroHistoryPoint {
+  MacroHistoryPoint.fromJson(Map<String, dynamic> j)
+      : date = (j['date'] ?? '') as String,
+        previous = j['previous'] as String?,
+        forecast = j['forecast'] as String?,
+        actual = j['actual'] as String?;
+
+  final String date;
+  final String? previous;
+  final String? forecast;
+  final String? actual;
+
+  /// 提取数值 (去掉 %, K, M, B, 逗号等), 无法解析返回 null.
+  static double? parseNum(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    var s = raw.replaceAll(',', '').replaceAll('%', '').trim();
+    double mult = 1;
+    if (s.endsWith('K')) {
+      mult = 1e3;
+      s = s.substring(0, s.length - 1);
+    } else if (s.endsWith('M')) {
+      mult = 1e6;
+      s = s.substring(0, s.length - 1);
+    } else if (s.endsWith('B')) {
+      mult = 1e9;
+      s = s.substring(0, s.length - 1);
+    } else if (s.endsWith('T')) {
+      mult = 1e12;
+      s = s.substring(0, s.length - 1);
+    }
+    final v = double.tryParse(s);
+    return v == null ? null : v * mult;
+  }
+}
+
 /// 数据获取层. 所有方法失败抛 ApiException; 页面自行决定回退.
 class McData {
   McData._();
@@ -202,6 +273,11 @@ class McData {
     return (resp['items'] as List? ?? [])
         .map((e) => MacroEventItem.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  static Future<MacroEventDetail> macroEventDetail(int id) async {
+    final resp = await McApi.get('/api/news/macro-calendar/$id/detail');
+    return MacroEventDetail.fromJson(resp);
   }
 
   static Future<List<OkxTicker>> tickers({String instType = 'SWAP'}) async {

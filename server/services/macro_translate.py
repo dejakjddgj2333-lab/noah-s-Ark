@@ -11,7 +11,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.hk import HkMacroNameZh
+from models.hk import HkMacroDescZh, HkMacroNameZh
 from services.translate_service import _chat
 
 logger = logging.getLogger(__name__)
@@ -60,4 +60,48 @@ async def zh_name_map(db: AsyncSession, names: list[str]) -> dict[str, str]:
             await db.commit()
         except Exception:
             await db.rollback()  # 唯一键竞争等, 下轮再补
+    return out
+
+
+_DESC_PROMPT = """给下面 JSON 数组里的宏观经济指标/事件各写一段中文解读 (80-150 字)。
+内容: 这个指标衡量什么; 公布值高于/低于预期通常对美元、美股、黄金、加密货币意味着什么; 讲话类事件说明该官员身份及市场关注点。
+直接输出 JSON {"map": {"原名": "解读", ...}}, 每个输入都要有键, 不要任何额外内容。"""
+
+
+async def zh_desc_map(db: AsyncSession, names: list[str]) -> dict[str, str]:
+    """返回 {英文名: 中文解读}. 未命中缓存的批量生成入库, 失败跳过 (前端隐藏解读区)."""
+    unique = [n for n in dict.fromkeys(names) if n]
+    if not unique:
+        return {}
+    cached = (
+        await db.scalars(
+            select(HkMacroDescZh).where(HkMacroDescZh.name.in_(unique))
+        )
+    ).all()
+    out = {c.name: c.desc_zh for c in cached}
+    missing = [n for n in unique if n not in out]
+    if not missing:
+        return out
+
+    for i in range(0, len(missing), _BATCH):
+        chunk = missing[i : i + _BATCH]
+        try:
+            r = await _chat(
+                _DESC_PROMPT, json.dumps({"names": chunk}, ensure_ascii=False),
+                max_tokens=8000,
+            )
+            m = (r or {}).get("map") or {}
+        except Exception as exc:
+            logger.warning("macro_desc_failed: %s", str(exc)[:200])
+            m = {}
+        for name in chunk:
+            desc = str(m.get(name) or "").strip()
+            if not desc:
+                continue
+            db.add(HkMacroDescZh(name=name[:300], desc_zh=desc))
+            out[name] = desc
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
     return out
