@@ -660,7 +660,10 @@ class _NewsPageState extends State<NewsPage> {
     final (node, glow) = accents[index % accents.length];
 
     final bullPct = _bullPct(item);
-    final views = _fmtCount(item.likeCount + item.commentCount);
+    // 阅读数: 无真实统计, 用文章 id 哈希出 300-3000 确定性起始值 (同一篇稳定), 叠加真实互动
+    final baseViews =
+        300 + ((item.id * 1103515245 + 12345) & 0x7fffffff) % 2700;
+    final views = _fmtCount(baseViews + item.likeCount + item.commentCount);
 
     final tags = <_Tag>[
       if (item.source.isNotEmpty)
@@ -886,13 +889,6 @@ class _NewsPageState extends State<NewsPage> {
                             size: 12, color: NewsPage._onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(views,
-                            style: McText.mono(
-                                size: 12, color: NewsPage._onSurfaceVariant)),
-                        const SizedBox(width: 10),
-                        const Icon(Icons.share,
-                            size: 12, color: NewsPage._onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Text('分享海报',
                             style: McText.mono(
                                 size: 12, color: NewsPage._onSurfaceVariant)),
                       ],
