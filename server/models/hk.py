@@ -214,3 +214,14 @@ class HkFavorite(HkBase):
     target_type = Column(String(16), nullable=False)  # 当前仅 news
     target_id = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=utc_now)
+
+
+class HkMacroNameZh(HkBase):
+    """宏观日历事件名中文缓存 (DeepSeek 批量翻译, 翻一次永久复用)."""
+
+    __tablename__ = "hk_macro_name_zh"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(300), unique=True, nullable=False, index=True)  # 英文原名
+    name_zh = Column(String(300), nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)

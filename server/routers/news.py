@@ -121,6 +121,16 @@ async def get_macro_calendar(
         # macro_events 表未迁移 (okx 侧未部署) 时返回空, 前端显示 暂无数据
         await db.rollback()
         rows = []
+
+    # 事件名中文化 (DeepSeek 批量翻译 + hk_macro_name_zh 缓存, 失败回退英文)
+    from services.macro_translate import zh_name_map
+
+    try:
+        zh_map = await zh_name_map(db, [e.name for e in rows if e.name])
+    except Exception:
+        await db.rollback()
+        zh_map = {}
+
     return {
         "date": bj_start.strftime("%Y-%m-%d"),
         "items": [
@@ -130,7 +140,8 @@ async def get_macro_calendar(
                 "event_at": (e.event_at + timedelta(hours=8)).strftime("%H:%M"),
                 "country": e.country,
                 "currency": e.currency,
-                "name": e.name,
+                "name": zh_map.get(e.name) or e.name,
+                "name_en": e.name,
                 "importance": e.importance,
                 "previous": e.previous,
                 "forecast": e.forecast,
