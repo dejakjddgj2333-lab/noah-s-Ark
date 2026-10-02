@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
@@ -27,12 +29,25 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   String _indexApy = '+12.45%';
   String _indexRate8h = '0.0114% / 8h';
 
+  // 费率矩阵筛选: pos=正费率 / neg=负费率 / hot=异动激增 (|rate|>=0.03).
+  String _filter = 'pos';
+  // 展开更多合约: 已加载的额外 symbol.
+  bool _expanded = false;
+  bool _expanding = false;
+
+  // 下次 8H 结算倒计时 (UTC 00/08/16).
+  String _countdown = '--:--:--';
+  Timer? _cdTimer;
+  // BTC 平均费率 (温度条游标, 默认 0.0114 对应 56%).
+  double _btcRate = 0.0114;
+
   // 费率矩阵行: 首屏展示 mock, 成功后按 symbol 覆盖.
   late List<_FundingRow> _rows = _mockRows();
 
   static List<_FundingRow> _mockRows() => const [
         _FundingRow(
           symbol: 'DOGE',
+          rateNum: 0.045,
           price: '\$0.1842',
           rate: '+0.0450%',
           rateColor: McColors.tertiary,
@@ -47,6 +62,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
         _FundingRow(
           symbol: 'SOL',
+          rateNum: 0.021,
           price: '\$148.65',
           rate: '+0.0210%',
           rateColor: McColors.tertiary,
@@ -61,6 +77,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
         _FundingRow(
           symbol: 'BTC',
+          rateNum: 0.01,
           price: '\$67,820.0',
           rate: '+0.0100%',
           rateColor: McColors.primary,
@@ -75,6 +92,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
         _FundingRow(
           symbol: 'ETH',
+          rateNum: 0.0085,
           price: '\$3,524.4',
           rate: '+0.0085%',
           rateColor: McColors.onSurface,
@@ -89,6 +107,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
         _FundingRow(
           symbol: 'XRP',
+          rateNum: 0.0092,
           price: '\$2.0413',
           rate: '+0.0092%',
           rateColor: McColors.primary,
@@ -103,6 +122,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         ),
         _FundingRow(
           symbol: 'XTZ',
+          rateNum: -0.032,
           price: '\$0.842',
           rate: '-0.0320%',
           rateColor: _error,
@@ -123,7 +143,29 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   @override
   void initState() {
     super.initState();
+    _tickCountdown();
+    _cdTimer =
+        Timer.periodic(const Duration(seconds: 1), (_) => _tickCountdown());
     _load();
+  }
+
+  @override
+  void dispose() {
+    _cdTimer?.cancel();
+    super.dispose();
+  }
+
+  // 距下一个 UTC 00/08/16 整点.
+  void _tickCountdown() {
+    final now = DateTime.now().toUtc();
+    var next = DateTime.utc(now.year, now.month, now.day,
+        (now.hour ~/ 8 + 1) * 8 % 24);
+    if (!next.isAfter(now)) next = next.add(const Duration(days: 1));
+    final d = next.difference(now);
+    String two(int n) => n.toString().padLeft(2, '0');
+    final text =
+        '${two(d.inHours)}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}';
+    if (mounted && text != _countdown) setState(() => _countdown = text);
   }
 
   Future<void> _load() async {
@@ -197,6 +239,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
             if (r.symbol == symbol) row else r,
         ];
         if (symbol == 'BTC' && avgRate != null) {
+          _btcRate = avgRate;
           _indexRate8h = '${_fmtRate(avgRate, signed: false)} / 8h';
           _indexApy = _fmtApy(avgRate);
         }
@@ -253,6 +296,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     final status = _statusOf(avg);
     final row = _FundingRow(
       symbol: symbol,
+      rateNum: avg,
       price: fallbackPrice, // 接口无现价字段, 沿用现有价格 (真实现价由 tickers 覆盖)
       rate: _fmtRate(avg),
       rateColor: avg >= 0.03
@@ -449,7 +493,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _hairline),
                     ),
-                    child: Text('03:24:15',
+                    child: Text(_countdown,
                         style: McText.mono(
                             size: 20, weight: FontWeight.w700, color: McColors.primary, letterSpacing: 2)),
                   ),
@@ -533,11 +577,13 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                         ),
                       ),
                     ),
-                    // Cursor at 56%
+                    // Cursor: BTC 费率映射 [-0.05%, +0.05%] -> [0, 1]
                     Positioned.fill(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          final left = constraints.maxWidth * 0.56 - 7;
+                          final frac =
+                              ((_btcRate + 0.05) / 0.1).clamp(0.02, 0.98);
+                          final left = constraints.maxWidth * frac - 7;
                           return Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -731,16 +777,25 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
           Container(
             padding: const EdgeInsets.only(top: 12),
             decoration: const BoxDecoration(border: Border(top: BorderSide(color: _hairlineSoft))),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('04-09 (周三)', style: McText.mono(size: 11, color: McColors.outline)),
-                Text('04-11', style: McText.mono(size: 11, color: McColors.outline)),
-                Text('04-13', style: McText.mono(size: 11, color: McColors.outline)),
-                Text('今日 (04-15)',
-                    style: McText.mono(size: 11, weight: FontWeight.w700, color: McColors.primary)),
-              ],
-            ),
+            child: Builder(builder: (context) {
+              // 近 7 天真实日期刻度 (曲线为示意, 日期不再硬编码)
+              String md(DateTime d) =>
+                  '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+              final now = DateTime.now();
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(md(now.subtract(const Duration(days: 6))),
+                      style: McText.mono(size: 11, color: McColors.outline)),
+                  Text(md(now.subtract(const Duration(days: 4))),
+                      style: McText.mono(size: 11, color: McColors.outline)),
+                  Text(md(now.subtract(const Duration(days: 2))),
+                      style: McText.mono(size: 11, color: McColors.outline)),
+                  Text('今日 (${md(now)})',
+                      style: McText.mono(size: 11, weight: FontWeight.w700, color: McColors.primary)),
+                ],
+              );
+            }),
           ),
         ],
       ),
@@ -774,38 +829,9 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
             ),
             child: Row(
               children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: McColors.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '正费率 (多头拥挤)',
-                      textAlign: TextAlign.center,
-                      style: McText.sans(size: 12, weight: FontWeight.w700, color: McColors.primary),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Text(
-                      '负费率 (空头拥挤)',
-                      textAlign: TextAlign.center,
-                      style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.onSurfaceVariant),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Text(
-                    '异动激增',
-                    textAlign: TextAlign.center,
-                    style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.onSurfaceVariant),
-                  ),
-                ),
+                Expanded(child: _filterPill('正费率 (多头拥挤)', 'pos')),
+                Expanded(child: _filterPill('负费率 (空头拥挤)', 'neg')),
+                _filterPill('异动激增', 'hot'),
               ],
             ),
           ),
@@ -835,31 +861,135 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
               ],
             ),
           ),
-          for (var i = 0; i < _rows.length; i++)
-            _matrixRow(_rows[i], showDivider: i < _rows.length - 1),
+          // 按筛选过滤
+          Builder(builder: (context) {
+            final visible = _rows.where((r) {
+              switch (_filter) {
+                case 'pos':
+                  return r.rateNum > 0;
+                case 'neg':
+                  return r.rateNum < 0;
+                case 'hot':
+                  return r.rateNum.abs() >= 0.03;
+                default:
+                  return true;
+              }
+            }).toList();
+            if (visible.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text('该分类下暂无合约',
+                      style: McText.sans(size: 12, color: McColors.outline)),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (var i = 0; i < visible.length; i++)
+                  _matrixRow(visible[i], showDivider: i < visible.length - 1),
+              ],
+            );
+          }),
           const SizedBox(height: 8),
           // Expand button
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: McColors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _hairline),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('展开全网 128 个合约费率',
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _expanding ? null : _toggleExpand,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: McColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _hairline),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _expanding
+                        ? '加载中...'
+                        : _expanded
+                            ? '收起额外合约'
+                            : '展开更多合约费率',
                     style: McText.sans(size: 12, weight: FontWeight.w600, color: McColors.onSurfaceVariant)),
-                const SizedBox(width: 6),
-                const Icon(Icons.expand_more, size: 16, color: McColors.onSurfaceVariant),
-              ],
+                  const SizedBox(width: 6),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16, color: McColors.onSurfaceVariant),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _filterPill(String label, String value) {
+    final active = _filter == value;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _filter = active ? '' : value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? McColors.surfaceContainerHighest : null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: McText.sans(
+            size: 12,
+            weight: active ? FontWeight.w700 : FontWeight.w500,
+            color: active ? McColors.primary : McColors.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 额外展开的合约 (失败的不出现, 已有 6 个不重复).
+  static const _extraSymbols = [
+    'BNB', 'ADA', 'AVAX', 'LINK', 'LTC', 'NEAR', 'TON', 'APT',
+  ];
+
+  Future<void> _toggleExpand() async {
+    if (_expanded) {
+      setState(() {
+        _expanded = false;
+        _rows = _rows
+            .where((r) => !_extraSymbols.contains(r.symbol))
+            .toList();
+      });
+      return;
+    }
+    setState(() => _expanding = true);
+    await Future.wait([for (final s in _extraSymbols) _fetchExtra(s)]);
+    if (!mounted) return;
+    setState(() {
+      _expanding = false;
+      _expanded = true;
+    });
+  }
+
+  // 拉取额外 symbol: 成功才追加 (appendOnly, 不覆盖已有行).
+  Future<void> _fetchExtra(String symbol) async {
+    try {
+      final resp =
+          await McData.overview('funding/exchange-rates?symbol=$symbol');
+      final parsed = _parseExchangeRates(symbol, resp['data']);
+      if (parsed == null || !mounted) return;
+      final (row, _) = parsed;
+      setState(() {
+        if (_rows.any((r) => r.symbol == symbol)) return;
+        _rows = [..._rows, row];
+      });
+    } catch (_) {
+      // 上游无该 symbol / 网络异常 — 跳过.
+    }
   }
 
   Widget _matrixRow(_FundingRow r, {bool showDivider = true}) {
@@ -948,34 +1078,18 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                children: [
-                  const McGlowDot(color: McColors.tertiary, size: 8),
-                  const SizedBox(width: 8),
-                  Text('WS: 12ms / 39 Exchanges Ingestion',
-                      style: McText.mono(size: 11, color: McColors.outline)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
             child: Row(
               children: [
-                const Icon(Icons.verified_user,
-                    size: 14, color: McColors.primary),
-                const SizedBox(width: 6),
-                Text('无滑点智能费率路由',
-                    style: McText.mono(
-                        size: 11, color: McColors.onSurfaceVariant)),
+                const McGlowDot(color: McColors.tertiary, size: 8),
+                const SizedBox(width: 8),
+                Text('数据源: CoinGlass 各所聚合',
+                    style: McText.mono(size: 11, color: McColors.outline)),
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          Text('年化 = 8H费率 × 1095',
+              style: McText.mono(size: 11, color: McColors.onSurfaceVariant)),
         ],
       ),
     );
@@ -997,6 +1111,7 @@ class _FundingRow {
     required this.statusColor,
     required this.statusBg,
     required this.statusBold,
+    this.rateNum = 0,
     this.showDivider = true,
   });
 
@@ -1012,6 +1127,7 @@ class _FundingRow {
   final Color statusColor;
   final Color statusBg;
   final bool statusBold;
+  final double rateNum; // 原始费率百分数, 筛选用
   final bool showDivider;
 
   _FundingRow copyWith({String? price}) => _FundingRow(
@@ -1027,6 +1143,7 @@ class _FundingRow {
         statusColor: statusColor,
         statusBg: statusBg,
         statusBold: statusBold,
+        rateNum: rateNum,
         showDivider: showDivider,
       );
 }

@@ -24,10 +24,22 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   // 链上流动性总览: null = 未加载/失败, 卡片回退 mock.
   LiquidityOverview? _liq;
 
+  // 时间线筛选: '' = 全部, 否则按 category 匹配 (提币/充值/做市/转账/异动).
+  String _filter = '';
+  // 预警阈值: 只显示 >= 该美元值的异动 (0 = 全部).
+  double _minUsd = 0;
+
+  List<_WhaleFeedItem> get _visibleFeed => _feedItems.where((f) {
+        if (_filter.isNotEmpty && f.category != _filter) return false;
+        return f.usdValue >= _minUsd;
+      }).toList();
+
   static List<_WhaleFeedItem> _mockFeedItems() => const [
         _WhaleFeedItem(
           pillIcon: Icons.download_for_offline,
           pillText: '提币囤积 · 强烈利好',
+          usdValue: 115704000,
+          category: '提币',
           pillColor: McColors.tertiary,
           chain: 'Bitcoin Mainnet',
           time: '3分钟前',
@@ -44,6 +56,8 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         _WhaleFeedItem(
           pillIcon: Icons.warning,
           pillText: '大额充值 · 潜在抛压',
+          usdValue: 85500000,
+          category: '充值',
           pillColor: McColors.error,
           chain: 'Ethereum',
           time: '14分钟前',
@@ -60,6 +74,8 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         _WhaleFeedItem(
           pillIcon: Icons.sync_alt,
           pillText: '做市机构动向',
+          usdValue: 15000000,
+          category: '做市',
           pillColor: McColors.primary,
           chain: 'ERC-20',
           time: '21分钟前',
@@ -76,6 +92,8 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         _WhaleFeedItem(
           pillIcon: Icons.local_fire_department,
           pillText: '大额链上交互 · 官方铸造',
+          usdValue: 1000000000,
+          category: '转账',
           pillColor: McColors.onSurface,
           pillNeutral: true,
           chain: 'TRON (TRC-20)',
@@ -168,8 +186,10 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         toColor: accent,
         arrowColor: accent,
         txHash: _shortAddr(user),
+        usdValue: sizeUsd,
+        category: '异动',
       ));
-      if (out.length >= 6) break;
+      if (out.length >= 10) break;
     }
     return out;
   }
@@ -400,11 +420,12 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _filterPill('全部', selected: true),
-                _filterPill('提币囤积'),
-                _filterPill('充值抛压预警'),
-                _filterPill('做市机构动向'),
-                _filterPill('巨额转账'),
+                _filterPill('全部', value: ''),
+                _filterPill('提币囤积', value: '提币'),
+                _filterPill('充值抛压预警', value: '充值'),
+                _filterPill('做市机构动向', value: '做市'),
+                _filterPill('巨额转账', value: '转账'),
+                _filterPill('合约仓位异动', value: '异动'),
               ],
             ),
           ),
@@ -571,30 +592,37 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     ];
   }
 
-  Widget _filterPill(String text, {bool selected = false}) {    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: selected
-            ? McColors.primaryContainer
-            : McColors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                    color: McColors.primaryContainer.withValues(alpha: 0.4),
-                    blurRadius: 8)
-              ]
-            : null,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        text,
-        style: McText.sans(
-          size: 12,
-          weight: selected ? FontWeight.w600 : FontWeight.w400,
-          color:
-              selected ? McColors.onPrimaryContainer : McColors.onSurfaceVariant,
+  Widget _filterPill(String text, {required String value}) {
+    final selected = _filter == value;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _filter = value),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? McColors.primaryContainer
+              : McColors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                      color: McColors.primaryContainer.withValues(alpha: 0.4),
+                      blurRadius: 8)
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          style: McText.sans(
+            size: 12,
+            weight: selected ? FontWeight.w600 : FontWeight.w400,
+            color: selected
+                ? McColors.onPrimaryContainer
+                : McColors.onSurfaceVariant,
+          ),
         ),
       ),
     );
@@ -802,10 +830,19 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
           ),
         ),
         const SizedBox(height: 14),
-        for (var i = 0; i < _feedItems.length; i++) ...[
-          if (i > 0) const SizedBox(height: 16),
-          _feedCard(_feedItems[i]),
-        ],
+        if (_visibleFeed.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text('当前筛选下暂无异动',
+                  style: McText.sans(size: 12, color: McColors.outline)),
+            ),
+          )
+        else
+          for (var i = 0; i < _visibleFeed.length; i++) ...[
+            if (i > 0) const SizedBox(height: 16),
+            _feedCard(_visibleFeed[i]),
+          ],
       ],
     );
   }
@@ -966,15 +1003,19 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                     ],
                   ),
                 ),
-                Row(
-                  children: [
-                    Text(
-                      '研判详情',
-                      style: McText.sans(size: 12, color: McColors.outline),
-                    ),
-                    const Icon(Icons.chevron_right,
-                        size: 14, color: McColors.outline),
-                  ],
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _openDetail(item),
+                  child: Row(
+                    children: [
+                      Text(
+                        '研判详情',
+                        style: McText.sans(size: 12, color: McColors.primary),
+                      ),
+                      const Icon(Icons.chevron_right,
+                          size: 14, color: McColors.primary),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -998,35 +1039,163 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     );
   }
 
-  Widget _alertThresholdButton() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: McColors.primaryContainer,
-          borderRadius: BorderRadius.circular(999),
-          border:
-              Border.all(color: McColors.primary.withValues(alpha: 0.2)),
-          boxShadow: const [
-            BoxShadow(color: Colors.black54, blurRadius: 16),
+  // 研判详情弹层: 完整字段 + 解读.
+  void _openDetail(_WhaleFeedItem item) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: McColors.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: McColors.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(item.pillIcon, size: 18, color: item.pillColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(item.pillText,
+                      style: McText.sans(
+                          size: 15,
+                          weight: FontWeight.w700,
+                          color: item.pillColor)),
+                ),
+                Text(item.time,
+                    style: McText.sans(size: 12, color: McColors.outline)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _detailRow('金额', item.amount),
+            _detailRow('估值', item.usd),
+            _detailRow('链/网络', item.chain),
+            _detailRow('转出方', item.from),
+            _detailRow('接收方', item.to),
+            _detailRow('TxHash', item.txHash),
+            const SizedBox(height: 12),
+            Text(
+              '解读: 大额${item.to.contains('冷钱包') ? '提币至冷钱包通常意味着长线囤积, 短期抛压减小' : item.to.contains('减仓') || item.to.contains('平仓') ? '减仓平仓, 该巨鲸短期看空或止盈' : item.to.contains('加仓') || item.to.contains('开仓') ? '加仓开仓, 该巨鲸短期看多' : '转入交易所通常被视为潜在卖出信号, 需关注后续盘口承接'}。',
+              style: McText.sans(
+                  size: 12, height: 1.6, color: McColors.onSurfaceVariant),
+            ),
           ],
         ),
-        child: Row(
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 64,
+            child: Text(label,
+                style: McText.sans(size: 12, color: McColors.outline)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: McText.mono(size: 12, color: McColors.onSurface)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 预警阈值: 选择后只显示 >= 阈值的异动.
+  void _pickThreshold() {
+    const options = <(String, double)>[
+      ('全部', 0),
+      ('≥ \$1M', 1e6),
+      ('≥ \$10M', 1e7),
+      ('≥ \$50M', 5e7),
+      ('≥ \$100M', 1e8),
+    ];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: McColors.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add_alert,
-                size: 18, color: McColors.onPrimaryContainer),
-            const SizedBox(width: 8),
-            Text(
-              '设置巨鲸预警阈值',
-              style: McText.sans(
-                  size: 12,
-                  weight: FontWeight.w600,
-                  color: McColors.onPrimaryContainer),
-            ),
-            const SizedBox(width: 6),
-            const McGlowDot(color: McColors.tertiary, size: 6),
+            const SizedBox(height: 12),
+            Text('巨鲸预警阈值',
+                style: McText.sans(size: 14, weight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            for (final (label, v) in options)
+              ListTile(
+                dense: true,
+                title: Text(label, style: McText.mono(size: 13)),
+                trailing: _minUsd == v
+                    ? const Icon(Icons.check,
+                        size: 18, color: McColors.tertiary)
+                    : null,
+                onTap: () {
+                  setState(() => _minUsd = v);
+                  Navigator.pop(context);
+                },
+              ),
+            const SizedBox(height: 8),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _alertThresholdButton() {
+    return Center(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _pickThreshold,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: McColors.primaryContainer,
+            borderRadius: BorderRadius.circular(999),
+            border:
+                Border.all(color: McColors.primary.withValues(alpha: 0.2)),
+            boxShadow: const [
+              BoxShadow(color: Colors.black54, blurRadius: 16),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add_alert,
+                  size: 18, color: McColors.onPrimaryContainer),
+              const SizedBox(width: 8),
+              Text(
+                _minUsd > 0
+                    ? '预警阈值: ≥ ${_fmtUsd(_minUsd)}'
+                    : '设置巨鲸预警阈值',
+                style: McText.sans(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: McColors.onPrimaryContainer),
+              ),
+              const SizedBox(width: 6),
+              const McGlowDot(color: McColors.tertiary, size: 6),
+            ],
+          ),
         ),
       ),
     );
@@ -1051,6 +1220,8 @@ class _WhaleFeedItem {
     required this.toColor,
     required this.arrowColor,
     required this.txHash,
+    this.usdValue = 0,
+    this.category = '',
   });
 
   final IconData pillIcon;
@@ -1068,4 +1239,6 @@ class _WhaleFeedItem {
   final Color toColor;
   final Color arrowColor;
   final String txHash;
+  final double usdValue; // 原始美元值, 阈值过滤用
+  final String category; // 分类过滤用 (提币/充值/做市/转账)
 }

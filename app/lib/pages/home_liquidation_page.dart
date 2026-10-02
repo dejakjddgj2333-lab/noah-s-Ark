@@ -41,6 +41,21 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   String _liqCount = '87,865'; // 爆仓人数 (coin-list 无人数字段时保留 mock)
   String _liqTotalText = '\$3.35亿';
 
+  // 实时监控卡: range -> (total, long, short) 原始值, mock 默认, 拉取成功覆盖.
+  final Map<String, (double, double, double)> _sums = {
+    '1h': (301e4, 167.6e4, 133.4e4),
+    '4h': (1120.7e4, 454.6e4, 666.1e4),
+    '24h': (3.35e8, 2.7e8, 6682e4),
+  };
+  String _monitorRange = '24h'; // 监控卡当前时段
+
+  // 顶部币种快捷过滤 ('全部' 或 BTC/ETH/...).
+  String _symbol = '全部';
+  // 实时 feed 最小金额过滤 (0=全部).
+  double _feedMinUsd = 0;
+  // 交易所统计当前时段.
+  String _statsRange = '24h';
+
   // 分时段爆仓 (1h/4h/12h): 首屏 mock, 拉取成功后覆盖.
   String _total1h = '\$301万';
   String _long1h = '\$167.6万';
@@ -66,6 +81,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           price: '\$0.03982',
           long: true,
           amount: '\$1,984.16',
+          amountUsd: 1984.16,
           amountColor: Colors.white,
           qty: '≈4.98万 FLOCK',
           time: '16:09:42',
@@ -79,6 +95,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           price: '\$0.11759',
           long: false,
           amount: '\$1,877.84',
+          amountUsd: 1877.84,
           amountColor: Colors.white,
           qty: '≈1.6万 USELESS',
           time: '16:09:28',
@@ -92,6 +109,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           price: '\$66,420.5',
           long: true,
           amount: '\$48.29万',
+          amountUsd: 482900,
           amountColor: Color(0xFF10B981),
           qty: '7.27 BTC',
           time: '16:08:50',
@@ -105,6 +123,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           price: '\$3,418.90',
           long: true,
           amount: '\$128.50万',
+          amountUsd: 1285000,
           amountColor: Color(0xFF10B981),
           qty: '375.8 ETH',
           time: '16:08:12',
@@ -118,6 +137,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           price: '\$148.20',
           long: false,
           amount: '\$21.35万',
+          amountUsd: 213500,
           amountColor: Colors.white,
           qty: '1,440.6 SOL',
           time: '16:07:45',
@@ -231,13 +251,16 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     ]);
   }
 
-  Future<void> _load24h() async {
+  Future<void> _load24h() => _loadRangeStats(_statsRange);
+
+  // 交易所统计按时段拉取; 仅 24h 时顺带更新总爆仓卡与监控卡.
+  Future<void> _loadRangeStats(String range) async {
     try {
       final resp =
-          await McData.overview('liquidations/exchange-list?range=24h');
+          await McData.overview('liquidations/exchange-list?range=$range');
       final parsed = _parseExchangeList(resp['data']);
       if (parsed == null || !mounted) return;
-      setState(() => _applyParsed(parsed));
+      setState(() => _applyParsed(parsed, range));
     } on ApiException {
       // 503 未配置 / 502 上游错误 — 保留 mock.
     } catch (_) {
@@ -256,12 +279,14 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     setState(() {
       final r1 = results[0];
       if (r1 != null) {
+        _sums['1h'] = r1;
         _total1h = _fmtUsdZh(r1.$1);
         _long1h = _fmtUsdZh(r1.$2);
         _short1h = _fmtUsdZh(r1.$3);
       }
       final r4 = results[1];
       if (r4 != null) {
+        _sums['4h'] = r4;
         _total4h = _fmtUsdZh(r4.$1);
         _long4h = _fmtUsdZh(r4.$2);
         _short4h = _fmtUsdZh(r4.$3);
@@ -321,6 +346,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       price: '\$${_fmtPrice(p.price)}',
       long: isLong,
       amount: _fmtUsdZh(p.notionalUsd),
+      amountUsd: p.notionalUsd,
       amountColor: isLong ? _bull : _bear,
       qty: '≈${_fmtQty(p.qty)} ${p.baseCcy}',
       time: _fmtClock(p.ts),
@@ -395,8 +421,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     return '${two(dt.hour)}:${two(dt.minute)}:${two(dt.second)}';
   }
 
-  // 应用解析结果: 覆盖已知名称的交易所行, 重算 24H 总爆仓与「全部」行.
-  void _applyParsed(List<_RawEx> raw) {
+  // 应用解析结果: 覆盖已知名称的交易所行, 重算该时段「全部」行;
+  // range=24h 时同步更新总爆仓卡与监控卡原始值.
+  void _applyParsed(List<_RawEx> raw, [String range = '24h']) {
     double sumTotal = 0, sumLong = 0, sumShort = 0;
     for (final r in raw) {
       if (_normName(r.name) == 'all') continue; // 聚合行, 跳过避免重复计数
@@ -436,10 +463,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     );
     _exStats = updated;
 
-    _total24 = _fmtUsdZh(sumTotal);
-    _long24 = _fmtUsdZh(sumLong);
-    _short24 = _fmtUsdZh(sumShort);
-    _liqTotalText = _fmtUsdZh(sumTotal);
+    _sums[range] = (sumTotal, sumLong, sumShort);
+    if (range == '24h') {
+      _total24 = _fmtUsdZh(sumTotal);
+      _long24 = _fmtUsdZh(sumLong);
+      _short24 = _fmtUsdZh(sumShort);
+      _liqTotalText = _fmtUsdZh(sumTotal);
+    }
   }
 
   static double _frac(double long, double short) {
@@ -565,6 +595,8 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
         children: [
           _buildAssetFilter(),
           const SizedBox(height: 16),
+          _buildMonitorCard(),
+          const SizedBox(height: 16),
           _buildTotalLiquidation(),
           const SizedBox(height: 16),
           _buildHeatmap(),
@@ -579,64 +611,173 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
 
   // ---- Asset quick filter bar ----
   Widget _buildAssetFilter() {
-    Widget chip(String label, {bool active = false}) {
-      return Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: EdgeInsets.symmetric(horizontal: active ? 14 : 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: active
-              ? McColors.primaryContainer
-              : McColors.surfaceContainerHigh.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(999),
-          border: active ? null : Border.all(color: _hairline),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: McColors.primaryContainer.withValues(alpha: 0.35),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: McText.sans(
-            size: 13,
-            weight: active ? FontWeight.w600 : FontWeight.w500,
-            color: active ? Colors.white : _onSurfaceVariant,
+    Widget chip(String label) {
+      final active = _symbol == label;
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _symbol = label),
+        child: Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: EdgeInsets.symmetric(horizontal: active ? 14 : 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: active
+                ? McColors.primaryContainer
+                : McColors.surfaceContainerHigh.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(999),
+            border: active ? null : Border.all(color: _hairline),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: McColors.primaryContainer.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: McText.sans(
+              size: 13,
+              weight: active ? FontWeight.w600 : FontWeight.w500,
+              color: active ? Colors.white : _onSurfaceVariant,
+            ),
           ),
         ),
       );
     }
 
-    return Row(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                chip('全部', active: true),
-                chip('BTC'),
-                chip('ETH'),
-                chip('SOL'),
-                chip('HYPE'),
-                chip('XRP'),
-              ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          chip('全部'),
+          chip('BTC'),
+          chip('ETH'),
+          chip('SOL'),
+          chip('HYPE'),
+          chip('XRP'),
+        ],
+      ),
+    );
+  }
+
+  // ---- 全网多空爆仓实时监控卡 (1H/4H/24H 可切换) ----
+  Widget _buildMonitorCard() {
+    final (total, long, short) =
+        _sums[_monitorRange] ?? _sums['24h']!;
+    final longPct = total > 0 ? (long / total * 100).round() : 50;
+
+    Widget tf(String label, String range) {
+      final active = _monitorRange == range;
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _monitorRange = range),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: active ? McColors.primaryContainer : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: McText.mono(
+              size: 11,
+              weight: active ? FontWeight.w700 : FontWeight.w400,
+              color: active ? Colors.white : _onSurfaceVariant,
             ),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: McColors.surfaceContainerHigh.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _hairline),
+      );
+    }
+
+    return McCard(
+      color: McColors.surfaceContainerLow,
+      padding: const EdgeInsets.all(14),
+      radius: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const McGlowDot(color: _bear, size: 8),
+                  const SizedBox(width: 6),
+                  Text('全网多空爆仓实时监控',
+                      style: McText.sans(size: 13, weight: FontWeight.w600, color: Colors.white)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: McColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _hairline),
+                ),
+                child: Row(
+                  children: [tf('1H', '1h'), tf('4H', '4h'), tf('24H', '24h')],
+                ),
+              ),
+            ],
           ),
-          child: const Icon(Icons.tune, size: 19, color: _onSurfaceVariant),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(_fmtUsdZh(total),
+                  style: McText.mono(size: 20, weight: FontWeight.w800, color: _bear)),
+              Text('多单 $longPct% · 空单 ${100 - longPct}%',
+                  style: McText.mono(size: 12, color: _onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 多空爆仓比例条
+          Container(
+            height: 8,
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: longPct.clamp(1, 99),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _bear,
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(4)),
+                      boxShadow: [BoxShadow(color: _bear.withValues(alpha: 0.5), blurRadius: 8)],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: (100 - longPct).clamp(1, 99),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _bull,
+                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
+                      boxShadow: [BoxShadow(color: _bull.withValues(alpha: 0.5), blurRadius: 8)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('多头爆仓 ${_fmtUsdZh(long)}',
+                  style: McText.mono(size: 12, color: _bear)),
+              Text('空头爆仓 ${_fmtUsdZh(short)}',
+                  style: McText.mono(size: 12, color: _bull)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1199,48 +1340,44 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           radius: 16,
           child: Column(
             children: [
-              // Filter toolbar
+              // Filter toolbar: 时段切换 (1h/4h/12h/24h)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _hairline),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: McColors.surface,
-                            borderRadius: BorderRadius.circular(8),
+                  PopupMenuButton<String>(
+                    color: _surfaceContainer,
+                    initialValue: _statsRange,
+                    onSelected: (v) {
+                      setState(() => _statsRange = v);
+                      _loadRangeStats(v);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: '1h', child: Text('1小时')),
+                      PopupMenuItem(value: '4h', child: Text('4小时')),
+                      PopupMenuItem(value: '12h', child: Text('12小时')),
+                      PopupMenuItem(value: '24h', child: Text('24小时')),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _hairline),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            const {
+                              '1h': '1小时',
+                              '4h': '4小时',
+                              '12h': '12小时',
+                              '24h': '24小时',
+                            }[_statsRange]!,
+                            style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white),
                           ),
-                          child: Text('交易所',
-                              style: McText.sans(size: 12, weight: FontWeight.w600, color: Colors.white)),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          child: Text('资产',
-                              style: McText.sans(size: 12, weight: FontWeight.w500, color: _onSurfaceVariant)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _hairline),
-                    ),
-                    child: Row(
-                      children: [
-                        Text('24小时', style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white)),
-                        const Icon(Icons.arrow_drop_down, size: 16, color: _onSurfaceVariant),
-                      ],
+                          const Icon(Icons.arrow_drop_down, size: 16, color: _onSurfaceVariant),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -1386,25 +1523,54 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           radius: 16,
           child: Column(
             children: [
-              // Filter toolbar
+              // Filter toolbar: 金额阈值 + 刷新
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      _feedFilter('全部'),
-                      const SizedBox(width: 10),
-                      _feedFilter('≥ 1千'),
+                  PopupMenuButton<double>(
+                    color: _surfaceContainer,
+                    initialValue: _feedMinUsd,
+                    onSelected: (v) => setState(() => _feedMinUsd = v),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 0, child: Text('全部')),
+                      PopupMenuItem(value: 1000, child: Text('≥ 1千')),
+                      PopupMenuItem(value: 10000, child: Text('≥ 1万')),
+                      PopupMenuItem(value: 100000, child: Text('≥ 10万')),
+                      PopupMenuItem(value: 1000000, child: Text('≥ 100万')),
                     ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: McColors.surfaceContainerHigh.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _hairline),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: McColors.surfaceContainerHigh.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _hairline),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            _feedMinUsd <= 0
+                                ? '全部'
+                                : '≥ ${_fmtUsdZh(_feedMinUsd).replaceAll('\$', '')}',
+                            style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_drop_down, size: 16, color: _onSurfaceVariant),
+                        ],
+                      ),
                     ),
-                    child: const Icon(Icons.refresh, size: 18, color: _onSurfaceVariant),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _load,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: McColors.surfaceContainerHigh.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _hairline),
+                      ),
+                      child: const Icon(Icons.refresh, size: 18, color: _onSurfaceVariant),
+                    ),
                   ),
                 ],
               ),
@@ -1431,31 +1597,35 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                   ],
                 ),
               ),
-              for (var i = 0; i < _feedItems.length; i++)
-                _feedRow(_feedItems[i],
-                    showDivider: i < _feedItems.length - 1),
+              // 币种 + 金额阈值过滤
+              Builder(builder: (context) {
+                final visible = _feedItems.where((f) {
+                  if (_symbol != '全部' &&
+                      !f.symbol.toUpperCase().contains(_symbol)) {
+                    return false;
+                  }
+                  return f.amountUsd >= _feedMinUsd;
+                }).toList();
+                if (visible.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text('暂无符合筛选的爆仓单',
+                          style: McText.sans(size: 12, color: _onSurfaceVariant)),
+                    ),
+                  );
+                }
+                return Column(
+                  children: [
+                    for (var i = 0; i < visible.length; i++)
+                      _feedRow(visible[i], showDivider: i < visible.length - 1),
+                  ],
+                );
+              }),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _feedFilter(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerHigh.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _hairline),
-      ),
-      child: Row(
-        children: [
-          Text(label, style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white)),
-          const SizedBox(width: 4),
-          const Icon(Icons.arrow_drop_down, size: 16, color: _onSurfaceVariant),
-        ],
-      ),
     );
   }
 
@@ -1612,6 +1782,7 @@ class _FeedItem {
     required this.amountColor,
     required this.qty,
     required this.time,
+    this.amountUsd = 0,
     this.showDivider = true,
   });
 
@@ -1626,6 +1797,7 @@ class _FeedItem {
   final Color amountColor;
   final String qty;
   final String time;
+  final double amountUsd; // 原始美元值, 过滤用
   final bool showDivider;
 }
 

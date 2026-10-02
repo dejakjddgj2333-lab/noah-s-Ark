@@ -734,24 +734,21 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
             Border.all(color: McColors.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const McGlowDot(),
-          const SizedBox(width: 6),
           Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text('WebSocket: 18ms (直连 Tokyo-A)',
-                  style: McText.mono(
-                      size: 12, color: McColors.onSurfaceVariant)),
+            child: Row(
+              children: [
+                const McGlowDot(),
+                const SizedBox(width: 6),
+                Text('数据源: OKX / CoinGlass',
+                    style: McText.mono(
+                        size: 12, color: McColors.onSurfaceVariant)),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          Text('BLOCK #21,498,924',
-              style: McText.mono(
-                  size: 12,
-                  color: McColors.onSurfaceVariant,
-                  letterSpacing: 1)),
+          Text('下拉刷新',
+              style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
     );

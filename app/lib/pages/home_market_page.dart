@@ -36,6 +36,9 @@ class HomeMarketPage extends StatefulWidget {
     'Layer 1': ['BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'NEAR', 'SUI'],
     'DeFi': ['UNI', 'AAVE', 'LINK', 'MKR', 'CRV', 'LDO'],
     'AI Agent': ['NEAR', 'FET', 'RNDR', 'WLD', 'TAO', 'GRT'],
+    'Meme': ['DOGE', 'SHIB', 'PEPE', 'WIF', 'BONK', 'FLOKI'],
+    'Solana生态': ['SOL', 'JUP', 'RAY', 'PYTH', 'WIF', 'BONK'],
+    'RWA': ['ONDO', 'MKR', 'POLYX', 'TRU', 'CFG'],
   };
 
   @override
@@ -177,13 +180,11 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
     return list;
   }
 
-  /// 依据板块分类客户端过滤 (仅保留已拉取到的 symbol; 无匹配回退原列表).
+  /// 依据板块分类客户端过滤 (仅保留已拉取到的 symbol).
   List<_RowData> _categorized(List<_RowData> rows) {
     final symbols = HomeMarketPage._categories[_category];
-    if (symbols == null) return rows; // 全部 / 自选 -> 不过滤
-    final filtered =
-        rows.where((r) => symbols.contains(r.symbol)).toList();
-    return filtered.isEmpty ? rows : filtered;
+    if (symbols == null) return rows; // 全部 -> 不过滤
+    return rows.where((r) => symbols.contains(r.symbol)).toList();
   }
 
   static String _fmtPrice(double p) {
@@ -257,10 +258,18 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
           const SizedBox(height: 12),
 
           // 3. 专业行情数据列表
-          _MarketListCard(
-              rows: rows,
-              loading: _loading && !usingLive,
-              onRowTap: _openDetail),
+          if (rows.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              alignment: Alignment.center,
+              child: Text('该板块暂无上榜币种',
+                  style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+            )
+          else
+            _MarketListCard(
+                rows: rows,
+                loading: _loading && !usingLive,
+                onRowTap: _openDetail),
           const SizedBox(height: 20),
 
           // 4. 板块轮动热力概览
@@ -467,7 +476,6 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
             child: Row(
               children: [
                 _tag('全部'),
-                _tag('自选', icon: Icons.star),
                 _tag('Layer 1'),
                 _tag('DeFi'),
                 _tag('AI Agent', dot: true),
@@ -513,14 +521,13 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
   }
 
   Widget _tag(String text, {IconData? icon, bool dot = false}) {
-    // 已接线的可筛选分类: 全部/自选/Layer1/DeFi/AI Agent; 其余保持静态展示.
-    const wired = {'全部', '自选', 'Layer 1', 'DeFi', 'AI Agent'};
+    // 全部 + _categories 表内的分类均可点; 表外(null)即 全部 不过滤.
     final active = widget.category == text;
     final color = active
         ? McColors.onPrimaryContainer
         : (dot ? McColors.primary : HomeMarketPage._onSurfVar);
     return GestureDetector(
-      onTap: wired.contains(text) ? () => widget.onCategory(text) : null,
+      onTap: () => widget.onCategory(text),
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.only(right: 8),
@@ -585,26 +592,14 @@ class _ListControlBar extends StatelessWidget {
               ],
             ),
           ),
-          Container(
+          // 数据窗口标识 (OKX tickers 固定 24H, 不可切换)
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: McColors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: HomeMarketPage._outlineVar.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Text('24H',
-                    style: McText.sans(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: McColors.primary)),
-                const SizedBox(width: 6),
-                const Icon(Icons.unfold_more,
-                    size: 15, color: HomeMarketPage._outline),
-              ],
-            ),
+            child: Text('24H',
+                style: McText.sans(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: McColors.primary)),
           ),
         ],
       ),
@@ -1214,50 +1209,19 @@ class _HeartbeatBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                children: [
-                  const McGlowDot(color: HomeMarketPage._bull, size: 8),
-                  const SizedBox(width: 8),
-                  Text('WS_NODE: 18ms',
-                      style: McText.mono(
-                          size: 12,
-                          color: HomeMarketPage._outline,
-                          letterSpacing: 1)),
-                ],
-              ),
+            child: Row(
+              children: [
+                const McGlowDot(color: HomeMarketPage._bull, size: 8),
+                const SizedBox(width: 8),
+                Text('数据源: OKX 永续合约',
+                    style: McText.mono(
+                        size: 12, color: HomeMarketPage._outline)),
+              ],
             ),
           ),
           const SizedBox(width: 8),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Row(
-                children: [
-                  Text('BLOCK: #20,412,890',
-                      style: McText.mono(
-                          size: 12, color: HomeMarketPage._outline)),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: McColors.primaryContainer.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text('明策撮合引擎 V4.2',
-                        style: McText.mono(
-                            size: 12,
-                            weight: FontWeight.w600,
-                            color: McColors.primary)),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          Text('24H 行情 · 下拉刷新',
+              style: McText.mono(size: 12, color: HomeMarketPage._outline)),
         ],
       ),
     );

@@ -22,12 +22,6 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
   String _fgLabel = '贪婪 (Greed)';
   Color _fgColor = McColors.bull;
 
-  // 爆仓监控 (mock 默认).
-  String _liqTotal = '\$3.82 亿';
-  int _liqLongPct = 56;
-  String _liqLongText = '多头爆仓 \$2.14 亿 (56%)';
-  String _liqShortText = '空头爆仓 \$1.68 亿 (44%)';
-
   // 资金费率加权 (mock 默认).
   String _fundingValue = '+0.0125%';
   Color _fundingColor = McColors.bull;
@@ -50,7 +44,6 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     // 不阻塞首帧: 立即渲染 mock, 成功后再 setState 覆盖.
     Future.wait([
       _loadSentiment(),
-      _loadLiquidations(),
       _loadFunding(),
       _loadIndicators(),
       _loadDominance(),
@@ -115,23 +108,6 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     } catch (_) {/* 未配置 / 上游错误 -> 保留 mock */}
   }
 
-  Future<void> _loadLiquidations() async {
-    try {
-      final resp =
-          await McData.overview('liquidations/exchange-list?range=24h');
-      final r = _parseLiquidations(resp);
-      if (r == null || !mounted) return;
-      final total = r[0], longUsd = r[1], shortUsd = r[2];
-      final longPct = total > 0 ? (longUsd / total * 100).round() : 50;
-      setState(() {
-        _liqTotal = _usdToYi(total);
-        _liqLongPct = longPct;
-        _liqLongText = '多头爆仓 ${_usdToYi(longUsd)} ($longPct%)';
-        _liqShortText = '空头爆仓 ${_usdToYi(shortUsd)} (${100 - longPct}%)';
-      });
-    } catch (_) {/* 保留 mock */}
-  }
-
   Future<void> _loadFunding() async {
     try {
       final resp = await McData.overview('funding/exchange-rates?symbol=BTC');
@@ -161,22 +137,6 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     return n?.round();
   }
 
-  /// 返回 [totalUsd, longUsd, shortUsd]; 无法得到有效多空合计时返回 null.
-  static List<double>? _parseLiquidations(Map<String, dynamic> resp) {
-    final data = resp['data'];
-    if (data is! List) return null;
-    double longUsd = 0, shortUsd = 0;
-    for (final e in data) {
-      if (e is! Map) continue;
-      // 跳过 All 聚合行, 避免重复计数
-      if ((e['exchange'] ?? '').toString().toLowerCase() == 'all') continue;
-      num numOf(dynamic v) => v is num ? v : (num.tryParse('$v') ?? 0);
-      longUsd += numOf(e['longLiquidation_usd'] ?? e['longLiquidationUsd']);
-      shortUsd += numOf(e['shortLiquidation_usd'] ?? e['shortLiquidationUsd']);
-    }
-    if (longUsd <= 0 || shortUsd <= 0) return null;
-    return [longUsd + shortUsd, longUsd, shortUsd];
-  }
 
   static double? _parseFunding(Map<String, dynamic> resp) {
     final rates = <num>[];
@@ -233,7 +193,6 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     }
   }
 
-  static String _usdToYi(double usd) => '\$${(usd / 1e8).toStringAsFixed(2)} 亿';
 
   static String _fgLabelFor(int v) {
     if (v < 25) return '极度恐惧 (Extreme Fear)';
@@ -283,20 +242,7 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         _matrixGrid(),
         const SizedBox(height: 16),
 
-        // 3. 24H 全网多空爆仓实时监控
-        _LiquidationCard(
-          total: _liqTotal,
-          longPct: _liqLongPct,
-          longText: _liqLongText,
-          shortText: _liqShortText,
-        ),
-        const SizedBox(height: 16),
-
-        // 4. 链上巨鲸与做市异动雷达
-        const _WhaleSection(),
-        const SizedBox(height: 16),
-
-        // 5. 主流资产多维量化指标一览
+        // 3. 主流资产多维量化指标一览
         const McSectionHeader(
           title: '主流资产多维量化指标一览',
           icon: Icons.trending_up,
@@ -785,402 +731,6 @@ class _MatrixCard extends StatelessWidget {
   }
 }
 
-/// 24H 全网多空爆仓实时监控卡片.
-class _LiquidationCard extends StatelessWidget {
-  const _LiquidationCard({
-    required this.total,
-    required this.longPct,
-    required this.longText,
-    required this.shortText,
-  });
-
-  final String total;
-  final int longPct;
-  final String longText;
-  final String shortText;
-
-  @override
-  Widget build(BuildContext context) {
-    return McCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const McGlowDot(color: McColors.bear, size: 8),
-                  const SizedBox(width: 6),
-                  Text(
-                    '全网多空爆仓实时监控',
-                    style: McText.sans(size: 12, weight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  _timeframeToggle(),
-                  const SizedBox(width: 8),
-                  Text(
-                    total,
-                    style: McText.mono(
-                        size: 14, weight: FontWeight.w700, color: McColors.bear),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // 多空爆仓比例进度条
-          Container(
-            height: 8,
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: McColors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: longPct,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: McColors.bear,
-                      borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(4)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: McColors.bear.withValues(alpha: 0.5),
-                          blurRadius: 8,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 100 - longPct,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: McColors.bull,
-                      borderRadius: const BorderRadius.horizontal(
-                          right: Radius.circular(4)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: McColors.bull.withValues(alpha: 0.5),
-                          blurRadius: 8,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    children: [
-                      const McGlowDot(color: McColors.bear, size: 6),
-                      const SizedBox(width: 4),
-                      Text(longText,
-                          style: McText.mono(size: 11, color: McColors.bear)),
-                    ],
-                  ),
-                ),
-              ),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    children: [
-                      const McGlowDot(color: McColors.bull, size: 6),
-                      const SizedBox(width: 4),
-                      Text(shortText,
-                          style: McText.mono(size: 11, color: McColors.bull)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // 最大单笔爆仓标牌
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: McColors.surfaceContainer,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                  color: McColors.outlineVariant.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const McPill('最大单笔', color: McColors.bear, fontSize: 10),
-                    const SizedBox(width: 8),
-                    Text('Binance - ETHUSDT 永续',
-                        style: McText.sans(size: 11)),
-                  ],
-                ),
-                Text(
-                  '\$8.50M 强平',
-                  style: McText.mono(
-                      size: 11, weight: FontWeight.w700, color: McColors.bear),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _timeframeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: McColors.outlineVariant.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          _tf('1H', false),
-          _tf('4H', false),
-          _tf('24H', true),
-        ],
-      ),
-    );
-  }
-
-  Widget _tf(String label, bool active) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: active ? McColors.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: McColors.primaryContainer.withValues(alpha: 0.6),
-                  blurRadius: 6,
-                )
-              ]
-            : null,
-      ),
-      child: Text(
-        label,
-        style: McText.mono(
-          size: 10,
-          weight: active ? FontWeight.w700 : FontWeight.w400,
-          color: active ? Colors.white : McColors.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-/// 链上巨鲸与做市异动雷达.
-class _WhaleSection extends StatelessWidget {
-  const _WhaleSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            children: [
-              const Icon(Icons.radar, size: 15, color: McColors.primaryContainer),
-              const SizedBox(width: 6),
-              Text('链上巨鲸与做市异动雷达',
-                  style: McText.sans(size: 12, weight: FontWeight.w600)),
-              const Spacer(),
-              const McGlowDot(color: McColors.bull, size: 4),
-              const SizedBox(width: 4),
-              Text('实时同步中',
-                  style: McText.mono(size: 10, color: McColors.bull)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        const _WhaleCard(
-          emoji: '🐋',
-          emojiBg: McColors.primaryContainer,
-          tag: '提币囤积 (Accumulation)',
-          tagColor: McColors.bull,
-          time: '3分钟前',
-          body: [
-            TextSpan(text: '巨鲸地址 '),
-            TextSpan(
-                text: '0x7a8...9f21',
-                style: TextStyle(
-                    fontFamily: 'JetBrains Mono', color: McColors.primary)),
-            TextSpan(text: ' 从 '),
-            TextSpan(
-                text: 'Binance',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.white)),
-            TextSpan(text: ' 提取 '),
-            TextSpan(
-                text: '1,200 BTC',
-                style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontWeight: FontWeight.w700,
-                    color: McColors.bull)),
-            TextSpan(text: ' (\$115.7M) 至冷钱包。'),
-          ],
-          chips: [
-            McChip('强利好吸筹'),
-            McChip('Tx: 8f42...a90b'),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const _WhaleCard(
-          emoji: '⚠️',
-          emojiBg: McColors.bear,
-          tag: '大额充值 (Potential Sell)',
-          tagColor: McColors.bear,
-          time: '14分钟前',
-          body: [
-            TextSpan(text: '某以太坊鲸鱼将 '),
-            TextSpan(
-                text: '25,000 ETH',
-                style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontWeight: FontWeight.w700,
-                    color: McColors.bear)),
-            TextSpan(text: ' (\$85.5M) 从未知钱包充入 '),
-            TextSpan(
-                text: 'Coinbase',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.white)),
-            TextSpan(text: ' 交易所。'),
-          ],
-          chips: [
-            McChip('潜在抛压预警', color: McColors.bear),
-            McChip('Ethereum Network'),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const _WhaleCard(
-          emoji: '⚡',
-          emojiBg: McColors.primaryContainer,
-          tag: '做市机构动向',
-          tagColor: McColors.primarySoft,
-          time: '28分钟前',
-          body: [
-            TextSpan(
-                text: 'DWF Labs',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.white)),
-            TextSpan(text: ' 链上向某主流衍生品交易所转入 '),
-            TextSpan(
-                text: '5,000,000 USDT',
-                style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontWeight: FontWeight.w700,
-                    color: McColors.primary)),
-            TextSpan(text: ' 进行流动性做市部署。'),
-          ],
-          chips: [
-            McChip('流动性注入', color: McColors.secondary),
-            McChip('TRON Network'),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _WhaleCard extends StatelessWidget {
-  const _WhaleCard({
-    required this.emoji,
-    required this.emojiBg,
-    required this.tag,
-    required this.tagColor,
-    required this.time,
-    required this.body,
-    required this.chips,
-  });
-
-  final String emoji;
-  final Color emojiBg;
-  final String tag;
-  final Color tagColor;
-  final String time;
-  final List<TextSpan> body;
-  final List<Widget> chips;
-
-  @override
-  Widget build(BuildContext context) {
-    return McCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            margin: const EdgeInsets.only(top: 2),
-            decoration: BoxDecoration(
-              color: emojiBg.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: emojiBg.withValues(alpha: 0.3)),
-            ),
-            alignment: Alignment.center,
-            child: Text(emoji, style: const TextStyle(fontSize: 16)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: McPill(tag, color: tagColor, fontSize: 12,
-                          bold: true),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(time,
-                        style: McText.mono(
-                            size: 10, color: McColors.onSurfaceVariant)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text.rich(
-                  TextSpan(
-                    style: McText.sans(size: 12, height: 1.5),
-                    children: body,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(spacing: 8, runSpacing: 4, children: chips),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// 主流资产多维量化指标一览列表.
 class _AssetListCard extends StatelessWidget {
   const _AssetListCard();
@@ -1372,30 +922,19 @@ class _TerminalStatusBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                children: [
-                  const McGlowDot(color: McColors.bull, size: 6),
-                  const SizedBox(width: 6),
-                  Text('WebSocket: 18ms (直连 Tokyo-A)',
-                      style: McText.mono(
-                          size: 10, color: McColors.onSurfaceVariant)),
-                ],
-              ),
+            child: Row(
+              children: [
+                const McGlowDot(color: McColors.bull, size: 6),
+                const SizedBox(width: 6),
+                Text('数据源: CoinGlass / CoinGecko',
+                    style: McText.mono(
+                        size: 10, color: McColors.onSurfaceVariant)),
+              ],
             ),
           ),
           const SizedBox(width: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text('BLOCK #21,498,924',
-                style: McText.mono(
-                    size: 10,
-                    color: McColors.onSurfaceVariant,
-                    letterSpacing: 1)),
-          ),
+          Text('失败时展示缓存参考值',
+              style: McText.mono(size: 10, color: McColors.onSurfaceVariant)),
         ],
       ),
     );
