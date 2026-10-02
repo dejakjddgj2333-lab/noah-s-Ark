@@ -84,6 +84,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   int? _playingId; // 正在播放的语音消息 id
   bool _voiceMode = false; // 语音输入模式 (替换输入框为 按住说话)
   bool _recording = false;
+  bool _recordCancel = false; // 上滑超过阈值 → 松开取消
+  double? _recordStartDy; // 长按起始 Y, 用于上滑取消检测
   bool _attachOpen = false; // + 附件面板
   String? _recordPath;
   DateTime? _recordStart;
@@ -1230,18 +1232,20 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // 语音/键盘切换 (输入框左侧; web 也可点, 按住时提示不支持).
-                  _roundIconBtn(
-                    _voiceMode ? Icons.keyboard : Icons.mic_none,
-                    () {
-                      setState(() {
-                        _voiceMode = !_voiceMode;
-                        _attachOpen = false;
-                      });
-                      if (!_voiceMode) _focus.requestFocus();
-                    },
-                  ),
-                  const SizedBox(width: 8),
+                  // 语音/键盘切换 (web 不支持语音, 隐藏).
+                  if (!kIsWeb) ...[
+                    _roundIconBtn(
+                      _voiceMode ? Icons.keyboard : Icons.mic_none,
+                      () {
+                        setState(() {
+                          _voiceMode = !_voiceMode;
+                          _attachOpen = false;
+                        });
+                        if (!_voiceMode) _focus.requestFocus();
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(child: _voiceMode ? _holdToTalk() : _textInput()),
                   const SizedBox(width: 8),
                   // + 附件面板. 发送走键盘 send 键 / web 回车, 无独立发送钮.
@@ -1314,33 +1318,60 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     );
   }
 
-  /// 按住说话 (语音录制).
+  /// 按住说话 (语音录制). 上滑 >80px 取消.
   Widget _holdToTalk() {
     return GestureDetector(
-      onLongPressStart: (_) => _startRecord(),
-      onLongPressEnd: (_) => _stopRecord(),
-      onLongPressCancel: () => _stopRecord(cancel: true),
+      onLongPressStart: (d) {
+        _recordStartDy = d.globalPosition.dy;
+        _recordCancel = false;
+        _startRecord();
+      },
+      onLongPressMoveUpdate: (d) {
+        if (!_recording || _recordStartDy == null) return;
+        final cancel = _recordStartDy! - d.globalPosition.dy > 80;
+        if (cancel != _recordCancel) {
+          setState(() => _recordCancel = cancel);
+        }
+      },
+      onLongPressEnd: (_) {
+        final cancel = _recordCancel;
+        _recordCancel = false;
+        _recordStartDy = null;
+        _stopRecord(cancel: cancel);
+      },
+      onLongPressCancel: () {
+        _recordCancel = false;
+        _recordStartDy = null;
+        _stopRecord(cancel: true);
+      },
       child: Container(
         height: 42,
         decoration: BoxDecoration(
           color: _recording
-              ? McColors.primaryContainer.withValues(alpha: 0.3)
+              ? (_recordCancel
+                  ? McColors.bear.withValues(alpha: 0.15)
+                  : McColors.primaryContainer.withValues(alpha: 0.3))
               : McColors.surfaceContainer,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _recording
-                ? McColors.primaryContainer
+                ? (_recordCancel
+                    ? McColors.bear
+                    : McColors.primaryContainer)
                 : McColors.outlineVariant.withValues(alpha: 0.6),
           ),
         ),
         alignment: Alignment.center,
         child: Text(
-          _recording ? '松开发送 · 上滑取消' : '按住 说话',
+          _recording
+              ? (_recordCancel ? '松开手指, 取消发送' : '松开发送 · 上滑取消')
+              : '按住 说话',
           style: McText.sans(
             size: 14,
             weight: FontWeight.w600,
-            color:
-                _recording ? McColors.primarySoft : McColors.onSurface,
+            color: _recording
+                ? (_recordCancel ? McColors.bear : McColors.primarySoft)
+                : McColors.onSurface,
           ),
         ),
       ),

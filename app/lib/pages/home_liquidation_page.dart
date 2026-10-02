@@ -38,7 +38,8 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   String _total24 = '\$3.3亿';
   String _long24 = '\$2.7亿';
   String _short24 = '\$6682万';
-  String _liqCount = '87,865'; // 爆仓人数 (coin-list 无人数字段时保留 mock)
+  String _liqCount = '--'; // 爆仓笔数 (exchange-list count 求和)
+  String _liqCountUnit = '笔强平';
   String _liqTotalText = '\$3.35亿';
 
   // 实时监控卡: range -> (total, long, short) 原始值, mock 默认, 拉取成功覆盖.
@@ -354,10 +355,31 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     );
   }
 
-  // 爆仓人数: 尝试 /overview/liquidations/coin-list, 查每币种是否有
-  // 人数类字段 (liquidation_count/num/...). CoinGlass v4 coin-list 实际只返回
-  // 金额/价格类字段, 无人数字段 — 故通常保留 mock, 有则求和覆盖.
+  // 爆仓笔数: 自建聚合 exchange-list 的 count 字段求和 (OKX/Bybit 实时强平流).
+  // free 模式有真实值; coinglass 模式无 count 时回退 coin-list 人数字段尝试.
   Future<void> _loadLiqCount() async {
+    try {
+      final resp = await McData.overview('liquidations/exchange-list?range=24h');
+      final list = _asList(resp['data']);
+      var sum = 0;
+      for (final e in list) {
+        if (e is! Map) continue;
+        final c = e.cast<String, dynamic>()['count'];
+        if (c is num) sum += c.toInt();
+      }
+      if (sum > 0 && mounted) {
+        setState(() {
+          _liqCount = _comma('$sum');
+          _liqCountUnit = '笔强平';
+        });
+        return;
+      }
+    } on ApiException {
+      // 落到 coin-list 尝试.
+    } catch (_) {
+      return;
+    }
+    // coinglass 模式回退: coin-list 人数字段 (多数套餐无此字段, 保持 --).
     try {
       final resp = await McData.overview('liquidations/coin-list');
       final list = _asList(resp['coins']);
@@ -379,12 +401,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
         }
       }
       if (!found || sum <= 0 || !mounted) return;
-      setState(() => _liqCount = _comma(sum.toStringAsFixed(0)));
+      setState(() {
+        _liqCount = _comma(sum.toStringAsFixed(0));
+        _liqCountUnit = '人被爆仓';
+      });
     } on ApiException {
-      // 503 未配置 / 502 上游错误 — 保留 mock.
-    } catch (_) {
-      // 网络/解析异常 — 保留 mock.
-    }
+      // 保留 --.
+    } catch (_) {}
   }
 
   static String _fmtPrice(double v) {
@@ -853,12 +876,12 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                         text: TextSpan(
                           style: McText.sans(size: 12, color: _onSurfaceVariant, height: 1.5),
                           children: [
-                            const TextSpan(text: '最近24小时，全球共有 '),
+                            const TextSpan(text: '最近24小时共记录 '),
                             TextSpan(
                               text: _liqCount,
                               style: McText.mono(size: 12, weight: FontWeight.w600, color: _primaryLight),
                             ),
-                            const TextSpan(text: ' 人被爆仓，爆仓总金额为 '),
+                            TextSpan(text: ' $_liqCountUnit，爆仓总金额为 '),
                             TextSpan(
                               text: _liqTotalText,
                               style: McText.mono(size: 12, weight: FontWeight.w600, color: _primaryLight),

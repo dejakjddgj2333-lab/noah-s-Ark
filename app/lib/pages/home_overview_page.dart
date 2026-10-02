@@ -37,6 +37,9 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
 
   // ---- 资金费率迷你卡 (mock 默认) ----
   String _fundingRate = '+0.0125%';
+  // 费率进度条 (-0.05%..+0.05% 映射) 与山寨季指数 (null=未加载).
+  double _fundingFrac = 0.5;
+  double? _altSeason;
 
   // ---- 市场全景横幅 (mock 默认) ----
   String _mcTotal = '\$3.24T';
@@ -130,6 +133,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       _loadSentiment(),
       _loadLiquidation(),
       _loadFunding(),
+      _loadAltSeason(),
       _loadAssets(),
       _loadGlobalBanner(),
       _loadLongShort(),
@@ -279,10 +283,28 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       final resp = await McData.overview('funding/exchange-rates?symbol=BTC');
       final avg = _avgFundingRate(resp['data']);
       if (avg == null || !mounted) return;
-      setState(() => _fundingRate =
-          '${avg >= 0 ? '+' : ''}${avg.toStringAsFixed(4)}%');
+      setState(() {
+        _fundingRate = '${avg >= 0 ? '+' : ''}${avg.toStringAsFixed(4)}%';
+        _fundingFrac = ((avg + 0.05) / 0.1).clamp(0.02, 0.98);
+      });
     } on ApiException {
       // 保留 mock.
+    } catch (_) {}
+  }
+
+  // 山寨季指数 (free 源 CoinGecko 自算 / coinglass 原生).
+  Future<void> _loadAltSeason() async {
+    try {
+      final resp = await McData.overview('indicators');
+      final list = resp['indicators'];
+      if (list is! List || !mounted) return;
+      for (final e in list) {
+        if (e is! Map || e['key'] != 'altcoin_season') continue;
+        final v = e['value'];
+        if (v is num) setState(() => _altSeason = v.toDouble());
+      }
+    } on ApiException {
+      // 未加载, 卡片显示 --
     } catch (_) {}
   }
 
@@ -509,9 +531,11 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(child: _FundingMiniCard(rate: _fundingRate)),
+                Expanded(
+                    child: _FundingMiniCard(
+                        rate: _fundingRate, fraction: _fundingFrac)),
                 const SizedBox(width: 10),
-                const Expanded(child: _AltSeasonCard()),
+                Expanded(child: _AltSeasonCard(value: _altSeason)),
               ],
             ),
           ),
@@ -966,12 +990,15 @@ class _LiquidationMiniCard extends StatelessWidget {
 
 /// 资金费率迷你卡.
 class _FundingMiniCard extends StatelessWidget {
-  const _FundingMiniCard({required this.rate});
+  const _FundingMiniCard({required this.rate, required this.fraction});
 
   final String rate;
+  final double fraction;
 
   @override
   Widget build(BuildContext context) {
+    final neg = rate.startsWith('-');
+    final color = neg ? McColors.bear : McColors.bull;
     return McCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -994,11 +1021,11 @@ class _FundingMiniCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(rate,
               style: McText.mono(
-                  size: 20, weight: FontWeight.w700, color: McColors.bull)),
+                  size: 20, weight: FontWeight.w700, color: color)),
           const SizedBox(height: 8),
-          const McProgressBar(fraction: 0.48, color: McColors.bull),
+          McProgressBar(fraction: fraction, color: color),
           const SizedBox(height: 12),
-          Text('适度偏多 · 8H结算',
+          Text('${neg ? '空头付费' : '多头付费'} · 8H结算',
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -1006,12 +1033,15 @@ class _FundingMiniCard extends StatelessWidget {
   }
 }
 
-/// 山寨季指数卡.
+/// 山寨季指数卡. value=null 显示 --.
 class _AltSeasonCard extends StatelessWidget {
-  const _AltSeasonCard();
+  const _AltSeasonCard({required this.value});
+
+  final double? value;
 
   @override
   Widget build(BuildContext context) {
+    final v = value;
     return McCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1036,7 +1066,7 @@ class _AltSeasonCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text('38',
+              Text(v == null ? '--' : v.round().toString(),
                   style: McText.mono(size: 20, weight: FontWeight.w700)),
               Text(' /100',
                   style: McText.mono(
@@ -1044,10 +1074,18 @@ class _AltSeasonCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const McProgressBar(
-              fraction: 0.38, color: McColors.primaryContainer),
+          McProgressBar(
+              fraction: v == null ? 0 : (v / 100).clamp(0.0, 1.0),
+              color: McColors.primaryContainer),
           const SizedBox(height: 12),
-          Text('距山寨爆发差 37 点',
+          Text(
+              v == null
+                  ? '加载中…'
+                  : v >= 75
+                      ? '山寨季进行中'
+                      : v <= 25
+                          ? '比特币季'
+                          : '距山寨季差 ${(75 - v).round()} 点',
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),

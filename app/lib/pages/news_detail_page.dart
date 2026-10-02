@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme.dart';
@@ -659,7 +660,13 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               label: '分享',
               count: item.shareCount,
               color: McColors.onSurfaceVariant,
-              onTap: () => _toast('分享功能即将上线'),
+              onTap: () => SharePlus.instance.share(
+                ShareParams(
+                  text: item.summary.isNotEmpty
+                      ? '${item.title}\n\n${item.summary}'
+                      : item.title,
+                ),
+              ),
             ),
           ],
         ),
@@ -980,15 +987,6 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.favorite_border,
-                        size: 12, color: McColors.onSurfaceVariant),
-                    const SizedBox(width: 3),
-                    Text(
-                      '${c.likeCount}',
-                      style: McText.mono(
-                          size: 12, color: McColors.onSurfaceVariant),
-                    ),
-                    const SizedBox(width: 16),
                     GestureDetector(
                       onTap: () => _setReplyTo(c),
                       child: Text(

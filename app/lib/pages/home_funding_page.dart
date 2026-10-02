@@ -41,6 +41,18 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   // BTC 平均费率 (温度条游标, 默认 0.0114 对应 56%).
   double _btcRate = 0.0114;
 
+  // BTC 费率近 7 日真实序列 (8H 一期); 空=未加载, 曲线回退示意.
+  List<double> _trendRates = const [];
+
+  // 头部健康标签: 由 BTC 费率符号与幅度推导.
+  String get _healthLabel {
+    if (_btcRate >= 0.03) return '多头过热·高溢价';
+    if (_btcRate >= 0.005) return '健康多头·温和溢价';
+    if (_btcRate > -0.005) return '多空均衡';
+    if (_btcRate > -0.03) return '空头温和·贴水';
+    return '空头拥挤·深度贴水';
+  }
+
   // 费率矩阵行: 首屏展示 mock, 成功后按 symbol 覆盖.
   late List<_FundingRow> _rows = _mockRows();
 
@@ -178,7 +190,23 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
       _fetchSymbol('DOGE'),
       _fetchSymbol('XTZ'),
       _loadPrices(),
+      _loadTrend(),
     ]);
+  }
+
+  // BTC 费率 7D 真实历史 (OKX funding-rate-history).
+  Future<void> _loadTrend() async {
+    try {
+      final resp = await McData.overview('funding/history?symbol=BTC');
+      final list = resp['history'];
+      if (list is! List || list.isEmpty || !mounted) return;
+      final rates = <double>[
+        for (final e in list)
+          if (e is Map && e['rate'] is num) (e['rate'] as num).toDouble(),
+      ];
+      if (rates.length < 2) return;
+      setState(() => _trendRates = rates);
+    } catch (_) {/* 保留示意曲线 */}
   }
 
   // 现价: funding 接口不带现价, 用 OKX tickers 按 symbol 覆盖每行价格.
@@ -474,7 +502,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: McColors.tertiary.withValues(alpha: 0.2)),
                       ),
-                      child: Text('健康多头·温和溢价',
+                      child: Text(_healthLabel,
                           style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.tertiary)),
                     ),
                   ],
@@ -621,8 +649,12 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     );
   }
 
-  // ---- Module 2: 期现套利年化推荐 ----
+  // ---- Module 2: 期现套利年化推荐 (真实费率 top2 正值) ----
   Widget _buildArbitrage() {
+    // 正费率行降序取前二; 期现套利年化 = 8H 费率 × 1095.
+    final pos = _rows.where((r) => r.rateNum > 0).toList()
+      ..sort((a, b) => b.rateNum.compareTo(a.rateNum));
+    final picks = pos.take(2).toList();
     return Column(
       children: [
         Padding(
@@ -644,38 +676,39 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                   ),
                 ),
               ),
-              Text('无常风险对冲', style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.outline)),
+              Text('年化 = 8H费率×1095', style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.outline)),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _arbCard(
-                symbol: 'DOGE',
-                tag: '首推',
-                tagColor: McColors.tertiary,
-                tagBg: const Color(0xFF005A34).withValues(alpha: 0.4),
-                apy: '+31.20%',
-                rate: '8H: 0.028%',
-                depth: '深度 \$1.4M',
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _arbCard(
-                symbol: 'SUI',
-                tag: '稳定',
-                tagColor: McColors.primary,
-                tagBg: McColors.primaryContainer.withValues(alpha: 0.3),
-                apy: '+24.80%',
-                rate: '8H: 0.022%',
-                depth: '深度 \$860K',
-              ),
-            ),
-          ],
-        ),
+        if (picks.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text('当前无正费率合约, 暂无套利机会',
+                style: McText.sans(size: 12, color: McColors.outline)),
+          )
+        else
+          Row(
+            children: [
+              for (var i = 0; i < picks.length; i++) ...[
+                if (i > 0) const SizedBox(width: 14),
+                Expanded(
+                  child: _arbCard(
+                    symbol: picks[i].symbol,
+                    tag: i == 0 ? '首推' : '次选',
+                    tagColor: i == 0 ? McColors.tertiary : McColors.primary,
+                    tagBg: i == 0
+                        ? const Color(0xFF005A34).withValues(alpha: 0.4)
+                        : McColors.primaryContainer.withValues(alpha: 0.3),
+                    apy: '+${(picks[i].rateNum * 1095).toStringAsFixed(2)}%',
+                    rate: '8H: ${picks[i].rateNum.toStringAsFixed(4)}%',
+                    depth: '三所费率均值',
+                  ),
+                ),
+              ],
+              if (picks.length == 1) const Expanded(child: SizedBox()),
+            ],
+          ),
       ],
     );
   }
@@ -771,7 +804,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
           SizedBox(
             height: 100,
             width: double.infinity,
-            child: CustomPaint(painter: _FundingTrendPainter()),
+            child: CustomPaint(painter: _FundingTrendPainter(_trendRates)),
           ),
           const SizedBox(height: 12),
           Container(
@@ -1082,7 +1115,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
               children: [
                 const McGlowDot(color: McColors.tertiary, size: 8),
                 const SizedBox(width: 8),
-                Text('数据源: CoinGlass 各所聚合',
+                Text('数据源: Binance/OKX/Bybit 聚合',
                     style: McText.mono(size: 11, color: McColors.outline)),
               ],
             ),
@@ -1149,9 +1182,14 @@ class _FundingRow {
 }
 
 /// 7D funding-rate trend: dashed zero baseline + gradient area + glowing endpoint.
+/// rates 为真实 8H 费率序列 (百分数, 升序); 空则回退设计稿示意曲线.
 class _FundingTrendPainter extends CustomPainter {
+  _FundingTrendPainter(this.rates);
+
+  final List<double> rates;
+
   // (x fraction, y up 0..1) sampled from the SVG path in home_funding.html.
-  static const _pts = [
+  static const _fallbackPts = [
     Offset(0.0, 0.388),
     Offset(0.118, 0.576),
     Offset(0.235, 0.506),
@@ -1160,20 +1198,40 @@ class _FundingTrendPainter extends CustomPainter {
     Offset(0.838, 0.647),
     Offset(1.0, 0.812),
   ];
-  static const _baseline = 0.341; // zero axis (y=56 of 85, flipped)
+  static const _fallbackBaseline = 0.341; // zero axis (y=56 of 85, flipped)
+
+  // 真实序列 -> 归一化点 + 零轴位置 (费率含 0 于值域内).
+  (List<Offset>, double) _build() {
+    if (rates.length < 2) return (_fallbackPts, _fallbackBaseline);
+    var lo = rates.reduce((a, b) => a < b ? a : b);
+    var hi = rates.reduce((a, b) => a > b ? a : b);
+    if (lo > 0) lo = 0;
+    if (hi < 0) hi = 0;
+    final range = hi - lo == 0 ? 1.0 : hi - lo;
+    // 留 5% 上下边距
+    Offset pt(int i) {
+      final y = (rates[i] - lo) / range * 0.9 + 0.05;
+      return Offset(i / (rates.length - 1), y);
+    }
+
+    final pts = [for (var i = 0; i < rates.length; i++) pt(i)];
+    final baseline = ((0 - lo) / range * 0.9 + 0.05).clamp(0.0, 1.0);
+    return (pts, baseline);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
+    final (pts, baseline) = _build();
     Offset map(Offset p) => Offset(p.dx * size.width, (1 - p.dy) * size.height);
 
-    final linePath = Path()..moveTo(map(_pts.first).dx, map(_pts.first).dy);
-    for (var i = 1; i < _pts.length; i++) {
-      final m = map(_pts[i]);
+    final linePath = Path()..moveTo(map(pts.first).dx, map(pts.first).dy);
+    for (var i = 1; i < pts.length; i++) {
+      final m = map(pts[i]);
       linePath.lineTo(m.dx, m.dy);
     }
 
     // Gradient area fill down to baseline.
-    final baseY = (1 - _baseline) * size.height;
+    final baseY = (1 - baseline) * size.height;
     final areaPath = Path.from(linePath)
       ..lineTo(size.width, baseY)
       ..lineTo(0, baseY)
@@ -1211,7 +1269,7 @@ class _FundingTrendPainter extends CustomPainter {
     canvas.drawPath(linePath, linePaint);
 
     // Glowing endpoint.
-    final end = map(_pts.last);
+    final end = map(pts.last);
     canvas.drawCircle(
       end,
       7,
@@ -1223,5 +1281,5 @@ class _FundingTrendPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_FundingTrendPainter old) => false;
+  bool shouldRepaint(_FundingTrendPainter old) => old.rates != rates;
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
@@ -195,12 +196,14 @@ class _CallPageState extends State<CallPage> {
             _popSelf();
           },
         ),
-        _smallBtn(
-          icon: speakerOn ? Icons.volume_up : Icons.volume_down,
-          label: speakerOn ? '免提' : '听筒',
-          active: speakerOn,
-          onTap: () => CallService.instance.toggleSpeaker(),
-        ),
+        // web 无扬声器切换, 隐藏免提钮.
+        if (!kIsWeb)
+          _smallBtn(
+            icon: speakerOn ? Icons.volume_up : Icons.volume_down,
+            label: speakerOn ? '免提' : '听筒',
+            active: speakerOn,
+            onTap: () => CallService.instance.toggleSpeaker(),
+          ),
       ],
     );
   }

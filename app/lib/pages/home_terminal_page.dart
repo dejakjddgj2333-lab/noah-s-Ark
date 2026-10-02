@@ -25,6 +25,29 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
   // 资金费率加权 (mock 默认).
   String _fundingValue = '+0.0125%';
   Color _fundingColor = McColors.bull;
+  double _fundingFrac = 0.48;
+
+  // 情绪历史 (近8日, 最新在末位): 昨日/上周行真实值.
+  List<int>? _fgHistory;
+
+  // 未平仓合约 (OKX BTC+ETH 永续名义额).
+  String _oiValue = '--';
+
+  // 24H 爆仓总额 (OKX/Bybit 自建聚合).
+  String _liqTotal = '--';
+  String _liqCount = '--';
+
+  // 稳定币总流通 (DefiLlama).
+  String _stableValue = '--';
+  String _stablePill = '--';
+
+  // 多空人数比 (Binance 全局账户).
+  String _lsRatio = '--';
+  String _lsFooter = '--';
+  double _lsFrac = 0.5;
+
+  // 主流资产列表 (真实行情+费率+走势; null=加载中).
+  List<_AssetRow>? _assetRows;
 
   // 山寨季指数 (mock 默认, altcoin_season 拉取成功后覆盖).
   String _altSeasonValue = '38';
@@ -47,7 +70,122 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
       _loadFunding(),
       _loadIndicators(),
       _loadDominance(),
+      _loadOpenInterest(),
+      _loadLiqTotal(),
+      _loadStableSupply(),
+      _loadLongShort(),
+      _loadAssets(),
     ]);
+  }
+
+  Future<void> _loadOpenInterest() async {
+    try {
+      final resp = await McData.overview('open-interest');
+      final v = resp['oi_usd'];
+      if (v is! num || !mounted) return;
+      setState(() => _oiValue = McData.fmtUsdCompact(v.toDouble()));
+    } catch (_) {/* 保留 -- */}
+  }
+
+  Future<void> _loadLiqTotal() async {
+    try {
+      final resp =
+          await McData.overview('liquidations/exchange-list?range=24h');
+      final list = resp['data'];
+      if (list is! List || !mounted) return;
+      double total = 0;
+      int count = 0;
+      for (final e in list) {
+        if (e is! Map) continue;
+        final v = e['liquidation_usd'];
+        if (v is num) total += v.toDouble();
+        final c = e['count'];
+        if (c is num) count += c.toInt();
+      }
+      if (total <= 0 && count == 0) return;
+      setState(() {
+        _liqTotal = total > 0 ? McData.fmtUsdCompact(total) : '--';
+        _liqCount = '$count 笔';
+      });
+    } catch (_) {/* 保留 -- */}
+  }
+
+  Future<void> _loadStableSupply() async {
+    try {
+      final liq = await McData.liquidityOverview();
+      if (!mounted || liq.stableTotalUsd == null) return;
+      final chg = liq.stableChange1dPct;
+      setState(() {
+        _stableValue = McData.fmtUsdCompact(liq.stableTotalUsd!);
+        _stablePill = chg == null
+            ? '24H --'
+            : '24H ${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(2)}%';
+      });
+    } catch (_) {/* 保留 -- */}
+  }
+
+  Future<void> _loadLongShort() async {
+    try {
+      final r = await McData.longShortRatio();
+      final long = r.longPct;
+      final short = r.shortPct;
+      if (long == null || short == null || short == 0 || !mounted) return;
+      setState(() {
+        _lsRatio = (long / short).toStringAsFixed(2);
+        _lsFrac = (long / 100).clamp(0.0, 1.0);
+        _lsFooter =
+            '多头 ${long.toStringAsFixed(1)}% · 空头 ${short.toStringAsFixed(1)}%';
+      });
+    } catch (_) {/* 保留 -- */}
+  }
+
+  // 主流资产: OKX 行情 + 各所费率均值 + 7D 走势, 四币并行.
+  Future<void> _loadAssets() async {
+    const symbols = ['BTC', 'ETH', 'SOL', 'SUI'];
+    try {
+      final tickers = await McData.tickers();
+      final rows = await Future.wait(symbols.map((s) async {
+        final t = tickers.firstWhere(
+          (x) => x.instId == '$s-USDT-SWAP',
+          orElse: () => throw StateError('no ticker $s'),
+        );
+        double? rate;
+        try {
+          final fr =
+              await McData.overview('funding/exchange-rates?symbol=$s');
+          rate = _parseFunding(fr);
+        } catch (_) {}
+        final spark = await McData.sparkline(t.instId).catchError(
+            (_) => <double>[]);
+        return _AssetRow(
+          symbol: s,
+          sub1: '成交 ${McData.fmtUsdCompact(t.volCcy24h)}',
+          sub2: rate == null
+              ? '费率 --'
+              : '费率 ${rate >= 0 ? '+' : ''}${rate.toStringAsFixed(3)}%',
+          sub2Color:
+              rate == null ? McColors.outline : (rate >= 0 ? McColors.bull : McColors.bear),
+          spark: spark,
+          sparkColor: t.changePct >= 0 ? McColors.bull : McColors.bear,
+          price: '\$${t.last >= 1000 ? _fmtInt(t.last) : t.last.toStringAsFixed(2)}',
+          delta:
+              '${t.changePct >= 0 ? '+' : ''}${t.changePct.toStringAsFixed(2)}%',
+          positive: t.changePct >= 0,
+        );
+      }));
+      if (!mounted) return;
+      setState(() => _assetRows = rows);
+    } catch (_) {/* 加载失败不渲染列表 */}
+  }
+
+  static String _fmtInt(double v) {
+    final s = v.toStringAsFixed(0);
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 
   Future<void> _loadIndicators() async {
@@ -99,11 +237,19 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     try {
       final resp = await McData.overview('sentiment');
       final v = _parseFearGreed(resp);
-      if (v == null || !mounted) return;
+      final hist = resp['history'];
+      if (!mounted) return;
       setState(() {
-        _fgValue = v;
-        _fgLabel = _fgLabelFor(v);
-        _fgColor = _fgColorFor(v);
+        if (v != null) {
+          _fgValue = v;
+          _fgLabel = _fgLabelFor(v);
+          _fgColor = _fgColorFor(v);
+        }
+        if (hist is List && hist.length >= 2) {
+          _fgHistory = hist
+              .map((e) => e is num ? e.toInt() : int.tryParse('$e') ?? 0)
+              .toList();
+        }
       });
     } catch (_) {/* 未配置 / 上游错误 -> 保留 mock */}
   }
@@ -116,6 +262,8 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
       setState(() {
         _fundingValue = '${avg >= 0 ? '+' : ''}${avg.toStringAsFixed(4)}%';
         _fundingColor = avg >= 0 ? McColors.bull : McColors.bear;
+        // 费率区间 -0.05%..+0.05% 映射进度条
+        _fundingFrac = ((avg + 0.05) / 0.1).clamp(0.02, 0.98);
       });
     } catch (_) {/* 保留 mock */}
   }
@@ -219,7 +367,10 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
           children: [
             Expanded(
                 child: _FearGreedCard(
-                    value: _fgValue, label: _fgLabel, color: _fgColor)),
+                    value: _fgValue,
+                    label: _fgLabel,
+                    color: _fgColor,
+                    history: _fgHistory)),
             const SizedBox(width: 10),
             Expanded(
                 child: _DominanceCard(
@@ -236,7 +387,7 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         // 2. 市场深度量化指标矩阵
         const McSectionHeader(
           title: '市场深度量化指标矩阵',
-          trailing: '6 个核心模型实时计算',
+          trailing: '公开数据源实时聚合',
         ),
         const SizedBox(height: 10),
         _matrixGrid(),
@@ -246,10 +397,10 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         const McSectionHeader(
           title: '主流资产多维量化指标一览',
           icon: Icons.trending_up,
-          trailing: '24H 实时监控',
+          trailing: 'OKX 行情 · 三所费率',
         ),
         const SizedBox(height: 10),
-        const _AssetListCard(),
+        _AssetListCard(rows: _assetRows),
         const SizedBox(height: 16),
 
         // 6. 底部终端微状态栏
@@ -271,55 +422,55 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         footer: _altSeasonFooter,
         footerColor: McColors.onSurfaceVariant,
       ),
-      const _MatrixCard(
+      _MatrixCard(
         title: '全网未平仓合约',
-        pill: McPill('+4.15%', color: McColors.bull),
-        value: '\$89.4B',
+        pill: const McPill('OKX 永续', color: McColors.primarySoft, bold: false),
+        value: _oiValue,
         valueColor: McColors.onSurface,
         fraction: 0.68,
         barColor: McColors.bull,
-        footer: '24h 增量资金强劲流入',
-        footerColor: McColors.bull,
+        footer: 'BTC+ETH 永续名义持仓',
+        footerColor: McColors.onSurfaceVariant,
       ),
       _MatrixCard(
         title: '资金费率加权',
         pill: McPill('适度偏多', color: _fundingColor, bold: false),
         value: _fundingValue,
         valueColor: _fundingColor,
-        fraction: 0.48,
+        fraction: _fundingFrac,
         barColor: const Color(0xCC00E388),
-        footer: '全网多头适度杠杆配置',
+        footer: 'Binance/OKX/Bybit 均值',
         footerColor: McColors.onSurfaceVariant,
       ),
-      const _MatrixCard(
-        title: '现货累计买卖差',
-        pill: McPill('看涨支撑', color: McColors.primarySoft, bold: false),
-        value: '+\$382M',
+      _MatrixCard(
+        title: '24H 爆仓总额',
+        pill: McPill(_liqCount, color: McColors.primarySoft, bold: false),
+        value: _liqTotal,
         valueColor: McColors.onSurface,
-        fraction: 0.62,
-        barColor: McColors.primaryContainer,
-        footer: '主力主动吃单净流入',
+        fraction: 0.5,
+        barColor: const Color(0xB3FF6363),
+        footer: 'OKX/Bybit 实时强平聚合',
         footerColor: McColors.onSurfaceVariant,
       ),
-      const _MatrixCard(
+      _MatrixCard(
         title: '稳定币供给指数',
-        pill: McPill('7D +\$1.8B', color: McColors.bull, bold: false),
-        value: '\$168.5B',
+        pill: McPill(_stablePill, color: McColors.bull, bold: false),
+        value: _stableValue,
         valueColor: McColors.onSurface,
         fraction: 0.78,
         barColor: McColors.bull,
-        footer: '场外资金流动性充足',
+        footer: 'DefiLlama 全稳定币流通',
         footerColor: McColors.onSurfaceVariant,
       ),
-      const _MatrixCard(
+      _MatrixCard(
         title: '多空人数比 (L/S)',
-        pill: McPill('散户偏多', color: McColors.primarySoft, bold: false),
-        value: '1.28',
+        pill: const McPill('Binance 账户', color: McColors.primarySoft, bold: false),
+        value: _lsRatio,
         valueColor: McColors.onSurface,
-        fraction: 0.56,
+        fraction: _lsFrac,
         barColor: McColors.primaryContainer,
-        restColor: Color(0xB3FF6363),
-        footer: '散户多方聚集 · 顶部分歧',
+        restColor: const Color(0xB3FF6363),
+        footer: _lsFooter,
         footerColor: McColors.onSurfaceVariant,
       ),
     ];
@@ -341,17 +492,28 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
   }
 }
 
-/// 恐惧与贪婪指数卡片.
+/// 恐惧与贪婪指数卡片. history 为近8日值 (最新在末位), 无则隐藏历史行.
 class _FearGreedCard extends StatelessWidget {
   const _FearGreedCard(
-      {required this.value, required this.label, required this.color});
+      {required this.value,
+      required this.label,
+      required this.color,
+      this.history});
 
   final int value;
   final String label;
   final Color color;
+  final List<int>? history;
 
   @override
   Widget build(BuildContext context) {
+    final hist = history;
+    final yesterday = (hist != null && hist.length >= 2)
+        ? hist[hist.length - 2]
+        : null;
+    final lastWeek =
+        (hist != null && hist.length >= 8) ? hist[hist.length - 8] : null;
+    final diff = yesterday == null ? null : value - yesterday;
     return McCard(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -376,7 +538,12 @@ class _FearGreedCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const McPill('+4 较昨日', color: McColors.bull, fontSize: 10),
+              if (diff != null)
+                McPill(
+                  '${diff >= 0 ? '+' : ''}$diff 较昨日',
+                  color: diff >= 0 ? McColors.bull : McColors.bear,
+                  fontSize: 10,
+                ),
             ],
           ),
           Padding(
@@ -425,18 +592,22 @@ class _FearGreedCard extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('昨日 68 · 贪婪',
-                  style: McText.mono(
-                      size: 12, color: McColors.onSurfaceVariant)),
-              const SizedBox(height: 4),
-              Text('上周 62 · 中性',
-                  style: McText.mono(
-                      size: 12, color: McColors.onSurfaceVariant)),
-            ],
-          ),
+          if (yesterday != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('昨日 $yesterday · ${_HomeTerminalPageState._fgLabelFor(yesterday).split(' ').first}',
+                    style: McText.mono(
+                        size: 12, color: McColors.onSurfaceVariant)),
+                if (lastWeek != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                      '上周 $lastWeek · ${_HomeTerminalPageState._fgLabelFor(lastWeek).split(' ').first}',
+                      style: McText.mono(
+                          size: 12, color: McColors.onSurfaceVariant)),
+                ],
+              ],
+            ),
         ],
       ),
     );
@@ -731,59 +902,15 @@ class _MatrixCard extends StatelessWidget {
   }
 }
 
-/// 主流资产多维量化指标一览列表.
+/// 主流资产多维量化指标一览列表. rows=null 加载中显示占位.
 class _AssetListCard extends StatelessWidget {
-  const _AssetListCard();
+  const _AssetListCard({required this.rows});
 
-  static const _rows = [
-    _AssetRow(
-      symbol: 'BTC',
-      sub1: '持仓 \$42.5B',
-      sub2: '费率 +0.012%',
-      sub2Color: McColors.bull,
-      spark: [0.20, 0.33, 0.27, 0.53, 0.47, 0.73, 0.67, 0.93],
-      sparkColor: McColors.bull,
-      price: '\$96,450.00',
-      delta: '+3.42%',
-      positive: true,
-    ),
-    _AssetRow(
-      symbol: 'ETH',
-      sub1: '持仓 \$24.8B',
-      sub2: '费率 +0.008%',
-      sub2Color: McColors.bull,
-      spark: [0.13, 0.27, 0.40, 0.33, 0.60, 0.67, 0.87],
-      sparkColor: McColors.bull,
-      price: '\$3,420.50',
-      delta: '+2.18%',
-      positive: true,
-    ),
-    _AssetRow(
-      symbol: 'SOL',
-      sub1: '持仓 \$11.2B',
-      sub2: '费率 +0.024%',
-      sub2Color: McColors.bull,
-      spark: [0.07, 0.33, 0.47, 0.40, 0.73, 0.83, 0.93],
-      sparkColor: McColors.bull,
-      price: '\$194.20',
-      delta: '+6.85%',
-      positive: true,
-    ),
-    _AssetRow(
-      symbol: 'SUI',
-      sub1: '持仓 \$3.4B',
-      sub2: '费率 -0.005%',
-      sub2Color: McColors.bear,
-      spark: [0.73, 0.67, 0.40, 0.50, 0.27, 0.33, 0.07],
-      sparkColor: McColors.bear,
-      price: '\$3.85',
-      delta: '-1.24%',
-      positive: false,
-    ),
-  ];
+  final List<_AssetRow>? rows;
 
   @override
   Widget build(BuildContext context) {
+    final list = rows;
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -793,17 +920,26 @@ class _AssetListCard extends StatelessWidget {
           border:
               Border.all(color: McColors.outlineVariant.withValues(alpha: 0.5)),
         ),
-        child: Column(
-          children: [
-            for (var i = 0; i < _rows.length; i++) ...[
-              if (i > 0)
-                Divider(
-                    height: 1,
-                    color: McColors.outlineVariant.withValues(alpha: 0.3)),
-              _rows[i],
-            ],
-          ],
-        ),
+        child: list == null
+            ? Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text('行情加载中…',
+                      style: McText.sans(
+                          size: 12, color: McColors.onSurfaceVariant)),
+                ),
+              )
+            : Column(
+                children: [
+                  for (var i = 0; i < list.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                          height: 1,
+                          color: McColors.outlineVariant.withValues(alpha: 0.3)),
+                    list[i],
+                  ],
+                ],
+              ),
       ),
     );
   }

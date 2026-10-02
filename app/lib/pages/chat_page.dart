@@ -32,6 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   Set<int> _onlineIds = const {};
 
   StreamSubscription<Map<String, dynamic>>? _wsSub;
+  Timer? _onlineTimer; // 在线状态 30s 轮询
   bool _autoRetried = false;
 
   @override
@@ -40,6 +41,8 @@ class _ChatPageState extends State<ChatPage> {
     ChatWs.instance.connect();
     _load();
     _loadOnline();
+    _onlineTimer = Timer.periodic(
+        const Duration(seconds: 30), (_) => _loadOnline());
     _wsSub = ChatWs.instance.events.listen(_onWsEvent);
     // 同步好友请求角标 (静默失败)
     _syncFriendRequests();
@@ -60,6 +63,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    _onlineTimer?.cancel();
     _wsSub?.cancel();
     _search.dispose();
     super.dispose();

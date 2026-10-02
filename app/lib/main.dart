@@ -449,7 +449,7 @@ class McBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _item(0, Icons.radar, '首页'),
-              _item(1, Icons.query_stats, '资讯', dot: true),
+              _item(1, Icons.query_stats, '资讯'),
               ValueListenableBuilder<int>(
                 valueListenable: ChatApi.unreadCount,
                 builder: (context, unread, _) => ValueListenableBuilder<int>(

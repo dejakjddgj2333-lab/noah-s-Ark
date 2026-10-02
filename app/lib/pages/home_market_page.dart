@@ -187,6 +187,39 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
     return rows.where((r) => symbols.contains(r.symbol)).toList();
   }
 
+  /// 板块热力: 由真实榜单计算各板块平均涨跌 + 领涨币. null=行情未加载.
+  List<_HeatTile>? _heatTiles() {
+    if (_liveRows.isEmpty) return null;
+    const sectors = ['AI Agent', 'Meme', 'Solana生态', 'DeFi'];
+    final out = <_HeatTile>[];
+    for (final s in sectors) {
+      final whitelist = HomeMarketPage._categories[s]!;
+      final rows =
+          _liveRows.where((r) => whitelist.contains(r.symbol)).toList();
+      if (rows.isEmpty) continue;
+      final avg = rows.fold<double>(0, (a, r) => a + r.pct) / rows.length;
+      final leader = rows.reduce((a, b) => a.pct >= b.pct ? a : b);
+      final hot = avg.abs() >= 3;
+      out.add(_HeatTile(
+        name: s,
+        pct: _fmtDelta(avg),
+        leader: '${avg >= 0 ? '领涨' : '领跌'}: ${leader.symbol}',
+        tag: avg >= 5
+            ? '爆发'
+            : avg >= 2
+                ? '放量'
+                : avg > -2
+                    ? '震荡'
+                    : '走弱',
+        hot: hot,
+        overlay: (avg.abs() / 50).clamp(0.02, 0.15),
+        borderAlpha: hot ? 0.20 : 0.15,
+        neg: avg < 0,
+      ));
+    }
+    return out.isEmpty ? null : out;
+  }
+
   static String _fmtPrice(double p) {
     if (p >= 1000) return '\$${_comma(p)}';
     if (p > 0 && p < 10) return '\$${p.toStringAsFixed(4)}';
@@ -273,7 +306,7 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
           const SizedBox(height: 20),
 
           // 4. 板块轮动热力概览
-          const _SectorHeatmapCard(),
+          _SectorHeatmapCard(tiles: _heatTiles()),
           const SizedBox(height: 12),
 
           // 5. 底部系统监控心跳条
@@ -995,12 +1028,15 @@ class _MarketRow extends StatelessWidget {
   }
 }
 
-/// 4. 板块轮动动能热力概览.
+/// 4. 板块轮动动能热力概览. tiles 由真实行情计算; null=加载中.
 class _SectorHeatmapCard extends StatelessWidget {
-  const _SectorHeatmapCard();
+  const _SectorHeatmapCard({required this.tiles});
+
+  final List<_HeatTile>? tiles;
 
   @override
   Widget build(BuildContext context) {
+    final list = tiles;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1031,7 +1067,7 @@ class _SectorHeatmapCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('全景热力',
+              Text('OKX 永续实时',
                   style: McText.sans(
                       size: 12,
                       color: HomeMarketPage._outline,
@@ -1039,57 +1075,34 @@ class _SectorHeatmapCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                      child: _HeatTile(
-                          name: 'AI Agent',
-                          pct: '+14.2%',
-                          leader: '领涨: VIRTUAL',
-                          tag: '爆发',
-                          hot: true,
-                          overlay: 0.10,
-                          borderAlpha: 0.20)),
-                  SizedBox(width: 12),
-                  Expanded(
-                      child: _HeatTile(
-                          name: 'Solana Meme',
-                          pct: '+9.8%',
-                          leader: '领涨: BONK',
-                          tag: '放量',
-                          hot: true,
-                          overlay: 0.05,
-                          borderAlpha: 0.15)),
-                ],
+          if (list == null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('板块数据加载中…',
+                    style: McText.sans(
+                        size: 12, color: HomeMarketPage._outline)),
               ),
-              SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                      child: _HeatTile(
-                          name: 'Layer 2',
-                          pct: '+1.4%',
-                          leader: '领涨: ARB',
-                          tag: '震荡',
-                          hot: false,
-                          overlay: 0.02)),
-                  SizedBox(width: 12),
-                  Expanded(
-                      child: _HeatTile(
-                          name: 'DeFi 3.0',
-                          pct: '+0.8%',
-                          leader: '领涨: AAVE',
-                          tag: '蓄势',
-                          hot: false,
-                          overlay: 0.02)),
+            )
+          else
+            Column(
+              children: [
+                for (var i = 0; i < list.length; i += 2) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: list[i]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: i + 1 < list.length
+                              ? list[i + 1]
+                              : const SizedBox()),
+                    ],
+                  ),
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -1105,6 +1118,7 @@ class _HeatTile extends StatelessWidget {
     required this.hot,
     required this.overlay,
     this.borderAlpha = 0.20,
+    this.neg = false,
   });
 
   final String name;
@@ -1114,12 +1128,14 @@ class _HeatTile extends StatelessWidget {
   final bool hot;
   final double overlay;
   final double borderAlpha;
+  final bool neg;
 
   @override
   Widget build(BuildContext context) {
     const bull = HomeMarketPage._bull;
+    final accent = neg ? McColors.bear : bull;
     final borderColor = hot
-        ? bull.withValues(alpha: borderAlpha)
+        ? accent.withValues(alpha: borderAlpha)
         : HomeMarketPage._outlineVar.withValues(alpha: 0.2);
     return Container(
       constraints: const BoxConstraints(minHeight: 78),
@@ -1132,7 +1148,7 @@ class _HeatTile extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Container(color: bull.withValues(alpha: overlay)),
+            child: Container(color: accent.withValues(alpha: overlay)),
           ),
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1149,7 +1165,7 @@ class _HeatTile extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(pct,
                       style: McText.sans(
-                          size: 12, weight: FontWeight.w700, color: bull)),
+                          size: 12, weight: FontWeight.w700, color: accent)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1168,7 +1184,7 @@ class _HeatTile extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: hot
-                          ? HomeMarketPage._bullCont.withValues(alpha: 0.4)
+                          ? accent.withValues(alpha: 0.15)
                           : McColors.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -1177,7 +1193,7 @@ class _HeatTile extends StatelessWidget {
                       style: McText.sans(
                         size: 12,
                         weight: hot ? FontWeight.w600 : FontWeight.w500,
-                        color: hot ? bull : HomeMarketPage._outline,
+                        color: hot ? accent : HomeMarketPage._outline,
                       ),
                     ),
                   ),

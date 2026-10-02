@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
@@ -14,8 +16,7 @@ class NewsPage extends StatefulWidget {
 
   // Blue theme tokens (aligned with other pages)
   static const _gold = McColors.primaryContainer; // #2e5cff
-  static const _goldBright = McColors.primarySoft; // #82a4ff
-  static const _green = Color(0xFF00F090); // secondary-container
+  static const _goldBright = McColors.primarySoft; // #82a4ff // secondary-container
   static const _greenText = Color(0xFF58FFA5); // secondary-fixed
   static const _cyan = Color(0xFF00D8F6); // tertiary
   static const _error = Color(0xFFFFB4AB);
@@ -50,14 +51,22 @@ class _NewsPageState extends State<NewsPage> {
     ('公告', 'notice'),
   ];
 
+  // 自动流送: 60s 静默拉新 (不触发 loading 闪烁).
+  Timer? _autoRefresh;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _autoRefresh = Timer.periodic(const Duration(seconds: 60), (_) async {
+      _loadBreaking();
+      await _loadTimeline(reset: true, silent: true);
+    });
   }
 
   @override
   void dispose() {
+    _autoRefresh?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -80,8 +89,8 @@ class _NewsPageState extends State<NewsPage> {
     } catch (_) {/* 静默, 保持旧值 */}
   }
 
-  // 时间线列表 (当前分类). reset=true 从第一页重新拉.
-  Future<void> _loadTimeline({bool reset = false}) async {
+  // 时间线列表 (当前分类). reset=true 从第一页重新拉; silent=自动流送不置 loading.
+  Future<void> _loadTimeline({bool reset = false, bool silent = false}) async {
     if (reset) {
       _page = 1;
       _endReached = false;
@@ -189,16 +198,16 @@ class _NewsPageState extends State<NewsPage> {
     return '$n';
   }
 
-  /// Sentiment → bull percentage. positive 75-90 / negative 15-30 / neutral 50.
-  int _bullPct(NewsItem item) {
-    switch (item.sentiment) {
-      case 'positive':
-        return 75 + (item.id % 16); // 75-90
-      case 'negative':
-        return 15 + (item.id % 16); // 15-30
-      default:
-        return 50;
-    }
+  /// 卡片右上日期标签: 今天/昨天/M-d.
+  String _dayLabel(DateTime utc) {
+    final d = utc.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final diff = today.difference(day).inDays;
+    if (diff <= 0) return '今天';
+    if (diff == 1) return '昨天';
+    return '${d.month}-${d.day}';
   }
 
   /// Category → Chinese tag label.
@@ -659,11 +668,17 @@ class _NewsPageState extends State<NewsPage> {
     ];
     final (node, glow) = accents[index % accents.length];
 
-    final bullPct = _bullPct(item);
     // 阅读数: 无真实统计, 用文章 id 哈希出 300-3000 确定性起始值 (同一篇稳定), 叠加真实互动
     final baseViews =
         300 + ((item.id * 1103515245 + 12345) & 0x7fffffff) % 2700;
     final views = _fmtCount(baseViews + item.likeCount + item.commentCount);
+
+    // 情绪标签: 后端 NLP 分类 (positive/negative/其它), 真实展示不编百分比.
+    final sentimentTag = switch (item.sentiment) {
+      'positive' => _Tag('利好', bg: const Color(0x3300E388), fg: NewsPage._greenText),
+      'negative' => _Tag('利空', bg: const Color(0x33FF6B6B), fg: NewsPage._error),
+      _ => null,
+    };
 
     final tags = <_Tag>[
       if (item.source.isNotEmpty)
@@ -672,6 +687,7 @@ class _NewsPageState extends State<NewsPage> {
       else
         _Tag(_categoryLabel(item.category),
             bg: McColors.surfaceContainerHigh, fg: NewsPage._gold),
+      ?sentimentTag,
     ];
 
     return GestureDetector(
@@ -685,9 +701,7 @@ class _NewsPageState extends State<NewsPage> {
         tags: tags,
         title: item.title,
         body: item.summary.isNotEmpty ? item.summary : item.content,
-        bullPct: bullPct,
-        bullCount: _fmtCount(item.likeCount),
-        bearCount: _fmtCount(item.commentCount),
+        dayLabel: _dayLabel(item.publishAt),
         views: views,
         actionLabel: '查看详情',
         actionIcon: Icons.arrow_outward,
@@ -705,9 +719,7 @@ class _NewsPageState extends State<NewsPage> {
     required List<_Tag> tags,
     required String title,
     required String body,
-    required int bullPct,
-    required String bullCount,
-    required String bearCount,
+    required String dayLabel,
     required String views,
     required String actionLabel,
     required IconData actionIcon,
@@ -784,7 +796,7 @@ class _NewsPageState extends State<NewsPage> {
                       ),
                     ),
                     Text(
-                      'TODAY',
+                      dayLabel,
                       style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
                     ),
                   ],
@@ -801,82 +813,6 @@ class _NewsPageState extends State<NewsPage> {
                   body,
                   style: McText.mono(
                       size: 12, color: NewsPage._onSurfaceVariant, height: 1.5),
-                ),
-                const SizedBox(height: 12),
-                // sentiment bar
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color:
-                        McColors.surfaceContainerLowest.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.trending_up,
-                                  size: 14, color: NewsPage._greenText),
-                              const SizedBox(width: 4),
-                              Text(
-                                '利好 $bullPct%',
-                                style: McText.mono(
-                                    size: 12,
-                                    weight: FontWeight.w700,
-                                    color: NewsPage._greenText),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '($bullCount)',
-                                style: McText.mono(
-                                    size: 12, color: NewsPage._onSurfaceVariant),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                '($bearCount)',
-                                style: McText.mono(
-                                    size: 12, color: NewsPage._onSurfaceVariant),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '利空 ${100 - bullPct}%',
-                                style: McText.mono(
-                                    size: 12,
-                                    weight: FontWeight.w700,
-                                    color: NewsPage._error),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.trending_down,
-                                  size: 14, color: NewsPage._error),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
-                        child: SizedBox(
-                          height: 6,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                  flex: bullPct,
-                                  child: Container(color: NewsPage._green)),
-                              Expanded(
-                                  flex: 100 - bullPct,
-                                  child: Container(color: NewsPage._error)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 12),
                 // action micro-row
