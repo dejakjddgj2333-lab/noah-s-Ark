@@ -111,6 +111,12 @@ async def lifespan(app: FastAPI):
     collector = None
     if config.news_collect_enabled and not config.database_url.startswith("sqlite"):
         collector = asyncio.create_task(_news_collect_loop())
+    # 免费数据源模式: 爆仓 WS 聚合 + HL 大额成交流 (coinglass 模式不需要)
+    market_tasks: list[asyncio.Task] = []
+    if config.market_data_source.lower() != "coinglass":
+        from services import hl_whale, liq_aggregator
+
+        market_tasks = liq_aggregator.start() + [hl_whale.start()]
     yield
     retention.cancel()
     if collector is not None:
@@ -119,6 +125,8 @@ async def lifespan(app: FastAPI):
             await collector
         except asyncio.CancelledError:
             pass
+    for t in market_tasks:
+        t.cancel()
     try:
         await retention
     except asyncio.CancelledError:

@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -236,3 +237,22 @@ class HkMacroDescZh(HkBase):
     name = Column(String(300), unique=True, nullable=False, index=True)  # 英文原名
     desc_zh = Column(Text, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class HkLiqEvent(HkBase):
+    """爆仓事件 (免费模式自建聚合): Binance/Bybit 强平 WS 写入, 保留 48h.
+
+    side = 被强平的仓位方向: long=多头爆仓 / short=空头爆仓.
+    """
+
+    __tablename__ = "hk_liq_events"
+    __table_args__ = (Index("ix_hk_liq_events_ts_ex", "ts", "exchange"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    ts = Column(DateTime, nullable=False, index=True)  # UTC naive
+    exchange = Column(String(16), nullable=False)  # Binance/Bybit
+    symbol = Column(String(32), nullable=False)
+    side = Column(String(8), nullable=False)  # long/short
+    price = Column(Float, nullable=False, default=0)
+    qty = Column(Float, nullable=False, default=0)
+    notional_usd = Column(Float, nullable=False, default=0)

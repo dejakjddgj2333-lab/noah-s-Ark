@@ -18,11 +18,16 @@ class HomeWhalePage extends StatefulWidget {
 }
 
 class _HomeWhalePageState extends State<HomeWhalePage> {
-  // 时间线条目: 首屏即展示内置 mock, 拉取成功后整体替换.
-  List<_WhaleFeedItem> _feedItems = _mockFeedItems();
+  // 时间线条目: coinglass 模式首屏展示内置 mock, 拉取成功后整体替换;
+  // free 模式无链上数据, 初始为空, 只展示 Hyperliquid 真实大额成交.
+  List<_WhaleFeedItem> _feedItems = const [];
 
   // 链上流动性总览: null = 未加载/失败, 卡片回退 mock.
   LiquidityOverview? _liq;
+
+  // 数据源: free 隐藏链上内容 (聪明钱/链上转账类异动); coinglass 全量.
+  String _source = 'free';
+  bool _sourceReady = false;
 
   // 时间线筛选: '' = 全部, 否则按 category 匹配 (提币/充值/做市/转账/异动).
   String _filter = '';
@@ -117,6 +122,15 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   }
 
   Future<void> _load() async {
+    if (!_sourceReady) {
+      _source = await McData.marketSource();
+      _sourceReady = true;
+      if (!mounted) return;
+      // coinglass 首帧给链上 mock; free 保持空等真实 HL 数据.
+      setState(() {
+        if (_source == 'coinglass') _feedItems = _mockFeedItems();
+      });
+    }
     // 两块独立拉取, 互不影响; 任一失败静默保留对应 mock.
     await Future.wait<void>([_loadFeed(), _loadLiquidity()]);
   }
@@ -270,8 +284,11 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
         children: [
           _liquidityOverview(),
-          const SizedBox(height: 20),
-          _smartMoneySection(),
+          // 机构与聪明钱仅 CoinGlass 模式展示 (链上地址追踪无免费源)
+          if (_source == 'coinglass') ...[
+            const SizedBox(height: 20),
+            _smartMoneySection(),
+          ],
           const SizedBox(height: 20),
           _whaleFeedSection(),
           const SizedBox(height: 24),
@@ -414,17 +431,19 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             ),
           ),
           const SizedBox(height: 16),
-          // filter pills
+          // filter pills: 链上分类 (提币/充值/做市/转账) 仅 coinglass 模式有数据
           SizedBox(
             height: 34,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
                 _filterPill('全部', value: ''),
-                _filterPill('提币囤积', value: '提币'),
-                _filterPill('充值抛压预警', value: '充值'),
-                _filterPill('做市机构动向', value: '做市'),
-                _filterPill('巨额转账', value: '转账'),
+                if (_source == 'coinglass') ...[
+                  _filterPill('提币囤积', value: '提币'),
+                  _filterPill('充值抛压预警', value: '充值'),
+                  _filterPill('做市机构动向', value: '做市'),
+                  _filterPill('巨额转账', value: '转账'),
+                ],
                 _filterPill('合约仓位异动', value: '异动'),
               ],
             ),

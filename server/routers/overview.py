@@ -1,4 +1,11 @@
-"""市场总览: CoinGlass v4 透传, 带内存 TTL 缓存. 未配置 API Key 返回 503."""
+"""市场总览: 双数据源.
+
+- coinglass: CoinGlass v4 透传 (需续费 key), 带内存 TTL 缓存
+- free: 免费源直连 (alternative.me / Binance / OKX / Bybit / HL / 自建爆仓聚合),
+  返回结构对齐 CoinGlass, 前端零改动
+
+切换: MARKET_DATA_SOURCE=coinglass|free; coinglass 模式无 key 时自动回落 free.
+"""
 from __future__ import annotations
 
 import time
@@ -8,11 +15,26 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query
 
 from config import config
+from services import hl_whale, liq_aggregator, market_free
 
 router = APIRouter(prefix="/market-overview", tags=["市场总览"])
 
 _BASE = "https://open-api-v4.coinglass.com"
 _TIMEOUT = 15
+
+
+def _use_coinglass() -> bool:
+    """coinglass 模式且 key 存在才走 CoinGlass."""
+    return (
+        config.market_data_source.lower() == "coinglass"
+        and bool(config.coinglass_api_key)
+    )
+
+
+@router.get("/source")
+async def get_source():
+    """当前数据源标识. 前端据此隐藏 CoinGlass 独有内容 (链上转账类巨鲸异动)."""
+    return {"source": "coinglass" if _use_coinglass() else "free"}
 
 # path+params -> (data, expire_at)
 _cache: dict[str, tuple[Any, float]] = {}
@@ -54,7 +76,12 @@ async def _cg_get(path: str, params: dict | None = None, ttl: int = 60) -> Any:
 
 @router.get("/sentiment")
 async def get_sentiment():
-    """恐慌贪婪指数(最新). data_list 时间升序, 取末位."""
+    """恐慌贪婪指数(最新). free=alternative.me, coinglass=fear-greed-history 末位."""
+    if not _use_coinglass():
+        r = await market_free.fear_greed()
+        if r is None:
+            raise HTTPException(status_code=502, detail="alternative.me 上游错误")
+        return r
     data = await _cg_get("/api/index/fear-greed-history", ttl=300)
     values = data.get("data_list") if isinstance(data, dict) else data
     return {"fear_greed": values[-1] if values else None}
@@ -62,14 +89,20 @@ async def get_sentiment():
 
 @router.get("/liquidations/exchange-list")
 async def get_liq_exchange_list(range: str = Query("24h")):
-    """各交易所爆仓统计. range: 1h/4h/12h/24h."""
+    """各交易所爆仓统计. range: 1h/4h/12h/24h.
+    free=自建聚合 (Binance/Bybit WS 实时流), coinglass=CoinGlass."""
+    if not _use_coinglass():
+        return {"range": range, "data": await liq_aggregator.exchange_list(range)}
     data = await _cg_get("/api/futures/liquidation/exchange-list", {"range": range}, ttl=60)
     return {"range": range, "data": data}
 
 
 @router.get("/funding/exchange-rates")
 async def get_funding_exchange_rates(symbol: str = Query("BTC")):
-    """单币种各所实时费率."""
+    """单币种各所实时费率. free=Binance/OKX/Bybit 聚合."""
+    if not _use_coinglass():
+        data = await market_free.funding_exchange_rates(symbol)
+        return {"symbol": symbol.upper(), "data": data or []}
     data = await _cg_get(
         "/api/futures/funding-rate/exchange-list", {"symbol": symbol.upper()}, ttl=60
     )
@@ -78,7 +111,10 @@ async def get_funding_exchange_rates(symbol: str = Query("BTC")):
 
 @router.get("/whale-alerts")
 async def get_whale_alerts():
-    """Hyperliquid 鲸鱼仓位变动."""
+    """巨鲸异动. free=Hyperliquid 大额成交流, coinglass=HL whale-alert.
+    链上转账类异动仅 coinglass 模式有 (前端按 /source 隐藏)."""
+    if not _use_coinglass():
+        return {"alerts": hl_whale.whale_alerts()}
     data = await _cg_get("/api/hyperliquid/whale-alert", ttl=60)
     return {"alerts": data}
 
@@ -219,11 +255,10 @@ async def get_liquidity():
 
 @router.get("/long-short-ratio")
 async def get_long_short_ratio(symbol: str = Query("BTC")):
-    """多头主导: 全局账户多空占比(最新一日).
-
-    exchange-list 在此套餐 404; 用 history 端点 (Binance 现货对).
-    失败返回 null, 前端回退.
-    """
+    """多头主导: 全局账户多空占比.
+    free=Binance 5m 实时, coinglass=CoinGlass history 最新一日."""
+    if not _use_coinglass():
+        return await market_free.long_short_ratio(symbol)
     try:
         data = await _cg_get(
             "/api/futures/global-long-short-account-ratio/history",
@@ -260,7 +295,11 @@ _INDICATORS: dict[str, tuple[str, str, str]] = {
 
 @router.get("/indicators")
 async def get_indicators():
-    """多维指数卡: 最新值 + 1d 变化 + 近 30 值 sparkline. 单项失败跳过该项."""
+    """多维指数卡: 最新值 + 1d 变化 + 近 30 值 sparkline. 单项失败跳过该项.
+    free 模式仅山寨季 (blockchaincenter), 其余指标为 CoinGlass 独有."""
+    if not _use_coinglass():
+        alt = await market_free.altcoin_season()
+        return {"indicators": [alt] if alt else []}
     out = []
     for key, (name, path, field) in _INDICATORS.items():
         try:
@@ -292,7 +331,9 @@ async def get_liq_orders(
     min_amount: int = Query(100000),
     limit: int = Query(50),
 ):
-    """实时大额爆仓单(最新在前), 原始字段透传前端解析."""
+    """实时大额爆仓单(最新在前), 原始字段透传前端解析. 仅 coinglass 模式."""
+    if not _use_coinglass():
+        return {"orders": []}
     data = await _cg_get(
         "/api/futures/liquidation/order",
         {"min_liquidation_amount": min_amount, "limit": limit},
@@ -303,6 +344,8 @@ async def get_liq_orders(
 
 @router.get("/liquidations/coin-list")
 async def get_liq_coin_list():
-    """各币 24h 爆仓(人数/多空明细), 原始字段透传."""
+    """各币 24h 爆仓(人数/多空明细), 原始字段透传. 仅 coinglass 模式."""
+    if not _use_coinglass():
+        return {"coins": []}
     data = await _cg_get("/api/futures/liquidation/coin-list", ttl=60)
     return {"coins": data}

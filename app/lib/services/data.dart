@@ -350,6 +350,29 @@ class McData {
   static Future<Map<String, dynamic>> overview(String path) =>
       McApi.get('/api/market-overview/$path');
 
+  /// 市场数据源: 'free' | 'coinglass'. 短缓存; 失败默认 'free' (隐藏链上内容更保守).
+  static String? _marketSourceCache;
+  static DateTime? _marketSourceAt;
+
+  static Future<String> marketSource() async {
+    final at = _marketSourceAt;
+    if (_marketSourceCache != null &&
+        at != null &&
+        DateTime.now().difference(at).inMinutes < 10) {
+      return _marketSourceCache!;
+    }
+    String source = 'free';
+    try {
+      final body = await overview('source');
+      source = (body['source'] as String?) ?? 'free';
+    } catch (_) {
+      // 接口失败保持 free
+    }
+    _marketSourceCache = source;
+    _marketSourceAt = DateTime.now();
+    return source;
+  }
+
   /// 全网全景 (总市值/成交额/涨跌幅/占比). 字段失败为 null.
   static Future<GlobalStats> globalStats() async =>
       GlobalStats.fromJson(await overview('global-stats'));

@@ -34,6 +34,9 @@ class Config:
 
     # 第三方 (与 okx 相同来源)
     coinglass_api_key: str = os.getenv("COINGLASS_API_KEY", "")
+    # 市场数据源: free=免费源直连(默认) / coinglass=CoinGlass (续 key 后切回).
+    # free 模式实际生效还需对应源可用; coinglass 模式需 key 存在, 否则自动回落 free.
+    market_data_source: str = os.getenv("MARKET_DATA_SOURCE", "free")
     okx_base_url: str = os.getenv("OKX_BASE_URL", "https://www.okx.com")
 
     # SMTP 注册验证码邮件
