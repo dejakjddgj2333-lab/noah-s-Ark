@@ -1,7 +1,8 @@
-"""爆仓自建聚合 (免费模式): Binance + Bybit 强平 WS -> hk_liq_events 表.
+"""爆仓自建聚合 (免费模式): Binance + Bybit + OKX 强平 WS -> hk_liq_events 表.
 
-- Binance: wss !forceOrder@arr 全市场强平推送
+- Binance: wss !forceOrder@arr 全市场强平推送 (部分网络被静默黑洞, 保留兜底)
 - Bybit: v5 allLiquidation.<symbol> 按主流币订阅 (无全市场频道)
+- OKX: liquidation-orders 全 SWAP (主力源, 连通性最好)
 - 内存批量缓冲 5s 一写; 每小时清理 48h 前数据
 - 供 overview 路由按 range (1h/4h/12h/24h) 聚合查询
 
@@ -106,6 +107,68 @@ async def _bybit_loop() -> None:
             await asyncio.sleep(10)
 
 
+async def _okx_loop() -> None:
+    """OKX 公共强平频道 (全 SWAP). 服务器到 OKX 通畅 (行情/费率同源).
+
+    sz 为合约张数, 名义额 = px * sz * ctVal (合约面值, 启动时拉一次).
+    """
+    import httpx
+
+    url = "wss://ws.okx.com:8443/ws/v5/public"
+    ct_val: dict[str, float] = {}
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            resp = await client.get(
+                "https://www.okx.com/api/v5/public/instruments",
+                params={"instType": "SWAP"},
+            )
+            for it in (resp.json().get("data") or []):
+                v = float(it.get("ctVal") or 1)
+                ct_val[str(it.get("instId") or "")] = v
+        logger.info("liq_okx_instruments: %d", len(ct_val))
+    except Exception as exc:
+        logger.warning("liq_okx_instruments_failed: %s", str(exc)[:200])
+
+    while True:
+        try:
+            async with websockets.connect(url, ping_interval=20) as ws:
+                await ws.send(json.dumps({
+                    "op": "subscribe",
+                    "args": [{"channel": "liquidation-orders", "instType": "SWAP"}],
+                }))
+                logger.info("liq_ws_connected: okx")
+                async for raw in ws:
+                    try:
+                        msg = json.loads(raw)
+                        data = msg.get("data")
+                        if not isinstance(data, list):
+                            continue
+                        for d in data:
+                            price = float(d.get("px") or 0)
+                            inst_id = str(d.get("instId") or "")
+                            qty = float(d.get("sz") or 0) * ct_val.get(inst_id, 1.0)
+                            # posSide=被强平仓位方向; net 模式按吃单方向推: sell=平多
+                            pos = d.get("posSide") or "net"
+                            if pos in ("long", "short"):
+                                side = pos
+                            else:
+                                side = "long" if d.get("side") == "sell" else "short"
+                            await _add(HkLiqEvent(
+                                ts=utc_now(),
+                                exchange="OKX",
+                                symbol=inst_id.replace("-SWAP", ""),
+                                side=side,
+                                price=price,
+                                qty=qty,
+                                notional_usd=price * qty,
+                            ))
+                    except Exception:
+                        continue
+        except Exception as exc:
+            logger.warning("liq_ws_okx_down: %s", str(exc)[:200])
+            await asyncio.sleep(10)
+
+
 async def _add(ev: HkLiqEvent) -> None:
     async with _lock:
         _buf.append(ev)
@@ -148,6 +211,7 @@ def start() -> list[asyncio.Task]:
     return [
         asyncio.create_task(_binance_loop(), name="liq_ws_binance"),
         asyncio.create_task(_bybit_loop(), name="liq_ws_bybit"),
+        asyncio.create_task(_okx_loop(), name="liq_ws_okx"),
         asyncio.create_task(_flush_loop(), name="liq_flush"),
         asyncio.create_task(_prune_loop(), name="liq_prune"),
     ]
