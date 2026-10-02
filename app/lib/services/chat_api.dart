@@ -118,6 +118,15 @@ class ChatApi {
     return [for (final e in raw) ChatMessage.fromJson(e)];
   }
 
+  /// 私聊对方已读游标 (群聊返回 null).
+  static Future<int?> peerReadState(int conversationId) async {
+    final m = await McApi.get(
+        '$_prefix/conversations/$conversationId/read-state',
+        token: _token);
+    final v = m['peer_last_read_message_id'];
+    return v == null ? null : _toInt(v);
+  }
+
   static Future<ChatMessage> sendMessage(int conversationId, String content,
       {int? replyToId, String? msgType, String? fileUrl, int? duration}) async {
     final resp = await McApi.post(

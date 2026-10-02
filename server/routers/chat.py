@@ -897,6 +897,26 @@ async def mark_read(
     return {"ok": True}
 
 
+@router.get("/conversations/{conversation_id}/read-state")
+async def read_state(
+    conversation_id: int,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """私聊对方已读游标: 对话页给自己的气泡画 已读/未读. 群聊返回 null."""
+    await _require_member(db, conversation_id, me.id)
+    conv = await db.get(HkConversation, conversation_id)
+    if conv is None or conv.type != "direct":
+        return {"peer_last_read_message_id": None}
+    peer = await db.scalar(
+        select(HkConversationMember.last_read_message_id).where(
+            HkConversationMember.conversation_id == conversation_id,
+            HkConversationMember.user_id != me.id,
+        )
+    )
+    return {"peer_last_read_message_id": peer or 0}
+
+
 # ---------- 消息 ----------
 
 

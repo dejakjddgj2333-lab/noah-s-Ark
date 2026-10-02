@@ -74,6 +74,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
 
   ChatMessage? _replyingTo;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
+  int _peerReadId = 0; // 私聊对方已读游标 (自己气泡 已读/未读 判定)
 
   // 媒体 (按需创建: web 不碰原生插件通道; dispose 只清已创建的)
   final _picker = ImagePicker();
@@ -102,6 +103,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     super.initState();
     ChatWs.instance.connect();
     _loadInitial();
+    if (!_isGroup) _loadPeerRead();
     _wsSub = ChatWs.instance.events.listen(_onWsEvent);
     _scroll.addListener(_maybeLoadMore);
     // 播放结束/停止后复位语音图标.
@@ -248,7 +250,21 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         setState(() =>
             _messages[idx] = _messages[idx].copyWith(reactions: reactions));
       }
+    } else if (type == 'read') {
+      // 对方已读推进游标 → 自己气泡回执实时翻 已读.
+      final mid = e['message_id'];
+      if (mid is int && mid > _peerReadId) {
+        setState(() => _peerReadId = mid);
+      }
     }
+  }
+
+  /// 私聊对方已读游标 (静默, 失败按 0 全未读).
+  Future<void> _loadPeerRead() async {
+    try {
+      final v = await ChatApi.peerReadState(widget.conversation.id);
+      if (v != null && mounted) setState(() => _peerReadId = v);
+    } catch (_) {/* 静默 */}
   }
 
   // ---------- 发送 ----------
@@ -843,6 +859,20 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                     ),
                   ),
                 bubble,
+                // 私聊自己气泡: 已读/未读 标记.
+                if (mine && !_isGroup)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, right: 2),
+                    child: Text(
+                      msg.id <= _peerReadId ? '已读' : '未读',
+                      style: McText.sans(
+                        size: 12,
+                        color: msg.id <= _peerReadId
+                            ? McColors.primarySoft
+                            : McColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 if (msg.reactions.isNotEmpty) _reactionRow(msg, mine),
               ],
             ),
