@@ -238,6 +238,7 @@ async def exchange_list(range_: str) -> list:
                     HkLiqEvent.exchange,
                     HkLiqEvent.side,
                     func.sum(HkLiqEvent.notional_usd),
+                    func.count(HkLiqEvent.id),
                 )
                 .where(HkLiqEvent.ts >= since)
                 .group_by(HkLiqEvent.exchange, HkLiqEvent.side)
@@ -245,9 +246,11 @@ async def exchange_list(range_: str) -> list:
         ).all()
 
     agg: dict[str, dict[str, float]] = {}
-    for exchange, side, total in rows:
+    counts: dict[str, int] = {}
+    for exchange, side, total, n in rows:
         a = agg.setdefault(exchange, {"long": 0.0, "short": 0.0})
         a[side] = float(total or 0)
+        counts[exchange] = counts.get(exchange, 0) + int(n or 0)
 
     return [
         {
@@ -255,6 +258,7 @@ async def exchange_list(range_: str) -> list:
             "longLiquidation_usd": a["long"],
             "shortLiquidation_usd": a["short"],
             "liquidation_usd": a["long"] + a["short"],
+            "count": counts[ex],
         }
         for ex, a in agg.items()
         if a["long"] + a["short"] > 0

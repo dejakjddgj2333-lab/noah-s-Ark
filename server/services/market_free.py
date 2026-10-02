@@ -39,12 +39,63 @@ async def _get(url: str, params: dict | None = None, ttl: int = 60) -> Any:
 # ---------- 恐慌贪婪 (alternative.me) ----------
 
 async def fear_greed() -> dict | None:
-    """返回 {"fear_greed": <0-100 int>} — 对齐 overview.sentiment 消费方."""
-    body = await _get("https://api.alternative.me/fng/", {"limit": 1}, ttl=300)
+    """返回 {"fear_greed": <0-100 int>, "history": [近8日值, 最新在末位]}.
+
+    history 供终端页"昨日/上周"真实展示.
+    """
+    body = await _get("https://api.alternative.me/fng/", {"limit": 8}, ttl=300)
     items = body.get("data") if isinstance(body, dict) else None
     if not items:
         return None
-    return {"fear_greed": int(items[0]["value"])}
+    values = [int(i["value"]) for i in items]
+    values.reverse()  # 接口新->旧, 翻成旧->新
+    return {"fear_greed": values[-1], "history": values}
+
+
+# ---------- 资金费率 7 日历史 (OKX) ----------
+
+async def funding_history(symbol: str) -> list | None:
+    """近 21 期 (8H一期≈7天) 资金费率, 升序 [{"ts": ms, "rate": pct}]."""
+    body = await _get(
+        "https://www.okx.com/api/v5/public/funding-rate-history",
+        {"instId": f"{symbol.upper()}-USDT-SWAP", "limit": 21},
+        ttl=600,
+    )
+    data = body.get("data") if isinstance(body, dict) else None
+    if not data:
+        return None
+    out = [
+        {"ts": int(d["fundingTime"]), "rate": float(d["fundingRate"]) * 100}
+        for d in data
+        if d.get("fundingRate") is not None and d.get("fundingTime")
+    ]
+    out.sort(key=lambda x: x["ts"])
+    return out or None
+
+
+# ---------- 未平仓合约 (OKX BTC+ETH 永续) ----------
+
+async def open_interest() -> dict | None:
+    """BTC+ETH 永续未平仓名义额 (OKX oiUsd 直给). {"oi_usd": float}."""
+    import asyncio
+    import contextlib
+
+    async def _one(inst: str) -> float:
+        with contextlib.suppress(Exception):
+            body = await _get(
+                "https://www.okx.com/api/v5/public/open-interest",
+                {"instType": "SWAP", "instId": inst}, ttl=300,
+            )
+            data = body.get("data") if isinstance(body, dict) else None
+            if data and data[0].get("oiUsd"):
+                return float(data[0]["oiUsd"])
+        return 0.0
+
+    btc, eth = await asyncio.gather(_one("BTC-USDT-SWAP"), _one("ETH-USDT-SWAP"))
+    total = btc + eth
+    if total <= 0:
+        return None
+    return {"oi_usd": total}
 
 
 # ---------- 各所资金费率 (Binance/OKX/Bybit) ----------

@@ -109,6 +109,37 @@ async def get_funding_exchange_rates(symbol: str = Query("BTC")):
     return {"symbol": symbol.upper(), "data": data}
 
 
+@router.get("/funding/history")
+async def get_funding_history(symbol: str = Query("BTC")):
+    """资金费率近 7 日历史 (8H 一期, 升序). free=OKX funding-rate-history."""
+    if not _use_coinglass():
+        data = await market_free.funding_history(symbol)
+        return {"symbol": symbol.upper(), "history": data or []}
+    data = await _cg_get(
+        "/api/futures/funding-rate/history",
+        {"exchange": "Binance", "symbol": f"{symbol.upper()}USDT", "interval": "8h", "limit": 21},
+        ttl=600,
+    )
+    # CoinGlass 升序时间列, 对齐 free 结构
+    hist = [
+        {"ts": d.get("time"), "rate": d.get("close")}
+        for d in (data or []) if isinstance(d, dict)
+    ]
+    return {"symbol": symbol.upper(), "history": hist}
+
+
+@router.get("/open-interest")
+async def get_open_interest():
+    """未平仓合约名义额. free=OKX BTC+ETH 永续 oiUsd 合计."""
+    if not _use_coinglass():
+        data = await market_free.open_interest()
+        return data or {"oi_usd": None}
+    data = await _cg_get("/api/futures/open-interest/aggregated-history",
+                         {"symbol": "BTC", "interval": "1d", "limit": 1}, ttl=300)
+    latest = data[-1] if isinstance(data, list) and data else {}
+    return {"oi_usd": latest.get("close")}
+
+
 @router.get("/whale-alerts")
 async def get_whale_alerts():
     """巨鲸异动. free=Hyperliquid 大额成交流, coinglass=HL whale-alert.
