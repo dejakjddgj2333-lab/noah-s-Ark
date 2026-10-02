@@ -236,7 +236,6 @@ class _NewsPageState extends State<NewsPage> {
                 const SizedBox(height: 16),
                 _loadMoreButton(),
                 const SizedBox(height: 20),
-                _editorialBar(),
               ],
             ),
     );
@@ -622,31 +621,8 @@ class _NewsPageState extends State<NewsPage> {
               ],
             ),
           ),
-          Row(
-            children: [
-              _miniAction(Icons.volume_up, '语音速报'),
-              Container(
-                width: 1,
-                height: 12,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                color: McColors.surfaceContainerHighest,
-              ),
-              _miniAction(Icons.tune, '筛选'),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _miniAction(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: NewsPage._onSurfaceVariant),
-        const SizedBox(width: 4),
-        Text(label, style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant)),
-      ],
     );
   }
 
@@ -687,8 +663,6 @@ class _NewsPageState extends State<NewsPage> {
     final views = _fmtCount(item.likeCount + item.commentCount);
 
     final tags = <_Tag>[
-      if (item.sentiment != null)
-        const _Tag('重要', bg: Color(0xFF93000A), fg: Color(0xFFFFDAD6)),
       if (item.source.isNotEmpty)
         _Tag(item.source,
             bg: McColors.surfaceContainerHigh, fg: NewsPage._onSurfaceVariant)
@@ -948,54 +922,6 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  // Editorial insight bar
-  Widget _editorialBar() {
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                const Icon(Icons.lightbulb, size: 20, color: NewsPage._cyan),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '加入明策量化社群，第一时间获取非农数据与巨鲸转账即时预警',
-                    style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: NewsPage._gold,
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(color: NewsPage._gold.withValues(alpha: 0.3), blurRadius: 10)
-              ],
-            ),
-            child: Text(
-              '立即订阅',
-              style: McText.mono(
-                  size: 12,
-                  weight: FontWeight.w700,
-                  color: const Color(0xFFFFFFFF)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _Tag {
