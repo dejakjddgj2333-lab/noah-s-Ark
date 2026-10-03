@@ -16,7 +16,9 @@ git pull origin master
 deploy_backend() {
   echo "==> 后端:同步代码 + 重建容器"
   rsync -a --delete "$REPO/server/" "$APP_DIR/server/"
-  rsync -a "$REPO/docker-compose.yml" "$REPO/.env.prod" "$APP_DIR/"
+  rsync -a "$REPO/docker-compose.yml" "$APP_DIR/"
+  # .env.prod 已移出版本控制 (381779b): 服务器上保留旧文件, 仓库有才同步
+  [ -f "$REPO/.env.prod" ] && rsync -a "$REPO/.env.prod" "$APP_DIR/"
   cd "$APP_DIR"
   # .env.secrets 由 GitHub Secrets 在 workflow 里写入; 手动部署兜底建空文件防 compose 报错
   touch .env.secrets
