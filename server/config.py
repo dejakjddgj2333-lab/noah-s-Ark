@@ -39,6 +39,11 @@ class Config:
     # free 模式实际生效还需对应源可用; coinglass 模式需 key 存在, 否则自动回落 free.
     market_data_source: str = os.getenv("MARKET_DATA_SOURCE", "free")
     okx_base_url: str = os.getenv("OKX_BASE_URL", "https://www.okx.com")
+    # TronGrid API key (充值扫链; 空 = 公共 3 QPS 限流)
+    trongrid_api_key: str = os.getenv("TRONGRID_API_KEY", "")
+    # 充值地址池: 空闲低于下限自动补足到目标数
+    deposit_pool_min: int = int(os.getenv("DEPOSIT_POOL_MIN", "20"))
+    deposit_pool_target: int = int(os.getenv("DEPOSIT_POOL_TARGET", "50"))
 
     # SMTP 注册验证码邮件
     smtp_host: str = os.getenv("SMTP_HOST", "")

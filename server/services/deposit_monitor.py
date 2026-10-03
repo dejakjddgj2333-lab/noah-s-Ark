@@ -4,66 +4,57 @@
 - (network, txid) 唯一约束保证不重复入账
 - confirmations >= required 时入账本金账户, 状态 confirming -> credited
 - 低于最小充值金额的记 unmatched, 走客服人工处理
+- TronGrid 429 指数退避; 空闲地址池低于下限自动补足
 """
 from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime
 from decimal import Decimal
 
-import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 
+from config import config
 from database import SessionLocal
 from models.account import HkDepositAddress, HkDepositRecord
-from models.hk import utc_now
-from services import account_service
+from services import account_service, trongrid
 from services.deposit_service import NETWORKS
 
 logger = logging.getLogger(__name__)
 
-TRONGRID_BASE = "https://api.trongrid.io"
 POLL_INTERVAL_SEC = 30
-HTTP_TIMEOUT = 10.0
+
+# 429 退避状态: 连续限流次数 -> sleep 秒数 (30s..5min 封顶)
+_throttle_hits = 0
 
 
-def _extract_txs(data: dict) -> list[dict]:
-    """TronGrid trc20 交易列表 -> 归一化字段."""
-    out = []
-    for tx in data.get("data", []) or []:
-        try:
-            value = tx.get("value", "0")
-            out.append(
-                {
-                    "txid": tx["transaction_id"],
-                    "from": tx.get("from", ""),
-                    "block_number": int(tx["block_number"]),
-                    "amount": Decimal(value) / Decimal(10**6),  # USDT 6 位小数
-                    "block_time": datetime.fromtimestamp(
-                        tx["block_timestamp"] / 1000
-                    ),
-                }
-            )
-        except (KeyError, ValueError, TypeError):
-            continue
-    return out
+def _throttle_sleep() -> float:
+    return min(30 * (2 ** _throttle_hits), 300)
 
 
-async def _latest_block(client: httpx.AsyncClient) -> int | None:
-    try:
-        resp = await client.get(
-            f"{TRONGRID_BASE}/walletsolidity/getnowblock",
-            timeout=HTTP_TIMEOUT,
+async def _ensure_pool(db, network: str) -> None:
+    """空闲地址低于下限自动补足 (与 admin generate 同逻辑, 明文私钥为既有设计)."""
+    free = await db.scalar(
+        select(func.count())
+        .select_from(HkDepositAddress)
+        .where(
+            HkDepositAddress.network == network,
+            HkDepositAddress.user_id.is_(None),
         )
-        resp.raise_for_status()
-        return int(resp.json()["block_header"]["raw_data"]["number"])
-    except Exception as e:  # noqa: BLE001 轮询服务不中断
-        logger.warning("deposit_monitor latest_block failed: %s", e)
-        return None
+    )
+    if (free or 0) >= config.deposit_pool_min:
+        return
+    count = config.deposit_pool_target - (free or 0)
+    logger.warning(
+        "deposit pool low (%s free), generating %s", free, count
+    )
+    from scripts.keygen import generate_addresses
+
+    created = await generate_addresses(network, count)
+    logger.info("deposit pool replenished: +%s %s addresses", created, network)
 
 
-async def _poll_network(db, client: httpx.AsyncClient, network: str) -> None:
+async def _poll_network(db, client, network: str) -> None:
     cfg = NETWORKS[network]
     result = await db.execute(
         select(HkDepositAddress).where(
@@ -75,7 +66,7 @@ async def _poll_network(db, client: httpx.AsyncClient, network: str) -> None:
     if not addresses:
         return
 
-    latest = await _latest_block(client)
+    latest = await trongrid.latest_block(client)
     if latest is None:
         return
 
@@ -84,21 +75,22 @@ async def _poll_network(db, client: httpx.AsyncClient, network: str) -> None:
 
     for addr in addresses:
         try:
-            resp = await client.get(
-                f"{TRONGRID_BASE}/v1/accounts/{addr.address}/transactions/trc20",
-                params={
-                    "contract_address": cfg["usdt_contract"],
-                    "only_confirmed": "true",
-                    "limit": 50,
-                },
-                timeout=HTTP_TIMEOUT,
+            txs = await trongrid.fetch_incoming(
+                client, addr.address, cfg["usdt_contract"]
             )
-            resp.raise_for_status()
+        except trongrid.RateLimited:
+            global _throttle_hits
+            _throttle_hits += 1
+            logger.warning(
+                "deposit_monitor throttled (hits=%s), skip round",
+                _throttle_hits,
+            )
+            return  # 本轮剩余地址跳过, 外层 sleep 退避
         except Exception as e:  # noqa: BLE001
             logger.warning("deposit_monitor poll %s failed: %s", addr.address, e)
             continue
 
-        for tx in _extract_txs(resp.json()):
+        for tx in txs:
             confirmations = max(latest - tx["block_number"] + 1, 0)
             existing = await db.execute(
                 select(HkDepositRecord).where(
@@ -140,13 +132,20 @@ async def _poll_network(db, client: httpx.AsyncClient, network: str) -> None:
 
 async def run_forever() -> None:
     """后台轮询循环. 由 app lifespan 启动, 异常自恢复不退出."""
+    global _throttle_hits
     logger.info("deposit_monitor started, interval=%ss", POLL_INTERVAL_SEC)
-    async with httpx.AsyncClient() as client:
+    async with trongrid.make_client() as client:
         while True:
             try:
                 async with SessionLocal() as db:
                     for network in NETWORKS:
+                        await _ensure_pool(db, network)
                         await _poll_network(db, client, network)
             except Exception as e:  # noqa: BLE001
                 logger.exception("deposit_monitor cycle error: %s", e)
-            await asyncio.sleep(POLL_INTERVAL_SEC)
+            sleep_s = (
+                _throttle_sleep() if _throttle_hits > 0 else POLL_INTERVAL_SEC
+            )
+            if _throttle_hits > 0:
+                _throttle_hits = max(_throttle_hits - 1, 0)  # 每轮衰减恢复
+            await asyncio.sleep(sleep_s)

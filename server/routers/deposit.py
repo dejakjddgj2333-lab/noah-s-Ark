@@ -22,6 +22,21 @@ class DepositAddressOut(BaseModel):
     min_deposit: Decimal
 
 
+class ClaimIn(BaseModel):
+    txid: str
+    network: str = "trc20"
+
+
+class PrepareTransferIn(BaseModel):
+    owner_address: str
+    amount: Decimal
+    network: str = "trc20"
+
+
+class BroadcastIn(BaseModel):
+    signed_tx: dict
+
+
 class DepositRecordOut(BaseModel):
     id: int
     network: str
@@ -69,6 +84,40 @@ async def deposit_records(
     db: AsyncSession = Depends(get_db),
 ):
     return await deposit_service.list_my_records(db, user.id)
+
+
+@router.post("/claim", response_model=DepositRecordOut)
+async def claim_deposit(
+    data: ClaimIn,
+    user: HkUser = Depends(auth_service.get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """txid 补单: 链上已转未到账时自助核销 (钱包连接到账也走这里)."""
+    return await deposit_service.claim_by_txid(
+        db, user.id, data.network, data.txid
+    )
+
+
+@router.post("/prepare-transfer")
+async def prepare_transfer(
+    data: PrepareTransferIn,
+    user: HkUser = Depends(auth_service.get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """构造未签名 USDT 转账交易 (钱包连接支付第一步)."""
+    return await deposit_service.prepare_transfer(
+        db, user.id, data.network, data.owner_address, data.amount
+    )
+
+
+@router.post("/broadcast")
+async def broadcast(
+    data: BroadcastIn,
+    user: HkUser = Depends(auth_service.get_current_user),
+):
+    """广播钱包签名后的交易, 返回 txid (随后前端调 claim 核销)."""
+    txid = await deposit_service.broadcast_tx(data.signed_tx)
+    return {"txid": txid}
 
 
 @router.get("/account", response_model=AccountOut)

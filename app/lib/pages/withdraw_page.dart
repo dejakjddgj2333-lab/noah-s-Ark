@@ -45,7 +45,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
     }
   }
 
-  Future<void> _quote() async {
+  Future<void> _doQuote() async {
     final amount = _amountCtrl.text.trim();
     if (amount.isEmpty || (double.tryParse(amount) ?? 0) <= 0) {
       setState(() => _quote = null);
@@ -225,7 +225,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
           const SizedBox(height: 6),
           TextField(
             controller: _amountCtrl,
-            onChanged: (_) => _quote(),
+            onChanged: (_) => _doQuote(),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             style: McText.mono(size: 16),
             decoration: InputDecoration(
@@ -237,7 +237,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
               suffix: GestureDetector(
                 onTap: () {
                   _amountCtrl.text = avail > 0 ? avail.toStringAsFixed(2) : '';
-                  _quote();
+                  _doQuote();
                 },
                 child: Text('全部', style: McText.sans(size: 12, color: McColors.primarySoft, weight: FontWeight.w600)),
               ),

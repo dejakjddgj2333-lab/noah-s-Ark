@@ -65,6 +65,40 @@ class FinanceApi {
         token: _token,
       );
 
+  // ── 充值 ──────────────────────────────────────────────
+  /// 我的充值地址 (首次自动从池分配).
+  static Future<Map<String, dynamic>> depositAddress() =>
+      McApi.get('/api/deposit/address', token: _token);
+
+  /// 充值记录 (最新在前).
+  static Future<List<dynamic>> depositRecords() =>
+      McApi.getList('/api/deposit/records', token: _token);
+
+  /// txid 补单 (链上已转未到账自助核销).
+  static Future<Map<String, dynamic>> claimDeposit(String txid) =>
+      McApi.post('/api/deposit/claim', {'txid': txid}, token: _token);
+
+  /// 钱包连接支付: 构造未签名 USDT 转账交易.
+  static Future<Map<String, dynamic>> prepareDepositTransfer({
+    required String ownerAddress,
+    required String amount,
+  }) =>
+      McApi.post(
+        '/api/deposit/prepare-transfer',
+        {'owner_address': ownerAddress, 'amount': amount},
+        token: _token,
+      );
+
+  /// 广播钱包签名后的交易, 返回 txid.
+  static Future<String> broadcastDeposit(Map<String, dynamic> signedTx) async {
+    final m = await McApi.post(
+      '/api/deposit/broadcast',
+      {'signed_tx': signedTx},
+      token: _token,
+    );
+    return (m['txid'] ?? '').toString();
+  }
+
   // ── 提现 ──────────────────────────────────────────────
   static Future<Map<String, dynamic>> withdrawQuote({
     required String account,

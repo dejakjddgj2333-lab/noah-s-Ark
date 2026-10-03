@@ -1,13 +1,170 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
+import '../services/api.dart';
+import '../services/finance_api.dart';
 
-/// 链上充值 (on-chain deposit). Pushed route ('/deposit') with its own app bar.
-class DepositPage extends StatelessWidget {
+/// 链上充值 (USDT-TRC20). 地址/记录全部来自后端:
+/// GET /api/deposit/address | /records, POST /api/deposit/claim 补单.
+/// 需求文档 V0.7 第六节: 网络一致性提示 / 错币提示 / min 10 / 12 确认.
+class DepositPage extends StatefulWidget {
   const DepositPage({super.key});
 
-  static const _address = 'TX8qWnK2vE83u7PLjY9cMkdP8h1xN92KzLa';
+  @override
+  State<DepositPage> createState() => _DepositPageState();
+}
+
+class _DepositPageState extends State<DepositPage> {
+  String? _address;
+  int _requiredConf = 12;
+  double _minDeposit = 10;
+  double _principalBalance = 0;
+  List<dynamic> _records = const [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        FinanceApi.depositAddress(),
+        FinanceApi.depositRecords(),
+        FinanceApi.account(),
+      ]);
+      if (!mounted) return;
+      final addr = results[0] as Map<String, dynamic>;
+      setState(() {
+        _address = addr['address']?.toString();
+        _requiredConf = _toInt(addr['required_confirmations'], 12);
+        _minDeposit = FinanceApi.d(addr['min_deposit']);
+        _records = results[1] as List<dynamic>;
+        _principalBalance =
+            FinanceApi.d((results[2] as Map)['principal_balance']);
+        _loading = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '网络错误, 下拉重试';
+      });
+    }
+  }
+
+  static int _toInt(dynamic v, int fallback) =>
+      int.tryParse(v?.toString() ?? '') ?? fallback;
+
+  void _copyAddress() {
+    final addr = _address;
+    if (addr == null) return;
+    Clipboard.setData(ClipboardData(text: addr));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('充值地址已复制')));
+  }
+
+  /// 规则说明弹窗 (文档第六节口径).
+  void _showRules() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: McColors.surfaceContainer,
+        title: Text('充值规则', style: McText.sans(size: 16, weight: FontWeight.w600)),
+        content: Text(
+          '1. 仅支持 USDT 的 TRC20 网络充值, 转出网络必须与所选网络一致, 否则不到账且无法追回。\n\n'
+          '2. 单笔最小充值 $_minDeposit USDT, 低于此金额不到账, 需联系客服处理。\n\n'
+          '3. 转账后需 $_requiredConf 个区块确认自动入账本金账户, 约 1 分钟。\n\n'
+          '4. 长时间未到账可在本页底部提交 txid 补单, 或联系客服。',
+          style: McText.sans(size: 13, color: McColors.onSurfaceVariant, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// txid 补单弹窗.
+  void _showClaim() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: McColors.surfaceContainer,
+        title: Text('txid 补单', style: McText.sans(size: 16, weight: FontWeight.w600)),
+        content: TextField(
+          controller: ctrl,
+          style: McText.mono(size: 12),
+          decoration: const InputDecoration(
+            hintText: '粘贴交易哈希 (64 位十六进制)',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 2,
+          minLines: 1,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _doClaim(ctrl.text.trim());
+            },
+            child: const Text('提交核销'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _doClaim(String txid) async {
+    if (txid.isEmpty) return;
+    try {
+      final rec = await FinanceApi.claimDeposit(txid);
+      if (!mounted) return;
+      final status = rec['status']?.toString() ?? '';
+      final msg = switch (status) {
+        'credited' => '核销成功, 已入账本金账户',
+        'confirming' => '已找到该笔转账, 确认中 (${rec['confirmations']}/${rec['required_confirmations']}), 达到后自动入账',
+        'unmatched' => '该笔低于最小充值金额, 请联系客服处理',
+        _ => '已提交, 状态: $status',
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
+      _load(); // 刷新记录
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('网络错误, 请稍后重试')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,30 +172,54 @@ class DepositPage extends StatelessWidget {
       backgroundColor: McColors.surface,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
-        child: _DepositAppBar(),
+        child: _DepositAppBar(onRules: _showRules),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
-        children: const [
-          _SecurityBar(),
-          SizedBox(height: 20),
-          _AssetCard(),
-          SizedBox(height: 20),
-          _NetworkCard(),
-          SizedBox(height: 20),
-          _QrCard(address: _address),
-          SizedBox(height: 20),
-          _RadarBar(),
-          SizedBox(height: 20),
-          _RecordsCard(),
-        ],
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
+          children: [
+            const _SecurityBar(),
+            const SizedBox(height: 20),
+            _AssetCard(balance: _principalBalance),
+            const SizedBox(height: 20),
+            _NetworkCard(
+              minDeposit: _minDeposit,
+              requiredConf: _requiredConf,
+            ),
+            const SizedBox(height: 20),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(40),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              _ErrorCard(message: _error!, onRetry: _load)
+            else
+              _QrCard(address: _address ?? '', onCopy: _copyAddress),
+            const SizedBox(height: 20),
+            const _RadarBar(),
+            const SizedBox(height: 20),
+            _RecordsCard(records: _records),
+            const SizedBox(height: 16),
+            _FooterActions(
+              onClaim: _showClaim,
+              onWalletPay: () =>
+                  Navigator.pushNamed(context, '/wallet-connect'),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Custom app bar: back + title(WEB3) + 规则说明 + share + avatar.
+/// Custom app bar: back + title(WEB3) + 规则说明.
 class _DepositAppBar extends StatelessWidget {
+  const _DepositAppBar({required this.onRules});
+
+  final VoidCallback onRules;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -56,9 +237,19 @@ class _DepositAppBar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-                _roundBtn(
-                  icon: Icons.arrow_back,
+                InkWell(
                   onTap: () => Navigator.maybePop(context),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.arrow_back,
+                        size: 18, color: McColors.onSurface),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
@@ -83,14 +274,28 @@ class _DepositAppBar extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                _textBtn(icon: Icons.help_outline, label: '规则说明'),
-                const SizedBox(width: 2),
-                _roundBtn(icon: Icons.share, onTap: () {}),
-                const SizedBox(width: 6),
-                const CircleAvatar(
-                  radius: 14,
-                  backgroundColor: McColors.surfaceContainerHigh,
-                  child: Icon(Icons.person, size: 16, color: McColors.primary),
+                InkWell(
+                  onTap: onRules,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.help_outline,
+                            size: 16, color: McColors.primary),
+                        const SizedBox(width: 4),
+                        Text('规则说明',
+                            style: McText.sans(
+                                size: 12, weight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -99,44 +304,9 @@ class _DepositAppBar extends StatelessWidget {
       ),
     );
   }
-
-  Widget _roundBtn({required IconData icon, VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 18, color: McColors.onSurface),
-      ),
-    );
-  }
-
-  Widget _textBtn({required IconData icon, required String label}) {
-    return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: McColors.primary),
-          const SizedBox(width: 4),
-          Text(label, style: McText.sans(size: 12, weight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
 }
 
-/// 1. Security shield badge bar.
+/// 1. Security bar: 链上自动入账说明 (不写未证实的审计宣传).
 class _SecurityBar extends StatelessWidget {
   const _SecurityBar();
 
@@ -153,47 +323,11 @@ class _SecurityBar extends StatelessWidget {
         children: [
           const Icon(Icons.verified_user, size: 16, color: McColors.primary),
           const SizedBox(width: 6),
-          Text(
-            'SECURE SHIELD',
-            style: McText.sans(
-              size: 12,
-              weight: FontWeight.w700,
-              color: McColors.primary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Container(
-              width: 4,
-              height: 4,
-              decoration: const BoxDecoration(
-                  color: McColors.outlineVariant, shape: BoxShape.circle)),
-          const SizedBox(width: 6),
           Expanded(
             child: Text(
-              '硬件冷热隔离 · 慢雾/派盾双重审计',
+              '链上转账 · 区块确认后自动入账 · 全程可溯',
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
               overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: McColors.tertiary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const McGlowDot(color: McColors.tertiary, size: 4),
-                const SizedBox(width: 4),
-                Text(
-                  '已认证',
-                  style: McText.sans(
-                      size: 12, weight: FontWeight.w500, color: McColors.tertiary),
-                ),
-              ],
             ),
           ),
         ],
@@ -202,9 +336,11 @@ class _SecurityBar extends StatelessWidget {
   }
 }
 
-/// 2. Asset selection + available balance card.
+/// 2. Asset card: 仅 USDT + 真实本金余额.
 class _AssetCard extends StatelessWidget {
-  const _AssetCard();
+  const _AssetCard({required this.balance});
+
+  final double balance;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +354,7 @@ class _AssetCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '选择充币资产',
+                '充币资产',
                 style: McText.sans(
                   size: 12,
                   weight: FontWeight.w500,
@@ -228,12 +364,12 @@ class _AssetCard extends StatelessWidget {
               ),
               Row(
                 children: [
-                  Text('可用余额:',
+                  Text('本金余额:',
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant)),
                   const SizedBox(width: 6),
                   Text(
-                    '12,450.00 USDT',
+                    '${balance.toStringAsFixed(2)} USDT',
                     style: McText.sans(
                         size: 13, weight: FontWeight.w600, color: McColors.onSurface),
                   ),
@@ -242,7 +378,6 @@ class _AssetCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Selected coin row
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -288,74 +423,14 @@ class _AssetCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '≈ \$12,450.00 USD',
+                        '充值后入账本金账户',
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant),
                       ),
                     ],
                   ),
                 ),
-                Row(
-                  children: [
-                    Text('切换币种',
-                        style: McText.sans(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: McColors.onSurfaceVariant)),
-                    const Icon(Icons.expand_more,
-                        size: 18, color: McColors.onSurfaceVariant),
-                  ],
-                ),
               ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Quick-select tags
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _tag('USDT', selected: true),
-                const SizedBox(width: 8),
-                _tag('BTC'),
-                const SizedBox(width: 8),
-                _tag('ETH'),
-                const SizedBox(width: 8),
-                _tag('SOL'),
-                const SizedBox(width: 8),
-                _tag('USDC'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _tag(String label, {bool selected = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: selected
-            ? McColors.primaryContainer
-            : McColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (selected) ...[
-            const McGlowDot(color: McColors.primary, size: 6),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            label,
-            style: McText.sans(
-              size: 12,
-              weight: FontWeight.w500,
-              color: selected
-                  ? McColors.onPrimaryContainer
-                  : McColors.onSurfaceVariant,
             ),
           ),
         ],
@@ -364,9 +439,12 @@ class _AssetCard extends StatelessWidget {
   }
 }
 
-/// 3. Network selection 2x2 grid card.
+/// 3. Network card: TRC20 可用, 其余灰显即将上线.
 class _NetworkCard extends StatelessWidget {
-  const _NetworkCard();
+  const _NetworkCard({required this.minDeposit, required this.requiredConf});
+
+  final double minDeposit;
+  final int requiredConf;
 
   @override
   Widget build(BuildContext context) {
@@ -377,35 +455,18 @@ class _NetworkCard extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    '充值公链网络',
-                    style: McText.sans(
-                      size: 12,
-                      weight: FontWeight.w500,
-                      color: McColors.onSurfaceVariant,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.info_outline,
-                      size: 14, color: McColors.outline),
-                ],
+              Text(
+                '充值公链网络',
+                style: McText.sans(
+                  size: 12,
+                  weight: FontWeight.w500,
+                  color: McColors.onSurfaceVariant,
+                  letterSpacing: 0.5,
+                ),
               ),
-              Row(
-                children: [
-                  const McGlowDot(color: McColors.tertiary, size: 6),
-                  const SizedBox(width: 4),
-                  Text(
-                    '全链路由畅通',
-                    style: McText.sans(
-                        size: 12, weight: FontWeight.w500, color: McColors.primary),
-                  ),
-                ],
-              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.info_outline, size: 14, color: McColors.outline),
             ],
           ),
           const SizedBox(height: 12),
@@ -422,36 +483,41 @@ class _NetworkCard extends StatelessWidget {
                 tag: '推荐',
                 tagColor: McColors.tertiary,
                 chain: 'Tron 主网',
-                speed: '费率低 · ~1-2分',
+                speed: '费率低 · ~1分钟',
                 speedColor: McColors.primary,
                 selected: true,
               ),
               _NetworkTile(
                 name: 'ERC20',
-                right: '12 Confirms',
+                tag: '即将上线',
+                tagColor: McColors.outline,
                 chain: 'Ethereum',
-                speed: '~3-5分',
-                speedColor: McColors.onSurfaceVariant,
+                speed: '-',
+                speedColor: McColors.outline,
+                disabled: true,
               ),
               _NetworkTile(
                 name: 'Arbitrum',
-                tag: 'L2 极速',
-                tagColor: McColors.secondary,
+                tag: '即将上线',
+                tagColor: McColors.outline,
                 chain: 'Arbitrum One',
-                speed: '< 30秒',
-                speedColor: McColors.tertiary,
+                speed: '-',
+                speedColor: McColors.outline,
+                disabled: true,
               ),
               _NetworkTile(
                 name: 'Solana',
-                right: 'SPL',
-                chain: 'High-TPS',
-                speed: '< 15秒',
-                speedColor: McColors.tertiary,
+                tag: '即将上线',
+                tagColor: McColors.outline,
+                chain: 'Solana',
+                speed: '-',
+                speedColor: McColors.outline,
+                disabled: true,
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Params strip
+          // Params strip (真值)
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -460,9 +526,10 @@ class _NetworkCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _param('预计到账', '约 2 分钟', McColors.onSurface),
-                _param('最小充值额', '10.00 USDT', McColors.onSurface),
-                _param('安全入账确认', '1 个区块确认', McColors.tertiary),
+                _param('预计到账', '约 1 分钟', McColors.onSurface),
+                _param('最小充值额', '${minDeposit.toStringAsFixed(0)} USDT',
+                    McColors.onSurface),
+                _param('入账确认数', '$requiredConf 个区块', McColors.tertiary),
               ],
             ),
           ),
@@ -476,8 +543,7 @@ class _NetworkCard extends StatelessWidget {
       child: Column(
         children: [
           Text(label,
-              style:
-                  McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+              style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 2),
           Text(
             value,
@@ -499,117 +565,118 @@ class _NetworkTile extends StatelessWidget {
     required this.speedColor,
     this.tag,
     this.tagColor = McColors.tertiary,
-    this.right,
     this.selected = false,
+    this.disabled = false,
   });
 
   final String name;
   final String? tag;
   final Color tagColor;
-  final String? right;
   final String chain;
   final String speed;
   final Color speedColor;
   final bool selected;
+  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: selected
-            ? McColors.primaryContainer.withValues(alpha: 0.2)
-            : McColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(8),
-        border: selected
-            ? Border.all(color: McColors.primaryContainer.withValues(alpha: 0.5))
-            : null,
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: McColors.primaryContainer.withValues(alpha: 0.18),
-                  blurRadius: 12,
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        style: McText.sans(
-                          size: 15,
-                          weight: selected ? FontWeight.w700 : FontWeight.w500,
-                          letterSpacing: -0.2,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (tag != null) ...[
-                      const SizedBox(width: 6),
-                      McPill(tag!, color: tagColor, fontSize: 12, bold: false),
-                    ],
-                  ],
-                ),
-              ),
-              if (selected)
-                const Icon(Icons.check_circle,
-                    size: 18, color: McColors.primary)
-              else if (right != null)
-                Text(right!,
-                    style: McText.mono(size: 12, color: McColors.outline)),
-            ],
-          ),
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: selected
-                      ? McColors.primaryContainer.withValues(alpha: 0.2)
-                      : McColors.surfaceContainerHighest.withValues(alpha: 0.3),
-                ),
-              ),
-            ),
-            child: Row(
+    return Opacity(
+      opacity: disabled ? 0.45 : 1,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: selected
+              ? McColors.primaryContainer.withValues(alpha: 0.2)
+              : McColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+          border: selected
+              ? Border.all(color: McColors.primaryContainer.withValues(alpha: 0.5))
+              : null,
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: McColors.primaryContainer.withValues(alpha: 0.18),
+                    blurRadius: 12,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(
-                  child: Text(chain,
-                      style: McText.sans(
-                          size: 12, color: McColors.onSurfaceVariant),
-                      overflow: TextOverflow.ellipsis),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          style: McText.sans(
+                            size: 15,
+                            weight: selected ? FontWeight.w700 : FontWeight.w500,
+                            letterSpacing: -0.2,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (tag != null) ...[
+                        const SizedBox(width: 6),
+                        McPill(tag!, color: tagColor, fontSize: 12, bold: false),
+                      ],
+                    ],
+                  ),
                 ),
-                Text(
-                  speed,
-                  style: McText.sans(
-                      size: 12, weight: FontWeight.w600, color: speedColor),
-                ),
+                if (selected)
+                  const Icon(Icons.check_circle,
+                      size: 18, color: McColors.primary),
               ],
             ),
-          ),
-        ],
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: selected
+                        ? McColors.primaryContainer.withValues(alpha: 0.2)
+                        : McColors.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(chain,
+                        style: McText.sans(
+                            size: 12, color: McColors.onSurfaceVariant),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  Text(
+                    speed,
+                    style: McText.sans(
+                        size: 12, weight: FontWeight.w600, color: speedColor),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// 4. QR code + custodial address card.
+/// 4. QR + 地址卡 (真二维码, 复制可用).
 class _QrCard extends StatelessWidget {
-  const _QrCard({required this.address});
+  const _QrCard({required this.address, required this.onCopy});
 
   final String address;
+  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -628,7 +695,7 @@ class _QrCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '专属收款托管地址',
+                    '专属收款地址',
                     style: McText.sans(
                       size: 12,
                       weight: FontWeight.w500,
@@ -646,7 +713,7 @@ class _QrCard extends StatelessWidget {
                   const McGlowDot(color: McColors.tertiary, size: 8),
                   const SizedBox(width: 6),
                   Text(
-                    '地址有效中',
+                    '长期有效',
                     style: McText.sans(
                         size: 12, weight: FontWeight.w500, color: McColors.tertiary),
                   ),
@@ -655,7 +722,6 @@ class _QrCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // QR placeholder
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -665,36 +731,16 @@ class _QrCard extends StatelessWidget {
                 BoxShadow(color: Colors.black54, blurRadius: 24, offset: Offset(0, 4))
               ],
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Icon(Icons.qr_code_2, size: 160, color: Color(0xFF0B0E14)),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: McColors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(4),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: McColors.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'M',
-                      style: McText.sans(
-                        size: 13,
-                        weight: FontWeight.w900,
-                        color: McColors.onPrimaryContainer,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            child: QrImageView(
+              data: address,
+              version: QrVersions.auto,
+              size: 160,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square, color: Color(0xFF0B0E14)),
+              dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: Color(0xFF0B0E14)),
             ),
           ),
           const SizedBox(height: 10),
@@ -720,20 +766,10 @@ class _QrCard extends StatelessWidget {
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('TRON 收款地址',
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant)),
-                    Row(
-                      children: [
-                        const McGlowDot(color: McColors.tertiary, size: 4),
-                        const SizedBox(width: 4),
-                        Text('已校验通过',
-                            style: McText.mono(
-                                size: 12, color: McColors.tertiary)),
-                      ],
-                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -759,28 +795,43 @@ class _QrCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: _actionBtn(
-                  icon: Icons.content_copy,
-                  label: '复制充值地址',
-                  primary: true,
-                ),
+          // Copy button
+          InkWell(
+            onTap: onCopy,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 44),
+              decoration: BoxDecoration(
+                color: McColors.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: McColors.primaryContainer.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _actionBtn(
-                  icon: Icons.download_for_offline,
-                  label: '保存充值海报',
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.content_copy,
+                      size: 18, color: McColors.onPrimaryContainer),
+                  const SizedBox(width: 6),
+                  Text(
+                    '复制充值地址',
+                    style: McText.sans(
+                      size: 12,
+                      weight: FontWeight.w600,
+                      color: McColors.onPrimaryContainer,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
-          // Warning tip
-            Container(
+          // Warning (文档第六节: 网络一致 + 仅 USDT)
+          Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: McColors.error.withValues(alpha: 0.15),
@@ -803,16 +854,16 @@ class _QrCard extends StatelessWidget {
                           color: const Color(0xFFFFDAD6),
                           height: 1.4),
                       children: [
-                        const TextSpan(text: '仅支持接收 '),
+                        const TextSpan(text: '转出网络必须与所选网络 '),
                         TextSpan(
-                          text: 'TRC20-USDT',
+                          text: 'TRC20',
                           style: McText.sans(
                               size: 12,
                               weight: FontWeight.w600,
                               color: McColors.error),
                         ),
                         const TextSpan(
-                            text: '，转入其他资产将无法追回。智能合约自动结算到账。'),
+                            text: ' 一致, 仅支持 USDT; 转错网络或转入其他代币将无法到账且无法追回。'),
                       ],
                     ),
                   ),
@@ -824,48 +875,9 @@ class _QrCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _actionBtn({
-    required IconData icon,
-    required String label,
-    bool primary = false,
-  }) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      decoration: BoxDecoration(
-        color: primary ? McColors.primaryContainer : McColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: primary
-            ? [
-                BoxShadow(
-                  color: McColors.primaryContainer.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon,
-              size: 18,
-              color: primary ? McColors.onPrimaryContainer : McColors.onSurface),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: McText.sans(
-              size: 12,
-              weight: primary ? FontWeight.w600 : FontWeight.w500,
-              color: primary ? McColors.onPrimaryContainer : McColors.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-/// 5. On-chain radar listening status bar.
+/// 5. 监听状态条 (真实口径: 30s 轮询 + 12 确认).
 class _RadarBar extends StatelessWidget {
   const _RadarBar();
 
@@ -877,53 +889,28 @@ class _RadarBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          SizedBox(
+          Container(
             width: 28,
             height: 28,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: McColors.tertiary.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.radar,
-                      size: 16, color: McColors.tertiary),
-                ),
-                const Positioned(
-                  top: 0,
-                  right: 0,
-                  child: McGlowDot(color: McColors.tertiary, size: 8),
-                ),
-              ],
+            decoration: BoxDecoration(
+              color: McColors.tertiary.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.radar, size: 16, color: McColors.tertiary),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        '链上智能雷达监听中',
-                        style: McText.sans(
-                            size: 13, weight: FontWeight.w600),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const McPill('RPC OK',
-                        color: McColors.tertiary, fontSize: 12, bold: false),
-                  ],
+                Text(
+                  '链上监听已开启',
+                  style: McText.sans(size: 13, weight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '毫秒级捕获网络广播，出块后 30 秒内推送通知',
+                  '每 30 秒扫描链上转账, 12 个区块确认后自动入账',
                   style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -937,9 +924,11 @@ class _RadarBar extends StatelessWidget {
   }
 }
 
-/// 6. Recent deposit records card.
+/// 6. 充值记录 (真数据).
 class _RecordsCard extends StatelessWidget {
-  const _RecordsCard();
+  const _RecordsCard({required this.records});
+
+  final List<dynamic> records;
 
   @override
   Widget build(BuildContext context) {
@@ -971,61 +960,29 @@ class _RecordsCard extends StatelessWidget {
                       color: McColors.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Text('3',
+                    child: Text('${records.length}',
                         style: McText.mono(size: 12, color: McColors.onSurface)),
                   ),
-                ],
-              ),
-              Row(
-                children: [
-                  Text('全部记录',
-                      style: McText.sans(size: 12, color: McColors.primary)),
-                  const Icon(Icons.chevron_right,
-                      size: 14, color: McColors.primary),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const _RecordTile(
-            amount: '+2,000.00 USDT',
-            net: 'TRC20',
-            netColor: McColors.onSurfaceVariant,
-            meta: '10 分钟前 · TXID: f8e9...3b21',
-            confirms: '24 确认数',
-          ),
-          const SizedBox(height: 8),
-          const _RecordTile(
-            amount: '+500.00 USDT',
-            net: 'Arbitrum',
-            netColor: McColors.secondary,
-            meta: '昨天 16:30 · TXID: 0x9a...7c1a',
-            confirms: 'L2 Finalized',
-          ),
-          const SizedBox(height: 8),
-          const _RecordTile(
-            amount: '+0.0500 BTC',
-            net: 'BTC Mainnet',
-            netColor: Color(0xFFF7931A),
-            meta: '3 天前 · TXID: 4d2e...99e1',
-            confirms: '3/3 确认',
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.travel_explore,
-                  size: 15, color: McColors.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Text(
-                '查看全部链上存证哈希 (Blockchain Explorer)',
-                style: McText.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: McColors.onSurfaceVariant),
+          if (records.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                '暂无充值记录',
+                style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
               ),
+            )
+          else
+            ...[
+              for (final r in records.take(10)) ...[
+                _RecordTile(record: r as Map<String, dynamic>),
+                const SizedBox(height: 8),
+              ],
             ],
-          ),
         ],
       ),
     );
@@ -1033,22 +990,30 @@ class _RecordsCard extends StatelessWidget {
 }
 
 class _RecordTile extends StatelessWidget {
-  const _RecordTile({
-    required this.amount,
-    required this.net,
-    required this.netColor,
-    required this.meta,
-    required this.confirms,
-  });
+  const _RecordTile({required this.record});
 
-  final String amount;
-  final String net;
-  final Color netColor;
-  final String meta;
-  final String confirms;
+  final Map<String, dynamic> record;
+
+  static String _shortTxid(String txid) =>
+      txid.length > 12 ? '${txid.substring(0, 6)}...${txid.substring(txid.length - 4)}' : txid;
 
   @override
   Widget build(BuildContext context) {
+    final amount = FinanceApi.d(record['amount']);
+    final txid = record['txid']?.toString() ?? '';
+    final status = record['status']?.toString() ?? '';
+    final conf = int.tryParse(record['confirmations']?.toString() ?? '') ?? 0;
+    final reqConf =
+        int.tryParse(record['required_confirmations']?.toString() ?? '') ?? 12;
+    final time = FinanceApi.time(record['block_time']);
+
+    final (label, color, sub) = switch (status) {
+      'credited' => ('已入账', McColors.tertiary, '$reqConf 确认'),
+      'confirming' => ('确认中', McColors.goldBright, '$conf/$reqConf 确认'),
+      'unmatched' => ('待客服处理', McColors.bear, '低于最小充值额'),
+      _ => (status, McColors.outline, ''),
+    };
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1058,40 +1023,46 @@ class _RecordTile extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: McColors.tertiary.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: McColors.tertiary.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.call_received,
+                      size: 16, color: McColors.tertiary),
                 ),
-                child: const Icon(Icons.call_received,
-                    size: 16, color: McColors.tertiary),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        amount,
-                        style: McText.sans(
-                            size: 14, weight: FontWeight.w600),
+                      Row(
+                        children: [
+                          Text(
+                            '+${amount.toStringAsFixed(2)} USDT',
+                            style: McText.sans(
+                                size: 14, weight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 6),
+                          const McChip('TRC20',
+                              color: McColors.onSurfaceVariant),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      McChip(net, color: netColor),
+                      const SizedBox(height: 2),
+                      Text('$time · TXID: ${_shortTxid(txid)}',
+                          style: McText.sans(
+                              size: 12, color: McColors.onSurfaceVariant),
+                          overflow: TextOverflow.ellipsis),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(meta,
-                      style: McText.sans(
-                          size: 12, color: McColors.onSurfaceVariant)),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -1100,29 +1071,121 @@ class _RecordTile extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: McColors.tertiary.withValues(alpha: 0.2),
+                  color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const McGlowDot(color: McColors.tertiary, size: 4),
-                    const SizedBox(width: 4),
-                    Text(
-                      '已入账',
-                      style: McText.sans(
-                          size: 12,
-                          weight: FontWeight.w600,
-                          color: McColors.tertiary),
-                    ),
-                  ],
+                child: Text(
+                  label,
+                  style: McText.sans(
+                      size: 12, weight: FontWeight.w600, color: color),
                 ),
               ),
               const SizedBox(height: 2),
-              Text(confirms,
+              Text(sub,
                   style: McText.sans(size: 12, color: McColors.outline)),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 底部: 钱包支付 + txid 补单 + tronscan 链接.
+class _FooterActions extends StatelessWidget {
+  const _FooterActions({required this.onClaim, required this.onWalletPay});
+
+  final VoidCallback onClaim;
+  final VoidCallback onWalletPay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onWalletPay,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44),
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                  color: McColors.primaryContainer.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.account_balance_wallet_outlined,
+                    size: 18, color: McColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  '连接钱包直接支付',
+                  style: McText.sans(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: McColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            InkWell(
+              onTap: onClaim,
+              child: Text(
+                '转账没到账? 提交 txid 补单',
+                style: McText.sans(
+                  size: 12,
+                  weight: FontWeight.w500,
+                  color: McColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            InkWell(
+              onTap: () => launchUrl(
+                  Uri.parse('https://tronscan.org'),
+                  mode: LaunchMode.externalApplication),
+              child: Text(
+                '链上浏览器查询',
+                style: McText.sans(
+                  size: 12,
+                  weight: FontWeight.w500,
+                  color: McColors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return McCard(
+      color: McColors.surfaceContainer,
+      borderColor: Colors.transparent,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Text(message,
+              style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          TextButton(onPressed: onRetry, child: const Text('重试')),
         ],
       ),
     );

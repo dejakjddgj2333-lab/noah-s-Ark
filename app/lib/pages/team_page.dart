@@ -212,6 +212,7 @@ class _TeamPageState extends State<TeamPage> {
                 ],
               ),
             ),
+    );
   }
 
   Widget _teamRow((int, int, int, double, double, double) row, int current) {

@@ -37,6 +37,7 @@ dependencies:
   http: ^1.2.1
   shared_preferences: ^2.2.3
   web_socket_channel: ^3.0.3
+  win32: ^6.0.1
   url_launcher: ^6.3.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -48,6 +49,14 @@ dependencies:
   flutter_webrtc: ^1.6.2+hotfix.3
   uuid: ^4.6.0
   share_plus: ^13.3.1
+  reown_sign: ^1.4.1
+  qr_flutter: ^4.1.0
+
+dependency_overrides:
+  # reown_sign 锁 ws 2.4/web 0.5, 与 share_plus 13 冲突; ws3 API 兼容其用法
+  web_socket_channel: ^3.0.3
+  # package_info_plus 9 锁 win32 5, 与 share_plus 13 的 win32 6 冲突; 10.x 兼容
+  package_info_plus: ^10.1.4
 
 dev_dependencies:
   flutter_test:

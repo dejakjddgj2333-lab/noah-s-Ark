@@ -23,6 +23,7 @@ import 'pages/orders_page.dart';
 import 'pages/products_page.dart';
 import 'pages/team_page.dart';
 import 'pages/vip_page.dart';
+import 'pages/wallet_connect_page.dart';
 import 'pages/withdraw_page.dart';
 import 'services/auth.dart';
 import 'services/call_service.dart';
@@ -64,6 +65,7 @@ class MingceApp extends StatelessWidget {
           '/orders': const OrdersPage(),
           '/funds': const FundsPage(),
           '/withdraw': const WithdrawPage(),
+          '/wallet-connect': const WalletConnectPage(),
         };
         final page = gated[settings.name];
         if (page == null) return null;
