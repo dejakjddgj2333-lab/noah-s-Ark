@@ -13,7 +13,26 @@ from sqlalchemy import delete, select, text
 from config import config
 from database import SessionLocal, engine
 from models.hk import HkBase, HkChatMessage, HkMessageReaction, utc_now
-from routers import auth, chat, interaction, invite, market, news, overview
+from routers import (
+    admin_deposit,
+    admin_products,
+    admin_users,
+    admin_withdrawals,
+    auth,
+    chat,
+    deposit,
+    interaction,
+    invite,
+    market,
+    news,
+    orders,
+    overview,
+    products,
+    settlements,
+    team,
+    vip,
+    withdrawals,
+)
 from routers.chat import CHAT_UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
@@ -93,8 +112,57 @@ async def _news_collect_loop() -> None:
         await asyncio.sleep(config.news_collect_interval_sec)
 
 
+# hk 表新增列的轻量迁移 (create_all 不会给已存在表加列; 重复执行仅报列已存在, 忽略)
+_MIGRATIONS = [
+    ("hk_orders", "product_name", "VARCHAR(64)"),
+    ("hk_orders", "base_daily_rate", "NUMERIC(10,6)"),
+    ("hk_orders", "duration_days", "INTEGER"),
+    ("hk_orders", "return_method", "VARCHAR(16)"),
+    ("hk_orders", "vip_level", "INTEGER"),
+    ("hk_orders", "lock_bonus_rate", "NUMERIC(10,6)"),
+    ("hk_orders", "rule_version", "VARCHAR(16)"),
+    ("hk_orders", "expires_at", "DATETIME"),
+    ("hk_orders", "settled_periods", "INTEGER"),
+    ("hk_orders", "next_settle_at", "DATETIME"),
+    ("hk_withdrawals", "processed_by", "VARCHAR(32)"),
+    ("hk_withdrawals", "idempotency_key", "VARCHAR(64)"),
+]
+
+
+async def _migrate() -> None:
+    # 新增列无法用 ADD COLUMN 附带 UNIQUE (sqlite 不支持), 唯一索引单独建
+    _INDEXES = [
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_hk_withdrawals_idem "
+        "ON hk_withdrawals (idempotency_key)",
+    ]
+    async with engine.begin() as conn:
+        for table, column, col_type in _MIGRATIONS:
+            try:
+                await conn.execute(
+                    text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+                )
+            except Exception:
+                pass  # 列已存在, 跳过
+        for ddl in _INDEXES:
+            try:
+                await conn.execute(text(ddl))
+            except Exception:
+                pass  # 索引已存在或表尚未建, 跳过
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 启动安全自检
+    import logging
+
+    logger = logging.getLogger("hk.security")
+    if "*" in config.cors_origins:
+        logger.warning("[安全] CORS 允许任意来源 (*), 生产环境应收窄为指定域名")
+    if not config.admin_usernames:
+        logger.warning("[安全] ADMIN_USERNAMES 为空, 后台接口 /api/admin/* 无人可访问")
+    if config.secret_key in ("dev-only-change-me", ""):
+        logger.warning("[安全] SECRET_KEY 为默认值, 生产环境必须设置强随机密钥")
+
     # hk 自有表不存在则建 (共享表由 okx 侧 Alembic 管理, hk 不建不改)
     async with engine.begin() as conn:
         await conn.run_sync(HkBase.metadata.create_all)
@@ -117,6 +185,19 @@ async def lifespan(app: FastAPI):
         from services import hl_whale, liq_aggregator
 
         market_tasks = liq_aggregator.start() + [hl_whale.start()]
+    await _migrate()
+    # 充值扫链监听 (自动到账); 测试可设 DEPOSIT_MONITOR_ENABLED=false 关闭
+    monitor_task = None
+    if config.deposit_monitor_enabled:
+        from services import deposit_monitor
+
+        monitor_task = asyncio.create_task(deposit_monitor.run_forever())
+    # 结算引擎 (产品收益/佣金/到期返本); 测试可设 SETTLEMENT_ENABLED=false 关闭
+    settle_task = None
+    if config.settlement_enabled:
+        from services import settlement_service
+
+        settle_task = asyncio.create_task(settlement_service.run_forever())
     yield
     retention.cancel()
     if collector is not None:
@@ -131,6 +212,10 @@ async def lifespan(app: FastAPI):
         await retention
     except asyncio.CancelledError:
         pass
+    if monitor_task is not None:
+        monitor_task.cancel()
+    if settle_task is not None:
+        settle_task.cancel()
     await engine.dispose()
 
 
@@ -151,6 +236,17 @@ app.include_router(invite.router, prefix="/api")
 app.include_router(news.router, prefix="/api")
 app.include_router(interaction.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
+app.include_router(products.router, prefix="/api")
+app.include_router(orders.router, prefix="/api")
+app.include_router(vip.router, prefix="/api")
+app.include_router(team.router, prefix="/api")
+app.include_router(settlements.router, prefix="/api")
+app.include_router(withdrawals.router, prefix="/api")
+app.include_router(admin_withdrawals.router, prefix="/api")
+app.include_router(admin_products.router, prefix="/api")
+app.include_router(admin_users.router, prefix="/api")
+app.include_router(deposit.router, prefix="/api")
+app.include_router(admin_deposit.router, prefix="/api")
 app.include_router(overview.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 

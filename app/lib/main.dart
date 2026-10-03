@@ -8,6 +8,7 @@ import 'pages/call_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/commission_page.dart';
 import 'pages/deposit_page.dart';
+import 'pages/funds_page.dart';
 import 'pages/home_funding_page.dart';
 import 'pages/home_liquidation_page.dart';
 import 'pages/home_market_page.dart';
@@ -18,6 +19,11 @@ import 'pages/invite_page.dart';
 import 'pages/login_page.dart';
 import 'pages/news_page.dart';
 import 'pages/profile_page.dart';
+import 'pages/orders_page.dart';
+import 'pages/products_page.dart';
+import 'pages/team_page.dart';
+import 'pages/vip_page.dart';
+import 'pages/withdraw_page.dart';
 import 'services/auth.dart';
 import 'services/call_service.dart';
 import 'services/chat_api.dart';
@@ -51,6 +57,13 @@ class MingceApp extends StatelessWidget {
           '/deposit': const DepositPage(),
           '/commission': const CommissionPage(),
           '/invite': const InvitePage(),
+          // V0.7 邀请返佣与等级体系
+          '/products': const ProductsPage(),
+          '/vip': const VipPage(),
+          '/team': const TeamPage(),
+          '/orders': const OrdersPage(),
+          '/funds': const FundsPage(),
+          '/withdraw': const WithdrawPage(),
         };
         final page = gated[settings.name];
         if (page == null) return null;

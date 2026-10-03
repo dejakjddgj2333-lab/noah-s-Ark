@@ -26,12 +26,9 @@ async function handleSubmit() {
   await formRef.value.validate()
   loading.value = true
   try {
-    // TODO: 对接后端登录接口
-    // const res = await login(form)
-    // userStore.setToken(res.token)
-    // userStore.setInfo(res.user)
-    userStore.setToken('demo-token')
-    userStore.setInfo({ username: form.username })
+    const res = await login(form)
+    userStore.setToken(res.token)
+    userStore.setInfo(res.user)
     ElMessage.success('登录成功')
     router.push(route.query.redirect || '/dashboard')
   } finally {

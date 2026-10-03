@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from decimal import Decimal
 
 from dotenv import load_dotenv
 
@@ -68,6 +69,47 @@ class Config:
     )
     news_collect_interval_sec: int = int(
         os.getenv("NEWS_COLLECT_INTERVAL_SEC", "1800")  # 30 分钟
+    )
+
+    # 后台管理员用户名 (逗号分隔; 仅这些用户可访问 /api/admin/*)
+    admin_usernames: tuple[str, ...] = tuple(
+        u.strip()
+        for u in os.getenv("ADMIN_USERNAMES", "").split(",")
+        if u.strip()
+    )
+    # 充值扫链监听开关 (测试时可关闭)
+    deposit_monitor_enabled: bool = (
+        os.getenv("DEPOSIT_MONITOR_ENABLED", "true").lower() == "true"
+    )
+    # 结算引擎开关与轮询间隔 (测试时可关闭)
+    settlement_enabled: bool = (
+        os.getenv("SETTLEMENT_ENABLED", "true").lower() == "true"
+    )
+    settlement_interval_sec: int = int(
+        os.getenv("SETTLEMENT_INTERVAL_SEC", "60")
+    )
+
+    # ── 安全防护 ──
+    # 登录限流: 同一 IP+用户名 窗口内允许的最大失败尝试次数
+    login_rate_limit: int = int(os.getenv("LOGIN_RATE_LIMIT", "5"))
+    login_rate_window_sec: int = int(os.getenv("LOGIN_RATE_WINDOW_SEC", "300"))
+    # 注册限流: 同一 IP 窗口内最大注册数 (防批量养号)
+    register_rate_limit: int = int(os.getenv("REGISTER_RATE_LIMIT", "100"))
+    register_rate_window_sec: int = int(
+        os.getenv("REGISTER_RATE_WINDOW_SEC", "3600")
+    )
+    # 发码限流: 同一 IP 窗口内最大发码数 (防邮件轰炸)
+    email_code_rate_limit: int = int(os.getenv("EMAIL_CODE_RATE_LIMIT", "10"))
+    email_code_rate_window_sec: int = int(
+        os.getenv("EMAIL_CODE_RATE_WINDOW_SEC", "3600")
+    )
+    # 提现限额 (USDT; 按扣费前申请金额计). 0 = 不限制
+    withdraw_max_per_request: Decimal = Decimal(
+        os.getenv("WITHDRAW_MAX_PER_REQUEST", "100000")
+    )
+    # 提现单日累计上限 (同一用户, 处理中+已通过计入;  rejected 已退回不计)
+    withdraw_daily_limit: Decimal = Decimal(
+        os.getenv("WITHDRAW_DAILY_LIMIT", "200000")
     )
 
 

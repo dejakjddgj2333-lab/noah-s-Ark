@@ -874,6 +874,62 @@ class _AssetsPageState extends State<AssetsPage> {
             ),
           ),
           const SizedBox(height: 12),
+          // V0.7 功能直达 (新增区块, 不影响上方既有内容)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: McColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: McColors.surfaceContainerHigh),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '理财中心',
+                  style: McText.display(size: 13, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final (route, icon, label) in [
+                      ('/products', Icons.savings_outlined, '理财产品'),
+                      ('/vip', Icons.workspace_premium_outlined, '我的VIP'),
+                      ('/team', Icons.groups_outlined, '我的团队'),
+                      ('/orders', Icons.receipt_long_outlined, '我的订单'),
+                      ('/funds', Icons.account_balance_wallet_outlined, '资金明细'),
+                      ('/withdraw', Icons.outbox_outlined, '提现'),
+                    ])
+                      Material(
+                        color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => Navigator.pushNamed(context, route),
+                          child: Container(
+                            width: (MediaQuery.of(context).size.width - 28 - 24 - 16) / 3,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Column(
+                              children: [
+                                Icon(icon, size: 22, color: McColors.primarySoft),
+                                const SizedBox(height: 6),
+                                Text(
+                                  label,
+                                  style: McText.sans(size: 12, weight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           // Recent feed
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -23,3 +23,28 @@ class HkOrder(HkBase):
     status = Column(String(16), nullable=False, default="effective", index=True)
     effective_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)
+
+    # ---- 下单瞬间的产品/资格快照 (Phase 2.5: 订单留存, 之后改产品不影响存量订单) ----
+    product_name = Column(String(64), nullable=False, default="")
+    base_daily_rate = Column(Numeric(10, 6), nullable=False, default=0)
+    duration_days = Column(Integer, nullable=False, default=0)
+    return_method = Column(String(16), nullable=False, default="expiry")
+    # 购买时适用 VIP 与锁定加成 (Phase 3 等级体系落地后由等级服务填充)
+    vip_level = Column(Integer, nullable=True)
+    lock_bonus_rate = Column(Numeric(10, 6), nullable=True)
+    # 资格校验依据的规则版本号
+    rule_version = Column(String(16), nullable=False, default="v0.7")
+    # 到期时间 = 生效时间 + 周期天数 (计时以订单生效时间为准, 每满24小时为一日)
+    expires_at = Column(DateTime, nullable=True)
+    # 结算进度 (Phase 5 结算引擎): 已结算期数 / 下期应结算时点
+    settled_periods = Column(Integer, nullable=False, default=0)
+    next_settle_at = Column(DateTime, nullable=True, index=True)
+
+    @property
+    def actual_daily_rate(self) -> Decimal | None:
+        """实际每日收益率 = 基础每日收益率 × (1 + 锁定VIP加成). 结算引擎(Phase 5)按此计算."""
+        if self.lock_bonus_rate is None:
+            return None
+        return Decimal(self.base_daily_rate) * (
+            1 + Decimal(self.lock_bonus_rate)
+        )

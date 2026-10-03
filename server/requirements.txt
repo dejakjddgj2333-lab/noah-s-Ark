@@ -14,3 +14,4 @@ psycopg2-binary>=2.9
 tenacity>=8.2
 structlog>=24.1
 python-multipart>=0.0.9
+tronpy>=0.5

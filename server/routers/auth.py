@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import config
 from database import get_db
 from models.hk import HkEmailCode, HkUser, utc_now
-from services import auth_service, email_service, invite_service
+from services import auth_service, email_service, invite_service, rate_limit_service
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -106,7 +106,15 @@ async def _latest_code(
 
 
 @router.post("/send-email-code")
-async def send_email_code(data: SendEmailCodeIn, db: AsyncSession = Depends(get_db)):
+async def send_email_code(
+    data: SendEmailCodeIn, request: Request, db: AsyncSession = Depends(get_db)
+):
+    ip = rate_limit_service.client_ip(request)
+    rate_limit_service.check(
+        f"emailcode:{ip}",
+        config.email_code_rate_limit,
+        config.email_code_rate_window_sec,
+    )
     if data.purpose == "register":
         existing = await db.execute(
             select(HkUser).where(HkUser.email == data.email)
@@ -153,7 +161,15 @@ async def send_email_code(data: SendEmailCodeIn, db: AsyncSession = Depends(get_
 
 
 @router.post("/register", response_model=TokenOut)
-async def register(data: RegisterIn, db: AsyncSession = Depends(get_db)):
+async def register(
+    data: RegisterIn, request: Request, db: AsyncSession = Depends(get_db)
+):
+    ip = rate_limit_service.client_ip(request)
+    rate_limit_service.check(
+        f"register:{ip}",
+        config.register_rate_limit,
+        config.register_rate_window_sec,
+    )
     if not _USERNAME_RE.match(data.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -205,7 +221,9 @@ async def register(data: RegisterIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-async def login(data: LoginIn, db: AsyncSession = Depends(get_db)):
+async def login(
+    data: LoginIn, request: Request, db: AsyncSession = Depends(get_db)
+):
     result = await db.execute(
         select(HkUser).where(HkUser.username == data.username)
     )
@@ -213,6 +231,13 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db)):
     if user is None or not auth_service.verify_password(
         data.password, user.password_hash
     ):
+        # 仅失败尝试计数, 成功登录不占额度; 超限抛 429 防暴力破解
+        ip = rate_limit_service.client_ip(request)
+        rate_limit_service.check(
+            f"login:{ip}:{data.username.lower()}",
+            config.login_rate_limit,
+            config.login_rate_window_sec,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码错误"
         )
