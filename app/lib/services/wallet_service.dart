@@ -10,7 +10,11 @@ import 'package:reown_sign/reown_sign.dart';
 class WalletService {
   WalletService._();
 
-  static const String projectId = String.fromEnvironment('WC_PROJECT_ID');
+  /// WalletConnect projectId (公开 dapp id, 非密钥). dart-define 可覆盖.
+  static const String projectId = String.fromEnvironment(
+    'WC_PROJECT_ID',
+    defaultValue: '467a3a5ae7a21119046c7d23818dd11d',
+  );
   static bool get available => projectId.isNotEmpty;
 
   static const tronChain = 'tron:0x2b6653dc'; // TRON 主网 CAIP-2
