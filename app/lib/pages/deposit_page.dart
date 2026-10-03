@@ -34,6 +34,21 @@ class _DepositPageState extends State<DepositPage> {
     _load();
   }
 
+  bool _argsRead = false;
+
+  /// 钱包矩阵跳入时带初始网络.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsRead) return;
+    _argsRead = true;
+    final arg = ModalRoute.of(context)?.settings.arguments?.toString();
+    if (arg != null && networkMeta.containsKey(arg) && arg != _network) {
+      setState(() => _network = arg);
+      _load();
+    }
+  }
+
   /// 切网络重拉地址+记录 (余额不依赖网络, 一并刷新).
   void _switchNetwork(String network) {
     if (network == _network) return;
