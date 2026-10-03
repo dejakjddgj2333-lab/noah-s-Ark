@@ -27,7 +27,11 @@ venv/
 env/
 ENV/
 
-# 注: .env / .env.prod 直接入库（私有仓库, 便于其他机器拉取即用）
+# 敏感配置: .env 一律不入库 (含生产密码/密钥); .env.example 模板除外
+.env
+.env.*
+!*.env.example
+!**/.env.example
 
 # 本地数据库 / 运行时数据
 *.db
