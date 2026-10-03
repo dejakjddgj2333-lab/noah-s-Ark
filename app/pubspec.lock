@@ -929,7 +929,7 @@ packages:
     source: hosted
     version: "2.3.0"
   reown_core:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: reown_core
       sha256: ec80a54a8d2ab25a8573bc2e68bac0e170a0b646d6e60729938600b8afb791cd

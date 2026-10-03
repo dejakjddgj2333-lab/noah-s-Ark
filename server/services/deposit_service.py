@@ -13,16 +13,46 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.account import HkDepositAddress, HkDepositRecord
 from models.hk import utc_now
-from services import account_service, trongrid
+from services import account_service, evmscan, trongrid
 
-# 网络配置: usdt_contract 为 TRC20-USDT 官方合约
+# 网络配置: chain=tron 走 TronGrid; chain=evm 走 Etherscan V2 (chain_id 区分).
+# usdt_contract 为各网 USDT 官方合约; decimals 影响金额解析.
 NETWORKS: dict[str, dict] = {
     "trc20": {
         "name": "TRC20 (Tron)",
         "usdt_contract": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
         "confirmations_required": 12,
         "min_deposit": "10",  # USDT, 设计文档第三节
-    }
+        "decimals": 6,
+        "chain": "tron",
+    },
+    "erc20": {
+        "name": "ERC20 (Ethereum)",
+        "usdt_contract": "0xdAC17F958D2ee523a1638c3018b8Eb7c0b51D39E4",
+        "confirmations_required": 12,
+        "min_deposit": "10",
+        "decimals": 6,
+        "chain": "evm",
+        "chain_id": 1,
+    },
+    "bep20": {
+        "name": "BEP20 (BSC)",
+        "usdt_contract": "0x55d398326f99059fF775485246999027B3197955",
+        "confirmations_required": 15,
+        "min_deposit": "10",
+        "decimals": 18,
+        "chain": "evm",
+        "chain_id": 56,
+    },
+    "arbitrum": {
+        "name": "Arbitrum One",
+        "usdt_contract": "0xFd086bC7CD5C481DCC9C85C478Fbe1e0C31CaaF69",
+        "confirmations_required": 12,
+        "min_deposit": "10",
+        "decimals": 6,
+        "chain": "evm",
+        "chain_id": 42161,
+    },
 }
 
 MIN_DEPOSIT_VIOLATION = "低于最小充值金额, 记录为 unmatched 待人工处理"
@@ -96,9 +126,10 @@ _TXID_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 async def prepare_transfer(
     db: AsyncSession, user_id: int, network: str, owner_address: str, amount: Decimal
 ) -> dict:
-    """构造未签名 TRC20-USDT transfer 交易 (钱包连接支付用).
+    """构造未签名 USDT transfer (钱包连接支付用).
 
-    TronGrid triggersmartcontract 生成, App 交钱包签名后走 broadcast.
+    tron: TronGrid triggersmartcontract 生成, 钱包签名后走 broadcast.
+    evm: 本地构造 eth_sendTransaction 参数, 钱包自行估 gas 签名并广播.
     """
     network = network.lower()
     cfg = get_network(network)
@@ -110,6 +141,34 @@ async def prepare_transfer(
         )
     if amount > Decimal("1000000"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="金额超出限制")
+
+    addr = await get_or_assign_address(db, user_id, network)
+    units = int(amount * Decimal(10 ** cfg["decimals"]))
+
+    if cfg["chain"] == "evm":
+        owner = owner_address.strip()
+        if not re.fullmatch(r"0x[0-9a-fA-F]{40}", owner):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, detail="付款地址不是有效 EVM 地址"
+            )
+        data = (
+            "0xa9059cbb"
+            + addr.address.lower().removeprefix("0x").rjust(64, "0")
+            + hex(units)[2:].rjust(64, "0")
+        )
+        return {
+            "transaction": {
+                "from": owner,
+                "to": cfg["usdt_contract"],
+                "value": "0x0",
+                "data": data,
+            },
+            "chain_id": cfg["chain_id"],
+            "to": addr.address,
+            "amount": str(amount),
+        }
+
+    # tron
     try:
         from tronpy.keys import to_base58check_address, to_hex_address
 
@@ -121,13 +180,9 @@ async def prepare_transfer(
             status.HTTP_400_BAD_REQUEST, detail="付款地址不是有效 TRC20 地址"
         ) from None
 
-    addr = await get_or_assign_address(db, user_id, network)
     to_hex = to_hex_address(addr.address)
-    units = int(amount * Decimal(10**6))
     # transfer(address,uint256): 地址去 0x41 前缀补 32 字节 + 金额 32 字节
-    parameter = (
-        to_hex[2:].rjust(64, "0") + hex(units)[2:].rjust(64, "0")
-    )
+    parameter = to_hex[2:].rjust(64, "0") + hex(units)[2:].rjust(64, "0")
     payload = {
         "owner_address": owner,
         "contract_address": cfg["usdt_contract"],
@@ -153,7 +208,6 @@ async def prepare_transfer(
     if not tx:
         msg = (data.get("Error") or data.get("error") or "构造失败").__str__()
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=msg)
-    # 钱包侧多要 hex 地址; visible=true 返回 base58, 统一补 hex 版 raw_data
     return {
         "transaction": tx,
         "to": addr.address,
@@ -198,6 +252,8 @@ async def claim_by_txid(
     network = network.lower()
     cfg = get_network(network)
     txid = txid.strip()
+    if txid.lower().startswith("0x"):
+        txid = txid[2:]  # EVM 交易哈希 0x 前缀归一化
     if not _TXID_RE.match(txid):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="txid 格式不正确")
 
@@ -228,13 +284,26 @@ async def claim_by_txid(
             status.HTTP_400_BAD_REQUEST, detail="请先获取充值地址"
         )
 
+    is_evm = cfg["chain"] == "evm"
+    if is_evm and not evmscan.available():
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="该网络暂未开放, 请用 TRC20 或联系客服",
+        )
     async with trongrid.make_client() as client:
         try:
-            txs = await trongrid.fetch_incoming(
-                client, addr.address, cfg["usdt_contract"], limit=200
-            )
-            latest = await trongrid.latest_block(client)
-        except trongrid.RateLimited:
+            if is_evm:
+                txs = await evmscan.fetch_incoming(
+                    client, cfg["chain_id"], addr.address,
+                    cfg["usdt_contract"], cfg["decimals"], limit=200,
+                )
+                latest = await evmscan.latest_block(client, cfg["chain_id"])
+            else:
+                txs = await trongrid.fetch_incoming(
+                    client, addr.address, cfg["usdt_contract"], limit=200
+                )
+                latest = await trongrid.latest_block(client)
+        except (trongrid.RateLimited, evmscan.RateLimited):
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="链上查询限流, 请稍后重试",
@@ -245,7 +314,10 @@ async def claim_by_txid(
                 detail="链上查询失败, 请稍后重试",
             ) from None
 
-    tx = next((t for t in txs if t["txid"].lower() == txid.lower()), None)
+    tx = next(
+        (t for t in txs if t["txid"].lower().removeprefix("0x") == txid.lower()),
+        None,
+    )
     if tx is None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,

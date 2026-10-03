@@ -17,7 +17,7 @@ from sqlalchemy import func, select
 from config import config
 from database import SessionLocal
 from models.account import HkDepositAddress, HkDepositRecord
-from services import account_service, trongrid
+from services import account_service, evmscan, trongrid
 from services.deposit_service import NETWORKS
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,12 @@ async def _ensure_pool(db, network: str) -> None:
 
 
 async def _poll_network(db, client, network: str) -> None:
+    global _throttle_hits
     cfg = NETWORKS[network]
+    is_evm = cfg["chain"] == "evm"
+    if is_evm and not evmscan.available():
+        return  # 未配 Etherscan key: 跳过 EVM 网络 (TRC20 不受影响)
+
     result = await db.execute(
         select(HkDepositAddress).where(
             HkDepositAddress.network == network,
@@ -66,7 +71,10 @@ async def _poll_network(db, client, network: str) -> None:
     if not addresses:
         return
 
-    latest = await trongrid.latest_block(client)
+    if is_evm:
+        latest = await evmscan.latest_block(client, cfg["chain_id"])
+    else:
+        latest = await trongrid.latest_block(client)
     if latest is None:
         return
 
@@ -75,11 +83,16 @@ async def _poll_network(db, client, network: str) -> None:
 
     for addr in addresses:
         try:
-            txs = await trongrid.fetch_incoming(
-                client, addr.address, cfg["usdt_contract"]
-            )
-        except trongrid.RateLimited:
-            global _throttle_hits
+            if is_evm:
+                txs = await evmscan.fetch_incoming(
+                    client, cfg["chain_id"], addr.address,
+                    cfg["usdt_contract"], cfg["decimals"],
+                )
+            else:
+                txs = await trongrid.fetch_incoming(
+                    client, addr.address, cfg["usdt_contract"]
+                )
+        except (trongrid.RateLimited, evmscan.RateLimited):
             _throttle_hits += 1
             logger.warning(
                 "deposit_monitor throttled (hits=%s), skip round",

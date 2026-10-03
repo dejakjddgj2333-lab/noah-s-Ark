@@ -66,26 +66,29 @@ class FinanceApi {
       );
 
   // ── 充值 ──────────────────────────────────────────────
-  /// 我的充值地址 (首次自动从池分配).
-  static Future<Map<String, dynamic>> depositAddress() =>
-      McApi.get('/api/deposit/address', token: _token);
+  /// 我的充值地址 (首次自动从池分配). network: trc20|erc20|bep20|arbitrum.
+  static Future<Map<String, dynamic>> depositAddress({String network = 'trc20'}) =>
+      McApi.get('/api/deposit/address?network=$network', token: _token);
 
   /// 充值记录 (最新在前).
   static Future<List<dynamic>> depositRecords() =>
       McApi.getList('/api/deposit/records', token: _token);
 
   /// txid 补单 (链上已转未到账自助核销).
-  static Future<Map<String, dynamic>> claimDeposit(String txid) =>
-      McApi.post('/api/deposit/claim', {'txid': txid}, token: _token);
+  static Future<Map<String, dynamic>> claimDeposit(String txid,
+          {String network = 'trc20'}) =>
+      McApi.post('/api/deposit/claim', {'txid': txid, 'network': network},
+          token: _token);
 
   /// 钱包连接支付: 构造未签名 USDT 转账交易.
   static Future<Map<String, dynamic>> prepareDepositTransfer({
     required String ownerAddress,
     required String amount,
+    String network = 'trc20',
   }) =>
       McApi.post(
         '/api/deposit/prepare-transfer',
-        {'owner_address': ownerAddress, 'amount': amount},
+        {'owner_address': ownerAddress, 'amount': amount, 'network': network},
         token: _token,
       );
 

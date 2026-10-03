@@ -41,6 +41,8 @@ class Config:
     okx_base_url: str = os.getenv("OKX_BASE_URL", "https://www.okx.com")
     # TronGrid API key (充值扫链; 空 = 公共 3 QPS 限流)
     trongrid_api_key: str = os.getenv("TRONGRID_API_KEY", "")
+    # Etherscan V2 API key (EVM 三网扫链; 一把 key 多链, etherscan.io 免费注册)
+    etherscan_api_key: str = os.getenv("ETHERSCAN_API_KEY", "")
     # 充值地址池: 空闲低于下限自动补足到目标数
     deposit_pool_min: int = int(os.getenv("DEPOSIT_POOL_MIN", "20"))
     deposit_pool_target: int = int(os.getenv("DEPOSIT_POOL_TARGET", "50"))

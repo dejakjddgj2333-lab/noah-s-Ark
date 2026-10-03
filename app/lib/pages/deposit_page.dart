@@ -19,6 +19,7 @@ class DepositPage extends StatefulWidget {
 }
 
 class _DepositPageState extends State<DepositPage> {
+  String _network = 'trc20'; // trc20|erc20|bep20|arbitrum
   String? _address;
   int _requiredConf = 12;
   double _minDeposit = 10;
@@ -33,6 +34,13 @@ class _DepositPageState extends State<DepositPage> {
     _load();
   }
 
+  /// 切网络重拉地址+记录 (余额不依赖网络, 一并刷新).
+  void _switchNetwork(String network) {
+    if (network == _network) return;
+    setState(() => _network = network);
+    _load();
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -40,7 +48,7 @@ class _DepositPageState extends State<DepositPage> {
     });
     try {
       final results = await Future.wait([
-        FinanceApi.depositAddress(),
+        FinanceApi.depositAddress(network: _network),
         FinanceApi.depositRecords(),
         FinanceApi.account(),
       ]);
@@ -73,6 +81,16 @@ class _DepositPageState extends State<DepositPage> {
   static int _toInt(dynamic v, int fallback) =>
       int.tryParse(v?.toString() ?? '') ?? fallback;
 
+  /// 网络展示元数据: (标签, 链名, 速度说明).
+  static const networkMeta = {
+    'trc20': ('TRC20', 'Tron 主网', '费率低 · ~1分钟'),
+    'erc20': ('ERC20', 'Ethereum', '手续费较高 · ~3分钟'),
+    'bep20': ('BEP20', 'BNB Chain', '费率低 · ~1分钟'),
+    'arbitrum': ('Arbitrum', 'Arbitrum One', '费率低 · ~1分钟'),
+  };
+
+  String get _networkLabel => networkMeta[_network]?.$1 ?? _network;
+
   void _copyAddress() {
     final addr = _address;
     if (addr == null) return;
@@ -89,9 +107,9 @@ class _DepositPageState extends State<DepositPage> {
         backgroundColor: McColors.surfaceContainer,
         title: Text('充值规则', style: McText.sans(size: 16, weight: FontWeight.w600)),
         content: Text(
-          '1. 仅支持 USDT 的 TRC20 网络充值, 转出网络必须与所选网络一致, 否则不到账且无法追回。\n\n'
+          '1. 仅支持 USDT 充值, 转出网络必须与所选网络 ($_networkLabel) 一致, 否则不到账且无法追回。\n\n'
           '2. 单笔最小充值 $_minDeposit USDT, 低于此金额不到账, 需联系客服处理。\n\n'
-          '3. 转账后需 $_requiredConf 个区块确认自动入账本金账户, 约 1 分钟。\n\n'
+          '3. 转账后需 $_requiredConf 个区块确认自动入账本金账户。\n\n'
           '4. 长时间未到账可在本页底部提交 txid 补单, 或联系客服。',
           style: McText.sans(size: 13, color: McColors.onSurfaceVariant, height: 1.5),
         ),
@@ -143,7 +161,7 @@ class _DepositPageState extends State<DepositPage> {
   Future<void> _doClaim(String txid) async {
     if (txid.isEmpty) return;
     try {
-      final rec = await FinanceApi.claimDeposit(txid);
+      final rec = await FinanceApi.claimDeposit(txid, network: _network);
       if (!mounted) return;
       final status = rec['status']?.toString() ?? '';
       final msg = switch (status) {
@@ -186,6 +204,8 @@ class _DepositPageState extends State<DepositPage> {
             _NetworkCard(
               minDeposit: _minDeposit,
               requiredConf: _requiredConf,
+              network: _network,
+              onSelect: _switchNetwork,
             ),
             const SizedBox(height: 20),
             if (_loading)
@@ -196,7 +216,11 @@ class _DepositPageState extends State<DepositPage> {
             else if (_error != null)
               _ErrorCard(message: _error!, onRetry: _load)
             else
-              _QrCard(address: _address ?? '', onCopy: _copyAddress),
+              _QrCard(
+                address: _address ?? '',
+                networkLabel: _networkLabel,
+                onCopy: _copyAddress,
+              ),
             const SizedBox(height: 20),
             const _RadarBar(),
             const SizedBox(height: 20),
@@ -204,8 +228,12 @@ class _DepositPageState extends State<DepositPage> {
             const SizedBox(height: 16),
             _FooterActions(
               onClaim: _showClaim,
-              onWalletPay: () =>
-                  Navigator.pushNamed(context, '/wallet-connect'),
+              onWalletPay: () => Navigator.pushNamed(
+                context,
+                '/wallet-connect',
+                arguments: _network,
+              ),
+              network: _network,
             ),
           ],
         ),
@@ -439,12 +467,19 @@ class _AssetCard extends StatelessWidget {
   }
 }
 
-/// 3. Network card: TRC20 可用, 其余灰显即将上线.
+/// 3. Network card: 四网可选 (trc20/erc20/bep20/arbitrum).
 class _NetworkCard extends StatelessWidget {
-  const _NetworkCard({required this.minDeposit, required this.requiredConf});
+  const _NetworkCard({
+    required this.minDeposit,
+    required this.requiredConf,
+    required this.network,
+    required this.onSelect,
+  });
 
   final double minDeposit;
   final int requiredConf;
+  final String network;
+  final ValueChanged<String> onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -477,43 +512,20 @@ class _NetworkCard extends StatelessWidget {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             childAspectRatio: 2.5,
-            children: const [
-              _NetworkTile(
-                name: 'TRC20',
-                tag: '推荐',
-                tagColor: McColors.tertiary,
-                chain: 'Tron 主网',
-                speed: '费率低 · ~1分钟',
-                speedColor: McColors.primary,
-                selected: true,
-              ),
-              _NetworkTile(
-                name: 'ERC20',
-                tag: '即将上线',
-                tagColor: McColors.outline,
-                chain: 'Ethereum',
-                speed: '-',
-                speedColor: McColors.outline,
-                disabled: true,
-              ),
-              _NetworkTile(
-                name: 'Arbitrum',
-                tag: '即将上线',
-                tagColor: McColors.outline,
-                chain: 'Arbitrum One',
-                speed: '-',
-                speedColor: McColors.outline,
-                disabled: true,
-              ),
-              _NetworkTile(
-                name: 'Solana',
-                tag: '即将上线',
-                tagColor: McColors.outline,
-                chain: 'Solana',
-                speed: '-',
-                speedColor: McColors.outline,
-                disabled: true,
-              ),
+            children: [
+              for (final e in _DepositPageState.networkMeta.entries)
+                _NetworkTile(
+                  name: e.value.$1,
+                  tag: e.key == 'trc20' ? '推荐' : null,
+                  tagColor: McColors.tertiary,
+                  chain: e.value.$2,
+                  speed: e.value.$3,
+                  speedColor: e.key == 'erc20'
+                      ? McColors.onSurfaceVariant
+                      : McColors.primary,
+                  selected: network == e.key,
+                  onTap: () => onSelect(e.key),
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -526,7 +538,9 @@ class _NetworkCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _param('预计到账', '约 1 分钟', McColors.onSurface),
+                _param('预计到账',
+                    _DepositPageState.networkMeta[network]?.$3 ?? '约 1 分钟',
+                    McColors.onSurface),
                 _param('最小充值额', '${minDeposit.toStringAsFixed(0)} USDT',
                     McColors.onSurface),
                 _param('入账确认数', '$requiredConf 个区块', McColors.tertiary),
@@ -566,7 +580,7 @@ class _NetworkTile extends StatelessWidget {
     this.tag,
     this.tagColor = McColors.tertiary,
     this.selected = false,
-    this.disabled = false,
+    this.onTap,
   });
 
   final String name;
@@ -576,12 +590,13 @@ class _NetworkTile extends StatelessWidget {
   final String speed;
   final Color speedColor;
   final bool selected;
-  final bool disabled;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: disabled ? 0.45 : 1,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -673,9 +688,14 @@ class _NetworkTile extends StatelessWidget {
 
 /// 4. QR + 地址卡 (真二维码, 复制可用).
 class _QrCard extends StatelessWidget {
-  const _QrCard({required this.address, required this.onCopy});
+  const _QrCard({
+    required this.address,
+    required this.networkLabel,
+    required this.onCopy,
+  });
 
   final String address;
+  final String networkLabel;
   final VoidCallback onCopy;
 
   @override
@@ -704,7 +724,7 @@ class _QrCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  const McPill('TRC20',
+                  McPill(networkLabel,
                       color: McColors.primary, fontSize: 12, bold: false),
                 ],
               ),
@@ -767,7 +787,7 @@ class _QrCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('TRON 收款地址',
+                    Text('$networkLabel 收款地址',
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant)),
                   ],
@@ -856,7 +876,7 @@ class _QrCard extends StatelessWidget {
                       children: [
                         const TextSpan(text: '转出网络必须与所选网络 '),
                         TextSpan(
-                          text: 'TRC20',
+                          text: networkLabel,
                           style: McText.sans(
                               size: 12,
                               weight: FontWeight.w600,
@@ -1049,7 +1069,11 @@ class _RecordTile extends StatelessWidget {
                                 size: 14, weight: FontWeight.w600),
                           ),
                           const SizedBox(width: 6),
-                          const McChip('TRC20',
+                          McChip(
+                              _DepositPageState.networkMeta[record['network']]
+                                      ?.$1 ??
+                                  (record['network']?.toString().toUpperCase() ??
+                                      ''),
                               color: McColors.onSurfaceVariant),
                         ],
                       ),
@@ -1093,10 +1117,22 @@ class _RecordTile extends StatelessWidget {
 
 /// 底部: 钱包支付 + txid 补单 + tronscan 链接.
 class _FooterActions extends StatelessWidget {
-  const _FooterActions({required this.onClaim, required this.onWalletPay});
+  const _FooterActions({
+    required this.onClaim,
+    required this.onWalletPay,
+    required this.network,
+  });
 
   final VoidCallback onClaim;
   final VoidCallback onWalletPay;
+  final String network;
+
+  static const _explorers = {
+    'trc20': 'https://tronscan.org',
+    'erc20': 'https://etherscan.io',
+    'bep20': 'https://bscscan.com',
+    'arbitrum': 'https://arbiscan.io',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -1149,7 +1185,7 @@ class _FooterActions extends StatelessWidget {
             const SizedBox(width: 16),
             InkWell(
               onTap: () => launchUrl(
-                  Uri.parse('https://tronscan.org'),
+                  Uri.parse(_explorers[network] ?? 'https://tronscan.org'),
                   mode: LaunchMode.externalApplication),
               child: Text(
                 '链上浏览器查询',

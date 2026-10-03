@@ -12,8 +12,10 @@ import '../services/api.dart';
 import '../services/finance_api.dart';
 import '../services/wallet_service.dart';
 
-/// 连接钱包支付 (WalletConnect v2 / TRON).
-/// 流程: 连接 → 输入金额 → prepare-transfer → 钱包签名 → broadcast → claim 入账.
+/// 连接钱包支付 (WalletConnect v2).
+/// 流程: 连接 → 输入金额 → prepare-transfer → 钱包签名/发送 → claim 入账.
+/// trc20 走 tron_signTransaction (可能需后端 broadcast);
+/// erc20/bep20/arbitrum 走 eth_sendTransaction (钱包直接广播, 返回哈希).
 /// 任一环节失败都降级提示手动转账 + txid 补单.
 class WalletConnectPage extends StatefulWidget {
   const WalletConnectPage({super.key});
@@ -26,20 +28,37 @@ enum _Phase { idle, connecting, connected, paying, done }
 
 class _WalletConnectPageState extends State<WalletConnectPage> {
   _Phase _phase = _Phase.idle;
+  String _network = 'trc20'; // 充值页带入
   String? _address; // 已连接钱包地址
   String? _wcUri; // 连接中展示的 wc: uri
   final _amountCtrl = TextEditingController();
   String _status = '';
   String? _error;
+  bool _argsRead = false;
+
+  bool get _isEvm => WalletService.isEvm(_network);
+  String get _networkLabel => switch (_network) {
+        'erc20' => 'ERC20',
+        'bep20' => 'BEP20',
+        'arbitrum' => 'Arbitrum',
+        _ => 'TRC20',
+      };
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsRead) return;
+    _argsRead = true;
+    final arg = ModalRoute.of(context)?.settings.arguments?.toString();
+    if (arg != null &&
+        (arg == 'trc20' || WalletService.isEvm(arg))) {
+      _network = arg;
+    }
     _restore();
   }
 
   Future<void> _restore() async {
-    final addr = await WalletService.connectedAddress();
+    final addr = await WalletService.connectedAddress(_network);
     if (addr != null && mounted) {
       setState(() {
         _address = addr;
@@ -63,7 +82,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       _status = '生成连接中...';
     });
     try {
-      final (uri, sessionFuture) = await WalletService.connect();
+      final (uri, sessionFuture) = await WalletService.connect(_network);
       if (!mounted) return;
       setState(() {
         _wcUri = uri?.toString();
@@ -72,12 +91,13 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       final SessionData session = await sessionFuture.timeout(
         const Duration(minutes: 2),
       );
-      final accs = session.namespaces['tron']?.accounts ?? const [];
+      final ns = _isEvm ? 'eip155' : 'tron';
+      final accs = session.namespaces[ns]?.accounts ?? const [];
       if (!mounted) return;
       if (accs.isEmpty) {
         setState(() {
           _phase = _Phase.idle;
-          _error = '钱包未提供 TRON 账户, 请换 Trust/SafePal 重试';
+          _error = '钱包未提供 $_networkLabel 账户, 请换 Trust/SafePal 重试';
         });
         return;
       }
@@ -130,25 +150,35 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       final prep = await FinanceApi.prepareDepositTransfer(
         ownerAddress: owner,
         amount: amountText,
+        network: _network,
       );
       if (!mounted) return;
-      setState(() => _status = '请在钱包中确认签名...');
 
-      // 2. 钱包签名 (部分钱包签名后直接广播)
-      final result = await WalletService.signTransaction(
-        ownerAddress: owner,
-        unsignedTx: prep['transaction'] as Map<String, dynamic>,
-      );
-
-      // 3. 结果分两类: 已广播 (带 txid) / 仅签名 (需后端广播)
       String txid = '';
-      if (result is Map) {
-        final r = result.cast<String, dynamic>();
-        txid = (r['txid'] ?? r['transaction']?['txID'] ?? '').toString();
-        if (txid.isEmpty) {
-          if (!mounted) return;
-          setState(() => _status = '广播交易中...');
-          txid = await FinanceApi.broadcastDeposit(r);
+      if (_isEvm) {
+        // EVM: 钱包签名并广播, 直接返回交易哈希
+        setState(() => _status = '请在钱包中确认发送...');
+        txid = await WalletService.sendEvmTransaction(
+          network: _network,
+          transaction: prep['transaction'] as Map<String, dynamic>,
+        );
+      } else {
+        setState(() => _status = '请在钱包中确认签名...');
+        // 2. 钱包签名 (部分钱包签名后直接广播)
+        final result = await WalletService.signTransaction(
+          ownerAddress: owner,
+          unsignedTx: prep['transaction'] as Map<String, dynamic>,
+        );
+
+        // 3. 结果分两类: 已广播 (带 txid) / 仅签名 (需后端广播)
+        if (result is Map) {
+          final r = result.cast<String, dynamic>();
+          txid = (r['txid'] ?? r['transaction']?['txID'] ?? '').toString();
+          if (txid.isEmpty) {
+            if (!mounted) return;
+            setState(() => _status = '广播交易中...');
+            txid = await FinanceApi.broadcastDeposit(r);
+          }
         }
       }
       if (txid.isEmpty) throw StateError('钱包未返回交易结果');
@@ -156,7 +186,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       // 4. 核销入账
       if (!mounted) return;
       setState(() => _status = '核销入账中...');
-      final rec = await FinanceApi.claimDeposit(txid);
+      final rec = await FinanceApi.claimDeposit(txid, network: _network);
       if (!mounted) return;
       final st = rec['status']?.toString();
       setState(() {
@@ -343,7 +373,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              '将从您的钱包向专属充值地址转账 USDT-TRC20, 12 确认后入账',
+              '将从您的钱包向专属充值地址转账 USDT-$_networkLabel, 区块确认后入账',
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
