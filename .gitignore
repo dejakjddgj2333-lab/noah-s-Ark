@@ -28,9 +28,6 @@ env/
 ENV/
 
 # 敏感配置: .env 一律不入库 (含生产密码/密钥); .env.example 模板除外
-.env
-.env.*
-!*.env.example
 !**/.env.example
 
 # 本地数据库 / 运行时数据
