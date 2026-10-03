@@ -28,6 +28,9 @@ env/
 ENV/
 
 # 敏感配置: .env 一律不入库 (含生产密码/密钥); .env.example 模板除外
+# 非敏感开关在 .env.config (入库跟踪, 勿加进这里)
+.env.prod
+server/.env
 !**/.env.example
 
 # 本地数据库 / 运行时数据

@@ -18,7 +18,7 @@ jobs:
             backend:
               - 'server/**'
               - 'docker-compose.yml'
-              - '.env.prod'
+              - '.env.config'
             admin:
               - 'admin/**'
             all:
