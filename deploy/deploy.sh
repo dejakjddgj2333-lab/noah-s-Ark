@@ -37,9 +37,10 @@ deploy_admin() {
   npm run build
   rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' "$REPO/admin/dist/" "$ADMIN_WEB/"
   # build 以 root 跑, rsync -a 保留 600 权限 → nginx(www) 403; 发布后重置属主/权限
-  chown -R www:www "$ADMIN_WEB"
+  # .user.ini 宝塔加了防改属性, chown 会 Operation not permitted → find 排除它
+  find "$ADMIN_WEB" ! -name '.user.ini' -exec chown www:www {} +
   find "$ADMIN_WEB" -type d -exec chmod 755 {} \;
-  find "$ADMIN_WEB" -type f -exec chmod 644 {} \;
+  find "$ADMIN_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
 }
 
 TARGETS="$*"
