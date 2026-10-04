@@ -50,6 +50,9 @@ class FinanceApi {
   static Future<List<dynamic>> commissions() =>
       McApi.getList('/api/commissions', token: _token);
 
+  static Future<Map<String, dynamic>> commissionSummary() =>
+      McApi.get('/api/commissions/summary', token: _token);
+
   static Future<List<dynamic>> levelLogs({String? kind}) =>
       McApi.getList(
         '/api/level-logs${kind != null ? '?kind=$kind' : ''}',
