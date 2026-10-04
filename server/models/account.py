@@ -168,3 +168,33 @@ class HkAdminActionLog(HkBase):
     target_id = Column(Integer, nullable=False)
     detail = Column(String(512), nullable=True)  # 关键前后值摘要 (如拒绝原因/txid)
     created_at = Column(DateTime, default=utc_now, index=True)
+
+
+class HkPlatformSetting(HkBase):
+    """平台参数 KV 表 (后台可改): 归集主钱包 sweep_target_<network> /
+    归集阈值 sweep_threshold_<network> 等."""
+
+    __tablename__ = "hk_platform_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(64), unique=True, nullable=False, index=True)
+    value = Column(String(256), nullable=False, default="")
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class HkSweepRecord(HkBase):
+    """资金归集记录: 池地址 → 主钱包. gas_needed=地址缺原生币待手动补."""
+
+    __tablename__ = "hk_sweep_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    network = Column(String(16), nullable=False, index=True)
+    from_address = Column(String(64), nullable=False)
+    to_address = Column(String(64), nullable=False)
+    amount = Column(Numeric(18, 6), nullable=False)  # USDT
+    txid = Column(String(80), nullable=True)
+    status = Column(String(16), nullable=False, default="success", index=True)  # success/gas_needed/failed
+    error = Column(String(256), nullable=True)
+    operator_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False)
+    operator_username = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=utc_now, index=True)

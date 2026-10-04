@@ -37,8 +37,22 @@ class HkUser(HkBase):
     email_verified = Column(Boolean, nullable=False, default=True)  # 注册即验证
     avatar_url = Column(String(512), nullable=True)
     status = Column(String(16), nullable=False, default="active")  # active/banned
+    role_id = Column(Integer, ForeignKey("hk_roles.id"), nullable=True)  # 后台角色, NULL=普通用户
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class HkRole(HkBase):
+    """后台角色 (RBAC): perms 为权限码 JSON 数组, ['*']=全部; builtin 角色不可删."""
+
+    __tablename__ = "hk_roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(32), unique=True, nullable=False, index=True)
+    name = Column(String(32), nullable=False)
+    perms = Column(Text, nullable=False, default="[]")  # JSON array of perm codes
+    builtin = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class HkEmailCode(HkBase):

@@ -29,6 +29,14 @@ async function handleSubmit() {
     const res = await login(form)
     userStore.setToken(res.token)
     userStore.setInfo(res.user)
+    // 拉权限: 非管理员会 403, 提示并退回
+    try {
+      await userStore.fetchMe()
+    } catch {
+      userStore.logout()
+      ElMessage.error('该账号无后台管理权限')
+      return
+    }
     ElMessage.success('登录成功')
     router.push(route.query.redirect || '/dashboard')
   } finally {
@@ -39,8 +47,14 @@ async function handleSubmit() {
 
 <template>
   <div class="login-page">
-    <el-card class="login-card">
-      <h2 class="login-title">Noah's Ark 后台管理</h2>
+    <div class="login-glow glow-a" />
+    <div class="login-glow glow-b" />
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-mark">NA</div>
+        <h2 class="login-title">Noah's Ark 运营后台</h2>
+        <p class="login-sub">链上资产 · 邀请返佣 · 运营管理平台</p>
+      </div>
       <el-form ref="formRef" :model="form" :rules="rules" size="large" @keyup.enter="handleSubmit">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" :prefix-icon="'User'" />
@@ -58,30 +72,106 @@ async function handleSubmit() {
           登 录
         </el-button>
       </el-form>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .login-page {
+  position: relative;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #001529 0%, #1f2d3d 100%);
+  background: radial-gradient(1200px 600px at 20% 10%, #1b2452 0%, #0b1026 55%, #070b1c 100%);
+  overflow: hidden;
+}
+
+.login-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+
+.glow-a {
+  width: 420px;
+  height: 420px;
+  background: #4c6fff;
+  top: -120px;
+  right: -80px;
+}
+
+.glow-b {
+  width: 360px;
+  height: 360px;
+  background: #8a5cff;
+  bottom: -140px;
+  left: -60px;
 }
 
 .login-card {
-  width: 380px;
+  position: relative;
+  width: 400px;
+  padding: 40px 36px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 64px rgba(4, 8, 28, 0.6);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.brand-mark {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4c6fff, #8a5cff);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(76, 111, 255, 0.5);
 }
 
 .login-title {
-  text-align: center;
-  margin-bottom: 24px;
-  color: #303133;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.login-sub {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.login-card :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+}
+
+.login-card :deep(.el-input__inner) {
+  color: #fff;
+}
+
+.login-card :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .login-btn {
   width: 100%;
+  height: 44px;
+  font-size: 15px;
+  letter-spacing: 6px;
 }
 </style>

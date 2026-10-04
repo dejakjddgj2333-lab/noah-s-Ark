@@ -48,7 +48,7 @@ class RejectIn(BaseModel):
 async def list_withdrawals(
     status: str | None = Query(default=None),
     limit: int = Query(default=100, le=500),
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("page:withdrawals")),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(HkWithdrawal)
@@ -62,7 +62,7 @@ async def list_withdrawals(
 async def approve_withdrawal(
     withdrawal_id: int,
     data: ApproveIn,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:withdrawal:audit")),
     db: AsyncSession = Depends(get_db),
 ):
     """审核通过: 处理中金额转出; 平台完成链上打款后登记 txid."""
@@ -81,7 +81,7 @@ async def approve_withdrawal(
 async def reject_withdrawal(
     withdrawal_id: int,
     data: RejectIn,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:withdrawal:audit")),
     db: AsyncSession = Depends(get_db),
 ):
     """拒绝: 全额退回 (金额+服务费+网络费)."""

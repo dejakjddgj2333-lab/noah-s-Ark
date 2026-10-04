@@ -1,6 +1,14 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminUsers, getAdminUserProfile } from '@/api/product'
+import {
+  adjustBalance,
+  freezeUser,
+  resetUserPassword,
+  unfreezeUser,
+  updateUser,
+} from '@/api/admin'
 
 const loading = ref(false)
 const list = ref([])
@@ -30,6 +38,87 @@ async function openProfile(row) {
   }
 }
 
+// ── 冻结/解冻 ──
+async function toggleFreeze(row) {
+  const banned = row.status === 'banned'
+  await ElMessageBox.confirm(
+    banned ? `确认解冻 ${row.username}?` : `确认冻结 ${row.username}? 冻结后无法登录/交易。`,
+    '操作确认',
+    { type: 'warning' },
+  )
+  if (banned) {
+    await unfreezeUser(row.id)
+    ElMessage.success('已解冻')
+  } else {
+    await freezeUser(row.id)
+    ElMessage.success('已冻结')
+  }
+  fetchList()
+}
+
+// ── 余额调整 ──
+const adjustVisible = ref(false)
+const adjustForm = reactive({ id: null, username: '', account: 'principal', amount: '', remark: '' })
+
+function openAdjust(row) {
+  Object.assign(adjustForm, { id: row.id, username: row.username, account: 'principal', amount: '', remark: '' })
+  adjustVisible.value = true
+}
+
+async function submitAdjust() {
+  if (!adjustForm.amount || Number(adjustForm.amount) === 0) {
+    ElMessage.warning('金额不能为 0 (负数=扣减)')
+    return
+  }
+  if (!adjustForm.remark.trim()) {
+    ElMessage.warning('必须填写调整原因')
+    return
+  }
+  await ElMessageBox.confirm(
+    `确认将 ${adjustForm.username} 的${adjustForm.account === 'principal' ? '本金' : '收益'}账户调整 ${adjustForm.amount} USDT?`,
+    '二次确认',
+    { type: 'warning' },
+  )
+  await adjustBalance(adjustForm.id, {
+    account: adjustForm.account,
+    amount: String(adjustForm.amount),
+    remark: adjustForm.remark,
+  })
+  ElMessage.success('调整成功')
+  adjustVisible.value = false
+  fetchList()
+}
+
+// ── 重置密码 ──
+async function openReset(row) {
+  const { value } = await ElMessageBox.prompt(
+    `为 ${row.username} 设置新密码 (至少 6 位):`,
+    '重置密码',
+    { inputPattern: /^.{6,}$/, inputErrorMessage: '至少 6 位', inputType: 'password' },
+  )
+  await resetUserPassword(row.id, { new_password: value })
+  ElMessage.success('密码已重置')
+}
+
+// ── 改绑 ──
+const updateVisible = ref(false)
+const updateForm = reactive({ id: null, username: '', email: '', inviter_code: '' })
+
+function openUpdate(row) {
+  Object.assign(updateForm, { id: row.id, username: row.username, email: row.email, inviter_code: '' })
+  updateVisible.value = true
+}
+
+async function submitUpdate() {
+  const body = {}
+  if (updateForm.email) body.email = updateForm.email
+  if (updateForm.inviter_code) body.inviter_code = updateForm.inviter_code
+  await updateUser(updateForm.id, body)
+  ElMessage.success('已更新')
+  updateVisible.value = false
+  fetchList()
+}
+
 function fmt(t) {
   return t && t !== 'None' ? String(t).replace('T', ' ').slice(0, 19) : '-'
 }
@@ -50,6 +139,13 @@ onMounted(fetchList)
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="username" label="用户名" min-width="100" />
         <el-table-column prop="email" label="邮箱" min-width="160" />
+        <el-table-column label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'banned' ? 'danger' : 'success'" effect="dark" size="small">
+              {{ row.status === 'banned' ? '已冻结' : '正常' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="VIP" width="70" align="center">
           <template #default="{ row }">
             <el-tag type="primary" effect="plain">VIP{{ row.vip_level }}</el-tag>
@@ -72,13 +168,70 @@ onMounted(fetchList)
         <el-table-column prop="created_at" label="注册时间" width="160">
           <template #default="{ row }">{{ fmt(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button size="small" type="primary" plain @click="openProfile(row)">档案</el-button>
+            <el-button
+              v-perm="'btn:user:freeze'"
+              size="small"
+              :type="row.status === 'banned' ? 'success' : 'warning'"
+              plain
+              @click="toggleFreeze(row)"
+            >{{ row.status === 'banned' ? '解冻' : '冻结' }}</el-button>
+            <el-button v-perm="'btn:user:adjust'" size="small" type="danger" plain @click="openAdjust(row)">调账</el-button>
+            <el-dropdown trigger="click" style="margin-left: 8px; vertical-align: middle">
+              <el-button size="small" plain>更多</el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item v-perm="'btn:user:reset'" @click="openReset(row)">重置密码</el-dropdown-item>
+                  <el-dropdown-item v-perm="'btn:user:update'" @click="openUpdate(row)">改绑邮箱/上级</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 余额调整 -->
+    <el-dialog v-model="adjustVisible" title="余额调整" width="420px">
+      <el-form label-width="80px">
+        <el-form-item label="用户">{{ adjustForm.username }}</el-form-item>
+        <el-form-item label="账户">
+          <el-radio-group v-model="adjustForm.account">
+            <el-radio value="principal">本金</el-radio>
+            <el-radio value="income">收益</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="金额">
+          <el-input v-model="adjustForm.amount" placeholder="正数=加, 负数=减 (如 -50)" />
+        </el-form-item>
+        <el-form-item label="原因">
+          <el-input v-model="adjustForm.remark" type="textarea" placeholder="必填, 记入审计日志" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="adjustVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitAdjust">确认调整</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 改绑 -->
+    <el-dialog v-model="updateVisible" title="改绑信息" width="420px">
+      <el-form label-width="80px">
+        <el-form-item label="用户">{{ updateForm.username }}</el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="updateForm.email" />
+        </el-form-item>
+        <el-form-item label="上级">
+          <el-input v-model="updateForm.inviter_code" placeholder="新上级邀请码, 留空不改" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="updateVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitUpdate">保存</el-button>
+      </template>
+    </el-dialog>
 
     <el-drawer v-model="drawerVisible" title="用户全量档案（只读）" size="72%">
       <div v-loading="profileLoading">

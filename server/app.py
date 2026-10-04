@@ -16,6 +16,8 @@ from models.hk import HkBase, HkChatMessage, HkMessageReaction, utc_now
 from routers import (
     admin_deposit,
     admin_products,
+    admin_rbac,
+    admin_sweep,
     admin_users,
     admin_withdrawals,
     auth,
@@ -121,10 +123,11 @@ _MIGRATIONS = [
     ("hk_orders", "vip_level", "INTEGER"),
     ("hk_orders", "lock_bonus_rate", "NUMERIC(10,6)"),
     ("hk_orders", "rule_version", "VARCHAR(16)"),
-    ("hk_orders", "expires_at", "DATETIME"),
+    ("hk_orders", "expires_at", "TIMESTAMP"),
     ("hk_orders", "settled_periods", "INTEGER"),
-    ("hk_orders", "next_settle_at", "DATETIME"),
+    ("hk_orders", "next_settle_at", "TIMESTAMP"),
     ("hk_withdrawals", "processed_by", "VARCHAR(32)"),
+    ("hk_users", "role_id", "INTEGER"),
     ("hk_withdrawals", "idempotency_key", "VARCHAR(64)"),
 ]
 
@@ -135,19 +138,21 @@ async def _migrate() -> None:
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_hk_withdrawals_idem "
         "ON hk_withdrawals (idempotency_key)",
     ]
-    async with engine.begin() as conn:
-        for table, column, col_type in _MIGRATIONS:
-            try:
+    # 每条独立事务: PG 单事务内一条失败会中止全部, "列已存在" 会殃及后续新列
+    for table, column, col_type in _MIGRATIONS:
+        try:
+            async with engine.begin() as conn:
                 await conn.execute(
                     text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
                 )
-            except Exception:
-                pass  # 列已存在, 跳过
-        for ddl in _INDEXES:
-            try:
+        except Exception:
+            pass  # 列已存在, 跳过
+    for ddl in _INDEXES:
+        try:
+            async with engine.begin() as conn:
                 await conn.execute(text(ddl))
-            except Exception:
-                pass  # 索引已存在或表尚未建, 跳过
+        except Exception:
+            pass  # 索引已存在或表尚未建, 跳过
 
 
 @asynccontextmanager
@@ -186,6 +191,11 @@ async def lifespan(app: FastAPI):
 
         market_tasks = liq_aggregator.start() + [hl_whale.start()]
     await _migrate()
+    # RBAC: 预置角色 upsert + ADMIN_USERNAMES 自动绑超管
+    async with SessionLocal() as db:
+        from services import admin_service as _admin_svc
+
+        await _admin_svc.seed_roles(db)
     # 充值扫链监听 (自动到账); 测试可设 DEPOSIT_MONITOR_ENABLED=false 关闭
     monitor_task = None
     if config.deposit_monitor_enabled:
@@ -247,6 +257,8 @@ app.include_router(admin_products.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
 app.include_router(deposit.router, prefix="/api")
 app.include_router(admin_deposit.router, prefix="/api")
+app.include_router(admin_rbac.router, prefix="/api")
+app.include_router(admin_sweep.router, prefix="/api")
 app.include_router(overview.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 

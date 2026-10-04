@@ -99,8 +99,8 @@ onMounted(fetchList)
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
-              <el-button size="small" type="success" @click="approve(row)">通过</el-button>
-              <el-button size="small" type="danger" plain @click="reject(row)">拒绝</el-button>
+              <el-button v-perm="'btn:withdrawal:audit'" size="small" type="success" @click="approve(row)">通过</el-button>
+              <el-button v-perm="'btn:withdrawal:audit'" size="small" type="danger" plain @click="reject(row)">拒绝</el-button>
             </template>
           </template>
         </el-table-column>

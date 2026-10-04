@@ -66,7 +66,7 @@ onMounted(() => {
         <el-card shadow="never">
           <div class="gen-form">
             <el-input-number v-model="genForm.count" :min="1" :max="200" size="small" />
-            <el-button type="primary" size="small" :loading="generating" @click="handleGenerate">生成地址</el-button>
+            <el-button v-perm="'btn:deposit:generate'" type="primary" size="small" :loading="generating" @click="handleGenerate">生成地址</el-button>
           </div>
           <div class="stat-label">向地址池补充 TRC20 地址</div>
         </el-card>

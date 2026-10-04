@@ -56,7 +56,7 @@ class ProductOut(BaseModel):
 @router.get("", response_model=list[ProductOut])
 async def list_products(
     status_filter: str | None = None,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """全部产品 (含草稿/下架), 可按状态过滤."""
@@ -70,7 +70,7 @@ async def list_products(
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 async def create_product(
     data: ProductIn,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """新建产品 (草稿)."""
@@ -89,7 +89,7 @@ async def create_product(
 async def update_product(
     product_id: int,
     data: ProductIn,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """修改产品配置. 已上架产品禁止修改 (Phase 0.9 未拍板, 保守策略: 先下架再改)."""
@@ -111,7 +111,7 @@ async def update_product(
 @router.post("/{product_id}/publish", response_model=ProductOut)
 async def publish_product(
     product_id: int,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """上架: 强制全套校验, 通过后对 APP 可见."""
@@ -136,7 +136,7 @@ async def publish_product(
 @router.post("/{product_id}/offline", response_model=ProductOut)
 async def offline_product(
     product_id: int,
-    user: HkUser = Depends(admin_service.require_admin),
+    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """下架: APP 不再可购买; 存量已生效订单按原快照继续结算至到期."""

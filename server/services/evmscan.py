@@ -98,3 +98,65 @@ async def fetch_incoming(
         except (KeyError, ValueError, TypeError):
             continue
     return out
+
+
+# ---------- 归集用: 余额查询 + 裸交易广播 (Etherscan V2 proxy) ----------
+
+
+async def native_balance(
+    client: httpx.AsyncClient, chain_id: int, address: str
+) -> Decimal:
+    """原生币余额 (ETH/BNB...), 单位 ETH."""
+    data = await _get(
+        client,
+        {"chainid": chain_id, "module": "account", "action": "balance",
+         "address": address},
+    )
+    return Decimal(str(data.get("result", "0"))) / Decimal(10**18)
+
+
+async def token_balance(
+    client: httpx.AsyncClient, chain_id: int, address: str,
+    contract: str, decimals: int,
+) -> Decimal:
+    """代币余额, 按 decimals 归一化."""
+    data = await _get(
+        client,
+        {"chainid": chain_id, "module": "account", "action": "tokenbalance",
+         "address": address, "contractaddress": contract},
+    )
+    return Decimal(str(data.get("result", "0"))) / Decimal(10**decimals)
+
+
+async def tx_nonce(client: httpx.AsyncClient, chain_id: int, address: str) -> int:
+    data = await _get(
+        client,
+        {"chainid": chain_id, "module": "proxy",
+         "action": "eth_getTransactionCount", "address": address, "tag": "latest"},
+    )
+    return int(data["result"], 16)
+
+
+async def gas_price(client: httpx.AsyncClient, chain_id: int) -> int:
+    """wei."""
+    data = await _get(
+        client,
+        {"chainid": chain_id, "module": "proxy", "action": "eth_gasPrice"},
+    )
+    return int(data["result"], 16)
+
+
+async def send_raw_tx(
+    client: httpx.AsyncClient, chain_id: int, raw_hex: str
+) -> str:
+    """广播签名交易, 返回 0x txid; 失败抛 RuntimeError."""
+    data = await _get(
+        client,
+        {"chainid": chain_id, "module": "proxy", "action": "eth_sendRawTransaction",
+         "hex": raw_hex},
+    )
+    result = data.get("result")
+    if result:
+        return str(result)
+    err = data.get("error") or {}
+    raise RuntimeError(str(err.get("message") or err)[:200] or "广播失败")

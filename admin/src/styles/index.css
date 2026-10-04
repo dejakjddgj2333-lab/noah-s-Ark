@@ -1,6 +1,17 @@
 :root {
-  --app-sidebar-width: 220px;
+  --app-sidebar-width: 224px;
   --app-header-height: 56px;
+
+  /* Element Plus 主题覆盖: 钴蓝主色 + 现代圆角 */
+  --el-color-primary: #4c6fff;
+  --el-color-primary-light-3: #7a93ff;
+  --el-color-primary-light-5: #a3b4ff;
+  --el-color-primary-light-7: #ccd5ff;
+  --el-color-primary-light-8: #dde3ff;
+  --el-color-primary-light-9: #eef1ff;
+  --el-color-primary-dark-2: #3a57d9;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
 }
 
 * {
@@ -14,9 +25,48 @@ body,
 #app {
   height: 100%;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
-  background-color: #f0f2f5;
+  background-color: #f4f6fb;
 }
 
 .app-main {
-  padding: 16px;
+  padding: 20px;
+}
+
+/* 卡片统一: 无边框柔和阴影 */
+.el-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(16, 24, 64, 0.06), 0 6px 18px rgba(16, 24, 64, 0.05);
+}
+
+/* 表格现代感 */
+.el-table {
+  --el-table-header-bg-color: #f7f8fc;
+  --el-table-header-text-color: #5a607f;
+  --el-table-row-hover-bg-color: #f2f5ff;
+  border-radius: 8px;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+}
+
+/* 弹窗圆角 */
+.el-dialog {
+  border-radius: 14px;
+}
+
+.el-drawer {
+  --el-drawer-padding-primary: 20px;
+}
+
+/* 主按钮渐变 */
+.el-button--primary:not(.is-link):not(.is-plain):not(.is-text) {
+  background: linear-gradient(90deg, #4c6fff, #6a5cff);
+  border: none;
+  box-shadow: 0 4px 12px rgba(76, 111, 255, 0.3);
+}
+
+.el-button--primary:not(.is-link):not(.is-plain):not(.is-text):hover {
+  background: linear-gradient(90deg, #5f80ff, #7d70ff);
 }

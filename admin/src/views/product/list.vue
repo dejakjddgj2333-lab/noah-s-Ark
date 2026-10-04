@@ -110,7 +110,7 @@ onMounted(fetchList)
           <el-option label="已下架" value="offline" />
         </el-select>
         <el-button @click="fetchList">刷新</el-button>
-        <el-button type="primary" @click="openCreate">新建产品</el-button>
+        <el-button v-perm="'btn:product:edit'" type="primary" @click="openCreate">新建产品</el-button>
       </div>
 
       <el-table :data="list" v-loading="loading" border stripe>
@@ -139,9 +139,9 @@ onMounted(fetchList)
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status !== 'published'" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button v-if="row.status !== 'published'" size="small" type="success" @click="publish(row)">上架</el-button>
-            <el-button v-if="row.status === 'published'" size="small" type="warning" @click="offline(row)">下架</el-button>
+            <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" type="success" @click="publish(row)">上架</el-button>
+            <el-button v-perm="'btn:product:edit'" v-if="row.status === 'published'" size="small" type="warning" @click="offline(row)">下架</el-button>
           </template>
         </el-table-column>
       </el-table>
