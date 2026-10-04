@@ -54,6 +54,12 @@ class WithdrawOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+@router.get("/networks")
+async def withdraw_networks():
+    """支持提现的网络清单 + 费用与收益账户规则 (提现页渲染用, 无需登录也可报价)."""
+    return {"networks": withdraw_service.list_networks()}
+
+
 @router.get("/quote", response_model=WithdrawQuoteOut)
 async def withdraw_quote(account: str, amount: Decimal, network: str = "trc20"):
     """提交前费用报价 (展示用; 提交时服务端重算, 以服务端为准, 确认后不追加扣费)."""

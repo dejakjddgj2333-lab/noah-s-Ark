@@ -4,8 +4,9 @@ import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
 
-/// 提现页 (V0.7 Phase 7.8): 账户选择 / 金额 / TRC20 地址 / 实时费用报价 → 确认提交.
-/// 规则: 收益账户 ≥50 USDT + 3% 服务费; 本金账户无门槛无服务费; 均收 1 USDT 网络费 (TRC20).
+/// 提现页 (V0.7 Phase 7.8): 账户选择 / 网络选择 / 金额 / 地址 / 实时费用报价 → 确认提交.
+/// 规则: 收益账户 ≥50 USDT + 3% 服务费; 本金账户无门槛无服务费;
+/// 费用从申请金额内扣 (实际到账 = 金额 - 服务费 - 网络费), 各网络网络费不同.
 class WithdrawPage extends StatefulWidget {
   const WithdrawPage({super.key});
 
@@ -15,6 +16,8 @@ class WithdrawPage extends StatefulWidget {
 
 class _WithdrawPageState extends State<WithdrawPage> {
   String _account = 'income';
+  String _network = 'trc20';
+  List<dynamic> _networks = const [];
   final _amountCtrl = TextEditingController();
   final _addrCtrl = TextEditingController();
   Map<String, dynamic>? _quote;
@@ -27,6 +30,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
   void initState() {
     super.initState();
     _loadAccount();
+    _loadNetworks();
   }
 
   @override
@@ -45,6 +49,24 @@ class _WithdrawPageState extends State<WithdrawPage> {
     }
   }
 
+  Future<void> _loadNetworks() async {
+    try {
+      final list = await FinanceApi.withdrawNetworks();
+      if (mounted && list.isNotEmpty) setState(() => _networks = list);
+    } catch (_) {
+      // 失败回退内置四网络
+    }
+  }
+
+  String get _networkLabel {
+    for (final n in _networks) {
+      if (n is Map && n['network'] == _network) return (n['label'] ?? _network).toString();
+    }
+    return _network.toUpperCase();
+  }
+
+  bool get _isEvm => _network != 'trc20';
+
   Future<void> _doQuote() async {
     final amount = _amountCtrl.text.trim();
     if (amount.isEmpty || (double.tryParse(amount) ?? 0) <= 0) {
@@ -53,7 +75,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
     }
     setState(() => _quoting = true);
     try {
-      final q = await FinanceApi.withdrawQuote(account: _account, amount: amount);
+      final q = await FinanceApi.withdrawQuote(account: _account, amount: amount, network: _network);
       if (mounted) setState(() => _quote = q);
     } on ApiException catch (e) {
       if (mounted) {
@@ -75,14 +97,14 @@ class _WithdrawPageState extends State<WithdrawPage> {
       return;
     }
     if (addr.isEmpty) {
-      _toast('请输入 TRC20 提币地址');
+      _toast('请输入 $_networkLabel 提币地址');
       return;
     }
     // 提交前以服务端报价二次确认 (报价接口无需登录, 提交时服务端重算为准)
     Map<String, dynamic>? q = _quote;
     if (q == null) {
       try {
-        q = await FinanceApi.withdrawQuote(account: _account, amount: amount);
+        q = await FinanceApi.withdrawQuote(account: _account, amount: amount, network: _network);
       } on ApiException catch (e) {
         _toast(e.message);
         return;
@@ -95,7 +117,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
         backgroundColor: McColors.surfaceContainer,
         title: Text('确认提现', style: McText.display(size: 15, weight: FontWeight.w700)),
         content: Text(
-          '${_account == 'income' ? '收益' : '本金'}账户提现 ${q!['amount']} USDT\n'
+          '${_account == 'income' ? '收益' : '本金'}账户提现 ${q!['amount']} USDT ($_networkLabel)\n'
           '服务费 ${q['service_fee']} + 网络费 ${q['network_fee']}\n'
           '实际到账 ${q['arrive_amount']} USDT\n'
           '地址 ${addr.length > 20 ? '${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}' : addr}',
@@ -119,7 +141,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
     try {
       await FinanceApi.withdrawCreate({
         'account': _account,
-        'network': 'trc20',
+        'network': _network,
         'address': addr,
         'amount': amount,
       });
@@ -220,6 +242,53 @@ class _WithdrawPageState extends State<WithdrawPage> {
             style: McText.sans(size: 11, color: McColors.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
+          // 网络选择
+          Text('提现网络', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final n in (_networks.isNotEmpty
+                  ? _networks
+                  : const [
+                      {'network': 'trc20', 'label': 'TRC20 (波场)'},
+                      {'network': 'erc20', 'label': 'ERC20 (以太坊)'},
+                      {'network': 'bep20', 'label': 'BEP20 (BNB Chain)'},
+                      {'network': 'arbitrum', 'label': 'Arbitrum'},
+                    ]))
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _network = (n['network'] ?? 'trc20').toString();
+                    _quote = null;
+                    _doQuote();
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _network == n['network']
+                          ? McColors.primaryContainer.withValues(alpha: 0.18)
+                          : McColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _network == n['network']
+                            ? McColors.primarySoft
+                            : McColors.surfaceContainerHigh,
+                      ),
+                    ),
+                    child: Text(
+                      (n['label'] ?? '').toString(),
+                      style: McText.sans(
+                        size: 12,
+                        weight: _network == n['network'] ? FontWeight.w700 : FontWeight.w400,
+                        color: _network == n['network'] ? McColors.primarySoft : McColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
           // 金额
           Text('提现金额 (USDT)', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
@@ -245,13 +314,13 @@ class _WithdrawPageState extends State<WithdrawPage> {
           ),
           const SizedBox(height: 14),
           // 地址
-          Text('TRC20 提币地址', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          Text('$_networkLabel 提币地址', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
           TextField(
             controller: _addrCtrl,
             style: McText.mono(size: 13),
             decoration: InputDecoration(
-              hintText: 'T 开头的 34 位地址',
+              hintText: _isEvm ? '0x 开头的 42 位地址' : 'T 开头的 34 位地址',
               hintStyle: McText.mono(size: 13, color: McColors.onSurfaceVariant),
               filled: true,
               fillColor: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
@@ -277,7 +346,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
                 children: [
                   _quoteRow('提现金额', '${_quote!['amount']}'),
                   _quoteRow('服务费 (3%)', '-${_quote!['service_fee']}'),
-                  _quoteRow('网络费 (TRC20)', '-${_quote!['network_fee']}'),
+                  _quoteRow('网络费 ($_networkLabel)', '-${_quote!['network_fee']}'),
                   const Divider(height: 14, color: McColors.outlineVariant),
                   _quoteRow('实际到账', '${_quote!['arrive_amount']}', highlight: true),
                 ],
@@ -303,7 +372,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            '申请后金额进入"处理中", 审核通过即打款; 被拒绝将全额退回 (金额+服务费+网络费)。费用以提交时服务端报价为准, 之后不会追加。',
+            '费用从申请金额内扣除, 实际到账 = 金额 - 服务费 - 网络费。申请后金额进入"处理中", 审核通过即打款; 被拒绝将退回申请金额。费用以提交时服务端报价为准, 之后不会追加。',
             style: McText.sans(size: 11, color: McColors.onSurfaceVariant, height: 1.6),
           ),
         ],

@@ -82,6 +82,14 @@ onMounted(fetchList)
         <el-table-column prop="amount" label="金额" width="100" align="right" />
         <el-table-column prop="service_fee" label="服务费" width="80" align="right" />
         <el-table-column prop="network_fee" label="网络费" width="80" align="right" />
+        <el-table-column prop="arrive_amount" label="实际到账" width="100" align="right">
+          <template #default="{ row }">
+            <span style="color: #22c1a3; font-weight: 600">{{ row.arrive_amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="网络" width="90" align="center">
+          <template #default="{ row }">{{ row.network?.toUpperCase() }}</template>
+        </el-table-column>
         <el-table-column label="地址" min-width="140">
           <template #default="{ row }">
             <el-tooltip :content="row.address"><span>{{ shortAddr(row.address) }}</span></el-tooltip>

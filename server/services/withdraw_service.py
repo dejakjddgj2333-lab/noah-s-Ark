@@ -3,11 +3,12 @@
 规则 (文档已确认部分):
 - 收益账户: 单笔 ≥50 USDT, 收 3% 平台服务费 + 网络费;
 - 本金账户: 无门槛、无服务费, 只收网络费;
+- 费用从申请金额内扣除: 实际到账 = 申请金额 - 服务费 - 网络费,
+  账户占用 = 申请金额 (不额外重复锁定手续费); 实际到账必须为正数;
 - 费用在提交时一次算定, 确认后不得追加扣费 (入账只按申请时算出的费用);
-- 申请即占用: 余额转出 (金额+费用), 申请金额转处理中;
-- 拒绝/失败: 全额退回 (金额+费用); 审核通过: 处理中金额转出, 平台线下打款;
-- 到账必须为正数;
-- 地址按网络格式校验 (TRC20 = base58check).
+- 申请即占用: 申请金额从可用余额转处理中;
+- 拒绝/失败: 全额退回申请金额; 审核通过: 处理中金额转出, 平台线下打款;
+- 地址按网络格式校验 (TRC20 = base58check; EVM = 0x+40hex).
 
 ⚠️ Phase 0.6 未拍板: 网络费数值暂按配置表固定值, 费用报价来源/有效期待拍板后调整.
 """
@@ -27,26 +28,54 @@ from services.balance_log_service import log as log_balance
 from services.team_service import truncate_2dp
 
 # 各网络提现参数. network_fee 数值为占位默认值, 待 Phase 0.6 拍板
-WITHDRAW_NETWORKS: dict[str, dict[str, Decimal]] = {
-    "trc20": {"network_fee": Decimal("1")},
+WITHDRAW_NETWORKS: dict[str, dict[str, object]] = {
+    "trc20": {"label": "TRC20 (波场)", "network_fee": Decimal("1")},
+    "erc20": {"label": "ERC20 (以太坊)", "network_fee": Decimal("5")},
+    "bep20": {"label": "BEP20 (BNB Chain)", "network_fee": Decimal("0.3")},
+    "arbitrum": {"label": "Arbitrum", "network_fee": Decimal("0.5")},
 }
+
+_EVM_NETWORKS = ("erc20", "bep20", "arbitrum")
 
 # 收益账户提现规则 (文档第六节)
 INCOME_MIN_AMOUNT = Decimal("50")
 INCOME_SERVICE_RATE = Decimal("0.03")
 
 
+def list_networks() -> list[dict]:
+    """支持提现的网络清单 (App 提现页渲染用)."""
+    return [
+        {
+            "network": net,
+            "label": str(cfg["label"]),
+            "network_fee": cfg["network_fee"],
+            "income_min_amount": INCOME_MIN_AMOUNT,
+            "income_service_rate": INCOME_SERVICE_RATE,
+        }
+        for net, cfg in WITHDRAW_NETWORKS.items()
+    ]
+
+
 def _validate_address(network: str, address: str) -> str:
-    """按网络格式校验并规范化地址 (TRC20: base58check)."""
+    """按网络格式校验并规范化地址 (TRC20: base58check; EVM: 0x+40hex)."""
+    address = address.strip()
     if network == "trc20":
         try:
             from tronpy.keys import to_base58check_address
 
-            return to_base58check_address(address.strip())
+            return to_base58check_address(address)
         except Exception:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "TRC20 地址格式无效"
             )
+    if network in _EVM_NETWORKS:
+        import re
+
+        if re.fullmatch(r"0[xX][0-9a-fA-F]{40}", address):
+            return address.lower()
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "EVM 地址格式无效 (0x 开头 42 位)"
+        )
     raise HTTPException(status.HTTP_400_BAD_REQUEST, f"暂不支持网络 {network}")
 
 
@@ -73,16 +102,22 @@ def quote(account: str, amount: Decimal, network: str) -> dict:
     service_fee = (
         truncate_2dp(amount * INCOME_SERVICE_RATE) if account == "income" else Decimal(0)
     )
-    network_fee = WITHDRAW_NETWORKS[network]["network_fee"]
-    total_deduction = amount + service_fee + network_fee
+    network_fee = Decimal(str(WITHDRAW_NETWORKS[network]["network_fee"]))
+    # 费用从申请金额内扣除 (文档第六节): 到账 = 金额 - 服务费 - 网络费, 必须为正数
+    arrive_amount = amount - service_fee - network_fee
+    if arrive_amount <= 0:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "申请金额不足以覆盖费用, 实际到账须为正数",
+        )
     return {
         "account": account,
         "network": network,
         "amount": amount,
         "service_fee": service_fee,
         "network_fee": network_fee,
-        "total_deduction": total_deduction,
-        "arrive_amount": amount,
+        "total_deduction": amount,  # 账户占用 = 申请金额, 不重复锁定手续费
+        "arrive_amount": arrive_amount,
     }
 
 
@@ -210,7 +245,7 @@ async def approve(db: AsyncSession, w: HkWithdrawal, txid: str | None) -> None:
 
 
 async def reject(db: AsyncSession, w: HkWithdrawal, remark: str | None) -> None:
-    """拒绝: 全额退回 (金额+服务费+网络费), 释放处理中."""
+    """拒绝: 退回申请金额 (费用从金额内扣, 未额外占用), 释放处理中."""
     if w.status != "pending":
         raise HTTPException(status.HTTP_409_CONFLICT, "该提现申请已处理")
     balance_col = (
@@ -219,7 +254,7 @@ async def reject(db: AsyncSession, w: HkWithdrawal, remark: str | None) -> None:
     pending_col = (
         HkAccount.principal_pending if w.account == "principal" else HkAccount.income_pending
     )
-    refund = Decimal(w.amount) + Decimal(w.service_fee) + Decimal(w.network_fee)
+    refund = Decimal(w.amount)
     await db.execute(
         update(HkAccount)
         .where(HkAccount.user_id == w.user_id)

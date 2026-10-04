@@ -103,6 +103,10 @@ class FinanceApi {
   }
 
   // ── 提现 ──────────────────────────────────────────────
+  static Future<List<dynamic>> withdrawNetworks() =>
+      McApi.get('/api/withdrawals/networks', token: _token)
+          .then((m) => (m['networks'] as List?) ?? const []);
+
   static Future<Map<String, dynamic>> withdrawQuote({
     required String account,
     required String amount,
