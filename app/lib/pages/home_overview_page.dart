@@ -13,8 +13,9 @@ import 'market_detail_page.dart';
 /// 首页 · 综合看板 — 聚合各分板核心指标的总览页.
 ///
 /// 各卡片尝试接真实后端: 情绪 ← sentiment, 24H爆仓 ← liquidations,
-/// 主流资产 ← OKX tickers+K线, 资金费率 ← funding. 失败(未配置 CoinGlass/
-/// 上游错误/后端未启动)时静默保留内置 mock, 永不红屏.
+/// 主流资产 ← OKX tickers+K线, 资金费率 ← funding. 首屏先显示骨架屏,
+/// 首次加载完成后展示真实数据; 加载失败的字段显示 '--' 或空态, 绝不显示
+/// 编造的假数字.
 class HomeOverviewPage extends StatefulWidget {
   const HomeOverviewPage({super.key});
 
@@ -23,69 +24,44 @@ class HomeOverviewPage extends StatefulWidget {
 }
 
 class _HomeOverviewPageState extends State<HomeOverviewPage> {
-  // ---- 情绪指数卡 (mock 默认) ----
-  String _sentimentValue = '74';
-  String _sentimentLabel = '贪婪';
+  /// 首次加载是否已完成 (成功或失败都算); false 时整页显示骨架屏.
+  bool _loaded = false;
+
+  // ---- 情绪指数卡 ----
+  String? _sentimentValue;
+  String? _sentimentLabel;
   Color _sentimentColor = McColors.bull;
-  String _sentimentSub = '昨日 68 · 贪婪';
+  String? _sentimentSub;
 
-  // ---- 24H 爆仓迷你卡 (mock 默认) ----
-  String _liqTotal = '\$3.82 亿';
-  double _liqLongFrac = 0.56;
-  String _liqLongText = '\$2.14亿';
-  String _liqShortText = '\$1.68亿';
+  // ---- 24H 爆仓迷你卡 ----
+  String? _liqTotal;
+  double? _liqLongFrac;
+  String? _liqLongText;
+  String? _liqShortText;
 
-  // ---- 资金费率迷你卡 (mock 默认) ----
-  String _fundingRate = '+0.0125%';
+  // ---- 资金费率迷你卡 ----
+  String? _fundingRate;
   // 费率进度条 (-0.05%..+0.05% 映射) 与山寨季指数 (null=未加载).
-  double _fundingFrac = 0.5;
+  double? _fundingFrac;
   double? _altSeason;
 
-  // ---- 市场全景横幅 (mock 默认) ----
-  String _mcTotal = '\$3.24T';
-  String _mcDelta = '+2.84%';
+  // ---- 市场全景横幅 ----
+  String? _mcTotal;
+  String? _mcDelta;
   bool _mcDeltaUp = true;
-  String _mcVolume = '\$142.8B';
-  String _longPct = '64%';
-  double _longFrac = 0.64;
+  String? _mcVolume;
+  String? _longPct;
+  double? _longFrac;
 
-  // ---- 巨鲸异动速递 (mock 默认) ----
-  List<_WhaleItem> _whaleItems = _mockWhaleItems();
+  // ---- 巨鲸异动速递 ----
+  List<_WhaleItem> _whaleItems = const [];
 
-  static List<_WhaleItem> _mockWhaleItems() => const [
-        _WhaleItem(
-          emoji: '🐋',
-          pillText: '提币囤积',
-          pillColor: McColors.bull,
-          time: '3分钟前',
-          body: '巨鲸地址 0x7a8...9f21 从 Binance 提取 1,200 BTC (\$115.7M) 至冷钱包。',
-        ),
-        _WhaleItem(
-          emoji: '⚠️',
-          pillText: '大额充值',
-          pillColor: McColors.bear,
-          time: '14分钟前',
-          body: '某以太坊鲸鱼将 25,000 ETH (\$85.5M) 从未知钱包充入 Coinbase 交易所。',
-        ),
-      ];
+  // ---- 主流资产速览 ----
+  List<_AssetRow> _assets = const [];
 
-  // ---- 主流资产速览 (mock 默认) ----
-  List<_AssetRow> _assets = _mockAssets();
-
-  // ---- 主流资产实时推送 (OKX WS, 失败静默保留 REST/ mock) ----
+  // ---- 主流资产实时推送 (OKX WS, 失败静默保留 REST 数据) ----
   StreamSubscription<TickerPush>? _tickerSub;
   static const _watchSymbols = ['BTC', 'ETH', 'SOL', 'SUI'];
-
-  static List<_AssetRow> _mockAssets() => const [
-        _AssetRow('BTC', '/USDT', '\$96,450.00', '+3.42%', true,
-            [0.1, 0.25, 0.2, 0.45, 0.4, 0.65, 0.6, 0.85]),
-        _AssetRow('ETH', '/USDT', '\$3,420.50', '+2.18%', true,
-            [0.05, 0.2, 0.35, 0.3, 0.55, 0.5, 0.75, 0.9]),
-        _AssetRow('SOL', '/USDT', '\$194.20', '+6.85%', true,
-            [0.0, 0.3, 0.5, 0.4, 0.7, 0.6, 0.85, 1.0]),
-        _AssetRow('SUI', '/USDT', '\$3.85', '-1.24%', false,
-            [0.9, 0.7, 0.75, 0.5, 0.4, 0.45, 0.2, 0.1]),
-      ];
 
   @override
   void initState() {
@@ -128,17 +104,21 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 
   Future<void> _load() async {
-    // 各数据源独立尝试, 任一失败不影响其它与已有 mock.
-    await Future.wait([
-      _loadSentiment(),
-      _loadLiquidation(),
-      _loadFunding(),
-      _loadAltSeason(),
-      _loadAssets(),
-      _loadGlobalBanner(),
-      _loadLongShort(),
-      _loadWhales(),
-    ]);
+    // 各数据源独立尝试, 任一失败不影响其它. 首次完成后脱离骨架屏.
+    try {
+      await Future.wait([
+        _loadSentiment(),
+        _loadLiquidation(),
+        _loadFunding(),
+        _loadAltSeason(),
+        _loadAssets(),
+        _loadGlobalBanner(),
+        _loadLongShort(),
+        _loadWhales(),
+      ]);
+    } finally {
+      if (mounted && !_loaded) setState(() => _loaded = true);
+    }
   }
 
   Future<void> _loadGlobalBanner() async {
@@ -148,7 +128,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       final cap = g.totalMarketCapUsd;
       final vol = g.totalVolumeUsd;
       final chg = g.changePct24h;
-      if (cap == null && vol == null && chg == null) return; // 全 null -> 保留 mock
+      if (cap == null && vol == null && chg == null) return; // 全 null -> 保留空态
       setState(() {
         if (cap != null) _mcTotal = McData.fmtUsdCompact(cap);
         if (vol != null) _mcVolume = McData.fmtUsdCompact(vol);
@@ -158,7 +138,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         }
       });
     } on ApiException {
-      // 保留 mock.
+      // 保留空态.
     } catch (_) {}
   }
 
@@ -173,7 +153,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         _longFrac = (lp / 100).clamp(0.0, 1.0);
       });
     } on ApiException {
-      // 保留 mock.
+      // 保留空态.
     } catch (_) {}
   }
 
@@ -184,7 +164,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       if (!mounted || items.isEmpty) return;
       setState(() => _whaleItems = items);
     } on ApiException {
-      // 保留 mock.
+      // 保留空态.
     } catch (_) {}
   }
 
@@ -255,7 +235,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         _sentimentSub = '实时 · $label';
       });
     } on ApiException {
-      // 保留 mock.
+      // 保留空态.
     } catch (_) {}
   }
 
@@ -274,7 +254,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         _liqShortText = _fmtUsdZh(short);
       });
     } on ApiException {
-      // 保留 mock.
+      // 保留空态.
     } catch (_) {}
   }
 
@@ -288,7 +268,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         _fundingFrac = ((avg + 0.05) / 0.1).clamp(0.02, 0.98);
       });
     } on ApiException {
-      // 保留 mock.
+      // 保留空态.
     } catch (_) {}
   }
 
@@ -313,48 +293,50 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
     try {
       tickers = await McData.tickers();
     } on ApiException {
-      return; // 保留 mock.
+      return; // 保留空态.
     } catch (_) {
       return;
     }
     if (!mounted) return;
 
-    const targets = ['BTC', 'ETH', 'SOL', 'SUI'];
-    final updated = [..._assets];
-    var changed = false;
-    for (var i = 0; i < updated.length; i++) {
-      final row = updated[i];
+    // 按关注列表从 tickers 组建行, 缺数据的币种直接缺席, 不造假.
+    final rows = <_AssetRow>[];
+    for (final sym in _watchSymbols) {
       OkxTicker? t;
       for (final x in tickers) {
-        if (x.symbol == row.symbol) {
+        if (x.symbol == sym) {
           t = x;
           break;
         }
       }
       if (t == null) continue;
       final up = t.changePct >= 0;
-      updated[i] = row.copyWith(
-        price: _fmtPrice(t.last),
-        delta: '${up ? '+' : ''}${t.changePct.toStringAsFixed(2)}%',
-        up: up,
-      );
-      changed = true;
+      rows.add(_AssetRow(
+        sym,
+        '/USDT',
+        _fmtPrice(t.last),
+        '${up ? '+' : ''}${t.changePct.toStringAsFixed(2)}%',
+        up,
+        const [],
+      ));
     }
-    if (changed && mounted) setState(() => _assets = updated);
+    if (rows.isNotEmpty && mounted) setState(() => _assets = rows);
 
-    // K线 sparkline: 逐币种独立尝试, 失败保留 mock 曲线.
-    for (var i = 0; i < targets.length; i++) {
+    // K线 sparkline: 逐币种独立尝试, 失败保持无曲线.
+    for (final row in rows) {
       try {
-        final spark = await McData.sparkline('${targets[i]}-USDT-SWAP');
+        final spark = await McData.sparkline('${row.symbol}-USDT-SWAP');
         if (spark.length >= 2 && mounted) {
           setState(() {
             final list = [..._assets];
-            list[i] = list[i].copyWith(spark: spark);
+            final idx = list.indexWhere((r) => r.symbol == row.symbol);
+            if (idx < 0) return;
+            list[idx] = list[idx].copyWith(spark: spark);
             _assets = list;
           });
         }
       } on ApiException {
-        // 保留 mock 曲线.
+        // 无曲线.
       } catch (_) {}
     }
   }
@@ -477,7 +459,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
         children: [
           // 1. 市场全景横幅
-          _marketBanner(),
+          if (!_loaded) McSkeleton.card(lines: 3) else _marketBanner(),
           const SizedBox(height: 16),
           // 2. 情绪 + 爆仓 双子卡 (定高对齐; IntrinsicHeight 与 Expanded 基线冲突不可用)
           SizedBox(
@@ -486,21 +468,25 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: _SentimentCard(
-                    value: _sentimentValue,
-                    label: _sentimentLabel,
-                    color: _sentimentColor,
-                    sub: _sentimentSub,
-                  ),
+                  child: !_loaded
+                      ? McSkeleton.card(lines: 3)
+                      : _SentimentCard(
+                          value: _sentimentValue,
+                          label: _sentimentLabel,
+                          color: _sentimentColor,
+                          sub: _sentimentSub,
+                        ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _LiquidationMiniCard(
-                    total: _liqTotal,
-                    longFrac: _liqLongFrac,
-                    longText: _liqLongText,
-                    shortText: _liqShortText,
-                  ),
+                  child: !_loaded
+                      ? McSkeleton.card(lines: 3)
+                      : _LiquidationMiniCard(
+                          total: _liqTotal,
+                          longFrac: _liqLongFrac,
+                          longText: _liqLongText,
+                          shortText: _liqShortText,
+                        ),
                 ),
               ],
             ),
@@ -513,7 +499,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
             trailing: '24H',
           ),
           const SizedBox(height: 10),
-          _assetList(),
+          if (!_loaded) McSkeleton.card(lines: 4) else _assetList(),
           const SizedBox(height: 16),
           // 4. 巨鲸异动最新
           const McSectionHeader(
@@ -523,7 +509,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
             trailingColor: McColors.bull,
           ),
           const SizedBox(height: 10),
-          _whaleFeed(),
+          if (!_loaded) McSkeleton.card(lines: 2) else _whaleFeed(),
           const SizedBox(height: 16),
           // 5. 资金费率 + 山寨季 双子卡 (定高对齐)
           SizedBox(
@@ -532,10 +518,17 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                    child: _FundingMiniCard(
-                        rate: _fundingRate, fraction: _fundingFrac)),
+                  child: !_loaded
+                      ? McSkeleton.card(lines: 3)
+                      : _FundingMiniCard(
+                          rate: _fundingRate, fraction: _fundingFrac),
+                ),
                 const SizedBox(width: 10),
-                Expanded(child: _AltSeasonCard(value: _altSeason)),
+                Expanded(
+                  child: !_loaded
+                      ? McSkeleton.card(lines: 3)
+                      : _AltSeasonCard(value: _altSeason),
+                ),
               ],
             ),
           ),
@@ -584,7 +577,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
     );
   }
 
-  Widget _vital(String label, String value, String? delta, bool? up,
+  Widget _vital(String label, String? value, String? delta, bool? up,
       {double? bar}) {
     return Expanded(
       child: Column(
@@ -593,7 +586,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           Text(label,
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 4),
-          Text(value,
+          Text(value ?? '--',
               style: McText.display(size: 18, weight: FontWeight.w700)),
           if (delta != null) ...[
             const SizedBox(height: 2),
@@ -614,6 +607,18 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
 
   // 主流资产行
   Widget _assetList() {
+    if (_assets.isEmpty) {
+      return McCard(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: Text('暂无资产数据',
+                style:
+                    McText.mono(size: 12, color: McColors.onSurfaceVariant)),
+          ),
+        ),
+      );
+    }
     return McCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -682,8 +687,20 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
     );
   }
 
-  // 巨鲸异动速递 (实时, 失败回退 mock)
+  // 巨鲸异动速递 (实时, 失败显示空态)
   Widget _whaleFeed() {
+    if (_whaleItems.isEmpty) {
+      return McCard(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: Text('暂无巨鲸异动数据',
+                style:
+                    McText.mono(size: 12, color: McColors.onSurfaceVariant)),
+          ),
+        ),
+      );
+    }
     return Column(
       children: [
         for (var i = 0; i < _whaleItems.length; i++) ...[
@@ -780,7 +797,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 }
 
-/// 巨鲸异动速递条目的不可变数据模型 (mock 与真实数据共用).
+/// 巨鲸异动速递条目的不可变数据模型.
 class _WhaleItem {
   const _WhaleItem({
     required this.emoji,
@@ -797,7 +814,7 @@ class _WhaleItem {
   final String body;
 }
 
-/// 主流资产行的不可变数据模型 (mock 与真实数据共用).
+/// 主流资产行的不可变数据模型.
 class _AssetRow {
   const _AssetRow(this.symbol, this.pair, this.price, this.delta,
       this.up, this.spark);
@@ -826,7 +843,7 @@ class _AssetRow {
   }
 }
 
-/// 情绪指数卡.
+/// 情绪指数卡. value/label/sub 为 null 时显示占位, 不造假数字.
 class _SentimentCard extends StatelessWidget {
   const _SentimentCard({
     required this.value,
@@ -835,10 +852,10 @@ class _SentimentCard extends StatelessWidget {
     required this.sub,
   });
 
-  final String value;
-  final String label;
+  final String? value;
+  final String? label;
   final Color color;
-  final String sub;
+  final String? sub;
 
   @override
   Widget build(BuildContext context) {
@@ -863,11 +880,11 @@ class _SentimentCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(value,
+              Text(value ?? '--',
                   style: McText.display(size: 24, weight: FontWeight.w700)),
               const SizedBox(width: 6),
               Flexible(
-                child: Text(label,
+                child: Text(label ?? '',
                     style: McText.sans(
                         size: 12,
                         weight: FontWeight.w600,
@@ -895,7 +912,7 @@ class _SentimentCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text(sub,
+          Text(sub ?? '暂无数据',
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -924,7 +941,7 @@ class _SentimentCard extends StatelessWidget {
   }
 }
 
-/// 多空爆仓迷你卡.
+/// 多空爆仓迷你卡. 各字段为 null 时显示占位, 不造假数字.
 class _LiquidationMiniCard extends StatelessWidget {
   const _LiquidationMiniCard({
     required this.total,
@@ -933,14 +950,14 @@ class _LiquidationMiniCard extends StatelessWidget {
     required this.shortText,
   });
 
-  final String total;
-  final double longFrac;
-  final String longText;
-  final String shortText;
+  final String? total;
+  final double? longFrac;
+  final String? longText;
+  final String? shortText;
 
   @override
   Widget build(BuildContext context) {
-    final lf = longFrac.clamp(0.0, 1.0);
+    final lf = longFrac?.clamp(0.0, 1.0);
     return McCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -957,7 +974,7 @@ class _LiquidationMiniCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(total,
+          Text(total ?? '--',
               style: McText.display(
                   size: 20, weight: FontWeight.w700, color: McColors.bear)),
           const SizedBox(height: 8),
@@ -965,22 +982,29 @@ class _LiquidationMiniCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             child: SizedBox(
               height: 6,
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: (lf * 1000).round(),
-                    child: Container(color: McColors.bear),
-                  ),
-                  Expanded(
-                    flex: ((1 - lf) * 1000).round(),
-                    child: Container(color: McColors.bull),
-                  ),
-                ],
-              ),
+              child: lf == null
+                  ? Container(
+                      color:
+                          McColors.surfaceVariant.withValues(alpha: 0.4))
+                  : Row(
+                      children: [
+                        Expanded(
+                          flex: (lf * 1000).round(),
+                          child: Container(color: McColors.bear),
+                        ),
+                        Expanded(
+                          flex: ((1 - lf) * 1000).round(),
+                          child: Container(color: McColors.bull),
+                        ),
+                      ],
+                    ),
             ),
           ),
           const SizedBox(height: 12),
-          Text('多 $longText · 空 $shortText',
+          Text(
+              longText == null
+                  ? '暂无数据'
+                  : '多 $longText · 空 ${shortText ?? '--'}',
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -988,16 +1012,16 @@ class _LiquidationMiniCard extends StatelessWidget {
   }
 }
 
-/// 资金费率迷你卡.
+/// 资金费率迷你卡. rate/fraction 为 null 时显示占位, 不造假数字.
 class _FundingMiniCard extends StatelessWidget {
   const _FundingMiniCard({required this.rate, required this.fraction});
 
-  final String rate;
-  final double fraction;
+  final String? rate;
+  final double? fraction;
 
   @override
   Widget build(BuildContext context) {
-    final neg = rate.startsWith('-');
+    final neg = rate?.startsWith('-') ?? false;
     final color = neg ? McColors.bear : McColors.bull;
     return McCard(
       child: Column(
@@ -1019,13 +1043,16 @@ class _FundingMiniCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(rate,
+          Text(rate ?? '--',
               style: McText.mono(
                   size: 20, weight: FontWeight.w700, color: color)),
           const SizedBox(height: 8),
-          McProgressBar(fraction: fraction, color: color),
+          McProgressBar(fraction: fraction ?? 0, color: color),
           const SizedBox(height: 12),
-          Text('${neg ? '空头付费' : '多头付费'} · 8H结算',
+          Text(
+              rate == null
+                  ? '暂无数据'
+                  : '${neg ? '空头付费' : '多头付费'} · 8H结算',
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -1080,7 +1107,7 @@ class _AltSeasonCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
               v == null
-                  ? '加载中…'
+                  ? '暂无数据'
                   : v >= 75
                       ? '山寨季进行中'
                       : v <= 25

@@ -52,9 +52,11 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
   /// 当前板块筛选: 全部 / 自选 / Layer 1 / DeFi / AI Agent (客户端过滤).
   String _category = '全部';
 
-  /// 真实行情行 (拉取成功后填充); 为空表示仍用 mock.
+  /// 真实行情行 (拉取成功后填充); 已加载但仍为空表示拉取失败.
   List<_RowData> _liveRows = [];
-  bool _loading = true;
+
+  /// 首轮行情是否已加载完成 (成功或失败都算); false 期间列表区显示骨架屏.
+  bool _loaded = false;
 
   /// WS 实时推送订阅 (取消于 dispose).
   StreamSubscription<TickerPush>? _wsSub;
@@ -105,13 +107,13 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
       if (!mounted) return;
       setState(() {
         _liveRows = rows;
-        _loading = false;
+        _loaded = true;
       });
       _subscribeLive(top.map((t) => t.instId).toSet());
     } catch (_) {
-      // 后端不可用 / 数据异常 -> 保留 mock.
+      // 后端不可用 / 数据异常 -> 标记已加载, 列表区显示空态而非假数据.
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() => _loaded = true);
     }
   }
 
@@ -251,7 +253,17 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
 
   Future<void> _refresh() => _load();
 
-  /// 点击行 -> 行情详情页. mock 行无 instId 时由 symbol 推导.
+  /// 列表区空态提示 (加载失败 / 板块为空).
+  Widget _emptyHint(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      alignment: Alignment.center,
+      child: Text(text,
+          style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+    );
+  }
+
+  /// 点击行 -> 行情详情页. 无 instId 时由 symbol 推导.
   void _openDetail(_RowData row) {
     final instId =
         row.instId.isEmpty ? '${row.symbol}-USDT-SWAP' : row.instId;
@@ -265,9 +277,7 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
 
   @override
   Widget build(BuildContext context) {
-    final usingLive = _liveRows.isNotEmpty;
-    final base = usingLive ? _liveRows : _MarketListCard._mockRows;
-    final rows = _categorized(_sorted(base));
+    final rows = _categorized(_sorted(_liveRows));
     return RefreshIndicator(
       onRefresh: _refresh,
       color: McColors.primary,
@@ -290,19 +300,15 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
           ),
           const SizedBox(height: 12),
 
-          // 3. 专业行情数据列表
-          if (rows.isEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              alignment: Alignment.center,
-              child: Text('该板块暂无上榜币种',
-                  style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
-            )
+          // 3. 专业行情数据列表: 未加载 -> 骨架屏; 加载失败 -> 空态; 否则真实榜单.
+          if (!_loaded)
+            McSkeleton.card(lines: 6, height: 16)
+          else if (_liveRows.isEmpty)
+            _emptyHint('行情加载失败, 下拉重试')
+          else if (rows.isEmpty)
+            _emptyHint('该板块暂无上榜币种')
           else
-            _MarketListCard(
-                rows: rows,
-                loading: _loading && !usingLive,
-                onRowTap: _openDetail),
+            _MarketListCard(rows: rows, onRowTap: _openDetail),
           const SizedBox(height: 20),
 
           // 4. 板块轮动热力概览
@@ -667,92 +673,10 @@ class _ListControlBar extends StatelessWidget {
 
 /// 3. 专业行情数据列表.
 class _MarketListCard extends StatelessWidget {
-  const _MarketListCard(
-      {required this.rows, this.loading = false, this.onRowTap});
+  const _MarketListCard({required this.rows, this.onRowTap});
 
   final List<_RowData> rows;
-  final bool loading;
   final ValueChanged<_RowData>? onRowTap;
-
-  static const _mockRows = [
-    _RowData(
-        symbol: 'BTC',
-        vol: '24H \$42.5B',
-        price: '\$96,450.00',
-        note: '高 \$97.1K',
-        noteColor: HomeMarketPage._bull,
-        spark: [0.25, 0.38, 0.19, 0.56, 0.44, 0.88],
-        sparkColor: HomeMarketPage._bull,
-        delta: '+3.42%',
-        positive: true,
-        alt: true),
-    _RowData(
-        symbol: 'ETH',
-        vol: '24H \$24.8B',
-        price: '\$3,420.50',
-        note: '高 \$3.48K',
-        noteColor: HomeMarketPage._bull,
-        spark: [0.13, 0.31, 0.25, 0.50, 0.63, 0.81],
-        sparkColor: HomeMarketPage._bull,
-        delta: '+2.18%',
-        positive: true,
-        alt: false),
-    _RowData(
-        symbol: 'SOL',
-        vol: '24H \$11.2B',
-        price: '\$194.20',
-        note: '突破强压',
-        noteColor: HomeMarketPage._bull,
-        spark: [0.06, 0.19, 0.50, 0.38, 0.81, 0.94],
-        sparkColor: HomeMarketPage._bull,
-        delta: '+6.85%',
-        positive: true,
-        alt: true),
-    _RowData(
-        symbol: 'SUI',
-        vol: '24H \$3.4B',
-        price: '\$3.85',
-        note: '缩量洗盘',
-        noteColor: HomeMarketPage._err,
-        spark: [0.81, 0.69, 0.75, 0.38, 0.50, 0.13],
-        sparkColor: HomeMarketPage._err,
-        delta: '-1.24%',
-        positive: false,
-        alt: false),
-    _RowData(
-        symbol: 'DOGE',
-        vol: '24H \$5.8B',
-        price: '\$0.3850',
-        note: '主升浪中',
-        noteColor: HomeMarketPage._bull,
-        spark: [0.13, 0.06, 0.50, 0.44, 0.81, 0.94],
-        sparkColor: HomeMarketPage._bull,
-        delta: '+12.40%',
-        positive: true,
-        alt: true),
-    _RowData(
-        symbol: 'AVAX',
-        vol: '24H \$1.9B',
-        price: '\$38.90',
-        note: '温和放量',
-        noteColor: HomeMarketPage._bull,
-        spark: [0.19, 0.31, 0.38, 0.50, 0.69, 0.81],
-        sparkColor: HomeMarketPage._bull,
-        delta: '+4.15%',
-        positive: true,
-        alt: false),
-    _RowData(
-        symbol: 'NEAR',
-        vol: '24H \$1.2B',
-        price: '\$6.75',
-        note: '突破颈线',
-        noteColor: HomeMarketPage._bull,
-        spark: [0.19, 0.13, 0.44, 0.38, 0.75, 0.88],
-        sparkColor: HomeMarketPage._bull,
-        delta: '+8.30%',
-        positive: true,
-        alt: true),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -803,18 +727,6 @@ class _MarketListCard extends StatelessWidget {
                   alt: i.isEven,
                   isLast: i == rows.length - 1,
                   onTap: onRowTap == null ? null : () => onRowTap!(rows[i])),
-            if (loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 14),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: McColors.primary),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -856,7 +768,7 @@ class _RowData {
   final bool positive;
   final bool alt;
 
-  /// 交易对 ID (如 BTC-USDT-SWAP), mock 行为 ''.
+  /// 交易对 ID (如 BTC-USDT-SWAP), 缺省为 ''.
   final String instId;
 
   /// 名义成交额 USD (排序键), 涨跌幅原始值.

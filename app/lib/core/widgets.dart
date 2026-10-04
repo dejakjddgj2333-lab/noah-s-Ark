@@ -359,3 +359,77 @@ class McAvatar extends StatelessWidget {
     );
   }
 }
+
+/// 骨架屏占位块: 灰色圆角矩形呼吸动画, 替代首屏 mock 假数据.
+class McSkeleton extends StatefulWidget {
+  const McSkeleton({
+    super.key,
+    this.width,
+    this.height = 14,
+    this.radius = 6,
+  });
+
+  final double? width;
+  final double height;
+  final double radius;
+
+  /// 整卡骨架: 一张卡片里放若干横条.
+  static Widget card({int lines = 3, double height = 14}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: McColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: McColors.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < lines; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            McSkeleton(width: i == 0 ? 120 : double.infinity, height: height),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  State<McSkeleton> createState() => _McSkeletonState();
+}
+
+class _McSkeletonState extends State<McSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: Color.lerp(
+              McColors.surfaceContainerHigh,
+              McColors.surfaceContainerHighest,
+              _c.value,
+            ),
+            borderRadius: BorderRadius.circular(widget.radius),
+          ),
+        );
+      },
+    );
+  }
+}

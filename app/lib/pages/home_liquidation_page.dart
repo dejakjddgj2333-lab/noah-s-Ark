@@ -12,8 +12,8 @@ import '../services/liquidation_ws.dart';
 /// Palette overrides from stitch_ref/home_liquidation.html.
 ///
 /// 总爆仓/交易所统计/热力分布尝试接
-/// `/api/market-overview/liquidations/exchange-list?range=24h`; 失败(未配置
-/// CoinGlass/上游错误/后端未启动)时静默保留内置 mock, 永不红屏.
+/// `/api/market-overview/liquidations/exchange-list?range=24h`; 首屏为骨架屏,
+/// 失败(未配置 CoinGlass/上游错误/后端未启动)时显示 '--' 占位, 永不红屏也不显示假数字.
 class HomeLiquidationPage extends StatefulWidget {
   const HomeLiquidationPage({super.key});
 
@@ -34,20 +34,19 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
 
   static const _hairline = Color(0x0FFFFFFF); // white/5
 
-  // 24H 总爆仓卡: 首屏展示 mock.
-  String _total24 = '\$3.3亿';
-  String _long24 = '\$2.7亿';
-  String _short24 = '\$6682万';
+  // 首轮数据加载(成功或失败)完成后置 true, 控制首屏骨架屏.
+  bool _loaded = false;
+
+  // 24H 总爆仓卡: 首屏骨架, 数据到达后覆盖, 加载失败保持 '--'.
+  String _total24 = '--';
+  String _long24 = '--';
+  String _short24 = '--';
   String _liqCount = '--'; // 爆仓笔数 (exchange-list count 求和)
   String _liqCountUnit = '笔强平';
-  String _liqTotalText = '\$3.35亿';
+  String _liqTotalText = '--';
 
-  // 实时监控卡: range -> (total, long, short) 原始值, mock 默认, 拉取成功覆盖.
-  final Map<String, (double, double, double)> _sums = {
-    '1h': (301e4, 167.6e4, 133.4e4),
-    '4h': (1120.7e4, 454.6e4, 666.1e4),
-    '24h': (3.35e8, 2.7e8, 6682e4),
-  };
+  // 实时监控卡: range -> (total, long, short) 原始值, 拉取成功填充, 无数据显示 '--'.
+  final Map<String, (double, double, double)> _sums = {};
   String _monitorRange = '24h'; // 监控卡当前时段
 
   // 顶部币种快捷过滤 ('全部' 或 BTC/ETH/...).
@@ -57,179 +56,33 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   // 交易所统计当前时段.
   String _statsRange = '24h';
 
-  // 分时段爆仓 (1h/4h/12h): 首屏 mock, 拉取成功后覆盖.
-  String _total1h = '\$301万';
-  String _long1h = '\$167.6万';
-  String _short1h = '\$133.4万';
-  String _total4h = '\$1120.7万';
-  String _long4h = '\$454.6万';
-  String _short4h = '\$666.1万';
-  String _total12h = '\$7150万';
-  String _long12h = '\$4469万';
-  String _short12h = '\$2681万';
+  // 分时段爆仓 (1h/4h/12h): 首屏骨架, 拉取成功后覆盖, 失败保持 '--'.
+  String _total1h = '--';
+  String _long1h = '--';
+  String _short1h = '--';
+  String _total4h = '--';
+  String _long4h = '--';
+  String _short4h = '--';
+  String _total12h = '--';
+  String _long12h = '--';
+  String _short12h = '--';
 
-  // 实时爆仓 feed: 首屏 mock 占位, Binance WS 推送后逐条前置覆盖.
-  final List<_FeedItem> _feedItems = _mockFeedItems();
+  // 实时爆仓 feed: 首屏骨架, Binance WS 推送后逐条前置填充.
+  final List<_FeedItem> _feedItems = [];
   StreamSubscription<LiqPush>? _liqSub;
 
-  static List<_FeedItem> _mockFeedItems() => const [
-        _FeedItem(
-          avatarBg: Color(0x26F3BA2F),
-          avatarLabel: '❖',
-          avatarColor: Color(0xFFF3BA2F),
-          name: 'Binance',
-          symbol: 'FLOCKUSDT',
-          price: '\$0.03982',
-          long: true,
-          amount: '\$1,984.16',
-          amountUsd: 1984.16,
-          amountColor: Colors.white,
-          qty: '≈4.98万 FLOCK',
-          time: '16:09:42',
-        ),
-        _FeedItem(
-          avatarBg: Color(0x26F3BA2F),
-          avatarLabel: '❖',
-          avatarColor: Color(0xFFF3BA2F),
-          name: 'Binance',
-          symbol: 'USELESS',
-          price: '\$0.11759',
-          long: false,
-          amount: '\$1,877.84',
-          amountUsd: 1877.84,
-          amountColor: Colors.white,
-          qty: '≈1.6万 USELESS',
-          time: '16:09:28',
-        ),
-        _FeedItem(
-          avatarBg: Color(0x1AFFFFFF),
-          avatarLabel: 'OK',
-          avatarColor: Colors.white,
-          name: 'OKX',
-          symbol: 'BTC-SWAP',
-          price: '\$66,420.5',
-          long: true,
-          amount: '\$48.29万',
-          amountUsd: 482900,
-          amountColor: Color(0xFF10B981),
-          qty: '7.27 BTC',
-          time: '16:08:50',
-        ),
-        _FeedItem(
-          avatarBg: Color(0x2610B981),
-          avatarLabel: 'HL',
-          avatarColor: Color(0xFF10B981),
-          name: 'Hyperliquid',
-          symbol: 'ETH-PERP',
-          price: '\$3,418.90',
-          long: true,
-          amount: '\$128.50万',
-          amountUsd: 1285000,
-          amountColor: Color(0xFF10B981),
-          qty: '375.8 ETH',
-          time: '16:08:12',
-        ),
-        _FeedItem(
-          avatarBg: Color(0x1AF7A600),
-          avatarLabel: 'BY',
-          avatarColor: Color(0xFFF7A600),
-          name: 'Bybit',
-          symbol: 'SOLUSDT',
-          price: '\$148.20',
-          long: false,
-          amount: '\$21.35万',
-          amountUsd: 213500,
-          amountColor: Colors.white,
-          qty: '1,440.6 SOL',
-          time: '16:07:45',
-          showDivider: false,
-        ),
-      ];
+  // 交易所统计行: 首屏骨架, 成功后按真实数据构建.
+  List<_ExStat>? _exStats;
 
-  // 交易所统计行: 首屏展示 mock, 成功后按名称覆盖.
-  late List<_ExStat> _exStats = _mockExStats();
-
-  static List<_ExStat> _mockExStats() => const [
-        _ExStat(
-          avatarBg: McColors.surfaceContainerHighest,
-          avatarLabel: '全',
-          avatarColor: _primaryLight,
-          name: '全部',
-          total: '\$3.3亿',
-          pct: '100.00%',
-          longFrac: 0.802,
-          longText: '\$2.7亿',
-          shortText: '\$6682万',
-          boldName: true,
-        ),
-        _ExStat(
-          avatarBg: Color(0x1AF3BA2F),
-          avatarLabel: '❖',
-          avatarColor: Color(0xFFF3BA2F),
-          name: 'Binance',
-          total: '\$1.6亿',
-          pct: '46.48%',
-          longFrac: 0.794,
-          longText: '\$1.2亿',
-          shortText: '\$3108.3万',
-        ),
-        _ExStat(
-          avatarBg: Color(0x2610B981),
-          avatarLabel: 'HL',
-          avatarColor: _bull,
-          name: 'Hyperliquid',
-          total: '\$5423.5万',
-          pct: '16.20%',
-          longFrac: 0.934,
-          longText: '\$5066.3万',
-          shortText: '\$357.2万',
-        ),
-        _ExStat(
-          avatarBg: Color(0x1AFFFFFF),
-          avatarLabel: 'OK',
-          avatarColor: Colors.white,
-          name: 'OKX',
-          total: '\$3734.6万',
-          pct: '11.15%',
-          longFrac: 0.695,
-          longText: '\$2596.3万',
-          shortText: '\$1138.2万',
-        ),
-        _ExStat(
-          avatarBg: Color(0x1AF7A600),
-          avatarLabel: 'BY',
-          avatarColor: Color(0xFFF7A600),
-          name: 'Bybit',
-          total: '\$3233.2万',
-          pct: '9.65%',
-          longFrac: 0.799,
-          longText: '\$2583.1万',
-          shortText: '\$650.2万',
-        ),
-        _ExStat(
-          avatarBg: Color(0x260052FF),
-          avatarLabel: 'GT',
-          avatarColor: Color(0xFF0052FF),
-          name: 'Gate',
-          total: '\$2708.5万',
-          pct: '8.09%',
-          longFrac: 0.794,
-          longText: '\$2152.1万',
-          shortText: '\$556.4万',
-        ),
-        _ExStat(
-          avatarBg: Color(0x2600F0FF),
-          avatarLabel: 'BG',
-          avatarColor: Color(0xFF00F0FF),
-          name: 'Bitget',
-          total: '\$1577.5万',
-          pct: '4.71%',
-          longFrac: 0.833,
-          longText: '\$1313.9万',
-          shortText: '\$263.6万',
-          showDivider: false,
-        ),
-      ];
+  // 已知交易所的展示元数据 (头像/配色); 数值全部来自接口, 无内置假数字.
+  static const List<_ExMeta> _exMeta = [
+    _ExMeta('Binance', Color(0x1AF3BA2F), '❖', Color(0xFFF3BA2F)),
+    _ExMeta('Hyperliquid', Color(0x2610B981), 'HL', _bull),
+    _ExMeta('OKX', Color(0x1AFFFFFF), 'OK', Colors.white),
+    _ExMeta('Bybit', Color(0x1AF7A600), 'BY', Color(0xFFF7A600)),
+    _ExMeta('Gate', Color(0x260052FF), 'GT', Color(0xFF0052FF)),
+    _ExMeta('Bitget', Color(0x2600F0FF), 'BG', Color(0xFF00F0FF)),
+  ];
 
   @override
   void initState() {
@@ -245,11 +98,14 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   }
 
   Future<void> _load() async {
+    // 各子加载内部均已捕获异常, 不会抛出; 成败都视为首轮完成.
     await Future.wait([
       _load24h(),
       _loadTimeframes(),
       _loadLiqCount(),
     ]);
+    if (!mounted) return;
+    setState(() => _loaded = true);
   }
 
   Future<void> _load24h() => _loadRangeStats(_statsRange);
@@ -263,13 +119,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       if (parsed == null || !mounted) return;
       setState(() => _applyParsed(parsed, range));
     } on ApiException {
-      // 503 未配置 / 502 上游错误 — 保留 mock.
+      // 503 未配置 / 502 上游错误 — 保持 '--' 占位.
     } catch (_) {
-      // 网络/解析异常 — 保留 mock.
+      // 网络/解析异常 — 保持 '--' 占位.
     }
   }
 
-  // 1h/4h/12h 分时段: 并行拉取, 各所求和 -> 总爆仓+多单+空单. 任一失败保留 mock.
+  // 1h/4h/12h 分时段: 并行拉取, 各所求和 -> 总爆仓+多单+空单. 任一失败保持 '--'.
   Future<void> _loadTimeframes() async {
     final results = await Future.wait([
       _sumRange('1h'),
@@ -444,7 +300,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     return '${two(dt.hour)}:${two(dt.minute)}:${two(dt.second)}';
   }
 
-  // 应用解析结果: 覆盖已知名称的交易所行, 重算该时段「全部」行;
+  // 应用解析结果: 按真实数据 + 已知交易所元数据构建统计行, 重算「全部」行;
   // range=24h 时同步更新总爆仓卡与监控卡原始值.
   void _applyParsed(List<_RawEx> raw, [String range = '24h']) {
     double sumTotal = 0, sumLong = 0, sumShort = 0;
@@ -456,35 +312,76 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     }
     if (sumTotal <= 0) return;
 
-    // 按名称匹配更新 (保留 mock 的头像/配色与未知名称).
-    final updated = <_ExStat>[];
-    for (final stat in _exStats) {
-      if (stat.name == '全部') continue; // 末尾统一重算
-      final match = _matchRaw(raw, stat.name);
-      if (match == null) {
-        updated.add(stat);
-      } else {
-        updated.add(stat.copyWith(
-          total: _fmtUsdZh(match.total),
-          pct: '${(match.total / sumTotal * 100).toStringAsFixed(2)}%',
-          longFrac: _frac(match.long, match.short),
-          longText: _fmtUsdZh(match.long),
-          shortText: _fmtUsdZh(match.short),
-        ));
-      }
+    _ExStat buildRow({
+      required Color avatarBg,
+      required String avatarLabel,
+      required Color avatarColor,
+      required String name,
+      required _RawEx match,
+      bool boldName = false,
+    }) {
+      return _ExStat(
+        avatarBg: avatarBg,
+        avatarLabel: avatarLabel,
+        avatarColor: avatarColor,
+        name: name,
+        total: _fmtUsdZh(match.total),
+        pct: '${(match.total / sumTotal * 100).toStringAsFixed(2)}%',
+        longFrac: _frac(match.long, match.short),
+        longText: _fmtUsdZh(match.long),
+        shortText: _fmtUsdZh(match.short),
+        boldName: boldName,
+      );
     }
-    // 「全部」行置顶重算.
-    updated.insert(
-      0,
-      _exStats.first.copyWith(
-        total: _fmtUsdZh(sumTotal),
-        pct: '100.00%',
-        longFrac: _frac(sumLong, sumShort),
-        longText: _fmtUsdZh(sumLong),
-        shortText: _fmtUsdZh(sumShort),
+
+    final rows = <_ExStat>[];
+    final used = <String>{}; // 已匹配的规范化名称
+    // 已知交易所: 按模板顺序, 仅展示接口实际返回的.
+    for (final meta in _exMeta) {
+      final match = _matchRaw(raw, meta.name);
+      if (match == null) continue;
+      used.add(_normName(meta.name));
+      rows.add(buildRow(
+        avatarBg: meta.avatarBg,
+        avatarLabel: meta.avatarLabel,
+        avatarColor: meta.avatarColor,
+        name: meta.name,
+        match: match,
+      ));
+    }
+    // 未知交易所: 追加, 用首字母头像.
+    for (final r in raw) {
+      final key = _normName(r.name);
+      if (key == 'all' || used.contains(key)) continue;
+      rows.add(buildRow(
+        avatarBg: McColors.surfaceContainerHighest,
+        avatarLabel: r.name.isEmpty ? '?' : r.name[0].toUpperCase(),
+        avatarColor: _primaryLight,
+        name: r.name,
+        match: r,
+      ));
+    }
+
+    // 「全部」行置顶 (聚合值).
+    final agg = _RawEx(name: '全部', total: sumTotal, long: sumLong, short: sumShort);
+    final updated = <_ExStat>[
+      buildRow(
+        avatarBg: McColors.surfaceContainerHighest,
+        avatarLabel: '全',
+        avatarColor: _primaryLight,
+        name: '全部',
+        match: agg,
+        boldName: true,
       ),
-    );
-    _exStats = updated;
+      ...rows,
+    ];
+    // 末行不画分隔线.
+    _exStats = [
+      for (var i = 0; i < updated.length; i++)
+        i == updated.length - 1
+            ? updated[i].copyWith(showDivider: false)
+            : updated[i],
+    ];
 
     _sums[range] = (sumTotal, sumLong, sumShort);
     if (range == '24h') {
@@ -588,19 +485,15 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     return v.toStringAsFixed(2);
   }
 
-  // 热力分布文本查询: 优先真实数据, 缺失回退到传入的 mock 默认.
-  String _heatAmt(String name, String dflt) {
-    final s = _find(name);
-    return s == null ? dflt : s.total;
-  }
+  // 热力分布文本查询: 真实数据, 缺失(未加载/接口无该所)显示 '--'.
+  String _heatAmt(String name) => _find(name)?.total ?? '--';
 
-  String _heatPct(String name, String dflt) {
-    final s = _find(name);
-    return s == null ? dflt : s.pct;
-  }
+  String _heatPct(String name) => _find(name)?.pct ?? '--';
 
   _ExStat? _find(String name) {
-    for (final e in _exStats) {
+    final list = _exStats;
+    if (list == null) return null;
+    for (final e in list) {
       if (e.name == name) return e;
     }
     return null;
@@ -687,9 +580,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
 
   // ---- 全网多空爆仓实时监控卡 (1H/4H/24H 可切换) ----
   Widget _buildMonitorCard() {
-    final (total, long, short) =
-        _sums[_monitorRange] ?? _sums['24h']!;
-    final longPct = total > 0 ? (long / total * 100).round() : 50;
+    if (!_loaded) return McSkeleton.card(lines: 3, height: 16);
+    final sums = _sums[_monitorRange] ?? _sums['24h'];
+    final hasData = sums != null && sums.$1 > 0;
+    final total = sums?.$1 ?? 0;
+    final long = sums?.$2 ?? 0;
+    final short = sums?.$3 ?? 0;
+    final longPct = hasData ? (long / total * 100).round() : 50;
 
     Widget tf(String label, String range) {
       final active = _monitorRange == range;
@@ -749,7 +646,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_fmtUsdZh(total),
+              Text(hasData ? _fmtUsdZh(total) : '--',
                   style: McText.mono(size: 20, weight: FontWeight.w800, color: _bear)),
               Text('多单 $longPct% · 空单 ${100 - longPct}%',
                   style: McText.mono(size: 12, color: _onSurfaceVariant)),
@@ -793,9 +690,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('多头爆仓 ${_fmtUsdZh(long)}',
+              Text('多头爆仓 ${hasData ? _fmtUsdZh(long) : '--'}',
                   style: McText.mono(size: 12, color: _bear)),
-              Text('空头爆仓 ${_fmtUsdZh(short)}',
+              Text('空头爆仓 ${hasData ? _fmtUsdZh(short) : '--'}',
                   style: McText.mono(size: 12, color: _bull)),
             ],
           ),
@@ -831,6 +728,15 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
 
   // ---- SECTION 1: 总爆仓 ----
   Widget _buildTotalLiquidation() {
+    if (!_loaded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('总爆仓'),
+          McSkeleton.card(lines: 5, height: 16),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -898,12 +804,12 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                           children: [
                             const TextSpan(text: '最大单笔爆仓单发生在 '),
                             TextSpan(
-                              text: 'Binance-ETH',
+                              text: '--',
                               style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white),
                             ),
                             const TextSpan(text: ' 价值 '),
                             TextSpan(
-                              text: '\$1,199.47万',
+                              text: '--',
                               style: McText.mono(size: 12, weight: FontWeight.w600, color: _primaryLight),
                             ),
                           ],
@@ -1026,6 +932,15 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
 
   // ---- SECTION 2: 交易所爆仓热力分布 (treemap) ----
   Widget _buildHeatmap() {
+    if (!_loaded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('交易所爆仓热力分布', trailing: '合约全网体量图'),
+          const McSkeleton(height: 250, radius: 16),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1075,13 +990,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(_heatAmt('Binance', '\$1.6亿'),
+                                Text(_heatAmt('Binance'),
                                     maxLines: 1, softWrap: false,
                                     overflow: TextOverflow.ellipsis,
                                     style: McText.mono(
                                         size: 21, weight: FontWeight.w800, color: Colors.white, height: 1)),
                                 const SizedBox(height: 2),
-                                Text('占比 ${_heatPct('Binance', '46.48%')}',
+                                Text('占比 ${_heatPct('Binance')}',
                                     style: McText.sans(
                                         size: 12,
                                         weight: FontWeight.w500,
@@ -1129,14 +1044,14 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                           color: Colors.white.withValues(alpha: 0.2),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
-                                        child: Text(_heatPct('Hyperliquid', '16.2%'),
+                                        child: Text(_heatPct('Hyperliquid'),
                                             maxLines: 1, softWrap: false,
                                             overflow: TextOverflow.ellipsis,
                                             style: McText.mono(size: 12, color: Colors.white)),
                                       ),
                                     ],
                                   ),
-                                  Text(_heatAmt('Hyperliquid', '\$5423.5万'),
+                                  Text(_heatAmt('Hyperliquid'),
                                       maxLines: 1, softWrap: false,
                                       overflow: TextOverflow.ellipsis,
                                       style: McText.mono(
@@ -1176,7 +1091,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                                     color: Colors.white.withValues(alpha: 0.8))),
                                           ],
                                         ),
-                                        Text(_heatAmt('OKX', '\$3734.6万'),
+                                        Text(_heatAmt('OKX'),
                                             maxLines: 1, softWrap: false,
                                             overflow: TextOverflow.ellipsis,
                                             style: McText.mono(
@@ -1207,7 +1122,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                               Text('Bybit',
                                                   style: McText.sans(
                                                       size: 12, weight: FontWeight.w700, color: Colors.white)),
-                                              Text(_heatAmt('Bybit', '\$3233.2万'),
+                                              Text(_heatAmt('Bybit'),
                                                   maxLines: 1, softWrap: false,
                                                   overflow: TextOverflow.ellipsis,
                                                   style: McText.mono(
@@ -1237,7 +1152,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                                             size: 12,
                                                             weight: FontWeight.w700,
                                                             color: Colors.white)),
-                                                    Text(_heatAmt('Gate', '\$2708万'),
+                                                    Text(_heatAmt('Gate'),
                                                         maxLines: 1, softWrap: false,
                                                         overflow: TextOverflow.ellipsis,
                                                         style: McText.mono(
@@ -1269,7 +1184,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                                                   size: 12,
                                                                   weight: FontWeight.w700,
                                                                   color: Colors.white)),
-                                                          Text(_heatAmt('Bitget', '\$1577万'),
+                                                          Text(_heatAmt('Bitget'),
                                                               maxLines: 1, softWrap: false,
                                                               overflow: TextOverflow.ellipsis,
                                                               style: McText.mono(
@@ -1353,6 +1268,16 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
 
   // ---- SECTION 3: 交易所爆仓统计 ----
   Widget _buildExchangeStats() {
+    if (!_loaded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('交易所爆仓统计'),
+          McSkeleton.card(lines: 5, height: 16),
+        ],
+      );
+    }
+    final stats = _exStats ?? const <_ExStat>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1433,7 +1358,15 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                   ],
                 ),
               ),
-              for (final s in _exStats) _statRow(s),
+              if (stats.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text('暂无数据', style: McText.sans(size: 12, color: _onSurfaceVariant)),
+                  ),
+                )
+              else
+                for (final s in stats) _statRow(s),
             ],
           ),
         ),
@@ -1632,30 +1565,41 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 ),
               ),
               // 币种 + 金额阈值过滤
-              Builder(builder: (context) {
-                final visible = _feedItems.where((f) {
-                  if (_symbol != '全部' &&
-                      !f.symbol.toUpperCase().contains(_symbol)) {
-                    return false;
-                  }
-                  return f.amountUsd >= _feedMinUsd;
-                }).toList();
-                if (visible.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: Text('暂无符合筛选的爆仓单',
-                          style: McText.sans(size: 12, color: _onSurfaceVariant)),
-                    ),
-                  );
-                }
-                return Column(
+              if (!_loaded)
+                const Column(
                   children: [
-                    for (var i = 0; i < visible.length; i++)
-                      _feedRow(visible[i], showDivider: i < visible.length - 1),
+                    McSkeleton(height: 40, radius: 8),
+                    SizedBox(height: 10),
+                    McSkeleton(height: 40, radius: 8),
+                    SizedBox(height: 10),
+                    McSkeleton(height: 40, radius: 8),
                   ],
-                );
-              }),
+                )
+              else
+                Builder(builder: (context) {
+                  final visible = _feedItems.where((f) {
+                    if (_symbol != '全部' &&
+                        !f.symbol.toUpperCase().contains(_symbol)) {
+                      return false;
+                    }
+                    return f.amountUsd >= _feedMinUsd;
+                  }).toList();
+                  if (visible.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text('暂无符合筛选的爆仓单',
+                            style: McText.sans(size: 12, color: _onSurfaceVariant)),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: [
+                      for (var i = 0; i < visible.length; i++)
+                        _feedRow(visible[i], showDivider: i < visible.length - 1),
+                    ],
+                  );
+                }),
             ],
           ),
         ),
@@ -1785,6 +1729,7 @@ class _ExStat {
     double? longFrac,
     String? longText,
     String? shortText,
+    bool? showDivider,
   }) {
     return _ExStat(
       avatarBg: avatarBg,
@@ -1797,9 +1742,19 @@ class _ExStat {
       longText: longText ?? this.longText,
       shortText: shortText ?? this.shortText,
       boldName: boldName,
-      showDivider: showDivider,
+      showDivider: showDivider ?? this.showDivider,
     );
   }
+}
+
+/// 已知交易所的展示元数据 (头像/配色), 不含任何数值.
+class _ExMeta {
+  const _ExMeta(this.name, this.avatarBg, this.avatarLabel, this.avatarColor);
+
+  final String name;
+  final Color avatarBg;
+  final String avatarLabel;
+  final Color avatarColor;
 }
 
 /// 实时爆仓 feed 行的不可变数据模型 (mock 与真实数据共用).

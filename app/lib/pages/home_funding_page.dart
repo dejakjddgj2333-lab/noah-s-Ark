@@ -9,9 +9,9 @@ import '../services/data.dart';
 
 /// 资金费率 (Funding Rate) content body.
 ///
-/// 费率矩阵与全网加权指数尝试接 `/api/market-overview/funding/exchange-rates`
-/// (BTC, 可选 ETH); 失败(未配置 CoinGlass/上游错误/后端未启动)时静默保留
-/// 内置 mock, 永不红屏.
+/// 费率矩阵与全网加权指数接 `/api/market-overview/funding/exchange-rates`.
+/// 首屏在首轮加载完成前显示骨架屏, 不再展示 mock 假数据; 加载失败的字段
+/// 显示 '--' 或空态, 永不红屏.
 class HomeFundingPage extends StatefulWidget {
   const HomeFundingPage({super.key});
 
@@ -25,9 +25,12 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   static const _hairline = Color(0x0FFFFFFF); // white/5
   static const _hairlineSoft = Color(0x0FFFFFFF); // white/[0.06]
 
-  // 全网加权指数 (BTC 行均值): 首屏展示 mock.
-  String _indexApy = '+12.45%';
-  String _indexRate8h = '0.0114% / 8h';
+  // 首轮加载是否完成 (成功或失败都算): false 时首屏显示骨架屏.
+  bool _loaded = false;
+
+  // 全网加权指数 (BTC 行均值): 未加载/失败显示 '--', 不显示编造数字.
+  String _indexApy = '--';
+  String _indexRate8h = '--';
 
   // 费率矩阵筛选: pos=正费率 / neg=负费率 / hot=异动激增 (|rate|>=0.03).
   String _filter = 'pos';
@@ -38,8 +41,8 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   // 下次 8H 结算倒计时 (UTC 00/08/16).
   String _countdown = '--:--:--';
   Timer? _cdTimer;
-  // BTC 平均费率 (温度条游标, 默认 0.0114 对应 56%).
-  double _btcRate = 0.0114;
+  // BTC 平均费率 (温度条游标, 默认 0 对应中性 50%).
+  double _btcRate = 0;
 
   // BTC 费率近 7 日真实序列 (8H 一期); 空=未加载, 曲线回退示意.
   List<double> _trendRates = const [];
@@ -53,102 +56,22 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     return '空头拥挤·深度贴水';
   }
 
-  // 费率矩阵行: 首屏展示 mock, 成功后按 symbol 覆盖.
-  late List<_FundingRow> _rows = _mockRows();
+  // 费率矩阵行: 初始为空 (首屏骨架), 接口成功后按 symbol upsert.
+  List<_FundingRow> _rows = const [];
 
-  static List<_FundingRow> _mockRows() => const [
-        _FundingRow(
-          symbol: 'DOGE',
-          rateNum: 0.045,
-          price: '\$0.1842',
-          rate: '+0.0450%',
-          rateColor: McColors.tertiary,
-          sub: ['0.045', '0.042', '0.048'],
-          subColor: McColors.tertiary,
-          apy: '+49.2%',
-          apyColor: McColors.tertiary,
-          status: '多头过热',
-          statusColor: _error,
-          statusBg: Color(0x664E0002),
-          statusBold: true,
-        ),
-        _FundingRow(
-          symbol: 'SOL',
-          rateNum: 0.021,
-          price: '\$148.65',
-          rate: '+0.0210%',
-          rateColor: McColors.tertiary,
-          sub: ['0.021', '0.020', '0.022'],
-          subColor: McColors.tertiary,
-          apy: '+22.9%',
-          apyColor: McColors.tertiary,
-          status: '适度看多',
-          statusColor: McColors.tertiary,
-          statusBg: Color(0x66005A34),
-          statusBold: true,
-        ),
-        _FundingRow(
-          symbol: 'BTC',
-          rateNum: 0.01,
-          price: '\$67,820.0',
-          rate: '+0.0100%',
-          rateColor: McColors.primary,
-          sub: ['0.010', '0.010', '0.010'],
-          subColor: McColors.primary,
-          apy: '+10.9%',
-          apyColor: McColors.primary,
-          status: '基准平稳',
-          statusColor: McColors.onSurfaceVariant,
-          statusBg: McColors.surfaceContainerHigh,
-          statusBold: false,
-        ),
-        _FundingRow(
-          symbol: 'ETH',
-          rateNum: 0.0085,
-          price: '\$3,524.4',
-          rate: '+0.0085%',
-          rateColor: McColors.onSurface,
-          sub: ['0.008', '0.009', '0.008'],
-          subColor: McColors.outline,
-          apy: '+9.3%',
-          apyColor: McColors.onSurface,
-          status: '中性温和',
-          statusColor: McColors.onSurfaceVariant,
-          statusBg: McColors.surfaceContainerHigh,
-          statusBold: false,
-        ),
-        _FundingRow(
-          symbol: 'XRP',
-          rateNum: 0.0092,
-          price: '\$2.0413',
-          rate: '+0.0092%',
-          rateColor: McColors.primary,
-          sub: ['0.009', '0.010', '0.009'],
-          subColor: McColors.primary,
-          apy: '+10.1%',
-          apyColor: McColors.primary,
-          status: '基准平稳',
-          statusColor: McColors.onSurfaceVariant,
-          statusBg: McColors.surfaceContainerHigh,
-          statusBold: false,
-        ),
-        _FundingRow(
-          symbol: 'XTZ',
-          rateNum: -0.032,
-          price: '\$0.842',
-          rate: '-0.0320%',
-          rateColor: _error,
-          sub: ['-0.032', '-0.030', '-0.035'],
-          subColor: _error,
-          apy: '-35.0%',
-          apyColor: _error,
-          status: '空头拥挤',
-          statusColor: _error,
-          statusBg: Color(0x664E0002),
-          statusBold: true,
-          showDivider: false,
-        ),
-      ];
+  // 展示排序: 基础 6 个 + 展开额外合约, 保持设计稿顺序而非接口返回顺序.
+  static const _symbolOrder = [
+    'DOGE', 'SOL', 'BTC', 'ETH', 'XRP', 'XTZ',
+    'BNB', 'ADA', 'AVAX', 'LINK', 'LTC', 'NEAR', 'TON', 'APT',
+  ];
+
+  static int _ord(String s) {
+    final i = _symbolOrder.indexOf(s);
+    return i < 0 ? 999 : i;
+  }
+
+  static List<_FundingRow> _sorted(List<_FundingRow> rows) =>
+      [...rows]..sort((a, b) => _ord(a.symbol).compareTo(_ord(b.symbol)));
 
   // ---- Module 4 matrix rows: BTC/ETH/SOL/XRP/DOGE/XTZ 费率已接线, 现价由 tickers 填充 ----
 
@@ -181,7 +104,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
   }
 
   Future<void> _load() async {
-    // 各 symbol 独立并行尝试, 任一失败不影响其它与已有 mock.
+    // 各 symbol 独立并行尝试, 任一失败不影响其它行.
     await Future.wait([
       _fetchSymbol('BTC'),
       _fetchSymbol('ETH'),
@@ -192,6 +115,8 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
       _loadPrices(),
       _loadTrend(),
     ]);
+    // 首轮完成 (无论成败) 后撤出骨架屏; 下拉刷新时 _loaded 已为 true, 不回到骨架.
+    if (mounted && !_loaded) setState(() => _loaded = true);
   }
 
   // BTC 费率 7D 真实历史 (OKX funding-rate-history).
@@ -209,24 +134,26 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     } catch (_) {/* 保留示意曲线 */}
   }
 
+  // 现价缓存 (symbol → last): funding 行异步出现, 缓存保证后到行的价格也能覆盖.
+  Map<String, double> _priceBySymbol = const {};
+
   // 现价: funding 接口不带现价, 用 OKX tickers 按 symbol 覆盖每行价格.
-  // 失败静默保留现有 (mock) 价格.
   Future<void> _loadPrices() async {
     try {
       final tickers = await McData.tickers(instType: 'SWAP');
-      final bySymbol = {for (final t in tickers) t.symbol: t};
       if (!mounted) return;
       setState(() {
+        _priceBySymbol = {for (final t in tickers) t.symbol: t.last};
         _rows = [
           for (final r in _rows)
-            if (bySymbol.containsKey(r.symbol))
-              r.copyWith(price: _fmtPrice(bySymbol[r.symbol]!.last))
+            if (_priceBySymbol.containsKey(r.symbol))
+              r.copyWith(price: _fmtPrice(_priceBySymbol[r.symbol]!))
             else
               r,
         ];
       });
     } catch (_) {
-      // 现价接口失败 — 保留现有价格.
+      // 现价接口失败 — 价格保持 '--' 或已有值.
     }
   }
 
@@ -254,18 +181,24 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     try {
       final resp =
           await McData.overview('funding/exchange-rates?symbol=$symbol');
-      // 接口无现价字段: 沿用现有价格, 真实现价由 _loadPrices 统一覆盖.
+      // 接口无现价字段: 优先现价缓存, 其次已有行价格, 兜底 '--'.
       final existing = _rows.where((r) => r.symbol == symbol);
-      final parsed = _parseExchangeRates(
-          symbol, resp['data'],
-          fallbackPrice: existing.isEmpty ? '--' : existing.first.price);
+      final cached = _priceBySymbol[symbol];
+      final fallbackPrice = cached != null
+          ? _fmtPrice(cached)
+          : (existing.isEmpty ? '--' : existing.first.price);
+      final parsed = _parseExchangeRates(symbol, resp['data'],
+          fallbackPrice: fallbackPrice);
       if (parsed == null || !mounted) return;
       final (row, avgRate) = parsed;
       setState(() {
-        _rows = [
+        // upsert: 已有该 symbol 则覆盖, 否则追加; 再按设计稿顺序排序.
+        final next = [
           for (final r in _rows)
             if (r.symbol == symbol) row else r,
         ];
+        if (!_rows.any((r) => r.symbol == symbol)) next.add(row);
+        _rows = _sorted(next);
         if (symbol == 'BTC' && avgRate != null) {
           _btcRate = avgRate;
           _indexRate8h = '${_fmtRate(avgRate, signed: false)} / 8h';
@@ -273,9 +206,9 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         }
       });
     } on ApiException {
-      // 503 未配置 / 502 上游错误 — 保留 mock.
+      // 503 未配置 / 502 上游错误 — 该行留空.
     } catch (_) {
-      // 网络/解析异常 — 保留 mock.
+      // 网络/解析异常 — 该行留空.
     }
   }
 
@@ -397,17 +330,28 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
-        children: [
-          _buildIndexCard(),
-          const SizedBox(height: 24),
-          _buildArbitrage(),
-          const SizedBox(height: 24),
-          _buildTrend(),
-          const SizedBox(height: 24),
-          _buildMatrix(),
-          const SizedBox(height: 16),
-          _buildFooter(),
-        ],
+        // 首轮加载未完成前显示骨架屏, 不展示任何 mock 数字.
+        children: _loaded
+            ? [
+                _buildIndexCard(),
+                const SizedBox(height: 24),
+                _buildArbitrage(),
+                const SizedBox(height: 24),
+                _buildTrend(),
+                const SizedBox(height: 24),
+                _buildMatrix(),
+                const SizedBox(height: 16),
+                _buildFooter(),
+              ]
+            : [
+                McSkeleton.card(lines: 5, height: 18),
+                const SizedBox(height: 24),
+                McSkeleton.card(lines: 2, height: 16),
+                const SizedBox(height: 24),
+                McSkeleton.card(lines: 3, height: 14),
+                const SizedBox(height: 24),
+                McSkeleton.card(lines: 6, height: 16),
+              ],
       ),
     );
   }
@@ -1013,12 +957,14 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
     try {
       final resp =
           await McData.overview('funding/exchange-rates?symbol=$symbol');
-      final parsed = _parseExchangeRates(symbol, resp['data']);
+      final cached = _priceBySymbol[symbol];
+      final parsed = _parseExchangeRates(symbol, resp['data'],
+          fallbackPrice: cached != null ? _fmtPrice(cached) : '--');
       if (parsed == null || !mounted) return;
       final (row, _) = parsed;
       setState(() {
         if (_rows.any((r) => r.symbol == symbol)) return;
-        _rows = [..._rows, row];
+        _rows = _sorted([..._rows, row]);
       });
     } catch (_) {
       // 上游无该 symbol / 网络异常 — 跳过.
