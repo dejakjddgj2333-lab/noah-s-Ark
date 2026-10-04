@@ -630,9 +630,12 @@ class _AssetsPageState extends State<AssetsPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.pushNamed(context, '/commission'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -665,10 +668,14 @@ class _AssetsPageState extends State<AssetsPage> {
                         ),
                       ],
                     ),
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: Container(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.pushNamed(context, '/commission'),
+                    child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: McColors.surfaceContainerLow,
@@ -720,6 +727,7 @@ class _AssetsPageState extends State<AssetsPage> {
                           style: McText.mono(size: 12, color: cobaltSoft),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),
