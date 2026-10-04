@@ -82,9 +82,9 @@ class _AssetsPageState extends State<AssetsPage> {
       children: [
         _identityCard(),
         const SizedBox(height: 20),
-        _financeCenterCard(),
-        const SizedBox(height: 20),
         _assetCard(),
+        const SizedBox(height: 20),
+        _financeCenterCard(),
         const SizedBox(height: 20),
         _commissionCard(),
         const SizedBox(height: 20),
@@ -537,7 +537,6 @@ class _AssetsPageState extends State<AssetsPage> {
                 ('/team', Icons.groups_outlined, '我的团队'),
                 ('/orders', Icons.receipt_long_outlined, '我的订单'),
                 ('/funds', Icons.account_balance_wallet_outlined, '资金明细'),
-                ('/deposit', Icons.input_outlined, '充值'),
                 ('/withdraw', Icons.outbox_outlined, '提现'),
               ])
                 Material(
