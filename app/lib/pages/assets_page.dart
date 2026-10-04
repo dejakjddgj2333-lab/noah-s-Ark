@@ -163,6 +163,36 @@ class _AssetsPageState extends State<AssetsPage> {
                                     const SizedBox(width: 4),
                                     const Icon(Icons.verified,
                                         size: 16, color: cobalt),
+                                    const SizedBox(width: 6),
+                                    // 团队等级徽章 (紧跟昵称, 真实数据).
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: cobalt.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                            color: cobalt.withValues(alpha: 0.4)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.diamond,
+                                              size: 16, color: cobaltSoft),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _team == null
+                                                ? '团队'
+                                                : '团队 ${_team!['team_level'] ?? 0} 级',
+                                            style: McText.mono(
+                                              size: 11,
+                                              weight: FontWeight.w700,
+                                              color: cobaltSoft,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
@@ -178,40 +208,14 @@ class _AssetsPageState extends State<AssetsPage> {
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right,
-                              size: 18, color: McColors.onSurfaceVariant),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // 团队等级徽章 (真实数据).
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: cobalt.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                        border:
-                            Border.all(color: cobalt.withValues(alpha: 0.4)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.diamond,
-                              size: 13, color: cobaltSoft),
-                          const SizedBox(width: 4),
-                          Text(
-                            _team == null
-                                ? '团队等级'
-                                : '团队 ${_team!['team_level'] ?? 0} 级',
-                            style: McText.mono(
-                              size: 11,
-                              weight: FontWeight.w700,
-                              color: cobaltSoft,
-                            ),
-                          ),
-                        ],
-                      ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 14),
+                      child: Icon(Icons.chevron_right,
+                          size: 18, color: McColors.onSurfaceVariant),
                     ),
                   ],
                 );
