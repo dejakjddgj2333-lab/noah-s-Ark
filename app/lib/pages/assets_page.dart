@@ -166,21 +166,13 @@ class _AssetsPageState extends State<AssetsPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                // ID + 邀请码 (点击复制).
-                                GestureDetector(
-                                  onTap: _inviteCode == null
-                                      ? null
-                                      : () =>
-                                          _copy(_inviteCode!, '已复制邀请码'),
-                                  child: Text(
-                                    'ID: ${auth.userId ?? '-'}'
-                                    '${_inviteCode == null ? '' : ' · 邀请码: $_inviteCode'}',
-                                    style: McText.mono(
-                                      size: 12,
-                                      weight: FontWeight.w700,
-                                      color: McColors.onSurfaceVariant,
-                                      letterSpacing: 1,
-                                    ),
+                                Text(
+                                  'ID: ${auth.userId ?? '-'}',
+                                  style: McText.mono(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: McColors.onSurfaceVariant,
+                                    letterSpacing: 1,
                                   ),
                                 ),
                               ],
@@ -192,35 +184,28 @@ class _AssetsPageState extends State<AssetsPage> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // 团队等级徽章 (真实数据: 团队等级 + 一代返佣比例).
+                    // 团队等级徽章 (真实数据).
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
+                          horizontal: 8, vertical: 5),
                       decoration: BoxDecoration(
                         color: cobalt.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                         border:
                             Border.all(color: cobalt.withValues(alpha: 0.4)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cobalt.withValues(alpha: 0.25),
-                            blurRadius: 12,
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.diamond,
-                              size: 14, color: cobaltSoft),
-                          const SizedBox(width: 6),
+                              size: 13, color: cobaltSoft),
+                          const SizedBox(width: 4),
                           Text(
                             _team == null
                                 ? '团队等级'
-                                : '团队 ${_team!['team_level'] ?? 0} 级'
-                                  '${_team!['gen1_rate'] == null ? '' : ' · 一代 ${(FinanceApi.d(_team!['gen1_rate']) * 100).toStringAsFixed(1)}%'}',
+                                : '团队 ${_team!['team_level'] ?? 0} 级',
                             style: McText.mono(
-                              size: 12,
+                              size: 11,
                               weight: FontWeight.w700,
                               color: cobaltSoft,
                             ),
@@ -231,6 +216,45 @@ class _AssetsPageState extends State<AssetsPage> {
                   ],
                 );
               },
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 邀请码整行 chip (点击复制)
+          GestureDetector(
+            onTap: _inviteCode == null
+                ? null
+                : () => _copy(_inviteCode!, '已复制邀请码'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: McColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: McColors.surfaceContainerHigh.withValues(alpha: 0.6)),
+              ),
+              child: Row(
+                children: [
+                  Text('邀请码',
+                      style: McText.sans(
+                          size: 12, color: McColors.onSurfaceVariant)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _inviteCode ?? '加载中…',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: McText.mono(
+                        size: 13,
+                        weight: FontWeight.w700,
+                        color: cobaltSoft,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.content_copy,
+                      size: 14, color: McColors.onSurfaceVariant),
+                ],
+              ),
             ),
           ),
         ],
