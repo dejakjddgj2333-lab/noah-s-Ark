@@ -33,7 +33,7 @@ class _NewsPageState extends State<NewsPage> {
   bool _error = false;
 
   // 分类过滤 + 分页
-  String _category = 'flash';
+  String _category = 'news';
   String? _keyword; // 行业政策 keyword 过滤模式 (非空时忽略 category)
   int _page = 1;
   bool _loadingMore = false;

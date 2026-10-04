@@ -1,3 +1,17 @@
 安卓包名：com.hkmc.noahsark
 别名：noahsark
 密码：noahsark
+
+
+ios包名：com.hkmc.noahsark
+密码：caonima
+
+Issuer ID：179ed838-15a7-4b56-82d0-a4d9f65eaeb9
+密钥ID：553U88DHNG
+p8密钥文本：
+-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgShbGtipvQeIXxnY+
+3ck9iIlykxvJljI9fZXHWZDIyCWgCgYIKoZIzj0DAQehRANCAAQkLWsQZyBwhimr
+GiDu+bPo2rTztiN6Lx3GQp38dP0ahqZeJYvu8grRAQWugnKVQRzDsA75WoZyhn5U
+Jvl+iQ70
+-----END PRIVATE KEY-----
