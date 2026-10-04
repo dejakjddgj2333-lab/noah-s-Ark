@@ -9,11 +9,23 @@ const userStore = useUserStore()
 
 const activeMenu = computed(() => route.path)
 
-const menuRoutes = computed(() => {
+const GROUP_ORDER = ['概览', '用户', '资金', '运营', '系统']
+
+const menuGroups = computed(() => {
   const root = router.options.routes.find((r) => r.path === '/')
-  return (root?.children || []).filter(
+  const items = (root?.children || []).filter(
     (r) => r.meta?.title && (!r.meta.perm || userStore.hasPerm(r.meta.perm)),
   )
+  const groups = new Map()
+  for (const item of items) {
+    const g = item.meta?.group || '其他'
+    if (!groups.has(g)) groups.set(g, [])
+    groups.get(g).push(item)
+  }
+  return GROUP_ORDER.filter((g) => groups.has(g)).map((g) => ({
+    title: g,
+    items: groups.get(g),
+  }))
 })
 
 function handleLogout() {
@@ -41,10 +53,15 @@ function handleLogout() {
         active-text-color="#ffffff"
         router
       >
-        <el-menu-item v-for="item in menuRoutes" :key="item.path" :index="'/' + item.path">
-          <el-icon><component :is="item.meta.icon" /></el-icon>
-          <span>{{ item.meta.title }}</span>
-        </el-menu-item>
+        <el-menu-item-group v-for="group in menuGroups" :key="group.title">
+          <template #title>
+            <span class="menu-group-title">{{ group.title }}</span>
+          </template>
+          <el-menu-item v-for="item in group.items" :key="item.path" :index="'/' + item.path">
+            <el-icon><component :is="item.meta.icon" /></el-icon>
+            <span>{{ item.meta.title }}</span>
+          </el-menu-item>
+        </el-menu-item-group>
       </el-menu>
     </el-aside>
 
@@ -146,6 +163,16 @@ function handleLogout() {
 .sidebar-menu :deep(.el-menu-item.is-active) {
   background: linear-gradient(90deg, rgba(76, 111, 255, 0.85), rgba(138, 92, 255, 0.65));
   box-shadow: 0 4px 12px rgba(76, 111, 255, 0.35);
+}
+
+.sidebar-menu :deep(.el-menu-item-group__title) {
+  padding: 14px 8px 4px;
+}
+
+.menu-group-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .layout-header {

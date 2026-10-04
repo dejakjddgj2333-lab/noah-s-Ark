@@ -296,6 +296,58 @@ async def admin_stats(
     product_count = await count(
         select(func.count()).select_from(HkProduct).where(
             HkProduct.status == "published"))
+
+    # ── 图表序列 (近 14 天) ──
+    day0 = today - timedelta(days=13)
+
+    def _fill_days(rows, value_idx=1, value_cast=int):
+        """补全缺日期: [(date, val)] → 连续 14 天."""
+        m = {str(r[0]): value_cast(r[value_idx] or 0) for r in rows}
+        return [
+            {"date": str((day0 + timedelta(days=i)).date()),
+             "value": m.get(str((day0 + timedelta(days=i)).date()), 0)}
+            for i in range(14)
+        ]
+
+    user_rows = (
+        await db.execute(
+            select(func.date(HkUser.created_at), func.count())
+            .where(HkUser.created_at >= day0)
+            .group_by(func.date(HkUser.created_at))
+        )
+    ).all()
+    deposit_rows = (
+        await db.execute(
+            select(func.date(HkDepositRecord.credited_at),
+                   func.coalesce(func.sum(HkDepositRecord.amount), 0))
+            .where(HkDepositRecord.status == "credited",
+                   HkDepositRecord.credited_at >= day0)
+            .group_by(func.date(HkDepositRecord.credited_at))
+        )
+    ).all()
+    order_rows = (
+        await db.execute(
+            select(func.date(HkOrder.created_at),
+                   func.coalesce(func.sum(HkOrder.amount), 0))
+            .where(HkOrder.created_at >= day0)
+            .group_by(func.date(HkOrder.created_at))
+        )
+    ).all()
+    network_rows = (
+        await db.execute(
+            select(HkDepositRecord.network,
+                   func.coalesce(func.sum(HkDepositRecord.amount), 0))
+            .where(HkDepositRecord.status == "credited")
+            .group_by(HkDepositRecord.network)
+        )
+    ).all()
+    withdraw_rows = (
+        await db.execute(
+            select(HkWithdrawal.status, func.count())
+            .group_by(HkWithdrawal.status)
+        )
+    ).all()
+
     return {
         "total_users": total_users,
         "today_users": today_users,
@@ -304,4 +356,14 @@ async def admin_stats(
         "pending_withdrawals": pending_withdrawals,
         "order_total": str(order_total),
         "product_count": product_count,
+        "user_series": _fill_days(user_rows),
+        "deposit_series": _fill_days(deposit_rows, value_cast=lambda v: round(float(v), 2)),
+        "order_series": _fill_days(order_rows, value_cast=lambda v: round(float(v), 2)),
+        "network_dist": [
+            {"network": n, "amount": round(float(a or 0), 2)}
+            for n, a in network_rows
+        ],
+        "withdraw_status": [
+            {"status": s_, "count": c} for s_, c in withdraw_rows
+        ],
     }
