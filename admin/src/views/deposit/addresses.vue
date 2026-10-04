@@ -65,16 +65,28 @@ onMounted(() => {
       <el-col :span="6">
         <el-card shadow="never">
           <div class="gen-form">
+            <el-select v-model="genForm.network" size="small" style="width: 110px">
+              <el-option label="TRC20" value="trc20" />
+              <el-option label="ERC20" value="erc20" />
+              <el-option label="BEP20" value="bep20" />
+              <el-option label="Arbitrum" value="arbitrum" />
+            </el-select>
             <el-input-number v-model="genForm.count" :min="1" :max="200" size="small" />
             <el-button v-perm="'btn:deposit:generate'" type="primary" size="small" :loading="generating" @click="handleGenerate">生成地址</el-button>
           </div>
-          <div class="stat-label">向地址池补充 TRC20 地址</div>
+          <div class="stat-label">向地址池补充所选网络地址</div>
         </el-card>
       </el-col>
     </el-row>
 
     <el-card shadow="never">
       <div class="toolbar">
+        <el-select v-model="query.network" placeholder="网络" clearable style="width: 130px">
+          <el-option label="TRC20" value="trc20" />
+          <el-option label="ERC20" value="erc20" />
+          <el-option label="BEP20" value="bep20" />
+          <el-option label="Arbitrum" value="arbitrum" />
+        </el-select>
         <el-select v-model="query.state" placeholder="分配状态" clearable style="width: 140px">
           <el-option label="空闲" value="free" />
           <el-option label="已分配" value="assigned" />
