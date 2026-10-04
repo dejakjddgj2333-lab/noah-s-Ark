@@ -82,6 +82,8 @@ class _AssetsPageState extends State<AssetsPage> {
       children: [
         _identityCard(),
         const SizedBox(height: 20),
+        _financeCenterCard(),
+        const SizedBox(height: 20),
         _assetCard(),
         const SizedBox(height: 20),
         _commissionCard(),
@@ -512,6 +514,61 @@ class _AssetsPageState extends State<AssetsPage> {
     );
   }
 
+  // ---- 理财中心 (功能直达, 独立卡片) ----
+  Widget _financeCenterCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '理财中心',
+            style: McText.display(size: 16, weight: FontWeight.w700),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final (route, icon, label) in [
+                ('/products', Icons.savings_outlined, '理财产品'),
+                ('/vip', Icons.workspace_premium_outlined, '我的VIP'),
+                ('/team', Icons.groups_outlined, '我的团队'),
+                ('/orders', Icons.receipt_long_outlined, '我的订单'),
+                ('/funds', Icons.account_balance_wallet_outlined, '资金明细'),
+                ('/deposit', Icons.input_outlined, '充值'),
+                ('/withdraw', Icons.outbox_outlined, '提现'),
+              ])
+                Material(
+                  color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => Navigator.pushNamed(context, route),
+                    child: Container(
+                      width: (MediaQuery.of(context).size.width - 28 - 40 - 16) / 3,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Column(
+                        children: [
+                          Icon(icon, size: 22, color: McColors.primarySoft),
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            style: McText.sans(size: 12, weight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---- 3. 合伙人分佣体系看板 ----
   Widget _commissionCard() {
     return Container(
@@ -831,63 +888,6 @@ class _AssetsPageState extends State<AssetsPage> {
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // V0.7 功能直达 (新增区块, 不影响上方既有内容)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: McColors.surfaceContainer,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: McColors.surfaceContainerHigh),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '理财中心',
-                  style: McText.display(size: 13, weight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final (route, icon, label) in [
-                      ('/products', Icons.savings_outlined, '理财产品'),
-                      ('/vip', Icons.workspace_premium_outlined, '我的VIP'),
-                      ('/team', Icons.groups_outlined, '我的团队'),
-                      ('/orders', Icons.receipt_long_outlined, '我的订单'),
-                      ('/funds', Icons.account_balance_wallet_outlined, '资金明细'),
-                      ('/deposit', Icons.input_outlined, '充值'),
-                      ('/withdraw', Icons.outbox_outlined, '提现'),
-                    ])
-                      Material(
-                        color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () => Navigator.pushNamed(context, route),
-                          child: Container(
-                            width: (MediaQuery.of(context).size.width - 28 - 24 - 16) / 3,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            child: Column(
-                              children: [
-                                Icon(icon, size: 22, color: McColors.primarySoft),
-                                const SizedBox(height: 6),
-                                Text(
-                                  label,
-                                  style: McText.sans(size: 12, weight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
                 ),
               ],
             ),
