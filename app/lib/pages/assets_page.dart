@@ -527,9 +527,13 @@ class _AssetsPageState extends State<AssetsPage> {
             style: McText.display(size: 16, weight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.5,
             children: [
               for (final (route, icon, label) in [
                 ('/products', Icons.savings_outlined, '理财产品'),
@@ -545,19 +549,16 @@ class _AssetsPageState extends State<AssetsPage> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () => Navigator.pushNamed(context, route),
-                    child: Container(
-                      width: (MediaQuery.of(context).size.width - 28 - 40 - 16) / 3,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      child: Column(
-                        children: [
-                          Icon(icon, size: 22, color: McColors.primarySoft),
-                          const SizedBox(height: 6),
-                          Text(
-                            label,
-                            style: McText.sans(size: 12, weight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 22, color: McColors.primarySoft),
+                        const SizedBox(height: 6),
+                        Text(
+                          label,
+                          style: McText.sans(size: 12, weight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
                 ),
