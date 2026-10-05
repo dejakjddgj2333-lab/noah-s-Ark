@@ -702,7 +702,8 @@ class _DominancePieCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     _legend('ETH', eth, McColors.secondary),
                     const SizedBox(height: 10),
-                    _legend('Other', other, _otherColor),
+                    // Other 段颜色太暗, 图例文字用亮色保证可读
+                    _legend('Other', other, McColors.onSurfaceVariant),
                   ],
                 ),
               ),
