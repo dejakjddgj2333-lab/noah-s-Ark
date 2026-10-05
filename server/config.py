@@ -62,6 +62,13 @@ class Config:
     # 验证码策略
     email_code_ttl_sec: int = int(os.getenv("EMAIL_CODE_TTL_SEC", "600"))
     email_code_interval_sec: int = int(os.getenv("EMAIL_CODE_INTERVAL_SEC", "60"))
+    # 同一验证码校验失败次数上限, 超限须重新获取 (防暴力枚举 6 位码)
+    email_code_max_attempts: int = int(os.getenv("EMAIL_CODE_MAX_ATTEMPTS", "5"))
+
+    # 反代信任: 置 true 才采信 X-Forwarded-For (nginx/云负载后); 直连必须保持 false
+    trust_x_forwarded_for: bool = os.getenv("TRUST_X_FORWARDED_FOR", "").lower() in (
+        "1", "true", "yes",
+    )
 
     # WebRTC TURN (与 okx 共用 coturn; 空 = 仅 STUN)
     turn_urls: str = os.getenv("TURN_URLS", "")  # 逗号分隔

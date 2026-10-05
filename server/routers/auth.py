@@ -19,6 +19,7 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
@@ -188,11 +189,18 @@ async def register(
 
     if config.email_verify_enabled:
         record = await _latest_code(db, data.email, "register")
-        if (
-            record is None
-            or record.code != data.code
-            or record.expires_at < utc_now()
-        ):
+        if record is None or record.expires_at < utc_now():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误或已过期"
+            )
+        if record.attempts >= config.email_code_max_attempts:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="验证码错误次数过多, 请重新获取",
+            )
+        if record.code != data.code:
+            record.attempts += 1  # 累计失败次数, 超限作废防枚举
+            await db.commit()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误或已过期"
             )
@@ -206,7 +214,14 @@ async def register(
         status="active",
     )
     db.add(user)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # 并发注册同名同邮箱: 唯一键兜底, 明确 409 (避免 500)
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="用户名或邮箱已被占用"
+        )
 
     # 每名用户注册即拥有专属邀请码; 填写了邀请码则当场绑定上级 (约束校验在 service 内)
     await invite_service.get_or_create_invite(db, user.id)

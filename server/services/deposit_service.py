@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.account import HkDepositAddress, HkDepositRecord
@@ -254,6 +255,7 @@ async def claim_by_txid(
     txid = txid.strip()
     if txid.lower().startswith("0x"):
         txid = txid[2:]  # EVM 交易哈希 0x 前缀归一化
+    txid = txid.lower()  # 哈希大小写不敏感, 归一化防大小写变体重复入账
     if not _TXID_RE.match(txid):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="txid 格式不正确")
 
@@ -343,7 +345,23 @@ async def claim_by_txid(
     if tx["amount"] < min_deposit:
         record.status = "unmatched"  # 低额不入账, 走客服
     db.add(record)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # 与扫链 monitor 并发撞 txid 唯一键: 放弃本单, 返回已有记录 (入账一次)
+        await db.rollback()
+        existing = await db.execute(
+            select(HkDepositRecord).where(
+                HkDepositRecord.network == network,
+                HkDepositRecord.txid == txid,
+            )
+        )
+        record = existing.scalar_one()
+        if record.user_id != user_id:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, detail="该 txid 与本账户无关"
+            )
+        return record
     if record.status == "confirming" and record.confirmations >= required:
         await account_service.credit_principal(db, record)
     await db.commit()

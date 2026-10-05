@@ -16,10 +16,14 @@ _buckets: dict[str, tuple[float, int]] = {}
 
 
 def client_ip(request: Request) -> str:
-    """客户端 IP (优先 X-Forwarded-For 首跳; 生产反代需配置可信头)."""
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd:
-        return fwd.split(",")[0].strip()
+    """客户端 IP. 仅当显式开启 TRUST_X_FORWARDED_FOR 时才采信 XFF 首跳
+    (直连部署时客户端可伪造该头绕过限流); 否则用传输层对端地址."""
+    from config import config
+
+    if config.trust_x_forwarded_for:
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return fwd.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
 

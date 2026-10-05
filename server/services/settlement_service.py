@@ -80,10 +80,12 @@ async def _credit(
     ref_id: int,
 ) -> None:
     """原子入账 (income_balance / principal_balance) 并留资金明细, 与购买扣款并发不丢更新."""
-    try:
-        await get_or_create_account(db, user_id)
-    except IntegrityError:
-        pass  # 并发开户, 行已存在
+    # 开户放 SAVEPOINT 内: 并发撞唯一键只回滚该保存点, 不毒化本单结算事务
+    async with db.begin_nested():
+        try:
+            await get_or_create_account(db, user_id)
+        except IntegrityError:
+            pass  # 并发开户, 行已存在
     col = getattr(HkAccount, field)
     await db.execute(
         update(HkAccount)
@@ -229,7 +231,12 @@ async def settle_due(
     )
     total = 0
     for order in result.scalars():
-        total += await settle_order(db, order, now)
+        try:
+            async with db.begin_nested():  # 单单隔离: 一单异常不拖垮本轮其余订单
+                total += await settle_order(db, order, now)
+        except Exception:
+            log.exception("结算订单失败, 跳过该单 order_id=%s", order.id)
+            continue
     return total
 
 

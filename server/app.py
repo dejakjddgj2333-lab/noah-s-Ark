@@ -135,14 +135,17 @@ _MIGRATIONS = [
     ("hk_commission_records", "due_at", "TIMESTAMP"),
     ("hk_commission_records", "status", "VARCHAR(16) DEFAULT 'settled'"),
     ("hk_orders", "team_level", "INTEGER"),
+    ("hk_email_codes", "attempts", "INTEGER DEFAULT 0"),
 ]
 
 
 async def _migrate() -> None:
     # 新增列无法用 ADD COLUMN 附带 UNIQUE (sqlite 不支持), 唯一索引单独建
     _INDEXES = [
-        "CREATE UNIQUE INDEX IF NOT EXISTS uq_hk_withdrawals_idem "
-        "ON hk_withdrawals (idempotency_key)",
+        # 幂等键唯一约束升级为 (user_id, idempotency_key): 先删旧的全局唯一索引
+        "DROP INDEX IF EXISTS uq_hk_withdrawals_idem",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_hk_withdrawals_user_idem "
+        "ON hk_withdrawals (user_id, idempotency_key)",
     ]
     # 每条独立事务: PG 单事务内一条失败会中止全部, "列已存在" 会殃及后续新列
     for table, column, col_type in _MIGRATIONS:

@@ -104,6 +104,7 @@ async def _poll_network(db, client, network: str) -> None:
             continue
 
         for tx in txs:
+            tx["txid"] = tx["txid"].lower().removeprefix("0x")  # 与补单归一化同口径
             confirmations = max(latest - tx["block_number"] + 1, 0)
             existing = await db.execute(
                 select(HkDepositRecord).where(
