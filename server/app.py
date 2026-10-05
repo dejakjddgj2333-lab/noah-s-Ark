@@ -129,9 +129,10 @@ _MIGRATIONS = [
     ("hk_withdrawals", "processed_by", "VARCHAR(32)"),
     ("hk_users", "role_id", "INTEGER"),
     ("hk_withdrawals", "idempotency_key", "VARCHAR(64)"),
-    ("hk_settlement_records", "due_at", "DATETIME"),
+    # 注意: 生产为 PostgreSQL, 无 DATETIME 类型, 须用 TIMESTAMP (MySQL/SQLite 亦兼容)
+    ("hk_settlement_records", "due_at", "TIMESTAMP"),
     ("hk_commission_records", "base_amount", "NUMERIC(18, 2) DEFAULT 0"),
-    ("hk_commission_records", "due_at", "DATETIME"),
+    ("hk_commission_records", "due_at", "TIMESTAMP"),
     ("hk_commission_records", "status", "VARCHAR(16) DEFAULT 'settled'"),
     ("hk_orders", "team_level", "INTEGER"),
 ]
