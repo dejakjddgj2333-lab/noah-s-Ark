@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/coin_icon.dart';
@@ -361,29 +362,21 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
       children: [
-        // 1. 核心情绪与宏观双子盘 (定高对齐; IntrinsicHeight 与 Expanded 基线冲突不可用)
-        SizedBox(
-          height: 180,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                  child: _FearGreedCard(
-                      value: _fgValue,
-                      label: _fgLabel,
-                      color: _fgColor,
-                      history: _fgHistory)),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: _DominanceCard(
-                btc: _btcDom,
-                eth: _ethDom,
-                other: _otherDom,
-                btcFrac: _btcDomFrac,
-                ethFrac: _ethDomFrac,
-              )),
-            ],
-          ),
+        // 1. 情绪指数卡 (整行)
+        _FearGreedCard(
+            value: _fgValue,
+            label: _fgLabel,
+            color: _fgColor,
+            history: _fgHistory),
+        const SizedBox(height: 10),
+
+        // 2. 市占率分布 (独立一块, 饼图)
+        _DominancePieCard(
+          btc: _btcDom,
+          eth: _ethDom,
+          other: _otherDom,
+          btcFrac: _btcDomFrac,
+          ethFrac: _ethDomFrac,
         ),
         const SizedBox(height: 16),
 
@@ -639,9 +632,9 @@ class _FearGreedCard extends StatelessWidget {
   }
 }
 
-/// 全网市占率分布卡片.
-class _DominanceCard extends StatelessWidget {
-  const _DominanceCard({
+/// 全网市占率分布饼图卡 (独立一块).
+class _DominancePieCard extends StatelessWidget {
+  const _DominancePieCard({
     required this.btc,
     required this.eth,
     required this.other,
@@ -655,21 +648,18 @@ class _DominanceCard extends StatelessWidget {
   final double btcFrac;
   final double ethFrac;
 
+  static final Color _otherColor = McColors.surfaceVariant.withValues(alpha: 0.5);
+
   @override
   Widget build(BuildContext context) {
-    final bf = (btcFrac * 1000).round();
-    final ef = (ethFrac * 1000).round();
-    final of = (1000 - bf - ef).clamp(1, 1000);
     return McCard(
       padding: const EdgeInsets.all(14),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.pie_chart,
-                  size: 15, color: McColors.secondary),
+              const Icon(Icons.pie_chart, size: 15, color: McColors.secondary),
               const SizedBox(width: 4),
               Text(
                 '市占率分布',
@@ -681,76 +671,41 @@ class _DominanceCard extends StatelessWidget {
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(btc,
-                        style: McText.mono(size: 20, weight: FontWeight.w700)),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Text('ETH $eth',
-                            style: McText.mono(
-                                size: 11, color: McColors.onSurfaceVariant)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: SizedBox(
-                    height: 6,
-                    child: Row(
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              SizedBox.square(
+                dimension: 110,
+                child: CustomPaint(
+                  painter: _DominancePiePainter(btcFrac, ethFrac),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          flex: bf,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: McColors.primaryContainer,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: McColors.primaryContainer
-                                      .withValues(alpha: 0.6),
-                                  blurRadius: 6,
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: ef,
-                          child: Container(color: McColors.secondary),
-                        ),
-                        Expanded(
-                          flex: of,
-                          child: Container(
-                            color: McColors.surfaceVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
+                        Text('BTC',
+                            style: McText.sans(
+                                size: 11, color: McColors.onSurfaceVariant)),
+                        Text(btc,
+                            style: McText.mono(
+                                size: 16, weight: FontWeight.w700)),
                       ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _legendLine('BTC $btc', McColors.primaryContainer),
-              const SizedBox(height: 4),
-              _legendLine('ETH $eth', McColors.secondary),
-              const SizedBox(height: 4),
-              _legendLine('Other $other', McColors.onSurfaceVariant),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _legend('BTC', btc, McColors.primaryContainer),
+                    const SizedBox(height: 10),
+                    _legend('ETH', eth, McColors.secondary),
+                    const SizedBox(height: 10),
+                    _legend('Other', other, _otherColor),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
@@ -758,19 +713,64 @@ class _DominanceCard extends StatelessWidget {
     );
   }
 
-  Widget _legendLine(String text, Color color) {
+  Widget _legend(String name, String pct, Color color) {
     return Row(
       children: [
         Container(
-          width: 6,
-          height: 6,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
-        Text(text, style: McText.mono(size: 12, weight: FontWeight.w600, color: color)),
+        const SizedBox(width: 8),
+        Text(name,
+            style:
+                McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+        const Spacer(),
+        Text(pct,
+            style: McText.mono(size: 13, weight: FontWeight.w700, color: color)),
       ],
     );
   }
+}
+
+/// 三环 donut: BTC / ETH / Other.
+class _DominancePiePainter extends CustomPainter {
+  _DominancePiePainter(this.btcFrac, this.ethFrac);
+
+  final double btcFrac;
+  final double ethFrac;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width * 0.2;
+    final rect = (Offset.zero & size).deflate(stroke / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    final fracs = [
+      btcFrac.clamp(0.0, 1.0),
+      ethFrac.clamp(0.0, 1.0),
+      (1 - btcFrac - ethFrac).clamp(0.0, 1.0),
+    ];
+    final colors = [
+      McColors.primaryContainer,
+      McColors.secondary,
+      _DominancePieCard._otherColor,
+    ];
+    var angle = -math.pi / 2;
+    for (var i = 0; i < 3; i++) {
+      final sweep = fracs[i] * 2 * math.pi;
+      if (sweep > 0) {
+        paint.color = colors[i];
+        canvas.drawArc(rect, angle, sweep, false, paint);
+      }
+      angle += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DominancePiePainter old) =>
+      old.btcFrac != btcFrac || old.ethFrac != ethFrac;
 }
 
 /// 量化指标矩阵单卡.

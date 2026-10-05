@@ -100,7 +100,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         chain: 'Hyperliquid',
         time: _relTime(ts),
         amount: sizeUsd > 0
-            ? '${_fmtUsd(sizeUsd)} $symbol'
+            ? '$symbol ${_fmtUsd(sizeUsd)}'
             : '$symbol 仓位变动',
         usd: sizeUsd > 0 ? '≈ ${_fmtUsd(sizeUsd)} USD' : '仓位规模更新',
         usdColor: accent,
@@ -148,12 +148,12 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     return '${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}';
   }
 
+  // 美元金额中文紧凑格式: 万/亿, 不用 K/M/B.
   static String _fmtUsd(double v) {
     final a = v.abs();
-    if (a >= 1e9) return '\$${(v / 1e9).toStringAsFixed(2)}B';
-    if (a >= 1e6) return '\$${(v / 1e6).toStringAsFixed(2)}M';
-    if (a >= 1e3) return '\$${(v / 1e3).toStringAsFixed(1)}K';
-    return '\$${v.toStringAsFixed(2)}';
+    if (a >= 1e8) return '\$${(v / 1e8).toStringAsFixed(2)}亿';
+    if (a >= 1e4) return '\$${(v / 1e4).toStringAsFixed(1)}万';
+    return '\$${v.toStringAsFixed(0)}';
   }
 
   // 大额紧凑: 复用全局 fmtUsdCompact (2.86T/112.3B/3.4M).
