@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal, ROUND_DOWN
 
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import desc, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.hk import utc_now
@@ -64,6 +64,45 @@ def rebate_rate(team_lv: int, gen: int) -> Decimal | None:
     row = next((r for r in TEAM_TABLE if r[0] == team_lv), TEAM_TABLE[-1])
     rate = Decimal(row[3 + gen - 1])
     return rate if rate > 0 else None
+
+
+async def team_level_at(db: AsyncSession, user_id: int, at: datetime) -> int:
+    """还原 user_id 的**团队等级在 at 时点**的值 (文档第四节: 按应结算时点取级).
+
+    等级只在购买/到期事件点变化, 且每个事件都写 hk_level_logs (只增不改),
+    故"最后一条 <= at 的 team 日志"的等级即为 at 时点的等级。
+    覆盖缺口回退: 无 <= at 的日志时用最早一条已知日志 (最接近 at 的历史状态);
+    全无日志时回退为当前实时计算。延迟结算/积压补结时用它取佣金比例,
+    保证与正常结算同口径。
+    """
+    from models.level_log import HkLevelLog
+
+    lv = (
+        await db.execute(
+            select(HkLevelLog.level)
+            .where(
+                HkLevelLog.user_id == user_id,
+                HkLevelLog.kind == "team",
+                HkLevelLog.created_at <= at,
+            )
+            .order_by(desc(HkLevelLog.created_at), desc(HkLevelLog.id))
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if lv is not None:
+        return lv
+    first = (
+        await db.execute(
+            select(HkLevelLog.level)
+            .where(HkLevelLog.user_id == user_id, HkLevelLog.kind == "team")
+            .order_by(HkLevelLog.created_at, HkLevelLog.id)
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if first is not None:
+        return first
+    members, holding = await team_stats(db, user_id)
+    return team_level(members, holding)
 
 
 def commission(income_2dp: Decimal, team_lv: int, gen: int) -> Decimal | None:

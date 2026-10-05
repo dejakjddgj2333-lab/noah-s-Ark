@@ -101,10 +101,17 @@ async def _credit(
 async def _settle_commissions(
     db: AsyncSession, order: HkOrder, record: HkSettlementRecord, income: Decimal
 ) -> None:
-    """按接收人**应结算时点**的团队等级 + 代数结算佣金 (无资格份额不发放, 不越级转移)."""
+    """按接收人**应结算时点**的团队等级 + 代数结算佣金 (无资格份额不发放, 不越级转移).
+
+    等级由 hk_level_logs 还原到 record.due_at (文档第四节); 旧流水无 due_at 时
+    回退为结算时刻的实时等级 (兼容历史数据)。
+    """
     for gen, receiver_id in await team_service.uplines(db, order.user_id):
-        members, holding = await team_service.team_stats(db, receiver_id)
-        lv = team_service.team_level(members, holding)
+        if record.due_at is not None:
+            lv = await team_service.team_level_at(db, receiver_id, record.due_at)
+        else:  # 历史流水兼容: 无应结算时点信息, 按结算时刻实时等级
+            members, holding = await team_service.team_stats(db, receiver_id)
+            lv = team_service.team_level(members, holding)
         rate = team_service.rebate_rate(lv, gen)
         if rate is None:
             continue
