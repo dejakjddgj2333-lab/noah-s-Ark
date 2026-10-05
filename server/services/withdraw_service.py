@@ -212,7 +212,7 @@ async def create_request(
             )
         ).scalar_one()
         return existing
-    # 资金明细: 申请占用 (金额+费用出账)
+    # 资金明细: 申请占用 (申请金额出账, 费用从金额内扣除不另扣)
     await log_balance(
         db, user_id, account, "withdraw_request", -q["total_deduction"],
         ref_type="withdrawal", ref_id=w.id,
@@ -227,11 +227,19 @@ async def approve(db: AsyncSession, w: HkWithdrawal, txid: str | None) -> None:
     pending_col = (
         HkAccount.principal_pending if w.account == "principal" else HkAccount.income_pending
     )
-    await db.execute(
+    res = await db.execute(
         update(HkAccount)
-        .where(HkAccount.user_id == w.user_id)
+        .where(
+            HkAccount.user_id == w.user_id,
+            pending_col >= Decimal(w.amount),
+        )
         .values(**{pending_col.name: pending_col - Decimal(w.amount)})
     )
+    await db.flush()
+    if res.rowcount != 1:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "处理中余额异常, 无法通过该提现申请"
+        )
     w.status = "approved"
     w.txid = txid
     from models.hk import utc_now

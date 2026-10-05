@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
@@ -31,6 +32,7 @@ import 'services/call_service.dart';
 import 'services/chat_api.dart';
 import 'services/chat_db.dart';
 import 'services/chat_ws.dart';
+import 'services/invite_link.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +94,7 @@ class McShell extends StatefulWidget {
 class _McShellState extends State<McShell> {
   int _index = 0;
   StreamSubscription<Map<String, dynamic>>? _chatSub;
+  StreamSubscription<Uri>? _linkSub;
   bool _callPageShown = false; // CallPage 是否已 push (root navigator)
 
   final _pages = const [
@@ -113,6 +116,23 @@ class _McShellState extends State<McShell> {
     _seedChatBadges();
     // 静默同步服务端昵称/头像 (可能在他端改过).
     AuthStore.instance.refreshProfile();
+    // 邀请链接识别: 冷启动 initialLink + 运行中 stream (文档: 链接注册识别邀请人).
+    final links = AppLinks();
+    links.getInitialLink().then(InviteLinkStore.instance.handleUri);
+    _linkSub = links.uriLinkStream.listen(InviteLinkStore.instance.handleUri);
+    InviteLinkStore.instance.onCode.listen(_onInviteCode);
+  }
+
+  void _onInviteCode(String code) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: McColors.surfaceContainerHigh,
+        content: Text('已识别邀请人, 注册时将自动填写邀请码',
+            style: McText.sans(size: 13, color: McColors.onSurface)),
+      ));
   }
 
   Future<void> _seedChatBadges() async {
@@ -214,6 +234,7 @@ class _McShellState extends State<McShell> {
   @override
   void dispose() {
     _chatSub?.cancel();
+    _linkSub?.cancel();
     CallService.instance.activeCall.removeListener(_onCallState);
     CallService.instance.notice.removeListener(_onCallNotice);
     super.dispose();

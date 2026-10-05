@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/auth.dart';
+import '../services/invite_link.dart';
 
 /// 登录 / 注册页 (push 路由 /login). 终端风格: 黑曜输入框 + 钴蓝执行键.
 class LoginPage extends StatefulWidget {
@@ -29,6 +30,17 @@ class _LoginPageState extends State<LoginPage> {
   // 验证码倒计时
   int _countdown = 0;
   Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // 邀请链接唤起: 自动填入邀请码并切到注册页 (文档: 链接注册识别邀请人).
+    final code = InviteLinkStore.instance.consume();
+    if (code != null) {
+      _inviteCtrl.text = code;
+      _isLogin = false;
+    }
+  }
 
   @override
   void dispose() {

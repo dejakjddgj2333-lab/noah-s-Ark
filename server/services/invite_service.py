@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.hk import utc_now
 from models.invite import HkInvite
 from models.order import HkOrder  # noqa: F401 注册 HkBase 元数据, 建表用
+from services import concurrency
 
 _CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # 去除易混淆字符
 _CODE_LEN = 8
@@ -100,6 +101,14 @@ async def bind_block_reason(db: AsyncSession, user_id: int) -> str | None:
 
 
 async def bind_inviter(
+    db: AsyncSession, user_id: int, invite_code: str
+) -> HkInvite:
+    """绑定上级. 与购买下单互斥 (防检查-写入竞态绕过, 文档第八节)."""
+    async with concurrency.bind_purchase_lock:
+        return await _bind_inviter_locked(db, user_id, invite_code)
+
+
+async def _bind_inviter_locked(
     db: AsyncSession, user_id: int, invite_code: str
 ) -> HkInvite:
     """绑定上级. 全部校验通过才写入; 调用方负责 commit.

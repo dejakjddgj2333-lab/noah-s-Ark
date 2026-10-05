@@ -188,6 +188,7 @@ class _OrdersPageState extends State<OrdersPage> {
               _chip('周期 ${o['duration_days']} 天'),
               if (vipLv != null) ...[
                 _chip('下单时 VIP$vipLv'),
+                if (o['team_level'] != null) _chip('团队${o['team_level']}级'),
                 _chip('锁定加成 +${(FinanceApi.d(bonus) * 100).toStringAsFixed(0)}%'),
               ],
               _chip('规则 v${o['rule_version']}'),

@@ -25,6 +25,7 @@ class SettlementOut(BaseModel):
     period_days: int
     income_amount: Decimal
     principal_amount: Decimal
+    due_at: datetime | None  # 应结算时点 (文档第八节)
     created_at: datetime
 
     model_config = {"from_attributes": True}

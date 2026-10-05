@@ -284,7 +284,7 @@ class _FundsPageState extends State<FundsPage> with SingleTickerProviderStateMix
                         style: McText.sans(size: 13, weight: FontWeight.w600)),
                     const SizedBox(height: 2),
                     Text(
-                      '比例 ${FinanceApi.pct(c['rate'])} · 结算时团队 ${c['receiver_team_level']} 级 · ${FinanceApi.time(c['created_at'])}',
+                      '基数 ${FinanceApi.d(c['base_amount'])} · 比例 ${FinanceApi.pct(c['rate'])} · 结算时团队 ${c['receiver_team_level']} 级 · ${FinanceApi.time(c['created_at'])}',
                       style: McText.sans(size: 11, color: McColors.onSurfaceVariant),
                     ),
                   ],

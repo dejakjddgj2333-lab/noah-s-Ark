@@ -130,7 +130,10 @@ async def _settle_commissions(
                 gen=gen,
                 receiver_team_level=lv,  # 结算依据留存 (文档第八节)
                 rate=rate,
+                base_amount=income,  # 佣金基数 = 该期收益
                 amount=amount,
+                due_at=record.due_at,  # 应结算时点
+                status="settled",
             )
         )
         await db.flush()
@@ -170,6 +173,7 @@ async def settle_order(db: AsyncSession, order: HkOrder, now: datetime) -> int:
                 period_no=period_no,
                 period_days=pd,
                 income_amount=income,
+                due_at=due_at,
             )
             db.add(record)
             await db.flush()

@@ -17,7 +17,7 @@ from models.account import HkAccount  # noqa: F401 注册元数据
 from models.hk import HkUser, utc_now
 from models.order import HkOrder
 from models.product import HkProduct
-from services import level_log_service, settlement_service, team_service, vip_service
+from services import concurrency, level_log_service, settlement_service, team_service, vip_service
 from services.account_service import get_or_create_account
 from services.balance_log_service import log as log_balance
 
@@ -25,6 +25,14 @@ RULE_VERSION = "v0.7"
 
 
 async def create_order(
+    db: AsyncSession, user: HkUser, product_id: int, amount: Decimal
+) -> HkOrder:
+    """下单购买: 与补绑互斥 (防"检查等级/资格"与"写入绑定"竞态绕过, 文档第八节)."""
+    async with concurrency.bind_purchase_lock:
+        return await _create_order_locked(db, user, product_id, amount)
+
+
+async def _create_order_locked(
     db: AsyncSession, user: HkUser, product_id: int, amount: Decimal
 ) -> HkOrder:
     """下单购买: 校验产品/金额/等级/余额后扣减本金并生成生效订单.
@@ -80,6 +88,7 @@ async def create_order(
         duration_days=product.duration_days,
         return_method=product.return_method,
         vip_level=user_vip,
+        team_level=user_team,
         lock_bonus_rate=vip_service.bonus_for_level(user_vip),
         rule_version=RULE_VERSION,
         expires_at=now + timedelta(days=product.duration_days),

@@ -30,6 +30,7 @@ class OrderOut(BaseModel):
     duration_days: int
     return_method: str
     vip_level: int | None
+    team_level: int | None
     lock_bonus_rate: Decimal | None
     actual_daily_rate: Decimal | None
     rule_version: str

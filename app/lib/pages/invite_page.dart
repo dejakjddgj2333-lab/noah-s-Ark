@@ -97,6 +97,10 @@ class _InvitePageState extends State<InvitePage> {
     return '$origin/?invite=${_info?.inviteCode ?? ''}';
   }
 
+  /// APP 内可直接唤起的 scheme 链接 (Android intent-filter 已配 noahsark://invite)
+  String get _inviteAppLink =>
+      'noahsark://invite?invite=${_info?.inviteCode ?? ''}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -198,6 +202,23 @@ class _InvitePageState extends State<InvitePage> {
               ),
               const SizedBox(width: 10),
               _copyButton('复制链接', () => _copy(_inviteLink, '邀请链接已复制')),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text('APP 直开链接', style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _inviteAppLink,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
+                ),
+              ),
+              const SizedBox(width: 10),
+              _copyButton('复制', () => _copy(_inviteAppLink, 'APP链接已复制')),
             ],
           ),
         ],

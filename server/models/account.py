@@ -127,7 +127,7 @@ class HkBalanceLog(HkBase):
 
 
 class HkWithdrawal(HkBase):
-    """提现申请. 申请即占用余额(金额+费用转处理中); 拒绝退回; 审核通过后线下打款."""
+    """提现申请. 费用从申请金额内扣除: 申请即占用申请金额转处理中; 拒绝全额退回; 通过后线下打款."""
 
     __tablename__ = "hk_withdrawals"
 
@@ -138,10 +138,10 @@ class HkWithdrawal(HkBase):
     account = Column(String(16), nullable=False)  # principal / income
     network = Column(String(16), nullable=False)  # 如 trc20
     address = Column(String(64), nullable=False)
-    amount = Column(Numeric(18, 2), nullable=False)  # 申请到账金额
+    amount = Column(Numeric(18, 2), nullable=False)  # 申请金额 (占用/扣款口径, 费用从其中扣除)
     service_fee = Column(Numeric(18, 2), nullable=False, default=0)  # 3% 服务费(仅收益账户)
     network_fee = Column(Numeric(18, 2), nullable=False, default=0)  # 网络费(两账户都收)
-    arrive_amount = Column(Numeric(18, 2), nullable=False)  # 实际到账 = amount (费用另扣)
+    arrive_amount = Column(Numeric(18, 2), nullable=False)  # 实际到账 = amount − 服务费 − 网络费
     status = Column(String(16), nullable=False, default="pending", index=True)
     txid = Column(String(80), nullable=True)  # 打款链上交易号
     remark = Column(String(256), nullable=True)

@@ -39,7 +39,9 @@ class HkSettlementRecord(HkBase):
     income_amount = Column(Numeric(18, 2), nullable=False)
     # 最后一期同时记录返还本金金额 (0 表示未返)
     principal_amount = Column(Numeric(18, 2), nullable=False, default=0)
-    created_at = Column(DateTime, default=utc_now)
+    # 应结算时点 = 生效时间 + 周期×期数 (文档第八节: 结算依据须留痕)
+    due_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now)  # 实际入账时间
 
 
 class HkCommissionRecord(HkBase):
@@ -62,5 +64,8 @@ class HkCommissionRecord(HkBase):
     gen = Column(Integer, nullable=False)  # 代数: 1/2/3
     receiver_team_level = Column(Integer, nullable=False)  # 应结算时点接收人团队等级
     rate = Column(Numeric(10, 6), nullable=False)  # 适用比例
+    base_amount = Column(Numeric(18, 2), nullable=False, default=0)  # 佣金基数 = 该期收益
     amount = Column(Numeric(18, 2), nullable=False)  # 已截断 2 位小数
-    created_at = Column(DateTime, default=utc_now)
+    due_at = Column(DateTime, nullable=True)  # 应结算时点 (同关联结算流水)
+    status = Column(String(16), nullable=False, default="settled")  # settled=已入账(终态)
+    created_at = Column(DateTime, default=utc_now)  # 实际入账时间
