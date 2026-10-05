@@ -1290,7 +1290,11 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
 
   Future<void> _load() async {
     try {
-      final list = await McData.tickers(instType: _type);
+      var list = await McData.tickers(instType: _type);
+      // 现货接口含 EUR/USDC/BTC 等多种计价对, 同币多行价不同 — 只留 USDT 计价.
+      if (_type == 'SPOT') {
+        list = list.where((t) => t.instId.endsWith('-USDT')).toList();
+      }
       list.sort((a, b) =>
           (b.last * b.volCcy24h).compareTo(a.last * a.volCcy24h));
       if (mounted) setState(() => _tickers = list);
