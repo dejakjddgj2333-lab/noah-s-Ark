@@ -532,8 +532,6 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          _statusBar(),
         ],
       ),
     );
@@ -760,37 +758,6 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // 底部状态栏
-  Widget _statusBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: McColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Row(
-              children: [
-                const McGlowDot(),
-                const SizedBox(width: 6),
-                Text('数据源: OKX / CoinGlass',
-                    style: McText.mono(
-                        size: 12, color: McColors.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          Text('下拉刷新',
-              style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
     );

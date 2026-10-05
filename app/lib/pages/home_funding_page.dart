@@ -340,8 +340,6 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                 _buildTrend(),
                 const SizedBox(height: 24),
                 _buildMatrix(),
-                const SizedBox(height: 16),
-                _buildFooter(),
               ]
             : [
                 McSkeleton.card(lines: 5, height: 18),
@@ -1044,31 +1042,6 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ---- Footer system indicators ----
-  Widget _buildFooter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Row(
-              children: [
-                const McGlowDot(color: McColors.tertiary, size: 8),
-                const SizedBox(width: 8),
-                Text('数据源: Binance/OKX/Bybit 聚合',
-                    style: McText.mono(size: 11, color: McColors.outline)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text('年化 = 8H费率 × 1095',
-              style: McText.mono(size: 11, color: McColors.onSurfaceVariant)),
         ],
       ),
     );
