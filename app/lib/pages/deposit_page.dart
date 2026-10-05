@@ -527,7 +527,7 @@ class _NetworkCard extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 2.5,
+            childAspectRatio: 2.0,
             children: [
               for (final e in _DepositPageState.networkMeta.entries)
                 _NetworkTile(
@@ -635,6 +635,7 @@ class _NetworkTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
