@@ -65,6 +65,9 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
 
   static const _bars = ['15m', '1H', '4H', '1D'];
 
+  /// 是否永续合约; 现货无资金费率/持仓量, 对应卡片隐藏.
+  bool get _isSwap => _instId.endsWith('-SWAP');
+
   double get _changePct =>
       _open24h > 0 ? (_last - _open24h) / _open24h * 100 : 0;
   double get _changeAbs => _last - _open24h;
@@ -84,8 +87,10 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
       }
     });
     _loadCandles();
-    _loadFunding();
-    _loadOpenInterest();
+    if (_isSwap) {
+      _loadFunding();
+      _loadOpenInterest();
+    }
   }
 
   @override
@@ -283,8 +288,10 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     _subscribeLive();
     _fillOnce();
     _loadCandles();
-    _loadFunding();
-    _loadOpenInterest();
+    if (_isSwap) {
+      _loadFunding();
+      _loadOpenInterest();
+    }
   }
 
   /// 全屏选币面板: 搜索 + 永续列表 (按 24H 成交额排序).
@@ -377,7 +384,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                     style: McText.sans(size: 16, weight: FontWeight.w700),
                   ),
                   Text(
-                    '/USDT 永续',
+                    _isSwap ? '/USDT 永续' : '/USDT 现货',
                     style: McText.sans(
                         size: 13, color: McColors.onSurfaceVariant),
                   ),
@@ -545,8 +552,10 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 32),
       children: [
         _buildKlineSection(),
-        const SizedBox(height: 16),
-        _FundingCountdownCard(rate: _fundingRate, nextFunding: _nextFunding),
+        if (_isSwap) ...[
+          const SizedBox(height: 16),
+          _FundingCountdownCard(rate: _fundingRate, nextFunding: _nextFunding),
+        ],
       ],
     );
   }
@@ -1229,6 +1238,8 @@ class _SymbolSwitcherSheet extends StatefulWidget {
 class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
   List<OkxTicker>? _tickers;
   String _query = '';
+  // 合约 SWAP / 现货 SPOT 分段.
+  late String _type = widget.current.endsWith('-SWAP') ? 'SWAP' : 'SPOT';
 
   @override
   void initState() {
@@ -1238,13 +1249,22 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
 
   Future<void> _load() async {
     try {
-      final list = await McData.tickers();
+      final list = await McData.tickers(instType: _type);
       list.sort((a, b) =>
           (b.last * b.volCcy24h).compareTo(a.last * a.volCcy24h));
       if (mounted) setState(() => _tickers = list);
     } catch (_) {
       if (mounted) setState(() => _tickers = const []);
     }
+  }
+
+  void _selectType(String type) {
+    if (type == _type) return;
+    setState(() {
+      _type = type;
+      _tickers = null;
+    });
+    _load();
   }
 
   @override
@@ -1291,6 +1311,43 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
                   borderSide: BorderSide.none,
                 ),
               ),
+            ),
+          ),
+          // 合约 / 现货 分段切换.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              children: [
+                for (final (type, label) in [('SWAP', '合约'), ('SPOT', '现货')])
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _selectType(type),
+                      child: Container(
+                        margin: EdgeInsets.only(
+                            right: type == 'SWAP' ? 8 : 0),
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(
+                          color: _type == type
+                              ? McColors.primaryContainer
+                              : McColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          label,
+                          style: McText.sans(
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: _type == type
+                                ? McColors.onPrimaryContainer
+                                : McColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           if (all == null)
