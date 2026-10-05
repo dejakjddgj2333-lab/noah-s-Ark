@@ -151,7 +151,8 @@ class HkWithdrawal(HkBase):
     processed_at = Column(DateTime, nullable=True)
 
     __table_args__ = (
-        Index("uq_hk_withdrawals_idem", "idempotency_key", unique=True),
+        # 幂等键按用户隔离: 同键跨用户互不影响, 同用户同键只入账一次
+        Index("uq_hk_withdrawals_user_idem", "user_id", "idempotency_key", unique=True),
     )
 
 

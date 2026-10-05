@@ -107,9 +107,9 @@ async def my_commissions(
                 receiver_team_level=comm.receiver_team_level,
                 rate=comm.rate,
                 amount=comm.amount,
-                base_amount=stl.income_amount,
+                base_amount=comm.base_amount if comm.base_amount else stl.income_amount,
                 period_no=stl.period_no,
-                settle_at=stl.created_at,
+                settle_at=comm.due_at if comm.due_at else stl.created_at,
                 created_at=comm.created_at,
             )
         )

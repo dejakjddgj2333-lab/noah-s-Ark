@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,7 +37,7 @@ class WithdrawOut(BaseModel):
 
 
 class ApproveIn(BaseModel):
-    txid: str | None = None  # 打款交易号
+    txid: str = Field(min_length=1)  # 打款交易号: 通过必须登记, 留审计依据
 
 
 class RejectIn(BaseModel):

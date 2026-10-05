@@ -80,10 +80,12 @@ async def _credit(
     ref_id: int,
 ) -> None:
     """原子入账 (income_balance / principal_balance) 并留资金明细, 与购买扣款并发不丢更新."""
-    try:
-        await get_or_create_account(db, user_id)
-    except IntegrityError:
-        pass  # 并发开户, 行已存在
+    # 开户放 SAVEPOINT 内: 并发撞唯一键只回滚该保存点, 不毒化本单结算事务
+    async with db.begin_nested():
+        try:
+            await get_or_create_account(db, user_id)
+        except IntegrityError:
+            pass  # 并发开户, 行已存在
     col = getattr(HkAccount, field)
     await db.execute(
         update(HkAccount)
@@ -101,10 +103,17 @@ async def _credit(
 async def _settle_commissions(
     db: AsyncSession, order: HkOrder, record: HkSettlementRecord, income: Decimal
 ) -> None:
-    """按接收人**应结算时点**的团队等级 + 代数结算佣金 (无资格份额不发放, 不越级转移)."""
+    """按接收人**应结算时点**的团队等级 + 代数结算佣金 (无资格份额不发放, 不越级转移).
+
+    等级由 hk_level_logs 还原到 record.due_at (文档第四节); 旧流水无 due_at 时
+    回退为结算时刻的实时等级 (兼容历史数据)。
+    """
     for gen, receiver_id in await team_service.uplines(db, order.user_id):
-        members, holding = await team_service.team_stats(db, receiver_id)
-        lv = team_service.team_level(members, holding)
+        if record.due_at is not None:
+            lv = await team_service.team_level_at(db, receiver_id, record.due_at)
+        else:  # 历史流水兼容: 无应结算时点信息, 按结算时刻实时等级
+            members, holding = await team_service.team_stats(db, receiver_id)
+            lv = team_service.team_level(members, holding)
         rate = team_service.rebate_rate(lv, gen)
         if rate is None:
             continue
@@ -222,7 +231,12 @@ async def settle_due(
     )
     total = 0
     for order in result.scalars():
-        total += await settle_order(db, order, now)
+        try:
+            async with db.begin_nested():  # 单单隔离: 一单异常不拖垮本轮其余订单
+                total += await settle_order(db, order, now)
+        except Exception:
+            log.exception("结算订单失败, 跳过该单 order_id=%s", order.id)
+            continue
     return total
 
 

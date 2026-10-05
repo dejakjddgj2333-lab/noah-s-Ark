@@ -134,7 +134,8 @@ async def create_request(
         existing = (
             await db.execute(
                 select(HkWithdrawal).where(
-                    HkWithdrawal.idempotency_key == idempotency_key
+                    HkWithdrawal.user_id == user_id,
+                    HkWithdrawal.idempotency_key == idempotency_key,
                 )
             )
         ).scalar_one_or_none()
@@ -207,7 +208,8 @@ async def create_request(
         existing = (
             await db.execute(
                 select(HkWithdrawal).where(
-                    HkWithdrawal.idempotency_key == idempotency_key
+                    HkWithdrawal.user_id == user_id,
+                    HkWithdrawal.idempotency_key == idempotency_key,
                 )
             )
         ).scalar_one()

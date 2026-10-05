@@ -69,4 +69,9 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exc
+    if user.status != "active":
+        # 封禁/冻结后旧 token 立即失效, 不再放行任何业务接口
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="账号已被禁用"
+        )
     return user

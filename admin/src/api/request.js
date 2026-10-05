@@ -4,7 +4,8 @@ import router from '@/router'
 import { useUserStore } from '@/store/user'
 
 const request = axios.create({
-  baseURL: '/api',
+  // 本地开发走 vite 代理 (/api → localhost:8000); 打包部署显式指向正式 API
+  baseURL: import.meta.env.DEV ? '/api' : 'http://shipapi.bdxapi.com/api',
   timeout: 10000,
 })
 

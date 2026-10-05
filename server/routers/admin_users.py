@@ -25,6 +25,7 @@ from services import (
     admin_service,
     auth_service,
     balance_log_service,
+    invite_service,
     team_service,
     vip_service,
 )
@@ -307,6 +308,29 @@ async def update_user(
         ).scalar_one_or_none()
         if invite is None:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "用户无邀请记录")
+        if invite.inviter_id is not None:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "该用户已绑定上级, 不可改绑"
+            )
+        if inviter.user_id == invite.inviter_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "绑定关系无变化")
+        # 防循环: 新上级的上级链上不得出现该用户
+        cyc = (
+            await db.execute(
+                invite_service._CYCLE_SQL,
+                {"start_id": inviter.user_id, "target_id": u.id},
+            )
+        ).scalar_one_or_none()
+        if cyc:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "会形成循环绑定, 已拒绝"
+            )
+        # 与补绑同口径: 本人或任意层级下级已有成功购买 → 永久失去改绑资格
+        if await invite_service.has_any_purchase(db, u.id):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "该用户或其下级已有成功购买, 不可改绑上级",
+            )
         changes.append(f"inviter {invite.inviter_id}->{inviter.user_id}")
         invite.inviter_id = inviter.user_id
     if not changes:

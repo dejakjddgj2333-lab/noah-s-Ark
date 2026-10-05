@@ -65,6 +65,7 @@ class HkEmailCode(HkBase):
     code = Column(String(8), nullable=False)
     purpose = Column(String(16), nullable=False, default="register")
     used = Column(Boolean, nullable=False, default=False)
+    attempts = Column(Integer, nullable=False, default=0)  # 校验失败累计, 超限作废
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=utc_now)
 

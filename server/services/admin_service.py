@@ -20,6 +20,8 @@ from services.permissions import BUILTIN_ROLES
 
 async def get_perms(db: AsyncSession, user: HkUser) -> list[str]:
     """用户后台权限码集. 白名单用户直通 ['*']."""
+    if user.status != "active":
+        return []  # 封禁/冻结用户即使命中白名单也不得进入后台
     if user.username in config.admin_usernames:
         return ["*"]
     if user.role_id is None:
