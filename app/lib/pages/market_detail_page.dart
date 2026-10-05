@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -25,6 +26,10 @@ class MarketDetailPage extends StatefulWidget {
 }
 
 class _MarketDetailPageState extends State<MarketDetailPage> {
+  // 当前交易对 (init 来自路由参数, 页内可切换, OKX 风格下拉选币).
+  late String _instId = widget.instId;
+  late String _symbol = widget.symbol;
+
   // 实时行情 (REST 初始 + WS 推送覆盖).
   double _last = 0;
   double _open24h = 0;
@@ -94,7 +99,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
 
   Future<void> _loadInitial() async {
     try {
-      final t = await McData.ticker(widget.instId);
+      final t = await McData.ticker(_instId);
       if (!mounted) return;
       setState(() {
         _last = t.last;
@@ -112,7 +117,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
       _loadInitial(),
       () async {
         try {
-          final (bids, asks) = await McData.orderBook(widget.instId);
+          final (bids, asks) = await McData.orderBook(_instId);
           if (!mounted) return;
           setState(() {
             _bids = bids;
@@ -122,7 +127,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
       }(),
       () async {
         try {
-          final trades = await McData.recentTrades(widget.instId);
+          final trades = await McData.recentTrades(_instId);
           if (!mounted || trades.isEmpty) return;
           setState(() {
             _trades
@@ -136,12 +141,12 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
 
   void _subscribeLive() {
     final ws = TickerWs.instance;
-    ws.subscribe({widget.instId});
-    ws.subscribeBooks(widget.instId);
-    ws.subscribeTrades(widget.instId);
+    ws.subscribe({_instId});
+    ws.subscribeBooks(_instId);
+    ws.subscribeTrades(_instId);
 
     _wsSub = ws.stream.listen((p) {
-      if (!mounted || p.instId != widget.instId) return;
+      if (!mounted || p.instId != _instId) return;
       setState(() {
         _last = p.last;
         _open24h = p.open24h;
@@ -152,7 +157,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     }, onError: (_) {});
 
     _bookSub = ws.bookStream.listen((b) {
-      if (!mounted || b.instId != widget.instId) return;
+      if (!mounted || b.instId != _instId) return;
       _lastBookWsAt = DateTime.now();
       setState(() {
         _bids = b.bids;
@@ -161,7 +166,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     }, onError: (_) {});
 
     _tradeSub = ws.tradeStream.listen((t) {
-      if (!mounted || t.instId != widget.instId) return;
+      if (!mounted || t.instId != _instId) return;
       setState(() {
         _trades.insert(0, t);
         if (_trades.length > 50) _trades.removeRange(50, _trades.length);
@@ -172,7 +177,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   Future<void> _loadCandles() async {
     setState(() => _candleLoading = true);
     try {
-      final data = await McData.candles(widget.instId, bar: _bar, limit: 60);
+      final data = await McData.candles(_instId, bar: _bar, limit: 60);
       if (!mounted) return;
       setState(() {
         _candles = data;
@@ -189,7 +194,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
 
   Future<void> _loadFunding() async {
     try {
-      final f = await McData.fundingRate(widget.instId);
+      final f = await McData.fundingRate(_instId);
       if (!mounted) return;
       setState(() {
         _fundingRate = f.rate;
@@ -201,7 +206,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   /// 持仓量: 后端可能无此端点, ApiException 时整卡隐藏 (不报错).
   Future<void> _loadOpenInterest() async {
     try {
-      final resp = await McData.overview('open-interest?symbol=${widget.symbol}');
+      final resp = await McData.overview('open-interest?symbol=${_symbol}');
       final v = _findNumber(resp);
       if (!mounted || v == null || v <= 0) return;
       setState(() => _openInterest = v);
@@ -249,6 +254,56 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     if (bar == _bar) return;
     setState(() => _bar = bar);
     _loadCandles();
+  }
+
+  // ---------------- 币种切换 (OKX 风格下拉选币) ----------------
+
+  /// 切换交易对: 重置全部状态并重拉/重订阅. WS 单例无需退订,
+  /// 各监听按 _instId 过滤, 旧币种推送自动忽略.
+  void _switchSymbol(String instId) {
+    if (instId == _instId) return;
+    setState(() {
+      _instId = instId;
+      _symbol = instId.replaceAll('-USDT-SWAP', '').replaceAll('-USDT', '');
+      _last = 0;
+      _open24h = 0;
+      _high24h = 0;
+      _low24h = 0;
+      _volCcy24h = 0;
+      _bids = const [];
+      _asks = const [];
+      _trades.clear();
+      _lastBookWsAt = null;
+      _candles = [];
+      _candleLoading = true;
+      _fundingRate = null;
+      _nextFunding = null;
+      _openInterest = null;
+    });
+    _subscribeLive();
+    _fillOnce();
+    _loadCandles();
+    _loadFunding();
+    _loadOpenInterest();
+  }
+
+  /// 全屏选币面板: 搜索 + 永续列表 (按 24H 成交额排序).
+  void _openSwitcher() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: McColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _SymbolSwitcherSheet(
+        current: _instId,
+        onSelect: (id) {
+          Navigator.of(context).pop();
+          _switchSymbol(id);
+        },
+      ),
+    );
   }
 
   @override
@@ -311,13 +366,26 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
             const SizedBox(width: 4),
-            Text(
-              widget.symbol,
-              style: McText.sans(size: 16, weight: FontWeight.w700),
-            ),
-            Text(
-              '/USDT 永续',
-              style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
+            // 币名 + 下拉箭头: 点开全屏选币面板 (OKX 风格).
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _openSwitcher,
+              child: Row(
+                children: [
+                  Text(
+                    _symbol,
+                    style: McText.sans(size: 16, weight: FontWeight.w700),
+                  ),
+                  Text(
+                    '/USDT 永续',
+                    style: McText.sans(
+                        size: 13, color: McColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.keyboard_arrow_down,
+                      size: 18, color: McColors.onSurfaceVariant),
+                ],
+              ),
             ),
           ],
         ),
@@ -623,7 +691,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
       children: [
         Text('价格 (USDT)',
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
-        Text('数量 (${widget.symbol})',
+        Text('数量 (${_symbol})',
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
       ],
     );
@@ -715,7 +783,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                         size: 12, color: McColors.onSurfaceVariant)),
               ),
               Expanded(
-                child: Text('数量 (${widget.symbol})',
+                child: Text('数量 (${_symbol})',
                     textAlign: TextAlign.right,
                     style: McText.sans(
                         size: 12, color: McColors.onSurfaceVariant)),
@@ -1145,4 +1213,168 @@ class _CandlePainter extends CustomPainter {
   @override
   bool shouldRepaint(_CandlePainter old) =>
       old.candles != candles || old.lastPrice != lastPrice || old.bar != bar;
+}
+
+/// 全屏选币面板 (OKX 风格): 搜索 + 永续合约列表, 按 24H 成交额降序.
+class _SymbolSwitcherSheet extends StatefulWidget {
+  const _SymbolSwitcherSheet({required this.current, required this.onSelect});
+
+  final String current;
+  final ValueChanged<String> onSelect;
+
+  @override
+  State<_SymbolSwitcherSheet> createState() => _SymbolSwitcherSheetState();
+}
+
+class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
+  List<OkxTicker>? _tickers;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await McData.tickers();
+      list.sort((a, b) =>
+          (b.last * b.volCcy24h).compareTo(a.last * a.volCcy24h));
+      if (mounted) setState(() => _tickers = list);
+    } catch (_) {
+      if (mounted) setState(() => _tickers = const []);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.trim().toUpperCase();
+    final all = _tickers;
+    final list = all == null
+        ? const <OkxTicker>[]
+        : q.isEmpty
+            ? all
+            : all.where((t) => t.symbol.contains(q)).toList();
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.85,
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: McColors.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: TextField(
+              autofocus: false,
+              onChanged: (v) => setState(() => _query = v),
+              style: McText.sans(size: 14),
+              decoration: InputDecoration(
+                hintText: '搜索币种',
+                hintStyle:
+                    McText.sans(size: 14, color: McColors.onSurfaceVariant),
+                prefixIcon: const Icon(Icons.search,
+                    size: 18, color: McColors.onSurfaceVariant),
+                filled: true,
+                fillColor: McColors.surfaceContainerHigh,
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          if (all == null)
+            const Expanded(
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: McColors.primary),
+                ),
+              ),
+            )
+          else if (list.isEmpty)
+            Expanded(
+              child: Center(
+                child: Text('无匹配币种',
+                    style: McText.sans(
+                        size: 13, color: McColors.onSurfaceVariant)),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.only(bottom: 24),
+                itemCount: list.length,
+                itemBuilder: (context, i) => _row(list[i]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(OkxTicker t) {
+    final isCurrent = t.instId == widget.current;
+    final pct = t.changePct;
+    final pctColor = pct >= 0 ? McColors.bull : McColors.bear;
+    return InkWell(
+      onTap: () => widget.onSelect(t.instId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        child: Row(
+          children: [
+            CoinIcon(t.symbol, size: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Row(
+                children: [
+                  Text(t.symbol,
+                      style: McText.sans(size: 14, weight: FontWeight.w700)),
+                  Text('/USDT',
+                      style: McText.sans(
+                          size: 12, color: McColors.onSurfaceVariant)),
+                  if (isCurrent) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.check_circle,
+                        size: 14, color: McColors.primary),
+                  ],
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  t.last > 0
+                      ? '\$${t.last >= 1000 ? _MarketDetailPageState._comma(t.last) : t.last.toStringAsFixed(t.last < 10 ? 4 : 2)}'
+                      : '--',
+                  style: McText.mono(
+                      size: 13,
+                      weight: FontWeight.w600,
+                      color: McColors.onSurface),
+                ),
+                Text(
+                  '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+                  style:
+                      McText.mono(size: 12, weight: FontWeight.w600, color: pctColor),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
