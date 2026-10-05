@@ -32,17 +32,19 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   double _low24h = 0;
   double _volCcy24h = 0;
 
-  // 盘口 (服务端 REST 轮询, 每次全量替换).
+  // 盘口 (OKX books5 WS 全量替换; REST 仅首帧+断流兜底).
   List<BookLevel> _bids = const [];
   List<BookLevel> _asks = const [];
 
-  // 逐笔成交 (服务端 REST 轮询, 新在前).
-  List<TradePush> _trades = const [];
+  // 逐笔成交 (OKX trades WS 前置插入, 新在前, 封顶 50).
+  final List<TradePush> _trades = [];
 
   StreamSubscription<TickerPush>? _wsSub;
-  // 盘口/成交/ticker 轮询: 手机直连 OKX WS 在国内常被墙,
-  // 统一走服务端代理 REST, 3s 一轮.
-  Timer? _liveTimer;
+  StreamSubscription<BookPush>? _bookSub;
+  StreamSubscription<TradePush>? _tradeSub;
+  // WS 断流兜底: 记录最后一次 WS 盘口到达时间, 超时用 REST 补.
+  DateTime? _lastBookWsAt;
+  Timer? _fallbackTimer;
 
   // K线.
   List<Map<String, double>> _candles = [];
@@ -67,9 +69,15 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   void initState() {
     super.initState();
     _subscribeLive();
-    _pollLive();
-    _liveTimer =
-        Timer.periodic(const Duration(seconds: 3), (_) => _pollLive());
+    _fillOnce();
+    // 兜底: WS 6s 无盘口数据(被墙/断流)时, REST 补一轮.
+    _fallbackTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      final at = _lastBookWsAt;
+      if (at == null ||
+          DateTime.now().difference(at) > const Duration(seconds: 6)) {
+        _fillOnce();
+      }
+    });
     _loadCandles();
     _loadFunding();
     _loadOpenInterest();
@@ -78,7 +86,9 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   @override
   void dispose() {
     _wsSub?.cancel();
-    _liveTimer?.cancel();
+    _bookSub?.cancel();
+    _tradeSub?.cancel();
+    _fallbackTimer?.cancel();
     super.dispose();
   }
 
@@ -96,8 +106,8 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     } catch (_) {/* 保留占位, 等待 WS 推送 */}
   }
 
-  /// 服务端代理轮询: ticker + 盘口 + 成交, 互不阻塞.
-  Future<void> _pollLive() async {
+  /// REST 首帧填充/断流兜底: ticker + 盘口 + 成交, 互不阻塞.
+  Future<void> _fillOnce() async {
     await Future.wait([
       _loadInitial(),
       () async {
@@ -114,7 +124,11 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         try {
           final trades = await McData.recentTrades(widget.instId);
           if (!mounted || trades.isEmpty) return;
-          setState(() => _trades = trades);
+          setState(() {
+            _trades
+              ..clear()
+              ..addAll(trades);
+          });
         } catch (_) {/* 保留旧成交 */}
       }(),
     ]);
@@ -123,6 +137,8 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   void _subscribeLive() {
     final ws = TickerWs.instance;
     ws.subscribe({widget.instId});
+    ws.subscribeBooks(widget.instId);
+    ws.subscribeTrades(widget.instId);
 
     _wsSub = ws.stream.listen((p) {
       if (!mounted || p.instId != widget.instId) return;
@@ -132,6 +148,23 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         _high24h = p.high24h;
         _low24h = p.low24h;
         _volCcy24h = p.volCcy24h;
+      });
+    }, onError: (_) {});
+
+    _bookSub = ws.bookStream.listen((b) {
+      if (!mounted || b.instId != widget.instId) return;
+      _lastBookWsAt = DateTime.now();
+      setState(() {
+        _bids = b.bids;
+        _asks = b.asks;
+      });
+    }, onError: (_) {});
+
+    _tradeSub = ws.tradeStream.listen((t) {
+      if (!mounted || t.instId != widget.instId) return;
+      setState(() {
+        _trades.insert(0, t);
+        if (_trades.length > 50) _trades.removeRange(50, _trades.length);
       });
     }, onError: (_) {});
   }
