@@ -523,6 +523,7 @@ class _NetworkCard extends StatelessWidget {
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
+            padding: EdgeInsets.zero, // 防 primary 滚动视图自动吃状态栏 inset
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,

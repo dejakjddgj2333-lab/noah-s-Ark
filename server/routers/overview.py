@@ -142,12 +142,9 @@ async def get_open_interest():
 
 @router.get("/whale-alerts")
 async def get_whale_alerts():
-    """巨鲸异动. free=Hyperliquid 大额成交流, coinglass=HL whale-alert.
-    链上转账类异动仅 coinglass 模式有 (前端按 /source 隐藏)."""
-    if not _use_coinglass():
-        return {"alerts": hl_whale.whale_alerts()}
-    data = await _cg_get("/api/hyperliquid/whale-alert", ttl=60)
-    return {"alerts": data}
+    """巨鲸异动. 固定走 Hyperliquid 大额成交流 (免费源):
+    直连 HL WS 数据比 CoinGlass hyperliquid/whale-alert 更全, 两种模式统一."""
+    return {"alerts": hl_whale.whale_alerts()}
 
 
 # ---------- 横幅全局数据 (CoinGecko) ----------

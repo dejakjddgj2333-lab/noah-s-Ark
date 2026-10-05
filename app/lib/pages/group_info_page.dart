@@ -297,6 +297,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   Widget _memberGrid() {
     return GridView.builder(
       shrinkWrap: true,
+      padding: EdgeInsets.zero, // 防 primary 滚动视图自动吃状态栏 inset
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 5,

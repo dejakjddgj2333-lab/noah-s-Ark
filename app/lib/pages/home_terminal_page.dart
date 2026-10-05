@@ -361,26 +361,29 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
       children: [
-        // 1. 核心情绪与宏观双子盘 (自然高度, IntrinsicHeight 与 Expanded 基线冲突)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-                child: _FearGreedCard(
-                    value: _fgValue,
-                    label: _fgLabel,
-                    color: _fgColor,
-                    history: _fgHistory)),
-            const SizedBox(width: 10),
-            Expanded(
-                child: _DominanceCard(
-              btc: _btcDom,
-              eth: _ethDom,
-              other: _otherDom,
-              btcFrac: _btcDomFrac,
-              ethFrac: _ethDomFrac,
-            )),
-          ],
+        // 1. 核心情绪与宏观双子盘 (定高对齐; IntrinsicHeight 与 Expanded 基线冲突不可用)
+        SizedBox(
+          height: 180,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                  child: _FearGreedCard(
+                      value: _fgValue,
+                      label: _fgLabel,
+                      color: _fgColor,
+                      history: _fgHistory)),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _DominanceCard(
+                btc: _btcDom,
+                eth: _ethDom,
+                other: _otherDom,
+                btcFrac: _btcDomFrac,
+                ethFrac: _ethDomFrac,
+              )),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 

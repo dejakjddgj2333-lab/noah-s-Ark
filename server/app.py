@@ -184,12 +184,15 @@ async def lifespan(app: FastAPI):
     collector = None
     if config.news_collect_enabled and not config.database_url.startswith("sqlite"):
         collector = asyncio.create_task(_news_collect_loop())
-    # 免费数据源模式: 爆仓 WS 聚合 + HL 大额成交流 (coinglass 模式不需要)
-    market_tasks: list[asyncio.Task] = []
-    if config.market_data_source.lower() != "coinglass":
-        from services import hl_whale, liq_aggregator
+    # HL 大额成交流: 常驻 (巨鲸异动固定用免费源, 比 CoinGlass whale-alert 全);
+    # 爆仓 WS 聚合仅免费数据源模式需要 (coinglass 模式爆仓走 API 透传).
+    from services import hl_whale
 
-        market_tasks = liq_aggregator.start() + [hl_whale.start()]
+    market_tasks: list[asyncio.Task] = [hl_whale.start()]
+    if config.market_data_source.lower() != "coinglass":
+        from services import liq_aggregator
+
+        market_tasks += liq_aggregator.start()
     await _migrate()
     # RBAC: 预置角色 upsert + ADMIN_USERNAMES 自动绑超管
     async with SessionLocal() as db:

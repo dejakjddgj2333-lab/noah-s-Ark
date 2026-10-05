@@ -530,6 +530,7 @@ class _AssetsPageState extends State<AssetsPage> {
           GridView.count(
             crossAxisCount: 3,
             shrinkWrap: true,
+            padding: EdgeInsets.zero, // 否则 primary 滚动视图自动吃状态栏 inset, 标题下出现大空隙
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,

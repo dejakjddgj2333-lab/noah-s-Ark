@@ -8,8 +8,8 @@ import '../services/data.dart';
 /// 巨鲸雷达 (Home → Whale Radar tab) — content body only.
 /// Rendered inside the existing shell (header + top tabs + bottom nav).
 ///
-/// 实时异动时间线尝试接 `/api/market-overview/whale-alerts`; 失败(未配置
-/// CoinGlass/上游错误/后端未启动)时静默保留内置 mock, 永不红屏.
+/// 实时异动时间线固定走 Hyperliquid 大额成交流 (免费源, 比 CoinGlass
+/// whale-alert 更全); 无数据时显示诚实空态, 不放编造 mock.
 class HomeWhalePage extends StatefulWidget {
   const HomeWhalePage({super.key});
 
@@ -18,18 +18,13 @@ class HomeWhalePage extends StatefulWidget {
 }
 
 class _HomeWhalePageState extends State<HomeWhalePage> {
-  // 时间线条目: coinglass 模式首屏展示内置 mock, 拉取成功后整体替换;
-  // free 模式无链上数据, 初始为空, 只展示 Hyperliquid 真实大额成交.
+  // 时间线条目: 仅 Hyperliquid 真实大额成交, 初始为空, 失败保持空态.
   List<_WhaleFeedItem> _feedItems = const [];
 
-  // 链上流动性总览: null = 未加载/失败, 卡片回退 mock.
+  // 链上流动性总览: null = 未加载/失败, 对应数值显示 '--'.
   LiquidityOverview? _liq;
 
-  // 数据源: free 隐藏链上内容 (聪明钱/链上转账类异动); coinglass 全量.
-  String _source = 'free';
-  bool _sourceReady = false;
-
-  // 时间线筛选: '' = 全部, 否则按 category 匹配 (提币/充值/做市/转账/异动).
+  // 时间线筛选: '' = 全部, '异动' = 合约仓位异动 (HL 流只有这一类).
   String _filter = '';
   // 预警阈值: 只显示 >= 该美元值的异动 (0 = 全部).
   double _minUsd = 0;
@@ -39,82 +34,6 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
         return f.usdValue >= _minUsd;
       }).toList();
 
-  static List<_WhaleFeedItem> _mockFeedItems() => const [
-        _WhaleFeedItem(
-          pillIcon: Icons.download_for_offline,
-          pillText: '提币囤积 · 强烈利好',
-          usdValue: 115704000,
-          category: '提币',
-          pillColor: McColors.tertiary,
-          chain: 'Bitcoin Mainnet',
-          time: '3分钟前',
-          amount: '1,200 BTC',
-          usd: '≈ \$115,704,000 USD',
-          usdColor: McColors.tertiary,
-          from: 'Binance',
-          to: '未知安全冷钱包',
-          fromColor: McColors.onSurfaceVariant,
-          toColor: McColors.tertiary,
-          arrowColor: McColors.tertiary,
-          txHash: '8f42...a90b',
-        ),
-        _WhaleFeedItem(
-          pillIcon: Icons.warning,
-          pillText: '大额充值 · 潜在抛压',
-          usdValue: 85500000,
-          category: '充值',
-          pillColor: McColors.error,
-          chain: 'Ethereum',
-          time: '14分钟前',
-          amount: '25,000 ETH',
-          usd: '≈ \$85,500,000 USD',
-          usdColor: McColors.error,
-          from: '神秘以太坊巨鲸',
-          to: 'Coinbase',
-          fromColor: McColors.error,
-          toColor: McColors.onSurfaceVariant,
-          arrowColor: McColors.error,
-          txHash: '3c1a...7e2d',
-        ),
-        _WhaleFeedItem(
-          pillIcon: Icons.sync_alt,
-          pillText: '做市机构动向',
-          usdValue: 15000000,
-          category: '做市',
-          pillColor: McColors.primary,
-          chain: 'ERC-20',
-          time: '21分钟前',
-          amount: '15,000,000 USDT',
-          usd: '≈ \$15,000,000 USD',
-          usdColor: McColors.onSurfaceVariant,
-          from: 'Wintermute',
-          to: 'Kraken',
-          fromColor: McColors.secondary,
-          toColor: McColors.onSurfaceVariant,
-          arrowColor: McColors.outline,
-          txHash: '1d98...54fb',
-        ),
-        _WhaleFeedItem(
-          pillIcon: Icons.local_fire_department,
-          pillText: '大额链上交互 · 官方铸造',
-          usdValue: 1000000000,
-          category: '转账',
-          pillColor: McColors.onSurface,
-          pillNeutral: true,
-          chain: 'TRON (TRC-20)',
-          time: '45分钟前',
-          amount: '1,000,000,000 USDT',
-          usd: '流动性补给印钞',
-          usdColor: McColors.tertiary,
-          from: 'Tether Treasury',
-          to: 'Authorized Inventory',
-          fromColor: McColors.onSurfaceVariant,
-          toColor: McColors.onSurface,
-          arrowColor: McColors.outline,
-          txHash: '92ef...63c8',
-        ),
-      ];
-
   @override
   void initState() {
     super.initState();
@@ -122,16 +41,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   }
 
   Future<void> _load() async {
-    if (!_sourceReady) {
-      _source = await McData.marketSource();
-      _sourceReady = true;
-      if (!mounted) return;
-      // coinglass 首帧给链上 mock; free 保持空等真实 HL 数据.
-      setState(() {
-        if (_source == 'coinglass') _feedItems = _mockFeedItems();
-      });
-    }
-    // 两块独立拉取, 互不影响; 任一失败静默保留对应 mock.
+    // 两块独立拉取, 互不影响; 任一失败保持空态/'--'.
     await Future.wait<void>([_loadFeed(), _loadLiquidity()]);
   }
 
@@ -142,9 +52,9 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
       if (!mounted || items.isEmpty) return;
       setState(() => _feedItems = items);
     } on ApiException {
-      // 503 未配置 / 502 上游错误 — 保留 mock.
+      // 上游/后端异常 — 保持空态.
     } catch (_) {
-      // 网络/解析异常 — 保留 mock.
+      // 网络/解析异常 — 保持空态.
     }
   }
 
@@ -154,9 +64,9 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
       if (!mounted || liq.isEmpty) return;
       setState(() => _liq = liq);
     } on ApiException {
-      // 上游/后端异常 — 保留 mock.
+      // 上游/后端异常 — 显示 '--'.
     } catch (_) {
-      // 网络/解析异常 — 保留 mock.
+      // 网络/解析异常 — 显示 '--'.
     }
   }
 
@@ -352,12 +262,12 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
               Expanded(
                 child: _metricBox(
                   label: '稳定币总流通',
-                  value: stableTotal != null ? _fmtCap(stableTotal) : '\$300.5B',
+                  value: stableTotal != null ? _fmtCap(stableTotal) : '--',
                   valueColor: McColors.onSurface,
-                  delta: stableTotal != null ? _fmtPct(stableChg) : '+0.32%',
+                  delta: stableTotal != null ? _fmtPct(stableChg) : '--',
                   deltaColor: stableTotal != null
                       ? _pctColor(stableChg)
-                      : McColors.bull,
+                      : McColors.onSurfaceVariant,
                   caption: 'DefiLlama 全稳定币 24H',
                 ),
               ),
@@ -365,11 +275,12 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
               Expanded(
                 child: _metricBox(
                   label: 'DeFi 总锁仓 TVL',
-                  value: tvlTotal != null ? _fmtCap(tvlTotal) : '\$94.6B',
+                  value: tvlTotal != null ? _fmtCap(tvlTotal) : '--',
                   valueColor: McColors.onSurface,
-                  delta: tvlTotal != null ? _fmtPct(tvlChg) : '+0.85%',
-                  deltaColor:
-                      tvlTotal != null ? _pctColor(tvlChg) : McColors.bull,
+                  delta: tvlTotal != null ? _fmtPct(tvlChg) : '--',
+                  deltaColor: tvlTotal != null
+                      ? _pctColor(tvlChg)
+                      : McColors.onSurfaceVariant,
                   caption: 'DefiLlama 全链锁仓 24H',
                 ),
               ),
@@ -414,7 +325,12 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                 ),
                 const SizedBox(height: 10),
                 if (tops.isEmpty)
-                  ..._mockStableRows()
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text('暂无数据',
+                        style: McText.sans(
+                            size: 12, color: McColors.onSurfaceVariant)),
+                  )
                 else
                   ...[
                     for (var i = 0; i < tops.length; i++) ...[
@@ -426,19 +342,13 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             ),
           ),
           const SizedBox(height: 16),
-          // filter pills: 链上分类 (提币/充值/做市/转账) 仅 coinglass 模式有数据
+          // filter pills: HL 大额成交流只有合约异动一类
           SizedBox(
             height: 34,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
                 _filterPill('全部', value: ''),
-                if (_source == 'coinglass') ...[
-                  _filterPill('提币囤积', value: '提币'),
-                  _filterPill('充值抛压预警', value: '充值'),
-                  _filterPill('做市机构动向', value: '做市'),
-                  _filterPill('巨额转账', value: '转账'),
-                ],
                 _filterPill('合约仓位异动', value: '异动'),
               ],
             ),
@@ -587,25 +497,6 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     );
   }
 
-  // mock 首帧的稳定币行 (真实数据未到时).
-  List<Widget> _mockStableRows() {
-    const mock = [
-      ('USDT', 183.7e9, 0.00),
-      ('USDC', 74.2e9, 0.01),
-      ('DAI', 5.3e9, -0.02),
-    ];
-    return [
-      for (var i = 0; i < mock.length; i++) ...[
-        if (i > 0) const SizedBox(height: 8),
-        _stableRow(StableCoin.fromJson({
-          'name': mock[i].$1,
-          'circulating_usd': mock[i].$2,
-          'change_1d_pct': mock[i].$3,
-        })),
-      ],
-    ];
-  }
-
   Widget _filterPill(String text, {required String value}) {
     final selected = _filter == value;
     return GestureDetector(
@@ -724,9 +615,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: item.pillNeutral
-                                  ? McColors.surfaceContainerHigh
-                                  : item.pillColor.withValues(alpha: 0.2),
+                              color: item.pillColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Row(
@@ -1049,13 +938,12 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   }
 }
 
-/// 时间线条目的不可变数据模型 (mock 与真实数据共用).
+/// 时间线条目的不可变数据模型.
 class _WhaleFeedItem {
   const _WhaleFeedItem({
     required this.pillIcon,
     required this.pillText,
     required this.pillColor,
-    this.pillNeutral = false,
     required this.chain,
     required this.time,
     required this.amount,
@@ -1074,7 +962,6 @@ class _WhaleFeedItem {
   final IconData pillIcon;
   final String pillText;
   final Color pillColor;
-  final bool pillNeutral;
   final String chain;
   final String time;
   final String amount;

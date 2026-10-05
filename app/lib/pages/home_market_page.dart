@@ -458,13 +458,17 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                             color: _mcDeltaUp
                                 ? HomeMarketPage._bull
                                 : HomeMarketPage._err),
-                        Text(_mcDelta,
-                            style: McText.sans(
-                                size: 12,
-                                weight: FontWeight.w600,
-                                color: _mcDeltaUp
-                                    ? HomeMarketPage._bull
-                                    : HomeMarketPage._err)),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(_mcDelta,
+                              overflow: TextOverflow.ellipsis,
+                              style: McText.sans(
+                                  size: 12,
+                                  weight: FontWeight.w600,
+                                  color: _mcDeltaUp
+                                      ? HomeMarketPage._bull
+                                      : HomeMarketPage._err)),
+                        ),
                       ],
                     ),
                   ),
@@ -546,12 +550,30 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: McText.sans(size: 12, color: HomeMarketPage._outline)),
+          // 窄列不折行: 标签/数值超出时等比缩小
+          SizedBox(
+            height: 16,
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(label,
+                  style:
+                      McText.sans(size: 12, color: HomeMarketPage._outline)),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value,
-              style: McText.sans(
-                  size: 16, weight: FontWeight.w700, color: valueColor)),
+          SizedBox(
+            height: 20,
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value,
+                  style: McText.sans(
+                      size: 16, weight: FontWeight.w700, color: valueColor)),
+            ),
+          ),
           const SizedBox(height: 4),
           sub,
         ],
