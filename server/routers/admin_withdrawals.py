@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,7 +37,16 @@ class WithdrawOut(BaseModel):
 
 
 class ApproveIn(BaseModel):
-    txid: str = Field(min_length=1)  # 打款交易号: 通过必须登记, 留审计依据
+    # 打款交易号: 通过必须登记, 留审计依据; 链上哈希格式 (0x 可选, 64 位十六进制)
+    txid: str = Field(min_length=1, max_length=66)
+
+    @field_validator("txid")
+    @classmethod
+    def _txid_format(cls, v: str) -> str:
+        import re
+        if not re.fullmatch(r"(0x)?[0-9a-fA-F]{64}", v.strip()):
+            raise ValueError("txid 格式不正确 (应为 64 位十六进制链上交易哈希)")
+        return v.strip()
 
 
 class RejectIn(BaseModel):
