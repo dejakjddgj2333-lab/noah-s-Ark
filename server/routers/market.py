@@ -57,6 +57,20 @@ async def candles(
     )
 
 
+@router.get("/books/{inst_id}")
+async def books(inst_id: str, sz: int = Query(20, ge=1, le=400)):
+    """盘口深度 (App 详情页轮询; 手机直连 OKX WS 常被墙, 走服务端代理)."""
+    return await _proxy("/api/v5/market/books", {"instId": inst_id, "sz": str(sz)})
+
+
+@router.get("/trades/{inst_id}")
+async def trades(inst_id: str, limit: int = Query(60, ge=1, le=500)):
+    """最近逐笔成交 (新在前)."""
+    return await _proxy(
+        "/api/v5/market/trades", {"instId": inst_id, "limit": str(limit)}
+    )
+
+
 @router.get("/funding-rate/{inst_id}")
 async def funding_rate(inst_id: str):
     """永续合约资金费率."""

@@ -1,5 +1,6 @@
 import 'api.dart';
 import 'auth.dart';
+import 'ticker_ws.dart' show BookLevel, TradePush;
 
 /// 资讯条目 (后端 /api/news 行).
 class NewsItem {
@@ -314,7 +315,7 @@ class McData {
     return OkxTicker.fromJson(data.first as Map<String, dynamic>);
   }
 
-  /// K线原始数据: 返回 [{ts,o,h,l,c}] 时间升序 (后端返回最新在前, 已反转).
+  /// K线原始数据: 返回 [{ts,o,h,l,c,v}] 时间升序 (后端返回最新在前, 已反转).
   static Future<List<Map<String, double>>> candles(String instId,
       {String bar = '1H', int limit = 60}) async {
     final resp =
@@ -330,11 +331,48 @@ class McData {
             'h': p(2),
             'l': p(3),
             'c': p(4),
+            'v': p(5),
           };
         })
         .toList()
         .reversed // OKX 最新在前 -> 时间升序
         .toList();
+  }
+
+  /// 盘口深度 (服务端代理 OKX; 手机直连 OKX WS 常被墙).
+  /// 返回 (bids, asks), 各档 (px, sz), bids 价格降序 / asks 升序.
+  static Future<(List<BookLevel>, List<BookLevel>)> orderBook(String instId,
+      {int sz = 20}) async {
+    final resp = await McApi.get('/api/market/books/$instId?sz=$sz');
+    final data = resp['data'] as List? ?? [];
+    if (data.isEmpty) return (const <BookLevel>[], const <BookLevel>[]);
+    final book = data.first as Map<String, dynamic>;
+    List<BookLevel> parse(dynamic raw) => [
+          for (final lv in (raw as List? ?? const []))
+            if (lv is List && lv.length >= 2)
+              BookLevel(
+                double.tryParse('${lv[0]}') ?? 0,
+                double.tryParse('${lv[1]}') ?? 0,
+              ),
+        ];
+    return (parse(book['bids']), parse(book['asks']));
+  }
+
+  /// 最近逐笔成交 (新在前).
+  static Future<List<TradePush>> recentTrades(String instId,
+      {int limit = 60}) async {
+    final resp = await McApi.get('/api/market/trades/$instId?limit=$limit');
+    return [
+      for (final e in (resp['data'] as List? ?? const []))
+        if (e is Map)
+          TradePush(
+            instId: instId,
+            px: double.tryParse('${e['px']}') ?? 0,
+            sz: double.tryParse('${e['sz']}') ?? 0,
+            side: '${e['side'] ?? ''}',
+            ts: int.tryParse('${e['ts']}') ?? 0,
+          ),
+    ];
   }
 
   /// 永续合约资金费率 (/api/market/funding-rate/{instId}).

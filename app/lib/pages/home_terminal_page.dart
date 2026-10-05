@@ -397,10 +397,6 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         ),
         const SizedBox(height: 10),
         _AssetListCard(rows: _assetRows),
-        const SizedBox(height: 16),
-
-        // 6. 底部终端微状态栏
-        const _TerminalStatusBar(),
       ],
     );
   }
@@ -1044,39 +1040,3 @@ class _AssetRow extends StatelessWidget {
   }
 }
 
-/// 底部终端微状态栏.
-class _TerminalStatusBar extends StatelessWidget {
-  const _TerminalStatusBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: McColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: McColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Row(
-              children: [
-                const McGlowDot(color: McColors.bull, size: 6),
-                const SizedBox(width: 6),
-                Text('数据源: CoinGlass / CoinGecko',
-                    style: McText.mono(
-                        size: 10, color: McColors.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text('失败时展示缓存参考值',
-              style: McText.mono(size: 10, color: McColors.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-}

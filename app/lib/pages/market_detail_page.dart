@@ -32,16 +32,17 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   double _low24h = 0;
   double _volCcy24h = 0;
 
-  // 盘口 (books5 全量替换).
+  // 盘口 (服务端 REST 轮询, 每次全量替换).
   List<BookLevel> _bids = const [];
   List<BookLevel> _asks = const [];
 
-  // 逐笔成交 (新在前, 封顶 50).
-  final List<TradePush> _trades = [];
+  // 逐笔成交 (服务端 REST 轮询, 新在前).
+  List<TradePush> _trades = const [];
 
   StreamSubscription<TickerPush>? _wsSub;
-  StreamSubscription<BookPush>? _bookSub;
-  StreamSubscription<TradePush>? _tradeSub;
+  // 盘口/成交/ticker 轮询: 手机直连 OKX WS 在国内常被墙,
+  // 统一走服务端代理 REST, 3s 一轮.
+  Timer? _liveTimer;
 
   // K线.
   List<Map<String, double>> _candles = [];
@@ -65,8 +66,10 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadInitial();
     _subscribeLive();
+    _pollLive();
+    _liveTimer =
+        Timer.periodic(const Duration(seconds: 3), (_) => _pollLive());
     _loadCandles();
     _loadFunding();
     _loadOpenInterest();
@@ -75,8 +78,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   @override
   void dispose() {
     _wsSub?.cancel();
-    _bookSub?.cancel();
-    _tradeSub?.cancel();
+    _liveTimer?.cancel();
     super.dispose();
   }
 
@@ -94,11 +96,33 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     } catch (_) {/* 保留占位, 等待 WS 推送 */}
   }
 
+  /// 服务端代理轮询: ticker + 盘口 + 成交, 互不阻塞.
+  Future<void> _pollLive() async {
+    await Future.wait([
+      _loadInitial(),
+      () async {
+        try {
+          final (bids, asks) = await McData.orderBook(widget.instId);
+          if (!mounted) return;
+          setState(() {
+            _bids = bids;
+            _asks = asks;
+          });
+        } catch (_) {/* 保留旧盘口 */}
+      }(),
+      () async {
+        try {
+          final trades = await McData.recentTrades(widget.instId);
+          if (!mounted || trades.isEmpty) return;
+          setState(() => _trades = trades);
+        } catch (_) {/* 保留旧成交 */}
+      }(),
+    ]);
+  }
+
   void _subscribeLive() {
     final ws = TickerWs.instance;
     ws.subscribe({widget.instId});
-    ws.subscribeBooks(widget.instId);
-    ws.subscribeTrades(widget.instId);
 
     _wsSub = ws.stream.listen((p) {
       if (!mounted || p.instId != widget.instId) return;
@@ -108,22 +132,6 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         _high24h = p.high24h;
         _low24h = p.low24h;
         _volCcy24h = p.volCcy24h;
-      });
-    }, onError: (_) {});
-
-    _bookSub = ws.bookStream.listen((b) {
-      if (!mounted || b.instId != widget.instId) return;
-      setState(() {
-        _bids = b.bids;
-        _asks = b.asks;
-      });
-    }, onError: (_) {});
-
-    _tradeSub = ws.tradeStream.listen((t) {
-      if (!mounted || t.instId != widget.instId) return;
-      setState(() {
-        _trades.insert(0, t);
-        if (_trades.length > 50) _trades.removeRange(50, _trades.length);
       });
     }, onError: (_) {});
   }
@@ -352,7 +360,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
             const SizedBox(width: 8),
             Expanded(
               child: _stat('24H 成交额',
-                  _notional > 0 ? McData.fmtUsdCompact(_notional) : '--',
+                  _notional > 0 ? _fmtZh(_notional) : '--',
                   McColors.onSurface),
             ),
           ],
@@ -396,7 +404,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
               style: McText.sans(size: 13, weight: FontWeight.w600)),
           const Spacer(),
           Text(
-            McData.fmtUsdCompact(oi),
+            _fmtZh(oi),
             style: McText.mono(
                 size: 16, weight: FontWeight.w700, color: McColors.onSurface),
           ),
@@ -489,9 +497,11 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                         painter: _CandlePainter(
                           candles: _candles,
                           lastPrice: _last,
+                          bar: _bar,
                           bull: McColors.bull,
                           bear: McColors.bear,
                           gridColor: McColors.outlineVariant,
+                          labelColor: McColors.onSurfaceVariant,
                         ),
                       ),
           ),
@@ -763,6 +773,14 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     return '$buf.${fixed.substring(dot + 1)}';
   }
 
+  /// 美元金额中文紧凑格式: 万/亿, 不用 K/M/B.
+  static String _fmtZh(double usd) {
+    final a = usd.abs();
+    if (a >= 1e8) return '\$${(usd / 1e8).toStringAsFixed(2)}亿';
+    if (a >= 1e4) return '\$${(usd / 1e4).toStringAsFixed(1)}万';
+    return '\$${usd.toStringAsFixed(2)}';
+  }
+
   /// ms 时间戳 → HH:mm:ss.
   static String _fmtClock(int ms) {
     if (ms <= 0) return '--:--:--';
@@ -866,21 +884,32 @@ class _FundingCountdownCardState extends State<_FundingCountdownCard> {
   }
 }
 
-/// 蜡烛图画笔: 绿涨红跌, 上下影线, 暗色背景网格 + 最新价虚线.
+/// OKX 风格蜡烛图: 右轴价标 + 时间轴 + MA5/10/20 + 成交量副图 + 最新价标签.
 class _CandlePainter extends CustomPainter {
   _CandlePainter({
     required this.candles,
     required this.lastPrice,
+    required this.bar,
     required this.bull,
     required this.bear,
     required this.gridColor,
+    required this.labelColor,
   });
 
   final List<Map<String, double>> candles;
   final double lastPrice;
+  final String bar;
   final Color bull;
   final Color bear;
   final Color gridColor;
+  final Color labelColor;
+
+  static const _labelW = 52.0; // 右轴价标宽
+  static const _timeH = 16.0; // 底部时间轴高
+  static const _volRatio = 0.22; // 成交量副图占比
+  static const _ma5Color = Color(0xFFE8EAF0);
+  static const _ma10Color = Color(0xFFF0B90B);
+  static const _ma20Color = Color(0xFFB877DB);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -888,9 +917,11 @@ class _CandlePainter extends CustomPainter {
 
     var lo = double.infinity;
     var hi = -double.infinity;
+    var maxVol = 0.0;
     for (final c in candles) {
       if (c['l']! < lo) lo = c['l']!;
       if (c['h']! > hi) hi = c['h']!;
+      if (c['v']! > maxVol) maxVol = c['v']!;
     }
     if (lastPrice > 0) {
       if (lastPrice < lo) lo = lastPrice;
@@ -898,27 +929,52 @@ class _CandlePainter extends CustomPainter {
     }
     final range = hi - lo;
     if (range <= 0) return;
-    // 上下各留 6% 边距.
+
+    final chartW = size.width - _labelW;
+    if (chartW <= 0) return;
+    final chartH = size.height - _timeH;
+    final priceH = chartH * (1 - _volRatio) - 4;
+    final volH = chartH * _volRatio;
+    final volTop = priceH + 4;
+
     final pad = range * 0.06;
     final min = lo - pad;
     final span = range + pad * 2;
+    double yOf(double price) => priceH - (price - min) / span * priceH;
 
-    double yOf(double price) =>
-        size.height - (price - min) / span * size.height;
-
-    // 水平网格线 (4 条).
     final gridPaint = Paint()
       ..color = gridColor.withValues(alpha: 0.25)
       ..strokeWidth = 1;
-    for (var i = 1; i <= 4; i++) {
-      final y = size.height * i / 5;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+
+    // 水平网格 + 右轴价标 (5 档).
+    for (var i = 0; i <= 4; i++) {
+      final y = priceH * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(chartW, y), gridPaint);
+      final price = min + span * (1 - i / 4);
+      _text(canvas, _axisPrice(price),
+          Offset(chartW + 6, y - 5), labelColor, 10);
     }
 
-    final count = candles.length;
-    final step = size.width / count;
-    final bodyW = (step * 0.6).clamp(1.0, step);
+    // 价格区与量区分隔线.
+    canvas.drawLine(Offset(0, volTop), Offset(chartW, volTop), gridPaint);
 
+    final count = candles.length;
+    final step = chartW / count;
+    final bodyW = (step * 0.62).clamp(1.0, step);
+
+    // 时间轴 (4 档).
+    for (var i = 0; i < 4; i++) {
+      final idx = (count - 1) * i ~/ 3;
+      final x = idx * step + step / 2;
+      final label = _axisTime(candles[idx]['ts']!);
+      final w = label.length * 5.4;
+      var tx = x - w / 2;
+      if (tx < 0) tx = 0;
+      if (tx + w > chartW) tx = chartW - w;
+      _text(canvas, label, Offset(tx, priceH + 6 + volH), labelColor, 9);
+    }
+
+    // 蜡烛 + 成交量.
     for (var i = 0; i < count; i++) {
       final c = candles[i];
       final o = c['o']!;
@@ -929,42 +985,131 @@ class _CandlePainter extends CustomPainter {
       final color = up ? bull : bear;
       final cx = i * step + step / 2;
 
-      // 影线.
-      final wickPaint = Paint()
-        ..color = color
-        ..strokeWidth = 1;
-      canvas.drawLine(Offset(cx, yOf(h)), Offset(cx, yOf(l)), wickPaint);
-
-      // 实体.
-      final bodyPaint = Paint()..color = color;
+      canvas.drawLine(
+          Offset(cx, yOf(h)),
+          Offset(cx, yOf(l)),
+          Paint()
+            ..color = color
+            ..strokeWidth = 1);
       final top = yOf(up ? cl : o);
       final bottom = yOf(up ? o : cl);
-      final rect = Rect.fromLTRB(
-        cx - bodyW / 2,
-        top,
-        cx + bodyW / 2,
-        (bottom - top).abs() < 1 ? top + 1 : bottom,
+      canvas.drawRect(
+        Rect.fromLTRB(cx - bodyW / 2, top, cx + bodyW / 2,
+            (bottom - top).abs() < 1 ? top + 1 : bottom),
+        Paint()..color = color,
       );
-      canvas.drawRect(rect, bodyPaint);
-    }
 
-    // 最新价虚线.
-    if (lastPrice > 0 && lastPrice >= min && lastPrice <= min + span) {
-      final y = yOf(lastPrice);
-      final dashPaint = Paint()
-        ..color = McColors.onSurfaceVariant.withValues(alpha: 0.8)
-        ..strokeWidth = 1;
-      const dashW = 5.0;
-      const gapW = 4.0;
-      var x = 0.0;
-      while (x < size.width) {
-        canvas.drawLine(Offset(x, y), Offset(x + dashW, y), dashPaint);
-        x += dashW + gapW;
+      if (maxVol > 0) {
+        final vh = (c['v']! / maxVol) * volH;
+        canvas.drawRect(
+          Rect.fromLTRB(cx - bodyW / 2, volTop + volH - vh, cx + bodyW / 2,
+              volTop + volH),
+          Paint()..color = color.withValues(alpha: 0.35),
+        );
       }
     }
+
+    // MA 线 + 左上角图例.
+    _maLine(canvas, 5, step, yOf, _ma5Color);
+    _maLine(canvas, 10, step, yOf, _ma10Color);
+    _maLine(canvas, 20, step, yOf, _ma20Color);
+    var lx = 2.0;
+    for (final (n, color) in [
+      (5, _ma5Color),
+      (10, _ma10Color),
+      (20, _ma20Color),
+    ]) {
+      final v = _maAt(count - 1, n);
+      final label = v == null ? 'MA$n' : 'MA$n ${_axisPrice(v)}';
+      _text(canvas, label, Offset(lx, 2), color, 10);
+      lx += label.length * 5.4 + 10;
+    }
+
+    // 最新价虚线 + 右轴标签.
+    if (lastPrice > 0 && lastPrice >= min && lastPrice <= min + span) {
+      final y = yOf(lastPrice);
+      final lastClose = candles.last['c']!;
+      final tagColor = lastPrice >= lastClose ? bull : bear;
+      final dashPaint = Paint()
+        ..color = tagColor.withValues(alpha: 0.7)
+        ..strokeWidth = 1;
+      var x = 0.0;
+      while (x < chartW) {
+        canvas.drawLine(Offset(x, y), Offset(x + 5, y), dashPaint);
+        x += 9;
+      }
+      canvas.drawRect(
+        Rect.fromLTWH(chartW, y - 8, _labelW, 16),
+        Paint()..color = tagColor,
+      );
+      _text(canvas, _axisPrice(lastPrice), Offset(chartW + 4, y - 5),
+          const Color(0xFF0B0E14), 10,
+          bold: true);
+    }
+  }
+
+  double? _maAt(int end, int n) {
+    if (end < n - 1 || end < 0) return null;
+    var sum = 0.0;
+    for (var i = end - n + 1; i <= end; i++) {
+      sum += candles[i]['c']!;
+    }
+    return sum / n;
+  }
+
+  void _maLine(Canvas canvas, int n, double step, double Function(double) yOf,
+      Color color) {
+    final path = Path();
+    var started = false;
+    for (var i = n - 1; i < candles.length; i++) {
+      final v = _maAt(i, n)!;
+      final x = i * step + step / 2;
+      if (!started) {
+        path.moveTo(x, yOf(v));
+        started = true;
+      } else {
+        path.lineTo(x, yOf(v));
+      }
+    }
+    if (!started) return;
+    canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withValues(alpha: 0.9)
+          ..strokeWidth = 1.2
+          ..style = PaintingStyle.stroke);
+  }
+
+  void _text(Canvas canvas, String s, Offset at, Color color, double size,
+      {bool bold = false}) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: s,
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, at);
+  }
+
+  String _axisPrice(double p) {
+    if (p >= 1000) return p.toStringAsFixed(1);
+    if (p >= 1) return p.toStringAsFixed(2);
+    return p.toStringAsFixed(4);
+  }
+
+  String _axisTime(double tsMs) {
+    final t = DateTime.fromMillisecondsSinceEpoch(tsMs.toInt());
+    String two(int n) => n.toString().padLeft(2, '0');
+    if (bar == '1D') return '${two(t.month)}-${two(t.day)}';
+    return '${two(t.hour)}:${two(t.minute)}';
   }
 
   @override
   bool shouldRepaint(_CandlePainter old) =>
-      old.candles != candles || old.lastPrice != lastPrice;
+      old.candles != candles || old.lastPrice != lastPrice || old.bar != bar;
 }
