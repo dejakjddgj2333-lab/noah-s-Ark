@@ -141,6 +141,8 @@ class _ProductsPageState extends State<ProductsPage> {
                     child: Text(
                       '${p['name']}',
                       style: McText.display(size: 15, weight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
@@ -158,7 +160,8 @@ class _ProductsPageState extends State<ProductsPage> {
               ),
               if (p['description'] != null) ...[
                 const SizedBox(height: 6),
-                Text('${p['description']}', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+                Text('${p['description']}', style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
               ],
               const SizedBox(height: 12),
               Row(
@@ -202,11 +205,15 @@ class _ProductsPageState extends State<ProductsPage> {
                 children: [
                   Icon(Icons.payments_outlined, size: 13, color: McColors.onSurfaceVariant),
                   const SizedBox(width: 4),
-                  Text(
-                    '${p['min_amount']} ~ ${p['max_amount']} USDT',
-                    style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
+                  Flexible(
+                    child: Text(
+                      '${p['min_amount']} ~ ${p['max_amount']} USDT',
+                      style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   if (p['vip_level_req'] != null)
                     _reqChip('VIP${p['vip_level_req']}')
                   else
@@ -342,7 +349,8 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
           Row(
             children: [
               Expanded(
-                child: Text('${_p['name']}', style: McText.display(size: 17, weight: FontWeight.w700)),
+                child: Text('${_p['name']}', style: McText.display(size: 17, weight: FontWeight.w700),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20, color: McColors.onSurfaceVariant),
