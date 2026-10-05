@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#151c33</color>
+    <!-- 与 Flutter McColors.surface (#10131A) 一致 -->
+    <color name="launch_background">#10131A</color>
 </resources>
