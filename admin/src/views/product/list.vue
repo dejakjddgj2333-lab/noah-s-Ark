@@ -14,7 +14,7 @@ const STATUS_MAP = {
   published: { label: '已上架', type: 'success' },
   offline: { label: '已下架', type: 'warning' },
 }
-const METHOD_MAP = { daily: '每日', period_7d: '每7天', period_30d: '每30天', expiry: '到期一次性' }
+const METHOD_MAP = { daily: '每日', period_7d: '每7天', period_30d: '每30天', expiry: '到期一次性', period_1h: '每小时' }
 
 const dialogVisible = ref(false)
 const saving = ref(false)
@@ -168,6 +168,7 @@ onMounted(fetchList)
             <el-option label="每隔7天" value="period_7d" />
             <el-option label="每隔30天" value="period_30d" />
             <el-option label="到期一次性" value="expiry" />
+            <el-option label="每小时(测试)" value="period_1h" />
           </el-select>
         </el-form-item>
         <el-form-item label="最低购买金额" required>

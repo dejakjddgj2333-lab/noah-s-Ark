@@ -162,6 +162,15 @@ async def _migrate() -> None:
                 await conn.execute(text(ddl))
         except Exception:
             pass  # 索引已存在或表尚未建, 跳过
+    # 列类型变更 (PG): sqlite 动态类型无需处理
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(
+                "ALTER TABLE hk_settlement_records ALTER COLUMN period_days "
+                "TYPE NUMERIC(10, 6)"
+            ))
+    except Exception:
+        pass  # 已是目标类型或不支持该语法, 跳过
 
 
 @asynccontextmanager

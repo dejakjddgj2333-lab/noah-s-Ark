@@ -34,7 +34,7 @@ class HkSettlementRecord(HkBase):
     order_id = Column(Integer, ForeignKey("hk_orders.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False, index=True)
     period_no = Column(Integer, nullable=False)  # 第几期, 从 1 开始
-    period_days = Column(Integer, nullable=False)  # 本期天数
+    period_days = Column(Numeric(10, 6), nullable=False)  # 本期天数 (小时节奏可为分数, 如 1/24)
     # 本期收益 (已按文档第五节截断至 2 位小数)
     income_amount = Column(Numeric(18, 2), nullable=False)
     # 最后一期同时记录返还本金金额 (0 表示未返)

@@ -51,6 +51,11 @@ def validate_product(
             status.HTTP_400_BAD_REQUEST,
             detail="每30天返还的产品, 周期必须是 30 的整数倍",
         )
+    if return_method == "period_1h" and duration_days * 24 < 1:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="每小时返还的产品, 周期至少 1 小时",
+        )
     for label, lv in (("个人VIP", vip_level_req), ("团队等级", team_level_req)):
         if lv is not None and not (0 <= lv <= 10):
             raise HTTPException(
