@@ -1447,6 +1447,22 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
                   Text('/USDT',
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant)),
+                  if (t.instId.endsWith('-SWAP')) ...[
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: McColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text('永续',
+                          style: McText.sans(
+                              size: 10,
+                              weight: FontWeight.w600,
+                              color: McColors.primary)),
+                    ),
+                  ],
                   if (isCurrent) ...[
                     const SizedBox(width: 6),
                     const Icon(Icons.check_circle,
