@@ -6,7 +6,6 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
 import '../services/data.dart';
-import '../services/liquidation_ws.dart';
 
 /// 多空爆仓 (Long/Short Liquidation) content body.
 /// Palette overrides from stitch_ref/home_liquidation.html.
@@ -67,9 +66,10 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   String _long12h = '--';
   String _short12h = '--';
 
-  // 实时爆仓 feed: 首屏骨架, Binance WS 推送后逐条前置填充.
+  // 实时爆仓 feed: 首屏骨架, 轮询服务端聚合流 (Binance/Bybit/OKX 落库) 填充.
+  // 不走手机直连 Binance WS — 国内网络对 fstream.binance.com 常被静默黑洞.
   final List<_FeedItem> _feedItems = [];
-  StreamSubscription<LiqPush>? _liqSub;
+  Timer? _feedTimer;
 
   // 交易所统计行: 首屏骨架, 成功后按真实数据构建.
   List<_ExStat>? _exStats;
@@ -87,13 +87,13 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   @override
   void initState() {
     super.initState();
-    _subscribeLiqWs();
+    _startFeedPoll();
     _load();
   }
 
   @override
   void dispose() {
-    _liqSub?.cancel();
+    _feedTimer?.cancel();
     super.dispose();
   }
 
@@ -180,33 +180,73 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     }
   }
 
-  // 实时爆仓 feed: 改用 Binance 合约强平 WS (免费/无 key), 替代 CoinGlass
-  // orders 接口 (当前套餐 502 plan-gated, 无法返回实时流).
-  void _subscribeLiqWs() {
-    _liqSub = LiquidationWs.instance.stream.listen((p) {
-      if (!mounted) return;
-      setState(() {
-        _feedItems.insert(0, _toFeedItem(p));
-        if (_feedItems.length > 50) _feedItems.removeLast();
-      });
-    });
+  // 实时爆仓 feed: 轮询服务端 /liquidations/recent (Binance/Bybit/OKX
+  // 强平 WS 已落库聚合), 每 10s 整体刷新. 替代手机直连 Binance WS
+  // (国内网络常被黑洞, 且自建聚合覆盖面更大).
+  void _startFeedPoll() {
+    _loadFeed();
+    _feedTimer = Timer.periodic(
+        const Duration(seconds: 10), (_) => _loadFeed());
   }
 
-  static _FeedItem _toFeedItem(LiqPush p) {
-    final isLong = p.side == 'long';
+  Future<void> _loadFeed() async {
+    try {
+      final resp = await McData.overview('liquidations/recent?limit=50');
+      final list = _asList(resp['data']);
+      final items = <_FeedItem>[];
+      for (final e in list) {
+        if (e is! Map) continue;
+        final item = _toFeedItem(e.cast<String, dynamic>());
+        if (item != null) items.add(item);
+      }
+      if (!mounted || items.isEmpty) return;
+      setState(() {
+        _feedItems
+          ..clear()
+          ..addAll(items);
+      });
+    } on ApiException {
+      // 后端/上游异常 — 保持现有列表.
+    } catch (_) {
+      // 网络/解析异常 — 保持现有列表.
+    }
+  }
+
+  static _FeedItem? _toFeedItem(Map<String, dynamic> m) {
+    final exchange = (m['exchange'] ?? '').toString();
+    final symbol = (m['symbol'] ?? '').toString();
+    final usd = _num(m['notional_usd']);
+    if (symbol.isEmpty || usd <= 0) return null;
+    final isLong = m['side'] == 'long';
+    final meta = _exMeta.firstWhere(
+      (x) => x.name == exchange,
+      orElse: () => _ExMeta(
+        exchange.isEmpty ? '未知' : exchange,
+        const Color(0x1AFFFFFF),
+        exchange.isEmpty ? '?' : exchange.substring(0, 1).toUpperCase(),
+        Colors.white,
+      ),
+    );
+    final ts = m['ts'] is num ? (m['ts'] as num).toInt() : 0;
+    // 各所 symbol 形态不一: BTCUSDT / BTC-USDT, 统一剥计价币得基础币.
+    final base = symbol
+        .replaceAll('-USDT-SWAP', '')
+        .replaceAll('-USDT', '')
+        .replaceAll('USDT', '')
+        .replaceAll('USDC', '');
     return _FeedItem(
-      avatarBg: const Color(0x26F3BA2F),
-      avatarLabel: '❖',
-      avatarColor: const Color(0xFFF3BA2F),
-      name: 'Binance',
-      symbol: p.symbol,
-      price: '\$${_fmtPrice(p.price)}',
+      avatarBg: meta.avatarBg,
+      avatarLabel: meta.avatarLabel,
+      avatarColor: meta.avatarColor,
+      name: meta.name,
+      symbol: base,
+      price: '\$${_fmtPrice(_num(m['price']))}',
       long: isLong,
-      amount: _fmtUsdZh(p.notionalUsd),
-      amountUsd: p.notionalUsd,
+      amount: _fmtUsdZh(usd),
+      amountUsd: usd,
       amountColor: isLong ? _bull : _bear,
-      qty: '≈${_fmtQty(p.qty)} ${p.baseCcy}',
-      time: _fmtClock(p.ts),
+      qty: '≈${_fmtQty(_num(m['qty']))} $base',
+      time: ts > 0 ? _fmtClock(ts) : '',
       showDivider: false,
     );
   }

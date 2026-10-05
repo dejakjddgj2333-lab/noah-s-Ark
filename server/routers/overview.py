@@ -97,6 +97,37 @@ async def get_liq_exchange_list(range: str = Query("24h")):
     return {"range": range, "data": data}
 
 
+@router.get("/liquidations/recent")
+async def get_liq_recent(limit: int = Query(50, le=100)):
+    """最新强平事件流 (hk_liq_events, Binance/Bybit/OKX 聚合, 新->旧).
+    App 实时爆仓 feed 轮询用 — 替代手机直连 Binance WS (国内网络常被黑洞)."""
+    from sqlalchemy import desc, select
+
+    from database import SessionLocal
+    from models.hk import HkLiqEvent
+
+    async with SessionLocal() as db:
+        rows = (
+            await db.execute(
+                select(HkLiqEvent).order_by(desc(HkLiqEvent.id)).limit(limit)
+            )
+        ).scalars().all()
+    return {
+        "data": [
+            {
+                "exchange": r.exchange,
+                "symbol": r.symbol,
+                "side": r.side,
+                "price": r.price,
+                "qty": r.qty,
+                "notional_usd": r.notional_usd,
+                "ts": int(r.ts.timestamp() * 1000) if r.ts else None,
+            }
+            for r in rows
+        ]
+    }
+
+
 @router.get("/funding/exchange-rates")
 async def get_funding_exchange_rates(symbol: str = Query("BTC")):
     """单币种各所实时费率. free=Binance/OKX/Bybit 聚合."""
