@@ -1028,9 +1028,18 @@ class _CandlePainter extends CustomPainter {
     var lo = double.infinity;
     var hi = -double.infinity;
     var maxVol = 0.0;
-    for (final c in candles) {
-      if (c['l']! < lo) lo = c['l']!;
-      if (c['h']! > hi) hi = c['h']!;
+    var hiIdx = 0;
+    var loIdx = 0;
+    for (var i = 0; i < candles.length; i++) {
+      final c = candles[i];
+      if (c['l']! < lo) {
+        lo = c['l']!;
+        loIdx = i;
+      }
+      if (c['h']! > hi) {
+        hi = c['h']!;
+        hiIdx = i;
+      }
       if (c['v']! > maxVol) maxVol = c['v']!;
     }
     if (lastPrice > 0) {
@@ -1135,6 +1144,13 @@ class _CandlePainter extends CustomPainter {
       lx += label.length * 5.4 + 10;
     }
 
+    // 可见区最高/最低价指示 (OKX 风格: 极值点短横线 + 价格文本).
+    final markColor = const Color(0xFFE8EAF0).withValues(alpha: 0.9);
+    _hiLoMark(canvas, hiIdx * step + step / 2, yOf(candles[hiIdx]['h']!),
+        candles[hiIdx]['h']!, markColor, chartW);
+    _hiLoMark(canvas, loIdx * step + step / 2, yOf(candles[loIdx]['l']!),
+        candles[loIdx]['l']!, markColor, chartW);
+
     // 最新价虚线 + 右轴标签.
     if (lastPrice > 0 && lastPrice >= min && lastPrice <= min + span) {
       final y = yOf(lastPrice);
@@ -1155,6 +1171,31 @@ class _CandlePainter extends CustomPainter {
       _text(canvas, _axisPrice(lastPrice), Offset(chartW + 4, y - 5),
           const Color(0xFF0B0E14), 10,
           bold: true);
+    }
+  }
+
+  /// 极值标记: 从 (x,y) 向左右画 20px 短横线, 外侧跟价格文本 (x 过半屏向左).
+  void _hiLoMark(Canvas canvas, double x, double y, double price, Color color,
+      double chartW) {
+    const lineSize = 20.0;
+    const gap = 5.0;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    final label = _axisPrice(price);
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(color: color, fontSize: 10),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    if (x < chartW / 2) {
+      canvas.drawLine(Offset(x, y), Offset(x + lineSize, y), paint);
+      tp.paint(canvas, Offset(x + lineSize + gap, y - tp.height / 2));
+    } else {
+      canvas.drawLine(Offset(x - lineSize, y), Offset(x, y), paint);
+      tp.paint(canvas, Offset(x - lineSize - gap - tp.width, y - tp.height / 2));
     }
   }
 
