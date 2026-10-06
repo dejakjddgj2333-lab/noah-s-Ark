@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, String
 
 from models.hk import HkBase, utc_now
 
@@ -41,6 +41,13 @@ class HkOrder(HkBase):
     # 结算进度 (Phase 5 结算引擎): 已结算期数 / 下期应结算时点
     settled_periods = Column(Integer, nullable=False, default=0)
     next_settle_at = Column(DateTime, nullable=True, index=True)
+    # 幂等键 (2026-10-06): 双击/超时重试/脚本重放只扣一次款 (唯一索引见 __table_args__)
+    idempotency_key = Column(String(64), nullable=True)
+
+    __table_args__ = (
+        # 幂等键按用户隔离: 同用户同键只生成一单, 跨用户互不影响
+        Index("uq_hk_orders_user_idem", "user_id", "idempotency_key", unique=True),
+    )
 
     @property
     def actual_daily_rate(self) -> Decimal | None:

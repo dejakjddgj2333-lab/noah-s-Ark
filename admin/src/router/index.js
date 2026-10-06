@@ -58,6 +58,12 @@ const routes = [
         meta: { title: '产品管理', icon: 'Goods', perm: 'page:products', group: '运营' },
       },
       {
+        path: 'order/list',
+        name: 'OrderList',
+        component: () => import('@/views/order/list.vue'),
+        meta: { title: '购买订单', icon: 'Tickets', perm: 'page:orders', group: '运营' },
+      },
+      {
         path: 'admins',
         name: 'Admins',
         component: () => import('@/views/admin/admins.vue'),

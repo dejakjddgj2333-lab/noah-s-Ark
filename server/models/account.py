@@ -156,6 +156,29 @@ class HkWithdrawal(HkBase):
     )
 
 
+class HkConvertRecord(HkBase):
+    """收益→本金转化记录 (2026-10-06). 只增不改; 幂等键防网络重试重复扣款.
+
+    单向: 只有收益→本金, 不存在本金→收益.
+    """
+
+    __tablename__ = "hk_convert_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    amount = Column(Numeric(18, 2), nullable=False)  # 转化金额 (收益账户出账全额)
+    service_fee = Column(Numeric(18, 2), nullable=False)  # 服务费 (金额×费率, 截断)
+    arrive_amount = Column(Numeric(18, 2), nullable=False)  # 到账本金 = amount − service_fee
+    idempotency_key = Column(String(64), nullable=True)  # 幂等键 (唯一索引见 __table_args__)
+    created_at = Column(DateTime, default=utc_now)
+
+    __table_args__ = (
+        Index("uq_hk_convert_user_idem", "user_id", "idempotency_key", unique=True),
+    )
+
+
 class HkAdminActionLog(HkBase):
     """后台关键操作审计日志: 谁在何时对什么做了什么 (只增不改)."""
 

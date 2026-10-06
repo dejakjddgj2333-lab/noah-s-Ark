@@ -8,9 +8,15 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from config import config
 from models.account import HkAccount, HkDepositRecord  # noqa: F401 注册元数据
 from models.hk import HkUser
-from services import account_service, auth_service, deposit_service
+from services import (
+    account_service,
+    auth_service,
+    deposit_service,
+    rate_limit_service,
+)
 
 router = APIRouter(prefix="/deposit", tags=["充值"])
 
@@ -92,7 +98,14 @@ async def claim_deposit(
     user: HkUser = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """txid 补单: 链上已转未到账时自助核销 (钱包连接到账也走这里)."""
+    """txid 补单: 链上已转未到账时自助核销 (钱包连接到账也走这里).
+
+    按用户限流 (配置 DEPOSIT_CLAIM_RATE_LIMIT 次/分钟): 每次补单都打
+    TronGrid/Etherscan API, 无效 txid 高频刷会耗光链上查询额度.
+    """
+    rate_limit_service.check(
+        f"deposit_claim:{user.id}", config.deposit_claim_rate_limit, 60
+    )
     return await deposit_service.claim_by_txid(
         db, user.id, data.network, data.txid
     )

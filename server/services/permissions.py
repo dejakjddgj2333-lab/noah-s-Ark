@@ -29,6 +29,9 @@ PERMISSION_TREE: list[dict] = [
         "code": "page:sweep",
         "name": "资金归集",
         "children": [
+            # 拆分两码 (2026-10-06 审计): 改主钱包地址与执行归集不得同人同号,
+            # 否则一个财务账号即可改地址+卷走全部池内资金
+            {"code": "btn:sweep:target", "name": "设置主钱包/阈值"},
             {"code": "btn:sweep:run", "name": "执行归集"},
         ],
     },
@@ -39,6 +42,7 @@ PERMISSION_TREE: list[dict] = [
             {"code": "btn:product:edit", "name": "新建/编辑/上下架"},
         ],
     },
+    {"code": "page:orders", "name": "购买订单", "children": []},
     {
         "code": "page:withdrawals",
         "name": "提现审核",
@@ -88,6 +92,7 @@ BUILTIN_ROLES: list[tuple[str, str, list[str]]] = [
             "btn:user:update",
             "page:products",
             "btn:product:edit",
+            "page:orders",
         ],
     ),
     (
@@ -102,6 +107,7 @@ BUILTIN_ROLES: list[tuple[str, str, list[str]]] = [
             "btn:sweep:run",
             "page:withdrawals",
             "btn:withdrawal:audit",
+            "page:orders",
         ],
     ),
     (

@@ -28,19 +28,19 @@ from services.balance_log_service import log as log_balance
 from services.push_service import push_if_offline
 from services.team_service import truncate_2dp
 
-# 各网络提现参数. network_fee 数值为占位默认值, 待 Phase 0.6 拍板
+# 各网络提现参数. network_fee 走配置 (WITHDRAW_FEE_*, 文档第六节待拍板数值)
 WITHDRAW_NETWORKS: dict[str, dict[str, object]] = {
-    "trc20": {"label": "TRC20 (波场)", "network_fee": Decimal("1")},
-    "erc20": {"label": "ERC20 (以太坊)", "network_fee": Decimal("5")},
-    "bep20": {"label": "BEP20 (BNB Chain)", "network_fee": Decimal("0.3")},
-    "arbitrum": {"label": "Arbitrum", "network_fee": Decimal("0.5")},
+    "trc20": {"label": "TRC20 (波场)", "network_fee": config.withdraw_fee_trc20},
+    "erc20": {"label": "ERC20 (以太坊)", "network_fee": config.withdraw_fee_erc20},
+    "bep20": {"label": "BEP20 (BNB Chain)", "network_fee": config.withdraw_fee_bep20},
+    "arbitrum": {"label": "Arbitrum", "network_fee": config.withdraw_fee_arbitrum},
 }
 
 _EVM_NETWORKS = ("erc20", "bep20", "arbitrum")
 
-# 收益账户提现规则 (文档第六节)
-INCOME_MIN_AMOUNT = Decimal("50")
-INCOME_SERVICE_RATE = Decimal("0.03")
+# 收益账户提现规则 (文档第六节), 数值走配置
+INCOME_MIN_AMOUNT = config.income_min_withdraw
+INCOME_SERVICE_RATE = config.income_service_rate
 
 
 def list_networks() -> list[dict]:

@@ -14,8 +14,10 @@ from config import config
 from database import SessionLocal, engine
 from models.hk import HkBase, HkChatMessage, HkMessageReaction, utc_now
 from routers import (
+    account,
     admin_deposit,
     admin_legal,
+    admin_orders,
     admin_products,
     admin_rbac,
     admin_sweep,
@@ -158,6 +160,7 @@ _MIGRATIONS = [
     ("hk_users", "fund_password_hash", "VARCHAR(128)"),
     ("hk_users", "totp_secret", "VARCHAR(64)"),
     ("hk_users", "anti_phishing_code", "VARCHAR(32)"),
+    ("hk_orders", "idempotency_key", "VARCHAR(64)"),
 ]
 
 
@@ -168,6 +171,8 @@ async def _migrate() -> None:
         "DROP INDEX IF EXISTS uq_hk_withdrawals_idem",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_hk_withdrawals_user_idem "
         "ON hk_withdrawals (user_id, idempotency_key)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_hk_orders_user_idem "
+        "ON hk_orders (user_id, idempotency_key)",
     ]
     # 每条独立事务: PG 单事务内一条失败会中止全部, "列已存在" 会殃及后续新列
     for table, column, col_type in _MIGRATIONS:
@@ -295,6 +300,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 app.include_router(news.router, prefix="/api")
 app.include_router(interaction.router, prefix="/api")
@@ -306,6 +312,7 @@ app.include_router(team.router, prefix="/api")
 app.include_router(settlements.router, prefix="/api")
 app.include_router(withdrawals.router, prefix="/api")
 app.include_router(admin_withdrawals.router, prefix="/api")
+app.include_router(admin_orders.router, prefix="/api")
 app.include_router(admin_products.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
 app.include_router(deposit.router, prefix="/api")

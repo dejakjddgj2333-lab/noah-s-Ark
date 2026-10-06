@@ -25,20 +25,38 @@ RULE_VERSION = "v0.7"
 
 
 async def create_order(
-    db: AsyncSession, user: HkUser, product_id: int, amount: Decimal
+    db: AsyncSession, user: HkUser, product_id: int, amount: Decimal,
+    idempotency_key: str | None = None,
 ) -> HkOrder:
     """下单购买: 与补绑互斥 (防"检查等级/资格"与"写入绑定"竞态绕过, 文档第八节)."""
     async with concurrency.bind_purchase_lock:
-        return await _create_order_locked(db, user, product_id, amount)
+        return await _create_order_locked(
+            db, user, product_id, amount, idempotency_key
+        )
 
 
 async def _create_order_locked(
-    db: AsyncSession, user: HkUser, product_id: int, amount: Decimal
+    db: AsyncSession, user: HkUser, product_id: int, amount: Decimal,
+    idempotency_key: str | None = None,
 ) -> HkOrder:
     """下单购买: 校验产品/金额/等级/余额后扣减本金并生成生效订单.
 
     调用方负责 commit. 行锁防并发超扣 (sqlite 事务串行天然安全).
+    idempotency_key: 可选幂等键 (客户端生成), 双击/超时重试/脚本重放
+    只扣一次款, 直接返回首次订单.
     """
+    if idempotency_key:
+        existing = (
+            await db.execute(
+                select(HkOrder).where(
+                    HkOrder.user_id == user.id,
+                    HkOrder.idempotency_key == idempotency_key,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return existing  # 幂等: 同键重试返回首次订单, 不重复扣款
+
     result = await db.execute(
         select(HkProduct)
         .where(HkProduct.id == product_id)
@@ -96,9 +114,22 @@ async def _create_order_locked(
         next_settle_at=settlement_service.first_settle_at(
             now, product.duration_days, product.return_method
         ),
+        idempotency_key=idempotency_key,
     )
     db.add(order)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # 并发同键 (跨进程绕过了锁): 撤销本次写入, 返回首次订单 (只扣一次)
+        await db.rollback()
+        return (
+            await db.execute(
+                select(HkOrder).where(
+                    HkOrder.user_id == user.id,
+                    HkOrder.idempotency_key == idempotency_key,
+                )
+            )
+        ).scalar_one()
 
     # 本金扣款: 条件原子 UPDATE (余额充足才扣), 行级并发安全 (sqlite/postgres 通用).
     # 不能用"先查余额再减"——并发下所有事务都读到旧余额, 会超扣 (测试已抓到).

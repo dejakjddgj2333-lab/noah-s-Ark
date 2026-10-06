@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../core/l10n.dart';
 import '../core/theme.dart';
@@ -259,6 +260,9 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
   final _amountCtrl = TextEditingController();
   bool _busy = false;
   String? _amountError;
+  // 幂等键: 弹窗打开时生成一次。网络超时后重试沿用同键,
+  // 服务端只扣一次款并返回首次订单 (防双击/重试重复扣款)
+  final _idemKey = const Uuid().v4();
 
   dynamic get _p => widget.product;
 
@@ -322,7 +326,7 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
         // 邀请信息拉取失败不阻塞购买
       }
 
-      await FinanceApi.buy(_p['id'] as int, amount);
+      await FinanceApi.buy(_p['id'] as int, amount, idempotencyKey: _idemKey);
       if (!mounted) return;
       // 成功后先弹提示再关弹层: SnackBar 挂在页面 Scaffold 上, 弹层关闭后可见
       _toast(tr('prod_buy_success'));

@@ -33,10 +33,15 @@ class FinanceApi {
       McApi.get('/api/team/me', token: _token);
 
   // ── 订单 ──────────────────────────────────────────────
-  static Future<Map<String, dynamic>> buy(int productId, String amount) =>
+  static Future<Map<String, dynamic>> buy(int productId, String amount,
+          {String? idempotencyKey}) =>
       McApi.post(
         '/api/orders',
-        {'product_id': productId, 'amount': amount},
+        {
+          'product_id': productId,
+          'amount': amount,
+          if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
+        },
         token: _token,
       );
 
@@ -127,6 +132,16 @@ class FinanceApi {
 
   static Future<List<dynamic>> withdrawals() =>
       McApi.getList('/api/withdrawals', token: _token);
+
+  // ── 收益→本金转化 (只收服务费, 不走链) ──
+  static Future<Map<String, dynamic>> convertQuote(String amount) =>
+      McApi.get('/api/account/convert/quote?amount=$amount', token: _token);
+
+  static Future<Map<String, dynamic>> convert(String amount,
+          {String? idempotencyKey}) =>
+      McApi.post('/api/account/convert',
+          {'amount': amount, if (idempotencyKey != null) 'idempotency_key': idempotencyKey},
+          token: _token);
 }
 
 /// 文案映射 (与后端口径一致).
@@ -161,6 +176,8 @@ class FinLabels {
     'withdraw_request': '提现申请',
     'withdraw_reject': '提现退回',
     'withdraw_approve': '提现通过',
+    'convert_out': '转化出账(收益)',
+    'convert_in': '转化入账(本金)',
   };
 
   static String changeType(dynamic v) =>

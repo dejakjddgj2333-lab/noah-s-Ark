@@ -145,7 +145,7 @@ onMounted(() => {
             </div>
             <div class="net-label">阈值: {{ targets[n.key]?.threshold || '500' }} USDT · gas: {{ n.gas }}</div>
           </div>
-          <el-button v-perm="'btn:sweep:run'" size="small" type="primary" plain @click="openEdit(n.key)">
+          <el-button v-perm="'btn:sweep:target'" size="small" type="primary" plain @click="openEdit(n.key)">
             设置
           </el-button>
         </el-card>

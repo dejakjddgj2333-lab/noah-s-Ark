@@ -117,6 +117,12 @@ class Config:
     email_code_rate_window_sec: int = int(
         os.getenv("EMAIL_CODE_RATE_WINDOW_SEC", "3600")
     )
+    # 购买限流: 同一用户每分钟最大下单数 (防脚本刷单耗尽余额)
+    purchase_rate_limit: int = int(os.getenv("PURCHASE_RATE_LIMIT", "10"))
+    # 补单限流: 同一用户每分钟最大 txid 补单数 (防刷爆链上查询 API 额度)
+    deposit_claim_rate_limit: int = int(
+        os.getenv("DEPOSIT_CLAIM_RATE_LIMIT", "5")
+    )
     # 提现限额 (USDT; 按扣费前申请金额计). 0 = 不限制
     withdraw_max_per_request: Decimal = Decimal(
         os.getenv("WITHDRAW_MAX_PER_REQUEST", "100000")
@@ -125,6 +131,17 @@ class Config:
     withdraw_daily_limit: Decimal = Decimal(
         os.getenv("WITHDRAW_DAILY_LIMIT", "200000")
     )
+    # 收益账户提现规则 (文档第六节): 单笔最低 + 服务费率
+    income_min_withdraw: Decimal = Decimal(os.getenv("INCOME_MIN_WITHDRAW", "50"))
+    income_service_rate: Decimal = Decimal(os.getenv("INCOME_SERVICE_RATE", "0.03"))
+    # 各网络提现网络费 (占位默认值, 文档第六节待拍板)
+    withdraw_fee_trc20: Decimal = Decimal(os.getenv("WITHDRAW_FEE_TRC20", "1"))
+    withdraw_fee_erc20: Decimal = Decimal(os.getenv("WITHDRAW_FEE_ERC20", "5"))
+    withdraw_fee_bep20: Decimal = Decimal(os.getenv("WITHDRAW_FEE_BEP20", "0.3"))
+    withdraw_fee_arbitrum: Decimal = Decimal(os.getenv("WITHDRAW_FEE_ARBITRUM", "0.5"))
+    # 收益→本金转化 (2026-10-06 拍板): 只收服务费, 内部转化不走链不收网络费
+    income_convert_rate: Decimal = Decimal(os.getenv("INCOME_CONVERT_RATE", "0.03"))
+    income_convert_min: Decimal = Decimal(os.getenv("INCOME_CONVERT_MIN", "50"))
 
     # ── APNs 远程推送 (iOS) ──
     apns_enabled: bool = os.getenv("APNS_ENABLED", "false").lower() == "true"

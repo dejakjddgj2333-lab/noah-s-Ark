@@ -9,8 +9,9 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from config import config
 from models.hk import HkUser
-from services import auth_service, order_service
+from services import auth_service, order_service, rate_limit_service
 
 router = APIRouter(prefix="/orders", tags=["订单"])
 
@@ -18,6 +19,8 @@ router = APIRouter(prefix="/orders", tags=["订单"])
 class OrderIn(BaseModel):
     product_id: int
     amount: Decimal
+    # 幂等键 (客户端生成): 双击/超时重试/脚本重放只扣一次款
+    idempotency_key: str | None = None
 
 
 class OrderOut(BaseModel):
@@ -49,8 +52,16 @@ async def buy(
     user: HkUser = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """购买产品: 从本金账户扣款, 扣款成功订单即生效 (拍板: 购买了就成功)."""
-    order = await order_service.create_order(db, user, data.product_id, data.amount)
+    """购买产品: 从本金账户扣款, 扣款成功订单即生效 (拍板: 购买了就成功).
+
+    同幂等键只扣一次; 按用户限流防脚本刷单 (配置 PURCHASE_RATE_LIMIT 次/分钟).
+    """
+    rate_limit_service.check(
+        f"buy:{user.id}", config.purchase_rate_limit, 60
+    )
+    order = await order_service.create_order(
+        db, user, data.product_id, data.amount, data.idempotency_key
+    )
     await db.commit()
     return order
 

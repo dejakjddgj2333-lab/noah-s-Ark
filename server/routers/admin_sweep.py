@@ -34,10 +34,14 @@ class TargetIn(BaseModel):
 @router.put("/targets")
 async def set_target(
     body: TargetIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:sweep:run")),
+    user: HkUser = Depends(admin_service.require_perm("btn:sweep:target")),
     db: AsyncSession = Depends(get_db),
 ):
-    """设置某网络主钱包 + 归集阈值. 地址格式按链校验."""
+    """设置某网络主钱包 + 归集阈值. 地址格式按链校验.
+
+    独立权限码 btn:sweep:target (与执行归集 btn:sweep:run 分离):
+    改地址和动钱不得是同一个权限, 防单账号改地址后卷走池内资金.
+    """
     if body.network not in NETWORKS:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "不支持的网络")
     cfg = NETWORKS[body.network]
