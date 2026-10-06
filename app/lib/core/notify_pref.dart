@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 通知开关偏好 (本地持久化).
-/// 目前仅本地开关; 真正的 APNs 远程推送需后端 device_token 上报 + 推送服务, 待接入.
+import '../services/push_service.dart';
+
+/// 通知开关偏好 (本地持久化) + 绑定真实推送注册/注销.
+/// 任一开关开 = 注册 APNs; 全关 = 注销 device_token.
 class NotifyPref extends ChangeNotifier {
   NotifyPref._();
   static final NotifyPref instance = NotifyPref._();
@@ -12,6 +14,8 @@ class NotifyPref extends ChangeNotifier {
 
   bool market = true; // 行情提醒
   bool notice = true; // 公告通知
+
+  bool get anyEnabled => market || notice;
 
   Future<void> load() async {
     final sp = await SharedPreferences.getInstance();
@@ -26,7 +30,7 @@ class NotifyPref extends ChangeNotifier {
     notifyListeners();
     final sp = await SharedPreferences.getInstance();
     await sp.setBool(_kMarket, v);
-    // TODO(push): 开启时注册 APNs device_token 并上报后端, 关闭时注销.
+    await _syncPush();
   }
 
   Future<void> setNotice(bool v) async {
@@ -35,6 +39,15 @@ class NotifyPref extends ChangeNotifier {
     notifyListeners();
     final sp = await SharedPreferences.getInstance();
     await sp.setBool(_kNotice, v);
-    // TODO(push): 同上, 接 APNs.
+    await _syncPush();
+  }
+
+  /// 开关状态同步到推送注册: 全开→注销, 有开→确保已上报.
+  Future<void> _syncPush() async {
+    if (anyEnabled) {
+      await PushService.instance.onLogin(); // 确保 token 已上报
+    } else {
+      await PushService.instance.unregister();
+    }
   }
 }

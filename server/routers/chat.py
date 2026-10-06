@@ -38,7 +38,7 @@ from models.hk import (
     HkMessageReaction,
     HkUser,
 )
-from services import auth_service
+from services import auth_service, push_service
 from services.chat_ws import chat_ws
 
 router = APIRouter(prefix="/chat", tags=["聊天"])
@@ -437,6 +437,12 @@ async def send_friend_request(
             "type": "friend_request",
             "from_user": {"id": me.id, "username": me.username},
         },
+    )
+    await push_service.push_if_offline(
+        db, data.to_user_id,
+        "新的好友请求",
+        f"{me.nickname or me.username} 请求添加你为好友",
+        {"type": "friend_request"},
     )
     return {"ok": True}
 
@@ -983,6 +989,25 @@ async def send_message(
             "message": jsonable_encoder(out),
         },
     )
+    # 离线成员走 APNs (在线成员 WS 已送达, push_if_offline 内部跳过)
+    _msg_preview = {
+        "image": "[图片]",
+        "audio": "[语音]",
+        "video": "[视频]",
+        "file": "[文件]",
+    }
+    push_title = me.nickname or me.username
+    if data.msg_type == "text":
+        push_body = data.content[:50]
+    else:
+        push_body = _msg_preview.get(data.msg_type, "[新消息]")
+    for uid in member_ids:
+        if uid == me.id:
+            continue
+        await push_service.push_if_offline(
+            db, uid, push_title, push_body,
+            {"type": "chat", "conversation_id": conversation_id},
+        )
     return out
 
 

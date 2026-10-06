@@ -5,11 +5,15 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>需要访问相机以拍摄照片和进行视频通话</string>
+	<string>需要访问相机，用于扫描钱包地址二维码、拍摄头像照片，以及进行音视频通话</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>需要访问相册以选择图片发送或设置为头像</string>
+	<string>需要访问相册，用于选择图片发送给好友或设置为个人头像</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>需要保存图片到相册，用于保存二维码和图片内容</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>需要访问麦克风以发送语音消息和进行音视频通话</string>
+	<string>需要访问麦克风，用于发送语音消息和进行音视频通话</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>需要发送通知，用于及时提醒您新消息、好友请求、行情预警和提现到账</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -55,6 +59,10 @@
 	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -126,6 +126,19 @@ class Config:
         os.getenv("WITHDRAW_DAILY_LIMIT", "200000")
     )
 
+    # ── APNs 远程推送 (iOS) ──
+    apns_enabled: bool = os.getenv("APNS_ENABLED", "false").lower() == "true"
+    apns_key_id: str = os.getenv("APNS_KEY_ID", "")  # APNs key 的 Key ID
+    apns_team_id: str = os.getenv("APNS_TEAM_ID", "")  # Apple Team ID
+    apns_bundle_id: str = os.getenv("APNS_BUNDLE_ID", "com.hkmc.noahsark")
+    # p8 私钥: 文件路径优先, 或直接给文本 (env 多行用 \n)
+    apns_key_path: str = os.getenv("APNS_KEY_PATH", "")
+    apns_key_text: str = os.getenv("APNS_KEY_TEXT", "")
+    # 生产用 api.push.apple.com; 开发/沙盒设 APNS_USE_SANDBOX=true
+    apns_use_sandbox: bool = os.getenv("APNS_USE_SANDBOX", "false").lower() == "true"
+    # 行情预警轮询间隔
+    price_alert_interval_sec: int = int(os.getenv("PRICE_ALERT_INTERVAL_SEC", "30"))
+
 
 def load_config() -> Config:
     cfg = Config()

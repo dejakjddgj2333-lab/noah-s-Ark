@@ -29,7 +29,9 @@ from routers import (
     news,
     orders,
     overview,
+    price_alert,
     products,
+    push,
     settlements,
     team,
     vip,
@@ -112,6 +114,20 @@ async def _news_collect_loop() -> None:
         except Exception:
             logger.exception("news_collect_error")
         await asyncio.sleep(config.news_collect_interval_sec)
+
+
+async def _price_alert_loop() -> None:
+    """行情预警常驻循环: 每 price_alert_interval_sec 扫一次未触发预警."""
+    from services import price_alert_monitor
+
+    while True:
+        try:
+            await price_alert_monitor.check_alerts()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("price_alert_error")
+        await asyncio.sleep(config.price_alert_interval_sec)
 
 
 # hk 表新增列的轻量迁移 (create_all 不会给已存在表加列; 重复执行仅报列已存在, 忽略)
@@ -233,8 +249,14 @@ async def lifespan(app: FastAPI):
         from services import settlement_service
 
         settle_task = asyncio.create_task(settlement_service.run_forever())
+    price_alert_task = asyncio.create_task(_price_alert_loop())
     yield
     retention.cancel()
+    price_alert_task.cancel()
+    try:
+        await price_alert_task
+    except asyncio.CancelledError:
+        pass
     if collector is not None:
         collector.cancel()
         try:
@@ -286,6 +308,8 @@ app.include_router(admin_rbac.router, prefix="/api")
 app.include_router(admin_sweep.router, prefix="/api")
 app.include_router(overview.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(push.router, prefix="/api")
+app.include_router(price_alert.router, prefix="/api")
 
 
 @app.get("/health")

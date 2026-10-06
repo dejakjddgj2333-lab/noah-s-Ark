@@ -33,11 +33,12 @@ jobs:
           ALL: ${{ steps.changes.outputs.all }}
           APITUBE_API_KEY: ${{ secrets.APITUBE_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          APNS_KEY_TEXT: ${{ secrets.APNS_KEY_TEXT }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: BACKEND,ADMIN,ALL,APITUBE_API_KEY,DEEPSEEK_API_KEY
+          envs: BACKEND,ADMIN,ALL,APITUBE_API_KEY,DEEPSEEK_API_KEY,APNS_KEY_TEXT
           script: |
             cd /www/wwwroot/hk/repo
             git fetch origin master
@@ -57,11 +58,12 @@ jobs:
 
             # 敏感 key 从 GitHub Secrets 写入运行目录 (不入库, push protection 拦 sk- 类 key)
             if [ "$BACKEND" = "true" ] || [ "$ALL" = "true" ]; then
-              echo "secrets 长度: APITUBE=${#APITUBE_API_KEY} DEEPSEEK=${#DEEPSEEK_API_KEY}"
+              echo "secrets 长度: APITUBE=${#APITUBE_API_KEY} DEEPSEEK=${#DEEPSEEK_API_KEY} APNS=${#APNS_KEY_TEXT}"
               umask 077
               cat > /www/wwwroot/shipapi.bdxapi.com/.env.secrets <<EOF
             APITUBE_API_KEY=$APITUBE_API_KEY
             DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY
+            APNS_KEY_TEXT=$APNS_KEY_TEXT
             EOF
             fi
 

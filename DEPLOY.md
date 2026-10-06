@@ -34,6 +34,12 @@ Settings → Secrets and variables → Actions，加三个 secret（和 okx 相�
 | `SERVER_HOST` | 服务器 IP/域名 |
 | `SERVER_USER` | SSH 用户名 |
 | `SSH_PRIVATE_KEY` | 能登录服务器的私钥（对应公钥在服务器 authorized_keys） |
+| `APITUBE_API_KEY` | 资讯采集 key（可空） |
+| `DEEPSEEK_API_KEY` | AI key（可空） |
+| `APNS_KEY_TEXT` | iOS 推送 APNs p8 私钥的 **base64 单行**（`base64 -i AuthKey_xxx.p8`） |
+
+> APNs：开关/KeyID/TeamID/BundleID 在 `.env.config`（入库）；p8 私钥只走 `APNS_KEY_TEXT` secret，
+> workflow 写入 `.env.secrets`，`push_service` 自动 base64 解码。改 `APNS_USE_SANDBOX=true` 切沙盒调试。
 
 ## 后台管理系统（暂未开发）
 

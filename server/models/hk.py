@@ -62,6 +62,21 @@ class HkLoginDevice(HkBase):
     last_seen_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
+class HkPushToken(HkBase):
+    """APNs device_token: 每用户多设备, App 启动/登录后上报."""
+
+    __tablename__ = "hk_push_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    token = Column(String(128), unique=True, nullable=False, index=True)  # APNs device token
+    platform = Column(String(16), nullable=False, default="ios")
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
 class HkRole(HkBase):
     """后台角色 (RBAC): perms 为权限码 JSON 数组, ['*']=全部; builtin 角色不可删."""
 
@@ -291,3 +306,19 @@ class HkLiqEvent(HkBase):
     price = Column(Float, nullable=False, default=0)
     qty = Column(Float, nullable=False, default=0)
     notional_usd = Column(Float, nullable=False, default=0)
+
+
+class HkPriceAlert(HkBase):
+    """行情预警: 价格 涨破/跌破 目标值时 APNs 推送, 触发一次后不再重复."""
+
+    __tablename__ = "hk_price_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    symbol = Column(String(32), nullable=False)  # 大写无斜杠, 如 BTC / BTCUSDT
+    direction = Column(String(8), nullable=False)  # up=涨破 / down=跌破
+    target_price = Column(Float, nullable=False)
+    triggered = Column(Boolean, nullable=False, default=False)  # 触发后置 True
+    created_at = Column(DateTime, default=utc_now)

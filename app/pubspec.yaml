@@ -55,6 +55,7 @@ dependencies:
   reown_core: ^1.4.1
   qr_flutter: ^4.1.0
   app_links: ^6.0.0
+  flutter_local_notifications: ^18.0.1
 
 dependency_overrides:
   # reown_sign 锁 ws 2.4/web 0.5, 与 share_plus 13 冲突; ws3 API 兼容其用法

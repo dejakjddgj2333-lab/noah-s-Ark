@@ -13,6 +13,7 @@ import 'totp_page.dart';
 import 'anti_phishing_page.dart';
 import 'devices_page.dart';
 import 'language_page.dart';
+import 'price_alerts_page.dart';
 
 /// 用户中心: 顶部用户卡 + 三个 tab (个人资料 / 安全设置 / 偏好设置).
 class ProfilePage extends StatefulWidget {
@@ -397,6 +398,14 @@ class _ProfilePageState extends State<ProfilePage>
               label: tr('pref_notify_notice'),
               value: NotifyPref.instance.notice,
               onChanged: (v) => NotifyPref.instance.setNotice(v),
+            ),
+            const SizedBox(height: 10),
+            _row(
+              label: tr('pref_price_alert'),
+              value: '',
+              trailing: _chevron(),
+              onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const PriceAlertsPage())),
             ),
           ],
         );

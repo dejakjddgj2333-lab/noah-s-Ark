@@ -36,6 +36,7 @@ import 'services/call_service.dart';
 import 'services/chat_api.dart';
 import 'services/chat_db.dart';
 import 'services/chat_ws.dart';
+import 'services/push_service.dart';
 import 'services/invite_link.dart';
 
 void main() async {
@@ -45,8 +46,13 @@ void main() async {
   await L10n.instance.load(); // 语言选择持久化
   await ColorPref.instance.load(); // 涨跌配色持久化
   await NotifyPref.instance.load(); // 通知开关持久化
+  await PushService.instance.init(); // 本地通知 + APNs token 接收
   // 已登录则启动聊天长连接.
-  if (AuthStore.instance.loggedIn) ChatWs.instance.connect();
+  if (AuthStore.instance.loggedIn) {
+    ChatWs.instance.connect();
+    PushService.instance.setAuthToken(AuthStore.instance.token);
+    PushService.instance.onLogin(); // 补上报 device_token
+  }
   runApp(const MingceApp());
 }
 
@@ -180,10 +186,31 @@ class _McShellState extends State<McShell> {
       _onIncomingCall(e);
       return;
     }
+    // 在线收到聊天消息 → 本地通知 (离线才走 APNs, 由后端 push_if_offline 发).
+    if (e['type'] == 'message') {
+      if (NotifyPref.instance.market || NotifyPref.instance.notice) {
+        final msg = e['message'];
+        final from = msg is Map ? (msg['sender'] ?? msg) : null;
+        final name = from is Map
+            ? (from['nickname'] ?? from['username'] ?? tr('peer_default'))
+            : tr('peer_default');
+        final content = msg is Map ? (msg['content'] ?? '').toString() : '';
+        final msgType = msg is Map ? (msg['msg_type'] ?? 'text').toString() : 'text';
+        final preview = msgType == 'text'
+            ? content
+            : {'image': '[图片]', 'audio': '[语音]', 'video': '[视频]'}[msgType] ??
+                '[新消息]';
+        PushService.instance.showLocal('$name', preview);
+      }
+      return;
+    }
     if (e['type'] != 'friend_request') return;
     final from = e['from_user'];
     final name = from is Map ? (from['username'] ?? tr('peer_default')) : tr('peer_default');
     ChatApi.friendRequestCount.value++;
+    // 好友请求也弹本地通知.
+    PushService.instance.showLocal(
+        tr('friend_request_body').replaceAll('{name}', '$name'), '');
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(

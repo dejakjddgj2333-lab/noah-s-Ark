@@ -25,6 +25,7 @@ from config import config
 from models.account import HkAccount, HkWithdrawal
 from services.account_service import get_or_create_account
 from services.balance_log_service import log as log_balance
+from services.push_service import push_if_offline
 from services.team_service import truncate_2dp
 
 # 各网络提现参数. network_fee 数值为占位默认值, 待 Phase 0.6 拍板
@@ -252,6 +253,11 @@ async def approve(db: AsyncSession, w: HkWithdrawal, txid: str | None) -> None:
         db, w.user_id, w.account, "withdraw_approve", -Decimal(w.amount),
         ref_type="withdrawal", ref_id=w.id,
     )
+    await push_if_offline(
+        db, w.user_id, "提现到账",
+        f"你的提现已到账, 金额 {w.amount} USDT",
+        {"type": "withdraw"},
+    )
 
 
 async def reject(db: AsyncSession, w: HkWithdrawal, remark: str | None) -> None:
@@ -284,6 +290,11 @@ async def reject(db: AsyncSession, w: HkWithdrawal, remark: str | None) -> None:
     await log_balance(
         db, w.user_id, w.account, "withdraw_reject", refund,
         ref_type="withdrawal", ref_id=w.id,
+    )
+    await push_if_offline(
+        db, w.user_id, "提现未通过",
+        "你的提现申请未通过, 金额已退回" + (f", 原因: {remark}" if remark else ""),
+        {"type": "withdraw"},
     )
 
 

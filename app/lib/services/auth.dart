@@ -8,6 +8,7 @@ import 'api.dart';
 import 'chat_api.dart';
 import 'chat_db.dart';
 import 'chat_ws.dart';
+import 'push_service.dart';
 
 /// 登录状态: token + 用户信息, 持久化到 SharedPreferences.
 class AuthStore extends ChangeNotifier {
@@ -277,9 +278,15 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
     // 登录/注册成功后启动聊天长连接.
     ChatWs.instance.connect();
+    // 注入登录 token 并上报 APNs device_token (登录前可能已拿到 token).
+    PushService.instance.setAuthToken(token);
+    PushService.instance.onLogin();
   }
 
   Future<void> logout() async {
+    // 登出前注销推送 token (需还带着旧 token 调接口).
+    await PushService.instance.unregister();
+    PushService.instance.setAuthToken(null);
     token = null;
     userId = null;
     username = null;
