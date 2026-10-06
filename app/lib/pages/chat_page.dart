@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/chat_api.dart';
@@ -151,7 +152,7 @@ class _ChatPageState extends State<ChatPage> {
           _syncUnreadBadge();
         });
         ChatDb.clearConversation(convId is int ? convId : 0);
-        _toast('你已被移出群聊');
+        _toast(tr('chat_removed_from_group'));
         return;
       }
       // 他人被移出 -> 成员数 -1.
@@ -271,22 +272,22 @@ class _ChatPageState extends State<ChatPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainerLow,
-        title: Text(isGroup ? '退出群聊' : '删除会话',
+        title: Text(isGroup ? tr('chat_leave_group') : tr('chat_delete_conversation'),
             style: McText.sans(size: 15, weight: FontWeight.w700)),
         content: Text(
-          isGroup ? '退出后将不再接收该群消息' : '删除后聊天记录将从列表隐藏',
+          isGroup ? tr('chat_leave_group_hint') : tr('chat_delete_conversation_hint'),
           style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('取消',
+            child: Text(tr('cancel'),
                 style: McText.sans(color: McColors.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child:
-                Text('确定', style: McText.sans(color: McColors.bear)),
+                Text(tr('confirm'), style: McText.sans(color: McColors.bear)),
           ),
         ],
       ),
@@ -302,7 +303,7 @@ class _ChatPageState extends State<ChatPage> {
       // 删除/退群同时清空本地消息缓存.
       ChatDb.clearConversation(c.id);
     } catch (_) {
-      _toast(isGroup ? '退群失败' : '删除失败');
+      _toast(isGroup ? tr('chat_leave_failed') : tr('chat_delete_failed'));
     }
   }
 
@@ -342,7 +343,7 @@ class _ChatPageState extends State<ChatPage> {
       padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
       child: Row(
         children: [
-          Text('聊天', style: McText.display(size: 18, weight: FontWeight.w700)),
+          Text(tr('nav_chat'), style: McText.display(size: 18, weight: FontWeight.w700)),
           const Spacer(),
           // 新朋友 (好友请求角标, 全局 notifier 驱动).
           ValueListenableBuilder<int>(
@@ -420,7 +421,7 @@ class _ChatPageState extends State<ChatPage> {
           decoration: InputDecoration(
             icon: const Icon(Icons.search,
                 size: 18, color: McColors.onSurfaceVariant),
-            hintText: '搜索会话',
+            hintText: tr('chat_search_hint'),
             hintStyle:
                 McText.sans(size: 13, color: McColors.onSurfaceVariant),
             border: InputBorder.none,
@@ -433,7 +434,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildTabs() {
-    const tabs = ['全部', '私聊', '群聊'];
+    final tabs = [tr('chat_tab_all'), tr('chat_tab_private'), tr('chat_tab_group')];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
@@ -482,7 +483,7 @@ class _ChatPageState extends State<ChatPage> {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Row(
         children: [
-          Text('会话',
+          Text(tr('chat_section_conversations'),
               style: McText.sans(
                   size: 12,
                   weight: FontWeight.w600,
@@ -490,7 +491,7 @@ class _ChatPageState extends State<ChatPage> {
                   letterSpacing: 0.4)),
           const Spacer(),
           if (_onlineIds.isNotEmpty)
-            Text('${_onlineIds.length} 位好友在线',
+            Text(tr('chat_friends_online').replaceAll('{n}', '${_onlineIds.length}'),
                 style: McText.sans(size: 12, color: McColors.outline)),
         ],
       ),
@@ -518,7 +519,7 @@ class _ChatPageState extends State<ChatPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             const SizedBox(height: 120),
-            _empty('暂无会话, 去添加好友聊聊吧', retry: true),
+            _empty(tr('chat_empty'), retry: true),
           ],
         ),
       );
@@ -533,7 +534,7 @@ class _ChatPageState extends State<ChatPage> {
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 const SizedBox(height: 120),
-                _empty(_search.text.isEmpty ? '暂无会话, 去添加好友聊聊吧' : '没有匹配的会话'),
+                _empty(_search.text.isEmpty ? tr('chat_empty') : tr('chat_no_match')),
               ],
             )
           : ListView.separated(
@@ -626,7 +627,7 @@ class _ChatPageState extends State<ChatPage> {
             Border.all(color: McColors.primarySoft.withValues(alpha: 0.28)),
       ),
       child: Text(
-        '群组 ${_fmtCount(memberCount)}',
+        tr('chat_group_pill').replaceAll('{n}', _fmtCount(memberCount)),
         style: McText.sans(
             size: 12, weight: FontWeight.w500, color: McColors.primarySoft),
       ),
@@ -637,14 +638,14 @@ class _ChatPageState extends State<ChatPage> {
   Widget _preview(Conversation c) {
     final last = c.lastMessage;
     if (last == null) {
-      return Text('暂无消息',
+      return Text(tr('chat_no_message'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: McText.sans(size: 12, color: McColors.onSurfaceVariant));
     }
     final base = McText.sans(size: 12, color: McColors.onSurfaceVariant);
     final prefix = last.isMine
-        ? '我: '
+        ? tr('chat_prefix_me')
         : (c.isGroup && last.senderName.isNotEmpty
             ? '${last.senderName}: '
             : '');
@@ -784,7 +785,7 @@ class _ChatPageState extends State<ChatPage> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: McColors.outlineVariant),
               ),
-              child: Text('重新加载',
+              child: Text(tr('chat_reload'),
                   style: McText.sans(size: 12, color: McColors.primarySoft)),
             ),
           ),

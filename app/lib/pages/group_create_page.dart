@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/chat_api.dart';
 
@@ -59,11 +60,11 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
   Future<void> _create() async {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      _toast('请输入群名称');
+      _toast(tr('grp_enter_name'));
       return;
     }
     if (_selected.isEmpty) {
-      _toast('请选择至少一位成员');
+      _toast(tr('grp_select_member'));
       return;
     }
     setState(() => _creating = true);
@@ -74,7 +75,7 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _creating = false);
-      _toast('创建失败');
+      _toast(tr('grp_create_failed'));
     }
   }
 
@@ -87,7 +88,7 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: McColors.onSurface),
-        title: Text('发起群聊',
+        title: Text(tr('grp_create_title'),
             style: McText.sans(size: 16, weight: FontWeight.w700)),
         actions: [
           Padding(
@@ -101,7 +102,7 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: McColors.primarySoft),
                     )
-                  : Text('创建',
+                  : Text(tr('grp_create'),
                       style: McText.sans(
                           size: 14,
                           weight: FontWeight.w700,
@@ -128,7 +129,7 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
                 decoration: InputDecoration(
                   icon: const Icon(Icons.group_outlined,
                       size: 18, color: McColors.onSurfaceVariant),
-                  hintText: '群名称',
+                  hintText: tr('grp_name_hint'),
                   hintStyle:
                       McText.sans(size: 14, color: McColors.onSurfaceVariant),
                   border: InputBorder.none,
@@ -142,11 +143,11 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
             child: Row(
               children: [
-                Text('选择成员',
+                Text(tr('grp_select_members'),
                     style:
                         McText.mono(size: 12, color: McColors.onSurfaceVariant)),
                 const Spacer(),
-                Text('已选 ${_selected.length}',
+                Text(tr('grp_selected').replaceAll('{n}', '${_selected.length}'),
                     style:
                         McText.mono(size: 12, color: McColors.primarySoft)),
               ],
@@ -171,7 +172,7 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
     }
     if (_friends.isEmpty) {
       return Center(
-        child: Text('暂无好友可选',
+        child: Text(tr('grp_no_friends'),
             style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
       );
     }

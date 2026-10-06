@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
@@ -50,7 +51,7 @@ class _TeamPageState extends State<TeamPage> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -77,7 +78,7 @@ class _TeamPageState extends State<TeamPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('我的团队', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('team_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
       body: _busy && _info == null
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -108,12 +109,12 @@ class _TeamPageState extends State<TeamPage> {
                       children: [
                         Row(
                           children: [
-                            Text('$lv 级',
+                            Text(tr('team_level_num').replaceAll('{n}', '$lv'),
                                 style: McText.display(size: 32, weight: FontWeight.w700, color: Colors.white)),
                             const SizedBox(width: 10),
                             Padding(
                               padding: const EdgeInsets.only(top: 10),
-                              child: Text('团队等级',
+                              child: Text(tr('team_level_label'),
                                   style: McText.sans(size: 12, color: Colors.white.withValues(alpha: 0.85))),
                             ),
                           ],
@@ -125,9 +126,9 @@ class _TeamPageState extends State<TeamPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('$members 人',
+                                  Text(tr('team_members_num').replaceAll('{n}', '$members'),
                                       style: McText.mono(size: 18, weight: FontWeight.w700, color: Colors.white)),
-                                  Text('三代内有效成员',
+                                  Text(tr('team_members_label'),
                                       style: McText.sans(size: 11, color: Colors.white.withValues(alpha: 0.8))),
                                 ],
                               ),
@@ -138,7 +139,7 @@ class _TeamPageState extends State<TeamPage> {
                                 children: [
                                   Text(holding.toStringAsFixed(2),
                                       style: McText.mono(size: 18, weight: FontWeight.w700, color: Colors.white)),
-                                  Text('团队有效持仓 (USDT)',
+                                  Text(tr('team_holding_label'),
                                       style: McText.sans(size: 11, color: Colors.white.withValues(alpha: 0.8))),
                                 ],
                               ),
@@ -148,7 +149,7 @@ class _TeamPageState extends State<TeamPage> {
                         const SizedBox(height: 14),
                         Row(
                           children: [
-                            for (final (label, v) in [('一代', g1), ('二代', g2), ('三代', g3)]) ...[
+                            for (final (label, v) in [(tr('comm_gen1'), g1), (tr('comm_gen2'), g2), (tr('comm_gen3'), g3)]) ...[
                               Expanded(
                                 child: Container(
                                   margin: const EdgeInsets.only(right: 8),
@@ -163,7 +164,7 @@ class _TeamPageState extends State<TeamPage> {
                                         v == null ? '—' : '${(FinanceApi.d(v) * 100).toStringAsFixed(1)}%',
                                         style: McText.display(size: 15, weight: FontWeight.w700, color: Colors.white),
                                       ),
-                                      Text('$label返佣', style: McText.sans(size: 10, color: Colors.white.withValues(alpha: 0.8))),
+                                      Text(tr('comm_gen_rebate').replaceAll('{label}', label), style: McText.sans(size: 10, color: Colors.white.withValues(alpha: 0.8))),
                                     ],
                                   ),
                                 ),
@@ -174,19 +175,22 @@ class _TeamPageState extends State<TeamPage> {
                         if (nextLv != null) ...[
                           const SizedBox(height: 12),
                           Text(
-                            '距 $nextLv 级: 还差 ${memberGap ?? 0} 名有效成员、${FinanceApi.d(holdingGap).toStringAsFixed(0)} USDT 团队持仓 (人数与金额需同时达标)',
+                            tr('team_to_next')
+                                .replaceAll('{next}', '$nextLv')
+                                .replaceAll('{member_gap}', '${memberGap ?? 0}')
+                                .replaceAll('{holding_gap}', FinanceApi.d(holdingGap).toStringAsFixed(0)),
                             style: McText.sans(size: 11, color: Colors.white.withValues(alpha: 0.85), height: 1.5),
                           ),
                         ] else ...[
                           const SizedBox(height: 12),
-                          Text('已达最高团队等级',
+                          Text(tr('team_max_level'),
                               style: McText.sans(size: 11, color: Colors.white.withValues(alpha: 0.85))),
                         ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text('团队等级规则 (人数与持仓同时达标取最高级)', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+                  Text(tr('team_rules_title'), style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
@@ -206,7 +210,7 @@ class _TeamPageState extends State<TeamPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '说明: 仅统计下级第一、二、三代; 有效成员 = 同一成员当前全部有效产品合计 ≥300 USDT 计 1 人 (多笔合并), 不足 300 不计人数但金额计入团队总额; 返佣 = 下线每期结算收益 × 对应比例, 按结算时点您的团队等级取值; 0 级仅一代 5%, 无资格份额不发放、不越级转移。',
+                    tr('team_note'),
                     style: McText.sans(size: 11, color: McColors.onSurfaceVariant, height: 1.6),
                   ),
                 ],
@@ -226,7 +230,7 @@ class _TeamPageState extends State<TeamPage> {
         children: [
           SizedBox(
             width: 40,
-            child: Text('$lv级',
+            child: Text(tr('team_level_num').replaceAll('{n}', '$lv'),
                 style: McText.display(
                   size: 13,
                   weight: isCurrent ? FontWeight.w700 : FontWeight.w500,
@@ -235,7 +239,7 @@ class _TeamPageState extends State<TeamPage> {
           ),
           Expanded(
             flex: 3,
-            child: Text('$members 人 / ≥$holding',
+            child: Text(tr('team_row_req').replaceAll('{members}', '$members').replaceAll('{holding}', '$holding'),
                 style: McText.mono(size: 11, color: McColors.onSurfaceVariant)),
           ),
           Expanded(

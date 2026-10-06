@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
@@ -49,7 +50,7 @@ class _VipPageState extends State<VipPage> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -73,7 +74,7 @@ class _VipPageState extends State<VipPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('我的 VIP', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('vip_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
       body: _busy && _info == null
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -110,7 +111,7 @@ class _VipPageState extends State<VipPage> {
                             const SizedBox(width: 12),
                             Padding(
                               padding: const EdgeInsets.only(bottom: 6),
-                              child: Text('收益加成 ${(bonus * 100).toStringAsFixed(0)}%',
+                              child: Text(tr('vip_bonus').replaceAll('{n}', (bonus * 100).toStringAsFixed(0)),
                                   style: McText.sans(size: 13, color: Colors.white.withValues(alpha: 0.9))),
                             ),
                           ],
@@ -124,7 +125,7 @@ class _VipPageState extends State<VipPage> {
                                 children: [
                                   Text(holding.toStringAsFixed(2),
                                       style: McText.mono(size: 18, weight: FontWeight.w700, color: Colors.white)),
-                                  Text('当前有效持仓 (USDT)',
+                                  Text(tr('vip_holding'),
                                       style: McText.sans(size: 11, color: Colors.white.withValues(alpha: 0.8))),
                                 ],
                               ),
@@ -134,11 +135,11 @@ class _VipPageState extends State<VipPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    gapVal == null ? '已满级' : '${gapVal.toStringAsFixed(0)} USDT',
+                                    gapVal == null ? tr('vip_max_level') : '${gapVal.toStringAsFixed(0)} USDT',
                                     style: McText.mono(size: 18, weight: FontWeight.w700, color: Colors.white),
                                   ),
                                   Text(
-                                    gapVal == null ? '恭喜达到最高等级' : '距 VIP$nextLv 还需',
+                                    gapVal == null ? tr('vip_max_congrats') : tr('vip_to_next').replaceAll('{n}', '$nextLv'),
                                     style: McText.sans(size: 11, color: Colors.white.withValues(alpha: 0.8)),
                                   ),
                                 ],
@@ -162,7 +163,7 @@ class _VipPageState extends State<VipPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text('等级规则 (购买时按生效前持仓定级锁定加成)',
+                  Text(tr('vip_rules_title'),
                       style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
                   const SizedBox(height: 8),
                   Container(
@@ -183,7 +184,7 @@ class _VipPageState extends State<VipPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '说明: 有效持仓 = 所有生效中且未到期的订单金额合计; 到期自动跌出持仓并即时重算等级; 已生效订单的加成本笔购买时锁定, 不受后续升降级影响。',
+                    tr('vip_note'),
                     style: McText.sans(size: 11, color: McColors.onSurfaceVariant, height: 1.6),
                   ),
                 ],
@@ -211,12 +212,12 @@ class _VipPageState extends State<VipPage> {
           ),
           Expanded(
             child: Text(
-              lv == 0 ? '任意持仓' : '持仓 ≥ ${threshold.toStringAsFixed(0)}',
+              lv == 0 ? tr('vip_any_holding') : tr('vip_holding_ge').replaceAll('{n}', threshold.toStringAsFixed(0)),
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
             ),
           ),
           Text(
-            lv == 0 ? '无加成' : '收益 +${(bonus * 100).toStringAsFixed(0)}%',
+            lv == 0 ? tr('vip_no_bonus') : tr('vip_bonus_pct').replaceAll('{n}', (bonus * 100).toStringAsFixed(0)),
             style: McText.mono(
               size: 12,
               weight: isCurrent ? FontWeight.w700 : FontWeight.w400,
@@ -231,7 +232,7 @@ class _VipPageState extends State<VipPage> {
                 color: McColors.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
-              child: Text('当前', style: McText.sans(size: 10, color: McColors.primarySoft)),
+              child: Text(tr('vip_current'), style: McText.sans(size: 10, color: McColors.primarySoft)),
             ),
           ],
         ],

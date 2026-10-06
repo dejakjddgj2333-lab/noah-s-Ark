@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -40,15 +41,16 @@ class _NewsPageState extends State<NewsPage> {
   bool _endReached = false;
   static const int _pageSize = 20;
   final ScrollController _scroll = ScrollController();
+  String _loadedLang = ''; // 已加载资讯的语言, 语言切换时触发重载
 
   // 行业政策关键词 (后端 keyword 支持逗号分隔 OR)
   static const String _policyKeyword = '监管,政策,SEC,法案,央行,合规';
 
-  // 分类 tab: 标签 → 后端 category (资讯/快讯/公告)
+  // 分类 tab: 标签 → 后端 category (资讯/快讯/公告). 标签用 tr, category 值不动.
   static const List<(String, String)> _categories = [
-    ('资讯', 'news'),
-    ('快讯', 'flash'),
-    ('公告', 'notice'),
+    ('news', 'news'),
+    ('flash', 'flash'),
+    ('notice', 'notice'),
   ];
 
   // 自动流送: 60s 静默拉新 (不触发 loading 闪烁).
@@ -205,25 +207,40 @@ class _NewsPageState extends State<NewsPage> {
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(d.year, d.month, d.day);
     final diff = today.difference(day).inDays;
-    if (diff <= 0) return '今天';
-    if (diff == 1) return '昨天';
+    if (diff <= 0) return tr('news_today');
+    if (diff == 1) return tr('news_yesterday');
     return '${d.month}-${d.day}';
   }
 
-  /// Category → Chinese tag label.
+  /// Category → tag label.
   String _categoryLabel(String category) {
     switch (category) {
       case 'flash':
-        return '快讯';
+        return tr('flash');
       case 'notice':
-        return '公告';
+        return tr('notice');
       default:
-        return '资讯';
+        return tr('news');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 语言切换 → 重新拉取对应语种的资讯.
+    return ListenableBuilder(
+      listenable: L10n.instance,
+      builder: (context, _) {
+        final lang = L10n.instance.code;
+        if (lang != _loadedLang) {
+          _loadedLang = lang;
+          WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+        }
+        return _buildBody(context);
+      },
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     return RefreshIndicator(
       onRefresh: _load,
       color: NewsPage._gold,
@@ -259,7 +276,7 @@ class _NewsPageState extends State<NewsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 6),
         children: [
           for (final (label, cat) in _categories)
-            _categoryChip(label, cat,
+            _categoryChip(tr(label), cat,
                 active: _keyword == null && _category == cat),
           _policyChip(),
         ],
@@ -307,7 +324,7 @@ class _NewsPageState extends State<NewsPage> {
               const SizedBox(width: 5),
             ],
             Text(
-              '政策',
+              tr('news_policy'),
               style: McText.mono(
                 size: 12,
                 weight: active ? FontWeight.w700 : FontWeight.w600,
@@ -364,7 +381,7 @@ class _NewsPageState extends State<NewsPage> {
     if (_endReached) {
       return Center(
         child: Text(
-          '没有更多了',
+          tr('news_no_more'),
           style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
         ),
       );
@@ -388,7 +405,7 @@ class _NewsPageState extends State<NewsPage> {
                       strokeWidth: 2, color: NewsPage._goldBright),
                 )
               : Text(
-                  '加载更多',
+                  tr('news_load_more'),
                   style: McText.mono(
                       size: 12,
                       weight: FontWeight.w600,
@@ -420,7 +437,7 @@ class _NewsPageState extends State<NewsPage> {
       child: Column(
         children: [
           Text(
-            _error ? '加载失败' : '暂无数据',
+            _error ? tr('news_load_failed') : tr('no_data'),
             style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
           ),
           const SizedBox(height: 10),
@@ -433,7 +450,7 @@ class _NewsPageState extends State<NewsPage> {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                _error ? '重试' : '刷新',
+                _error ? tr('news_retry') : tr('news_refresh'),
                 style: McText.mono(
                     size: 12,
                     weight: FontWeight.w700,
@@ -485,7 +502,7 @@ class _NewsPageState extends State<NewsPage> {
                 Row(
                   children: [
                     Text(
-                      '突发头条',
+                      tr('news_breaking'),
                       style: McText.mono(
                           size: 12,
                           weight: FontWeight.w700,
@@ -529,10 +546,14 @@ class _NewsPageState extends State<NewsPage> {
 
   String _relativeTime(DateTime utc) {
     final diff = DateTime.now().difference(utc.toLocal());
-    if (diff.isNegative || diff.inMinutes < 1) return '刚刚';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
-    if (diff.inHours < 24) return '${diff.inHours}小时前';
-    return '${diff.inDays}天前';
+    if (diff.isNegative || diff.inMinutes < 1) return tr('time_just_now');
+    if (diff.inMinutes < 60) {
+      return tr('time_minutes_ago').replaceAll('{n}', '${diff.inMinutes}');
+    }
+    if (diff.inHours < 24) {
+      return tr('time_hours_ago').replaceAll('{n}', '${diff.inHours}');
+    }
+    return tr('time_days_ago').replaceAll('{n}', '${diff.inDays}');
   }
 
   // Terminal sub-navigation tabs
@@ -542,12 +563,12 @@ class _NewsPageState extends State<NewsPage> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _tab(Icons.rss_feed, '7×24 快讯',
+          _tab(Icons.rss_feed, tr('news_flash_24'),
               active: _keyword == null && _category == 'flash',
               ping: true,
               onTap: () => _selectCategory('flash')),
-          _tab(Icons.calendar_today, '宏观日历', onTap: _openCalendar),
-          _tab(Icons.gavel, '行业政策',
+          _tab(Icons.calendar_today, tr('cal_title'), onTap: _openCalendar),
+          _tab(Icons.gavel, tr('news_policy'),
               active: _keyword != null, onTap: _applyPolicyFilter),
         ],
       ),
@@ -622,7 +643,7 @@ class _NewsPageState extends State<NewsPage> {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    '/ 自动流送中',
+                    tr('news_streaming'),
                     style: McText.mono(size: 12, color: NewsPage._onSurfaceVariant),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -675,8 +696,8 @@ class _NewsPageState extends State<NewsPage> {
 
     // 情绪标签: 后端 NLP 分类 (positive/negative/其它), 真实展示不编百分比.
     final sentimentTag = switch (item.sentiment) {
-      'positive' => _Tag('利好', bg: const Color(0x3300E388), fg: NewsPage._greenText),
-      'negative' => _Tag('利空', bg: const Color(0x33FF6B6B), fg: NewsPage._error),
+      'positive' => _Tag(tr('news_bullish'), bg: const Color(0x3300E388), fg: NewsPage._greenText),
+      'negative' => _Tag(tr('news_bearish'), bg: const Color(0x33FF6B6B), fg: NewsPage._error),
       _ => null,
     };
 
@@ -703,7 +724,7 @@ class _NewsPageState extends State<NewsPage> {
         body: item.summary.isNotEmpty ? item.summary : item.content,
         dayLabel: _dayLabel(item.publishAt),
         views: views,
-        actionLabel: '查看详情',
+        actionLabel: tr('news_view_detail'),
         actionIcon: Icons.arrow_outward,
         actionColor: node,
         isLast: index == _flash.length - 1,

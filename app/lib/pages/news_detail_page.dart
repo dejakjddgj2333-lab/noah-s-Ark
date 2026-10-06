@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -131,7 +132,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _state = prev); // 回滚
-      _toast('操作失败, 请重试');
+      _toast(tr('news_op_failed'));
     }
   }
 
@@ -147,11 +148,11 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       setState(() {
         _state = _state.copyWith(favoritedByMe: favorited);
       });
-      _toast(favorited ? '已收藏' : '已取消收藏');
+      _toast(favorited ? tr('news_favorited') : tr('news_unfavorited'));
     } catch (_) {
       if (!mounted) return;
       setState(() => _state = prev);
-      _toast('操作失败, 请重试');
+      _toast(tr('news_op_failed'));
     }
   }
 
@@ -258,13 +259,13 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         _sending = false;
       });
       _composerFocus.unfocus();
-      _toast('评论已发布');
+      _toast(tr('news_comment_published'));
       await _loadComments(reset: true);
       await _refreshState();
     } catch (_) {
       if (!mounted) return;
       setState(() => _sending = false);
-      _toast('发布失败, 请重试');
+      _toast(tr('news_publish_failed'));
     }
   }
 
@@ -273,17 +274,17 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainer,
-        title: Text('删除评论', style: McText.sans(size: 15, weight: FontWeight.w600)),
-        content: Text('确定删除这条评论吗?',
+        title: Text(tr('news_delete_comment'), style: McText.sans(size: 15, weight: FontWeight.w600)),
+        content: Text(tr('news_delete_comment_hint'),
             style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('取消', style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
+            child: Text(tr('cancel'), style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('删除', style: McText.sans(size: 13, color: McColors.bear)),
+            child: Text(tr('delete'), style: McText.sans(size: 13, color: McColors.bear)),
           ),
         ],
       ),
@@ -292,12 +293,12 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     try {
       await McInteraction.deleteComment(c.id);
       if (!mounted) return;
-      _toast('已删除');
+      _toast(tr('news_deleted'));
       await _loadComments(reset: true);
       await _refreshState();
     } catch (_) {
       if (!mounted) return;
-      _toast('删除失败');
+      _toast(tr('news_delete_failed'));
     }
   }
 
@@ -327,14 +328,14 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   Future<void> _openSource(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) {
-      _toast('链接无效');
+      _toast(tr('news_link_invalid'));
       return;
     }
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok) _toast('无法打开链接');
+      if (!ok) _toast(tr('news_link_cannot_open'));
     } catch (_) {
-      _toast('无法打开链接');
+      _toast(tr('news_link_cannot_open'));
     }
   }
 
@@ -343,22 +344,22 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   String _categoryLabel(String category) {
     switch (category) {
       case 'flash':
-        return '快讯';
+        return tr('flash');
       case 'notice':
-        return '公告';
+        return tr('notice');
       case 'research':
-        return '研报';
+        return tr('news_research');
       default:
-        return '资讯';
+        return tr('news');
     }
   }
 
   String _fmtTime(DateTime utc) {
     final local = utc.toLocal();
     final diff = DateTime.now().difference(local);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
-    if (diff.inHours < 24) return '${diff.inHours}小时前';
+    if (diff.inMinutes < 1) return tr('time_just_now');
+    if (diff.inMinutes < 60) return tr('time_minutes_ago').replaceAll('{n}', '${diff.inMinutes}');
+    if (diff.inHours < 24) return tr('time_hours_ago').replaceAll('{n}', '${diff.inHours}');
     final y = local.year.toString().padLeft(4, '0');
     final mo = local.month.toString().padLeft(2, '0');
     final d = local.day.toString().padLeft(2, '0');
@@ -380,7 +381,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               size: 20, color: McColors.onSurface),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: Text('资讯详情',
+        title: Text(tr('news_detail_title'),
             style: McText.sans(size: 15, weight: FontWeight.w600)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -543,7 +544,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         .toList();
     if (paras.isEmpty) {
       return [
-        Text('暂无正文内容',
+        Text(tr('news_no_content'),
             style: McText.sans(size: 14, color: McColors.onSurfaceVariant)),
       ];
     }
@@ -582,7 +583,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '查看原文',
+                  tr('news_view_original'),
                   style: McText.sans(size: 14, weight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
@@ -631,7 +632,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               icon: state.likedByMe
                   ? Icons.thumb_up
                   : Icons.thumb_up_outlined,
-              label: '点赞',
+              label: tr('news_like'),
               count: state.likeCount,
               color: state.likedByMe
                   ? McColors.primarySoft
@@ -641,14 +642,14 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
             ),
             _barAction(
               icon: Icons.mode_comment_outlined,
-              label: '评论',
+              label: tr('news_comment'),
               count: state.commentCount,
               color: McColors.onSurfaceVariant,
               onTap: _onCommentTap,
             ),
             _barAction(
               icon: state.favoritedByMe ? Icons.star : Icons.star_border,
-              label: '收藏',
+              label: tr('news_favorite'),
               color: state.favoritedByMe
                   ? McColors.goldBright
                   : McColors.onSurfaceVariant,
@@ -657,7 +658,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
             ),
             _barAction(
               icon: Icons.share_outlined,
-              label: '分享',
+              label: tr('news_share'),
               count: item.shareCount,
               color: McColors.onSurfaceVariant,
               onTap: () => SharePlus.instance.share(
@@ -730,7 +731,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
             ),
             const SizedBox(width: 8),
             Text(
-              '评论 ${_stateLoaded ? _state.commentCount : _commentsTotal}',
+              '${tr('news_comment')} ${_stateLoaded ? _state.commentCount : _commentsTotal}',
               style: McText.sans(size: 15, weight: FontWeight.w700),
             ),
           ],
@@ -759,7 +760,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           ),
           alignment: Alignment.center,
           child: Text(
-            '登录后参与评论',
+            tr('news_login_to_comment'),
             style: McText.sans(
                 size: 13,
                 weight: FontWeight.w600,
@@ -779,7 +780,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               children: [
                 Flexible(
                   child: Text(
-                    '回复 @${_replyTo!.username}',
+                    tr('news_reply_to').replaceAll('{name}', _replyTo!.username),
                     style: McText.mono(size: 12, color: McColors.primarySoft),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -813,8 +814,8 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                   style: McText.sans(size: 13),
                   decoration: InputDecoration(
                     hintText: _replyTo != null
-                        ? '回复 @${_replyTo!.username}...'
-                        : '写下你的看法...',
+                        ? tr('news_reply_hint').replaceAll('{name}', _replyTo!.username)
+                        : tr('news_comment_hint'),
                     hintStyle:
                         McText.sans(size: 13, color: McColors.onSurfaceVariant),
                     border: InputBorder.none,
@@ -842,7 +843,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                               strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          '发送',
+                          tr('news_send'),
                           style: McText.mono(
                               size: 12,
                               weight: FontWeight.w700,
@@ -878,7 +879,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Center(
-          child: Text('暂无评论, 来抢沙发',
+          child: Text(tr('news_no_comments'),
               style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
         ),
       );
@@ -909,7 +910,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                             strokeWidth: 2, color: McColors.primarySoft),
                       )
                     : Text(
-                        '加载更多',
+                        tr('news_load_more'),
                         style: McText.mono(
                             size: 12,
                             weight: FontWeight.w600,
@@ -935,7 +936,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         children: [
           const Icon(Icons.refresh, size: 14, color: McColors.primarySoft),
           const SizedBox(width: 4),
-          Text('评论加载失败, 点击重试',
+          Text(tr('news_comments_failed_retry'),
               style: McText.sans(size: 12, color: McColors.primarySoft)),
         ],
       ),
@@ -961,7 +962,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                   children: [
                     Flexible(
                       child: Text(
-                        c.username.isEmpty ? '匿名用户' : c.username,
+                        c.username.isEmpty ? tr('news_anonymous') : c.username,
                         style: McText.sans(
                             size: 13,
                             weight: FontWeight.w600,
@@ -990,7 +991,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                     GestureDetector(
                       onTap: () => _setReplyTo(c),
                       child: Text(
-                        '回复',
+                        tr('news_reply'),
                         style: McText.sans(
                             size: 12,
                             weight: FontWeight.w600,
@@ -1002,7 +1003,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                       GestureDetector(
                         onTap: () => _deleteComment(c),
                         child: Text(
-                          '删除',
+                          tr('delete'),
                           style: McText.sans(
                               size: 12,
                               weight: FontWeight.w600,
@@ -1021,8 +1022,8 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                       children: [
                         Text(
                           _expanded.contains(c.id)
-                              ? '收起回复'
-                              : '查看 ${c.replyCount} 条回复',
+                              ? tr('news_collapse_replies')
+                              : tr('news_view_replies').replaceAll('{n}', '${c.replyCount}'),
                           style: McText.sans(
                               size: 12,
                               weight: FontWeight.w600,
@@ -1064,7 +1065,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     if (list.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text('暂无回复',
+        child: Text(tr('news_no_replies'),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
       );
     }
@@ -1087,7 +1088,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
 
   Widget _avatar(String username, {double size = 32}) {
     final initial =
-        username.isEmpty ? '匿' : username.characters.first.toUpperCase();
+        username.isEmpty ? tr('news_anon_initial') : username.characters.first.toUpperCase();
     return Container(
       width: size,
       height: size,
@@ -1115,7 +1116,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           const Icon(Icons.cloud_off,
               size: 32, color: McColors.onSurfaceVariant),
           const SizedBox(height: 12),
-          Text('加载失败',
+          Text(tr('news_load_failed'),
               style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 14),
           GestureDetector(
@@ -1128,7 +1129,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '重试',
+                tr('news_retry'),
                 style: McText.mono(
                     size: 12,
                     weight: FontWeight.w700,

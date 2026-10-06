@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
@@ -314,7 +315,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => pending.state = _SendState.failed);
-      _toast('发送失败, 点击重试');
+      _toast(tr('chat_send_failed_retry'));
     }
   }
 
@@ -346,7 +347,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         await _sendMedia(f, 'image');
       }
     } catch (_) {
-      _toast('选择图片失败');
+      _toast(tr('chat_pick_image_failed'));
     }
   }
 
@@ -357,7 +358,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           source: ImageSource.camera, imageQuality: 70, maxWidth: 1600);
       if (f != null) await _sendMedia(f, 'image');
     } catch (_) {
-      _toast('拍摄失败');
+      _toast(tr('chat_capture_failed'));
     }
   }
 
@@ -376,13 +377,13 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             ListTile(
               leading: const Icon(Icons.photo_library_outlined,
                   color: McColors.onSurfaceVariant),
-              title: Text('从相册选择', style: McText.sans(size: 14)),
+              title: Text(tr('chat_pick_from_album'), style: McText.sans(size: 14)),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.videocam_outlined,
                   color: McColors.onSurfaceVariant),
-              title: Text('拍摄', style: McText.sans(size: 14)),
+              title: Text(tr('chat_shoot'), style: McText.sans(size: 14)),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             const SizedBox(height: 4),
@@ -395,7 +396,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       final f = await _picker.pickVideo(source: source);
       if (f != null) await _sendMedia(f, 'video');
     } catch (_) {
-      _toast('选择视频失败');
+      _toast(tr('chat_pick_video_failed'));
     }
   }
 
@@ -418,7 +419,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       });
       await _deliver(pending);
     } catch (_) {
-      _toast('发送失败');
+      _toast(tr('chat_send_failed'));
     }
   }
 
@@ -426,13 +427,13 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
 
   Future<void> _startRecord() async {
     if (kIsWeb) {
-      _toast('网页版暂不支持语音, 请用 App');
+      _toast(tr('chat_voice_web_unsupported'));
       return;
     }
     if (_recording) return;
     try {
       if (!await _recorder.hasPermission()) {
-        _toast('需要麦克风权限');
+        _toast(tr('chat_mic_permission'));
         return;
       }
       final dir = await getTemporaryDirectory();
@@ -444,7 +445,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       _recordStart = DateTime.now();
       if (mounted) setState(() => _recording = true);
     } catch (_) {
-      _toast('录音失败');
+      _toast(tr('chat_record_failed'));
     }
   }
 
@@ -489,7 +490,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       await _player.play(UrlSource(url));
       if (mounted) setState(() => _playingId = msg.id);
     } catch (_) {
-      _toast('播放失败');
+      _toast(tr('chat_play_failed'));
     }
   }
 
@@ -505,7 +506,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             () => _messages[idx] = _messages[idx].copyWith(reactions: reactions));
       }
     } catch (_) {
-      _toast('操作失败');
+      _toast(tr('chat_action_failed'));
     }
   }
 
@@ -566,7 +567,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                   ),
                   if (_isGroup)
                     Text(
-                      '${widget.conversation.memberCount} 位成员',
+                      tr('chat_member_count').replaceAll('{n}', '${widget.conversation.memberCount}'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant),
                     ),
@@ -614,10 +615,10 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       );
     }
     if (_loadFailed) {
-      return _emptyState('加载失败, 下拉重试', onRetry: _loadInitial);
+      return _emptyState(tr('chat_load_failed'), onRetry: _loadInitial);
     }
     if (_messages.isEmpty && _pending.isEmpty) {
-      return _emptyState('还没有消息, 说点什么吧');
+      return _emptyState(tr('chat_no_messages_say'));
     }
 
     final loaderCount = (_hasMore || _loadingMore) ? 1 : 0;
@@ -713,7 +714,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                 size: 12, color: McColors.onSurfaceVariant),
           const SizedBox(width: 4),
           Text(
-            failed ? '失败 · 点我重试' : '发送中',
+            failed ? tr('chat_failed_retry') : tr('chat_sending'),
             style: McText.sans(
                 size: 12,
                 color: failed ? McColors.bear : McColors.onSurfaceVariant),
@@ -877,7 +878,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           ),
           if (mine) ...[
             const SizedBox(width: 8),
-            _avatar(msg.senderName.isEmpty ? '我' : msg.senderName,
+            _avatar(msg.senderName.isEmpty ? tr('chat_me') : msg.senderName,
                 size: 30, url: AuthStore.instance.avatarUrl),
           ],
         ],
@@ -1209,15 +1210,15 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                 ),
               ),
               const Divider(height: 1),
-              _actionTile(ctx, Icons.reply, '回复', () {
+              _actionTile(ctx, Icons.reply, tr('chat_reply'), () {
                 setState(() => _replyingTo = msg);
                 _focus.requestFocus();
               }),
               // 媒体消息无可复制文本, 跳过复制项.
               if (msg.msgType == 'text')
-                _actionTile(ctx, Icons.copy, '复制', () {
+                _actionTile(ctx, Icons.copy, tr('chat_copy'), () {
                   Clipboard.setData(ClipboardData(text: msg.content));
-                  _toast('已复制');
+                  _toast(tr('chat_copied'));
                 }),
               const SizedBox(height: 8),
             ],
@@ -1334,7 +1335,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         textInputAction: TextInputAction.send,
         style: McText.sans(size: 14),
         decoration: InputDecoration(
-          hintText: '发消息...',
+          hintText: tr('chat_input_hint'),
           hintStyle:
               McText.sans(size: 14, color: McColors.onSurfaceVariant),
           border: InputBorder.none,
@@ -1392,8 +1393,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
         alignment: Alignment.center,
         child: Text(
           _recording
-              ? (_recordCancel ? '松开手指, 取消发送' : '松开发送 · 上滑取消')
-              : '按住 说话',
+              ? (_recordCancel ? tr('chat_release_cancel') : tr('chat_release_send'))
+              : tr('chat_hold_to_talk'),
           style: McText.sans(
             size: 14,
             weight: FontWeight.w600,
@@ -1413,11 +1414,11 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          _attachItem(Icons.photo_library_outlined, '相册', _pickImages),
+          _attachItem(Icons.photo_library_outlined, tr('chat_album'), _pickImages),
           const SizedBox(width: 32),
-          _attachItem(Icons.photo_camera_outlined, '拍摄', _pickCamera),
+          _attachItem(Icons.photo_camera_outlined, tr('chat_shoot'), _pickCamera),
           const SizedBox(width: 32),
-          _attachItem(Icons.videocam_outlined, '视频', _pickVideo),
+          _attachItem(Icons.videocam_outlined, tr('chat_video'), _pickVideo),
         ],
       ),
     );
@@ -1462,7 +1463,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '回复 ${r.senderName}',
+                  tr('chat_reply_to').replaceAll('{name}', r.senderName),
                   style: McText.sans(
                       size: 12,
                       weight: FontWeight.w600,
@@ -1489,10 +1490,10 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   }
 
   static String _mediaLabel(String msgType) => switch (msgType) {
-        'image' => '图片',
-        'video' => '视频',
-        'audio' => '语音',
-        _ => '消息',
+        'image' => tr('chat_media_image'),
+        'video' => tr('chat_media_video'),
+        'audio' => tr('chat_media_audio'),
+        _ => tr('chat_media_message'),
       };
 
   Widget _avatar(String name, {double size = 32, String? url}) {
@@ -1523,7 +1524,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: onRetry,
-              child: const McPill('重新加载', color: McColors.primarySoft),
+              child: McPill(tr('chat_reload'), color: McColors.primarySoft),
             ),
           ],
         ],

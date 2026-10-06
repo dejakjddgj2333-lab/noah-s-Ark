@@ -100,6 +100,14 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 改登录密码: 校验旧密码, 通过则更新. 抛 ApiException(含后端 detail 文案).
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    await McApi.post('/api/auth/change-password', {
+      'old_password': oldPassword,
+      'new_password': newPassword,
+    }, token: token);
+  }
+
   /// 上传头像 (jpg/png/webp/gif, ≤10MB). 成功后本地同步.
   Future<void> uploadAvatar(Uint8List bytes, String filename) async {
     final req = http.MultipartRequest(

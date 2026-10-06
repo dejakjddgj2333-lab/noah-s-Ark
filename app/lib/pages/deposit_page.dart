@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -88,7 +89,7 @@ class _DepositPageState extends State<DepositPage> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = '网络错误, 下拉重试';
+        _error = tr('net_error_retry');
       });
     }
   }
@@ -96,12 +97,12 @@ class _DepositPageState extends State<DepositPage> {
   static int _toInt(dynamic v, int fallback) =>
       int.tryParse(v?.toString() ?? '') ?? fallback;
 
-  /// 网络展示元数据: (标签, 链名, 速度说明).
+  /// 网络展示元数据: (标签, 链名 key, 速度说明 key). 显示时 tr().
   static const networkMeta = {
-    'trc20': ('TRC20', 'Tron 主网', '费率低 · ~1分钟'),
-    'erc20': ('ERC20', 'Ethereum', '手续费较高 · ~3分钟'),
-    'bep20': ('BEP20', 'BNB Chain', '费率低 · ~1分钟'),
-    'arbitrum': ('Arbitrum', 'Arbitrum One', '费率低 · ~1分钟'),
+    'trc20': ('TRC20', 'dep_chain_tron', 'dep_speed_fast'),
+    'erc20': ('ERC20', 'dep_chain_eth', 'dep_speed_slow'),
+    'bep20': ('BEP20', 'dep_chain_bnb', 'dep_speed_fast'),
+    'arbitrum': ('Arbitrum', 'dep_chain_arb', 'dep_speed_fast'),
   };
 
   String get _networkLabel => networkMeta[_network]?.$1 ?? _network;
@@ -111,7 +112,7 @@ class _DepositPageState extends State<DepositPage> {
     if (addr == null) return;
     Clipboard.setData(ClipboardData(text: addr));
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('充值地址已复制')));
+        .showSnackBar(SnackBar(content: Text(tr('dep_addr_copied'))));
   }
 
   /// 规则说明弹窗 (文档第六节口径).
@@ -120,18 +121,18 @@ class _DepositPageState extends State<DepositPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainer,
-        title: Text('充值规则', style: McText.sans(size: 16, weight: FontWeight.w600)),
+        title: Text(tr('dep_rules_title'), style: McText.sans(size: 16, weight: FontWeight.w600)),
         content: Text(
-          '1. 仅支持 USDT 充值, 转出网络必须与所选网络 ($_networkLabel) 一致, 否则不到账且无法追回。\n\n'
-          '2. 单笔最小充值 $_minDeposit USDT, 低于此金额不到账, 需联系客服处理。\n\n'
-          '3. 转账后需 $_requiredConf 个区块确认自动入账本金账户。\n\n'
-          '4. 长时间未到账可在本页底部提交 txid 补单, 或联系客服。',
+          '${tr('dep_rules_1').replaceAll('{network}', _networkLabel)}\n\n'
+          '${tr('dep_rules_2').replaceAll('{min}', _minDeposit.toStringAsFixed(0))}\n\n'
+          '${tr('dep_rules_3').replaceAll('{conf}', '$_requiredConf')}\n\n'
+          '${tr('dep_rules_4')}',
           style: McText.sans(size: 13, color: McColors.onSurfaceVariant, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('知道了'),
+            child: Text(tr('dep_got_it')),
           ),
         ],
       ),
@@ -145,13 +146,13 @@ class _DepositPageState extends State<DepositPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainer,
-        title: Text('txid 补单', style: McText.sans(size: 16, weight: FontWeight.w600)),
+        title: Text(tr('dep_claim_title'), style: McText.sans(size: 16, weight: FontWeight.w600)),
         content: TextField(
           controller: ctrl,
           style: McText.mono(size: 12),
-          decoration: const InputDecoration(
-            hintText: '粘贴交易哈希 (64 位十六进制)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: tr('dep_claim_hint'),
+            border: const OutlineInputBorder(),
           ),
           maxLines: 2,
           minLines: 1,
@@ -159,14 +160,14 @@ class _DepositPageState extends State<DepositPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(tr('cancel')),
           ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await _doClaim(ctrl.text.trim());
             },
-            child: const Text('提交核销'),
+            child: Text(tr('dep_claim_submit')),
           ),
         ],
       ),
@@ -180,10 +181,12 @@ class _DepositPageState extends State<DepositPage> {
       if (!mounted) return;
       final status = rec['status']?.toString() ?? '';
       final msg = switch (status) {
-        'credited' => '核销成功, 已入账本金账户',
-        'confirming' => '已找到该笔转账, 确认中 (${rec['confirmations']}/${rec['required_confirmations']}), 达到后自动入账',
-        'unmatched' => '该笔低于最小充值金额, 请联系客服处理',
-        _ => '已提交, 状态: $status',
+        'credited' => tr('dep_claim_credited'),
+        'confirming' => tr('dep_claim_confirming')
+            .replaceAll('{conf}', '${rec['confirmations']}')
+            .replaceAll('{req}', '${rec['required_confirmations']}'),
+        'unmatched' => tr('dep_claim_unmatched'),
+        _ => tr('dep_claim_submitted').replaceAll('{status}', status),
       };
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(msg)));
@@ -195,7 +198,7 @@ class _DepositPageState extends State<DepositPage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('网络错误, 请稍后重试')));
+          .showSnackBar(SnackBar(content: Text(tr('net_error_retry'))));
     }
   }
 
@@ -301,7 +304,7 @@ class _DepositAppBar extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          '链上充值',
+                          tr('dep_title'),
                           style: McText.sans(
                             size: 16,
                             weight: FontWeight.w600,
@@ -333,7 +336,7 @@ class _DepositAppBar extends StatelessWidget {
                         const Icon(Icons.help_outline,
                             size: 16, color: McColors.primary),
                         const SizedBox(width: 4),
-                        Text('规则说明',
+                        Text(tr('dep_rules'),
                             style: McText.sans(
                                 size: 12, weight: FontWeight.w500)),
                       ],
@@ -368,7 +371,7 @@ class _SecurityBar extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              '链上转账 · 区块确认后自动入账 · 全程可溯',
+              tr('dep_security_note'),
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
               overflow: TextOverflow.ellipsis,
             ),
@@ -397,7 +400,7 @@ class _AssetCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '充币资产',
+                tr('dep_asset_title'),
                 style: McText.sans(
                   size: 12,
                   weight: FontWeight.w500,
@@ -407,7 +410,7 @@ class _AssetCard extends StatelessWidget {
               ),
               Row(
                 children: [
-                  Text('本金余额:',
+                  Text(tr('dep_principal_balance'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant)),
                   const SizedBox(width: 6),
@@ -466,7 +469,7 @@ class _AssetCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '充值后入账本金账户',
+                        tr('dep_asset_sub'),
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant),
                       ),
@@ -507,7 +510,7 @@ class _NetworkCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                '充值公链网络',
+                tr('dep_network_title'),
                 style: McText.sans(
                   size: 12,
                   weight: FontWeight.w500,
@@ -532,10 +535,10 @@ class _NetworkCard extends StatelessWidget {
               for (final e in _DepositPageState.networkMeta.entries)
                 _NetworkTile(
                   name: e.value.$1,
-                  tag: e.key == 'trc20' ? '推荐' : null,
+                  tag: e.key == 'trc20' ? tr('dep_recommended') : null,
                   tagColor: McColors.tertiary,
-                  chain: e.value.$2,
-                  speed: e.value.$3,
+                  chain: tr(e.value.$2),
+                  speed: tr(e.value.$3),
                   speedColor: e.key == 'erc20'
                       ? McColors.onSurfaceVariant
                       : McColors.primary,
@@ -554,12 +557,16 @@ class _NetworkCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _param('预计到账',
-                    _DepositPageState.networkMeta[network]?.$3 ?? '约 1 分钟',
+                _param(
+                    tr('dep_eta'),
+                    tr(_DepositPageState.networkMeta[network]?.$3 ??
+                        'dep_speed_fast'),
                     McColors.onSurface),
-                _param('最小充值额', '${minDeposit.toStringAsFixed(0)} USDT',
+                _param(tr('dep_min_deposit'), '${minDeposit.toStringAsFixed(0)} USDT',
                     McColors.onSurface),
-                _param('入账确认数', '$requiredConf 个区块', McColors.tertiary),
+                _param(tr('dep_confirmations'),
+                    tr('dep_conf_blocks').replaceAll('{n}', '$requiredConf'),
+                    McColors.tertiary),
               ],
             ),
           ),
@@ -732,7 +739,7 @@ class _QrCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '专属收款地址',
+                    tr('dep_receive_addr'),
                     style: McText.sans(
                       size: 12,
                       weight: FontWeight.w500,
@@ -750,7 +757,7 @@ class _QrCard extends StatelessWidget {
                   const McGlowDot(color: McColors.tertiary, size: 8),
                   const SizedBox(width: 6),
                   Text(
-                    '长期有效',
+                    tr('dep_long_term'),
                     style: McText.sans(
                         size: 12, weight: FontWeight.w500, color: McColors.tertiary),
                   ),
@@ -787,7 +794,7 @@ class _QrCard extends StatelessWidget {
               const Icon(Icons.touch_app, size: 15, color: McColors.primary),
               const SizedBox(width: 4),
               Text(
-                '扫描二维码或复制下方地址充币',
+                tr('dep_scan_hint'),
                 style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
               ),
             ],
@@ -804,7 +811,7 @@ class _QrCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('$networkLabel 收款地址',
+                    Text('$networkLabel ${tr('dep_receive_suffix')}',
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant)),
                   ],
@@ -855,7 +862,7 @@ class _QrCard extends StatelessWidget {
                       size: 18, color: McColors.onPrimaryContainer),
                   const SizedBox(width: 6),
                   Text(
-                    '复制充值地址',
+                    tr('dep_copy_addr'),
                     style: McText.sans(
                       size: 12,
                       weight: FontWeight.w600,
@@ -891,7 +898,7 @@ class _QrCard extends StatelessWidget {
                           color: const Color(0xFFFFDAD6),
                           height: 1.4),
                       children: [
-                        const TextSpan(text: '转出网络必须与所选网络 '),
+                        TextSpan(text: tr('dep_warn_prefix')),
                         TextSpan(
                           text: networkLabel,
                           style: McText.sans(
@@ -899,8 +906,7 @@ class _QrCard extends StatelessWidget {
                               weight: FontWeight.w600,
                               color: McColors.error),
                         ),
-                        const TextSpan(
-                            text: ' 一致, 仅支持 USDT; 转错网络或转入其他代币将无法到账且无法追回。'),
+                        TextSpan(text: tr('dep_warn_suffix')),
                       ],
                     ),
                   ),
@@ -941,13 +947,13 @@ class _RadarBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '链上监听已开启',
+                  tr('dep_radar_title'),
                   style: McText.sans(size: 13, weight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '每 30 秒扫描链上转账, 12 个区块确认后自动入账',
+                  tr('dep_radar_sub'),
                   style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -981,7 +987,7 @@ class _RecordsCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '最近充值记录',
+                    tr('dep_recent_records'),
                     style: McText.sans(
                       size: 12,
                       weight: FontWeight.w500,
@@ -1009,7 +1015,7 @@ class _RecordsCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                '暂无充值记录',
+                tr('dep_no_records'),
                 style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
               ),
             )
@@ -1045,9 +1051,21 @@ class _RecordTile extends StatelessWidget {
     final time = FinanceApi.time(record['block_time']);
 
     final (label, color, sub) = switch (status) {
-      'credited' => ('已入账', McColors.tertiary, '$reqConf 确认'),
-      'confirming' => ('确认中', McColors.goldBright, '$conf/$reqConf 确认'),
-      'unmatched' => ('待客服处理', McColors.bear, '低于最小充值额'),
+      'credited' => (
+          tr('dep_status_credited'),
+          McColors.tertiary,
+          tr('dep_conf_only').replaceAll('{n}', '$reqConf')
+        ),
+      'confirming' => (
+          tr('dep_status_confirming'),
+          McColors.goldBright,
+          tr('dep_conf_progress').replaceAll('{c}', '$conf').replaceAll('{r}', '$reqConf')
+        ),
+      'unmatched' => (
+          tr('dep_status_unmatched'),
+          McColors.bear,
+          tr('dep_below_min')
+        ),
       _ => (status, McColors.outline, ''),
     };
 
@@ -1173,7 +1191,7 @@ class _FooterActions extends StatelessWidget {
                     size: 18, color: McColors.primary),
                 const SizedBox(width: 6),
                 Text(
-                  '连接钱包直接支付',
+                  tr('dep_wallet_pay'),
                   style: McText.sans(
                     size: 12,
                     weight: FontWeight.w600,
@@ -1191,7 +1209,7 @@ class _FooterActions extends StatelessWidget {
             InkWell(
               onTap: onClaim,
               child: Text(
-                '转账没到账? 提交 txid 补单',
+                tr('dep_claim_link'),
                 style: McText.sans(
                   size: 12,
                   weight: FontWeight.w500,
@@ -1205,7 +1223,7 @@ class _FooterActions extends StatelessWidget {
                   Uri.parse(_explorers[network] ?? 'https://tronscan.org'),
                   mode: LaunchMode.externalApplication),
               child: Text(
-                '链上浏览器查询',
+                tr('dep_explorer'),
                 style: McText.sans(
                   size: 12,
                   weight: FontWeight.w500,
@@ -1238,7 +1256,7 @@ class _ErrorCard extends StatelessWidget {
               style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
               textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          TextButton(onPressed: onRetry, child: const Text('重试')),
+          TextButton(onPressed: onRetry, child: Text(tr('news_retry'))),
         ],
       ),
     );

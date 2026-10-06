@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
@@ -37,7 +38,7 @@ class _ProductsPageState extends State<ProductsPage> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -67,7 +68,7 @@ class _ProductsPageState extends State<ProductsPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('理财产品', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('prod_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
       body: RefreshIndicator(
         color: McColors.primarySoft,
@@ -86,7 +87,7 @@ class _ProductsPageState extends State<ProductsPage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 80),
                       child: Center(
-                        child: Text('暂无上架产品', style: McText.sans(color: McColors.onSurfaceVariant)),
+                        child: Text(tr('prod_empty'), style: McText.sans(color: McColors.onSurfaceVariant)),
                       ),
                     ),
                   for (final p in _items) ...[
@@ -174,7 +175,7 @@ class _ProductsPageState extends State<ProductsPage> {
                           '${(rate * 100).toStringAsFixed(2)}%',
                           style: McText.display(size: 22, weight: FontWeight.w700, color: McColors.goldBright),
                         ),
-                        Text('基础日收益率', style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
+                        Text(tr('prod_base_daily'), style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -182,9 +183,9 @@ class _ProductsPageState extends State<ProductsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${p['duration_days']} 天',
+                        Text('${p['duration_days']} ${tr('prod_days')}',
                             style: McText.display(size: 16, weight: FontWeight.w600)),
-                        Text('产品周期', style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
+                        Text(tr('prod_period'), style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -194,7 +195,7 @@ class _ProductsPageState extends State<ProductsPage> {
                       children: [
                         Text('${totalPct.toStringAsFixed(1)}%',
                             style: McText.display(size: 16, weight: FontWeight.w600, color: McColors.tertiary)),
-                        Text('基础总收益', style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
+                        Text(tr('prod_total_return'), style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -217,12 +218,12 @@ class _ProductsPageState extends State<ProductsPage> {
                   if (p['vip_level_req'] != null)
                     _reqChip('VIP${p['vip_level_req']}')
                   else
-                    _reqChip('不限 VIP'),
+                    _reqChip(tr('prod_no_vip')),
                   const SizedBox(width: 6),
                   if (p['team_level_req'] != null)
-                    _reqChip('团队 ${p['team_level_req']} 级')
+                    _reqChip(tr('prod_team_req').replaceAll('{n}', '${p['team_level_req']}'))
                   else
-                    _reqChip('不限团队'),
+                    _reqChip(tr('prod_no_team')),
                 ],
               ),
             ],
@@ -269,7 +270,7 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
   Future<void> _submit() async {
     final amount = _amountCtrl.text.trim();
     if (amount.isEmpty || (double.tryParse(amount) ?? 0) <= 0) {
-      _toast('请输入有效金额');
+      _toast(tr('prod_err_amount'));
       return;
     }
     setState(() => _busy = true);
@@ -282,19 +283,19 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: McColors.surfaceContainer,
-              title: Text('购买前提示', style: McText.display(size: 15, weight: FontWeight.w700)),
+              title: Text(tr('prod_prebuy_title'), style: McText.display(size: 15, weight: FontWeight.w700)),
               content: Text(
-                '您还未绑定邀请码。本人或任意层级下级购买成功后, 将无法补填邀请码绑定上级, 该资格永久失效。',
+                tr('prod_prebuy_body'),
                 style: McText.sans(size: 13, height: 1.5),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
-                  child: Text('先去绑定', style: McText.sans(color: McColors.onSurfaceVariant)),
+                  child: Text(tr('prod_go_bind'), style: McText.sans(color: McColors.onSurfaceVariant)),
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
-                  child: Text('继续购买', style: McText.sans(color: McColors.goldBright, weight: FontWeight.w600)),
+                  child: Text(tr('prod_continue_buy'), style: McText.sans(color: McColors.goldBright, weight: FontWeight.w600)),
                 ),
               ],
             ),
@@ -310,12 +311,12 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
 
       await FinanceApi.buy(_p['id'] as int, amount);
       if (!mounted) return;
-      _toast('购买成功, 订单已生效');
+      _toast(tr('prod_buy_success'));
       Navigator.of(context).pop(true);
     } on ApiException catch (e) {
       if (mounted) _toast(e.message);
     } catch (_) {
-      if (mounted) _toast('网络错误, 请稍后重试');
+      if (mounted) _toast(tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -360,18 +361,22 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            '日收益率 ${(rate * 100).toStringAsFixed(2)}% · 周期 ${_p['duration_days']} 天 · '
-            '${FinLabels.returnMethods[_p['return_method']] ?? _p['return_method']}',
+            tr('prod_detail_line')
+                .replaceAll('{rate}', (rate * 100).toStringAsFixed(2))
+                .replaceAll('{days}', '${_p['duration_days']}')
+                .replaceAll('{method}', FinLabels.returnMethods[_p['return_method']] ?? '${_p['return_method']}'),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
           ),
           Text(
-            '金额范围 ${_p['min_amount']} ~ ${_p['max_amount']} USDT'
-            '${_p['vip_level_req'] != null ? ' · 需 VIP${_p['vip_level_req']}' : ''}'
-            '${_p['team_level_req'] != null ? ' · 需团队 ${_p['team_level_req']} 级' : ''}',
+            tr('prod_range_line')
+                .replaceAll('{min}', '${_p['min_amount']}')
+                .replaceAll('{max}', '${_p['max_amount']}')
+                .replaceAll('{vip}', _p['vip_level_req'] != null ? tr('prod_need_vip').replaceAll('{n}', '${_p['vip_level_req']}') : '')
+                .replaceAll('{team}', _p['team_level_req'] != null ? tr('prod_need_team').replaceAll('{n}', '${_p['team_level_req']}') : ''),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
-          Text('购买金额 (USDT)', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          Text(tr('prod_amount'), style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
           TextField(
             controller: _amountCtrl,
@@ -392,7 +397,7 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            '从本金账户扣款, 扣款成功订单即生效; 下单时按当前 VIP 等级锁定收益加成, 到期自动返还本金。',
+            tr('prod_note'),
             style: McText.sans(size: 11, color: McColors.onSurfaceVariant, height: 1.5),
           ),
           const SizedBox(height: 16),
@@ -410,7 +415,7 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
                       width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: McColors.onPrimaryContainer),
                     )
-                  : Text('确认购买', style: McText.display(size: 14, weight: FontWeight.w700, color: McColors.onPrimaryContainer)),
+                  : Text(tr('prod_confirm_buy'), style: McText.display(size: 14, weight: FontWeight.w700, color: McColors.onPrimaryContainer)),
             ),
           ),
         ],

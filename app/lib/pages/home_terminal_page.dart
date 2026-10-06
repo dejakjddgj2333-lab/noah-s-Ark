@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/coin_icon.dart';
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/data.dart';
@@ -20,7 +21,7 @@ class HomeTerminalPage extends StatefulWidget {
 class _HomeTerminalPageState extends State<HomeTerminalPage> {
   // 情绪指数 (mock 默认, 拉取成功后覆盖).
   int _fgValue = 74;
-  String _fgLabel = '贪婪 (Greed)';
+  String _fgLabel = tr('senti_greed');
   Color _fgColor = McColors.bull;
 
   // 资金费率加权 (mock 默认).
@@ -53,7 +54,7 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
   // 山寨季指数 (mock 默认, altcoin_season 拉取成功后覆盖).
   String _altSeasonValue = '38';
   double _altSeasonFrac = 0.38;
-  String _altSeasonFooter = '距山寨爆发差 37 点';
+  String _altSeasonFooter = tr('term_alt_gap_mock');
 
   // 市占率分布 (mock 默认, btc/eth dominance 拉取成功后覆盖).
   String _btcDom = '56.4%';
@@ -106,7 +107,7 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
       if (total <= 0 && count == 0) return;
       setState(() {
         _liqTotal = total > 0 ? McData.fmtUsdCompact(total) : '--';
-        _liqCount = '$count 笔';
+        _liqCount = tr('term_liq_count').replaceAll('{n}', '$count');
       });
     } catch (_) {/* 保留 -- */}
   }
@@ -134,8 +135,9 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
       setState(() {
         _lsRatio = (long / short).toStringAsFixed(2);
         _lsFrac = (long / 100).clamp(0.0, 1.0);
-        _lsFooter =
-            '多头 ${long.toStringAsFixed(1)}% · 空头 ${short.toStringAsFixed(1)}%';
+        _lsFooter = tr('term_ls_footer')
+            .replaceAll('{long}', long.toStringAsFixed(1))
+            .replaceAll('{short}', short.toStringAsFixed(1));
       });
     } catch (_) {/* 保留 -- */}
   }
@@ -160,10 +162,12 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
             (_) => <double>[]);
         return _AssetRow(
           symbol: s,
-          sub1: '成交 ${McData.fmtUsdCompact(t.volCcy24h)}',
+          sub1: tr('term_vol_prefix')
+              .replaceAll('{v}', McData.fmtUsdCompact(t.volCcy24h)),
           sub2: rate == null
-              ? '费率 --'
-              : '费率 ${rate >= 0 ? '+' : ''}${rate.toStringAsFixed(3)}%',
+              ? tr('term_rate_na')
+              : tr('term_rate_prefix').replaceAll(
+                  '{v}', '${rate >= 0 ? '+' : ''}${rate.toStringAsFixed(3)}%'),
           sub2Color:
               rate == null ? McColors.outline : (rate >= 0 ? McColors.bull : McColors.bear),
           spark: spark,
@@ -205,7 +209,9 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
           _altSeasonValue = val.round().toString();
           _altSeasonFrac = (val / 100).clamp(0.0, 1.0);
           _altSeasonFooter = chg is num
-              ? '24H ${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(0)} 点'
+              ? tr('term_alt_change')
+                  .replaceAll('{sign}', chg >= 0 ? '+' : '')
+                  .replaceAll('{n}', chg.toStringAsFixed(0))
               : _altSeasonFooter;
         });
       }
@@ -344,11 +350,11 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
 
 
   static String _fgLabelFor(int v) {
-    if (v < 25) return '极度恐惧 (Extreme Fear)';
-    if (v < 45) return '恐惧 (Fear)';
-    if (v < 55) return '中性 (Neutral)';
-    if (v < 75) return '贪婪 (Greed)';
-    return '极度贪婪 (Extreme Greed)';
+    if (v < 25) return tr('senti_extreme_fear');
+    if (v < 45) return tr('senti_fear');
+    if (v < 55) return tr('senti_neutral');
+    if (v < 75) return tr('senti_greed');
+    return tr('senti_extreme_greed');
   }
 
   static Color _fgColorFor(int v) {
@@ -381,19 +387,19 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         const SizedBox(height: 16),
 
         // 2. 市场深度量化指标矩阵
-        const McSectionHeader(
-          title: '市场深度量化指标矩阵',
-          trailing: '公开数据源实时聚合',
+        McSectionHeader(
+          title: tr('term_matrix_section'),
+          trailing: tr('term_matrix_trailing'),
         ),
         const SizedBox(height: 10),
         _matrixGrid(),
         const SizedBox(height: 16),
 
         // 3. 主流资产多维量化指标一览
-        const McSectionHeader(
-          title: '主流资产多维量化指标一览',
+        McSectionHeader(
+          title: tr('term_assets_section'),
           icon: Icons.trending_up,
-          trailing: 'OKX 行情 · 三所费率',
+          trailing: tr('term_assets_trailing'),
         ),
         const SizedBox(height: 10),
         _AssetListCard(rows: _assetRows),
@@ -404,7 +410,7 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
   Widget _matrixGrid() {
     final cards = [
       _MatrixCard(
-        title: '山寨季指数',
+        title: tr('term_alt_season'),
         pill: const McPill('BTC Season', color: McColors.primarySoft, bold: false),
         value: _altSeasonValue,
         suffix: '/100',
@@ -415,48 +421,48 @@ class _HomeTerminalPageState extends State<HomeTerminalPage> {
         footerColor: McColors.onSurfaceVariant,
       ),
       _MatrixCard(
-        title: '全网未平仓合约',
-        pill: const McPill('OKX 永续', color: McColors.primarySoft, bold: false),
+        title: tr('term_open_interest'),
+        pill: McPill(tr('term_pill_okx_perp'), color: McColors.primarySoft, bold: false),
         value: _oiValue,
         valueColor: McColors.onSurface,
         fraction: 0.68,
         barColor: McColors.bull,
-        footer: 'BTC+ETH 永续名义持仓',
+        footer: tr('term_oi_footer'),
         footerColor: McColors.onSurfaceVariant,
       ),
       _MatrixCard(
-        title: '资金费率加权',
-        pill: McPill('适度偏多', color: _fundingColor, bold: false),
+        title: tr('term_funding_weighted'),
+        pill: McPill(tr('term_funding_pill'), color: _fundingColor, bold: false),
         value: _fundingValue,
         valueColor: _fundingColor,
         fraction: _fundingFrac,
         barColor: const Color(0xCC00E388),
-        footer: 'Binance/OKX/Bybit 均值',
+        footer: tr('term_funding_footer'),
         footerColor: McColors.onSurfaceVariant,
       ),
       _MatrixCard(
-        title: '24H 爆仓总额',
+        title: tr('term_liq_total'),
         pill: McPill(_liqCount, color: McColors.primarySoft, bold: false),
         value: _liqTotal,
         valueColor: McColors.onSurface,
         fraction: 0.5,
         barColor: const Color(0xB3FF6363),
-        footer: 'OKX/Bybit 实时强平聚合',
+        footer: tr('term_liq_footer'),
         footerColor: McColors.onSurfaceVariant,
       ),
       _MatrixCard(
-        title: '稳定币供给指数',
+        title: tr('term_stable_index'),
         pill: McPill(_stablePill, color: McColors.bull, bold: false),
         value: _stableValue,
         valueColor: McColors.onSurface,
         fraction: 0.78,
         barColor: McColors.bull,
-        footer: 'DefiLlama 全稳定币流通',
+        footer: tr('term_stable_footer'),
         footerColor: McColors.onSurfaceVariant,
       ),
       _MatrixCard(
-        title: '多空人数比 (L/S)',
-        pill: const McPill('Binance 账户', color: McColors.primarySoft, bold: false),
+        title: tr('term_long_short_ratio'),
+        pill: McPill(tr('term_pill_binance_acct'), color: McColors.primarySoft, bold: false),
         value: _lsRatio,
         valueColor: McColors.onSurface,
         fraction: _lsFrac,
@@ -521,7 +527,7 @@ class _FearGreedCard extends StatelessWidget {
                       size: 15, color: McColors.primaryContainer),
                   const SizedBox(width: 4),
                   Text(
-                    '情绪指数',
+                    tr('term_sentiment_index'),
                     style: McText.sans(
                       size: 12,
                       weight: FontWeight.w500,
@@ -532,7 +538,8 @@ class _FearGreedCard extends StatelessWidget {
               ),
               if (diff != null)
                 McPill(
-                  '${diff >= 0 ? '+' : ''}$diff 较昨日',
+                  tr('term_vs_yesterday')
+                      .replaceAll('{diff}', '${diff >= 0 ? '+' : ''}$diff'),
                   color: diff >= 0 ? McColors.bull : McColors.bear,
                   fontSize: 10,
                 ),
@@ -588,13 +595,13 @@ class _FearGreedCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('昨日 $yesterday · ${_HomeTerminalPageState._fgLabelFor(yesterday).split(' ').first}',
+                Text(tr('term_yesterday_line').replaceAll('{v}', '$yesterday').replaceAll('{label}', _HomeTerminalPageState._fgLabelFor(yesterday)),
                     style: McText.mono(
                         size: 12, color: McColors.onSurfaceVariant)),
                 if (lastWeek != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                      '上周 $lastWeek · ${_HomeTerminalPageState._fgLabelFor(lastWeek).split(' ').first}',
+                      tr('term_lastweek_line').replaceAll('{v}', '$lastWeek').replaceAll('{label}', _HomeTerminalPageState._fgLabelFor(lastWeek)),
                       style: McText.mono(
                           size: 12, color: McColors.onSurfaceVariant)),
                 ],
@@ -658,7 +665,7 @@ class _DominancePieCard extends StatelessWidget {
               const Icon(Icons.pie_chart, size: 15, color: McColors.secondary),
               const SizedBox(width: 4),
               Text(
-                '市占率分布',
+                tr('term_dominance'),
                 style: McText.sans(
                   size: 12,
                   weight: FontWeight.w500,
@@ -924,7 +931,7 @@ class _AssetListCard extends StatelessWidget {
             ? Padding(
                 padding: const EdgeInsets.all(20),
                 child: Center(
-                  child: Text('行情加载中…',
+                  child: Text(tr('mkt_loading'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant)),
                 ),

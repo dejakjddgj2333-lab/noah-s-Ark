@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/auth.dart';
@@ -57,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _sendCode() async {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _error = '请输入有效邮箱');
+      setState(() => _error = tr('login_err_email'));
       return;
     }
     setState(() {
@@ -71,17 +72,17 @@ class _LoginPageState extends State<LoginPage> {
         // dev 模式: SMTP 未配置, 直接回填
         _codeCtrl.text = debugCode;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('开发模式: 验证码已自动填入')),
+          SnackBar(content: Text(tr('login_dev_code_filled'))),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('验证码已发送, 请查收邮箱')),
+          SnackBar(content: Text(tr('login_code_sent'))),
         );
       }
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = '网络错误, 请稍后重试');
+      setState(() => _error = tr('login_err_network'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -104,16 +105,16 @@ class _LoginPageState extends State<LoginPage> {
     final username = _userCtrl.text.trim();
     final password = _passCtrl.text;
     if (username.isEmpty || password.isEmpty) {
-      setState(() => _error = '请输入用户名和密码');
+      setState(() => _error = tr('login_err_empty'));
       return;
     }
     if (!_isLogin) {
       if (_emailCtrl.text.trim().isEmpty || _codeCtrl.text.trim().isEmpty) {
-        setState(() => _error = '请输入邮箱和验证码');
+        setState(() => _error = tr('login_err_empty_code'));
         return;
       }
       if (password != _pass2Ctrl.text) {
-        setState(() => _error = '两次密码不一致');
+        setState(() => _error = tr('login_err_pwd_mismatch'));
         return;
       }
     }
@@ -137,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = '网络错误, 请稍后重试');
+      setState(() => _error = tr('login_err_network'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -185,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 4),
                   Center(
                     child: Text(
-                      _isLogin ? '欢迎回到交易终端' : '创建终端账户 · 邮箱即凭证',
+                      _isLogin ? tr('login_welcome_back') : tr('login_create_account'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant),
                     ),
@@ -203,13 +204,13 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: Row(
                       children: [
-                        _segTab('登录', _isLogin, () {
+                        _segTab(tr('login_tab'), _isLogin, () {
                           setState(() {
                             _isLogin = true;
                             _error = null;
                           });
                         }),
-                        _segTab('注册', !_isLogin, () {
+                        _segTab(tr('login_register'), !_isLogin, () {
                           setState(() {
                             _isLogin = false;
                             _error = null;
@@ -220,17 +221,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
                   // 表单
-                  _field(_userCtrl, '用户名', Icons.person_outline),
+                  _field(_userCtrl, tr('username'), Icons.person_outline),
                   const SizedBox(height: 12),
                   if (!_isLogin) ...[
-                    _field(_emailCtrl, '邮箱', Icons.mail_outline,
+                    _field(_emailCtrl, tr('email'), Icons.mail_outline,
                         keyboard: TextInputType.emailAddress),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
                           child: _field(
-                              _codeCtrl, '邮箱验证码', Icons.pin_outlined,
+                              _codeCtrl, tr('login_email_code'), Icons.pin_outlined,
                               keyboard: TextInputType.number),
                         ),
                         const SizedBox(width: 10),
@@ -241,13 +242,13 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                   if (!_isLogin) ...[
                     const SizedBox(height: 12),
-                    _field(_inviteCtrl, '邀请码 (选填)', Icons.card_giftcard_outlined,
+                    _field(_inviteCtrl, tr('login_invite_optional'), Icons.card_giftcard_outlined,
                         keyboard: TextInputType.text),
                   ],
-                  _field(_passCtrl, '密码', Icons.lock_outline, obscure: true),
+                  _field(_passCtrl, tr('login_password'), Icons.lock_outline, obscure: true),
                   if (!_isLogin) ...[
                     const SizedBox(height: 12),
-                    _field(_pass2Ctrl, '确认密码', Icons.lock_outline,
+                    _field(_pass2Ctrl, tr('login_confirm_password'), Icons.lock_outline,
                         obscure: true),
                   ],
                   if (_error != null) ...[
@@ -298,7 +299,7 @@ class _LoginPageState extends State<LoginPage> {
                                   strokeWidth: 2, color: Colors.white),
                             )
                           : Text(
-                              _isLogin ? '登 录' : '注册并绑定邮箱',
+                              _isLogin ? tr('login_btn_login') : tr('login_btn_register'),
                               style: McText.sans(
                                   size: 14,
                                   weight: FontWeight.w700,
@@ -309,7 +310,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      '注册即代表同意《终端服务协议》与《风险披露声明》',
+                      tr('login_agreement'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant),
                     ),
@@ -412,7 +413,7 @@ class _LoginPageState extends State<LoginPage> {
           padding: const EdgeInsets.symmetric(horizontal: 14),
         ),
         child: Text(
-          _countdown > 0 ? '${_countdown}s' : '发送验证码',
+          _countdown > 0 ? '${_countdown}s' : tr('login_send_code'),
           style: McText.mono(
             size: 12,
             weight: FontWeight.w600,

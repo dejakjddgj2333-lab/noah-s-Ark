@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -41,14 +42,14 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
   String _long24 = '--';
   String _short24 = '--';
   String _liqCount = '--'; // 爆仓笔数 (exchange-list count 求和)
-  String _liqCountUnit = '笔强平';
+  String _liqCountUnit = tr('liq_unit_orders');
   String _liqTotalText = '--';
 
   // 实时监控卡: range -> (total, long, short) 原始值, 拉取成功填充, 无数据显示 '--'.
   final Map<String, (double, double, double)> _sums = {};
   String _monitorRange = '24h'; // 监控卡当前时段
 
-  // 顶部币种快捷过滤 ('全部' 或 BTC/ETH/...).
+  // 顶部币种快捷过滤 ('全部' 或 BTC/ETH/...). 内部值固定中文, 显示经 liqSymbolLabel.
   String _symbol = '全部';
   // 实时 feed 最小金额过滤 (0=全部).
   double _feedMinUsd = 0;
@@ -221,7 +222,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     final meta = _exMeta.firstWhere(
       (x) => x.name == exchange,
       orElse: () => _ExMeta(
-        exchange.isEmpty ? '未知' : exchange,
+        exchange.isEmpty ? tr('liq_unknown_ex') : exchange,
         const Color(0x1AFFFFFF),
         exchange.isEmpty ? '?' : exchange.substring(0, 1).toUpperCase(),
         Colors.white,
@@ -266,7 +267,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       if (sum > 0 && mounted) {
         setState(() {
           _liqCount = _comma('$sum');
-          _liqCountUnit = '笔强平';
+          _liqCountUnit = tr('liq_unit_orders');
         });
         return;
       }
@@ -299,7 +300,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       if (!found || sum <= 0 || !mounted) return;
       setState(() {
         _liqCount = _comma(sum.toStringAsFixed(0));
-        _liqCountUnit = '人被爆仓';
+        _liqCountUnit = tr('liq_unit_people');
       });
     } on ApiException {
       // 保留 --.
@@ -407,9 +408,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     final updated = <_ExStat>[
       buildRow(
         avatarBg: McColors.surfaceContainerHighest,
-        avatarLabel: '全',
+        avatarLabel: tr('liq_all_short'),
         avatarColor: _primaryLight,
-        name: '全部',
+        name: tr('liq_all'),
         match: agg,
         boldName: true,
       ),
@@ -592,7 +593,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 : null,
           ),
           child: Text(
-            label,
+            label == '全部' ? tr('liq_all') : label,
             style: McText.sans(
               size: 13,
               weight: active ? FontWeight.w600 : FontWeight.w500,
@@ -665,7 +666,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 children: [
                   const McGlowDot(color: _bear, size: 8),
                   const SizedBox(width: 6),
-                  Text('全网多空爆仓实时监控',
+                  Text(tr('liq_monitor_title'),
                       style: McText.sans(size: 13, weight: FontWeight.w600, color: Colors.white)),
                 ],
               ),
@@ -688,7 +689,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
             children: [
               Text(hasData ? _fmtUsdZh(total) : '--',
                   style: McText.mono(size: 20, weight: FontWeight.w800, color: _bear)),
-              Text('多单 $longPct% · 空单 ${100 - longPct}%',
+              Text(tr('liq_long_short_pct')
+                  .replaceAll('{long}', '$longPct')
+                  .replaceAll('{short}', '${100 - longPct}'),
                   style: McText.mono(size: 12, color: _onSurfaceVariant)),
             ],
           ),
@@ -730,9 +733,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('多头爆仓 ${hasData ? _fmtUsdZh(long) : '--'}',
+              Text('${tr('liq_long_liq')} ${hasData ? _fmtUsdZh(long) : '--'}',
                   style: McText.mono(size: 12, color: _bear)),
-              Text('空头爆仓 ${hasData ? _fmtUsdZh(short) : '--'}',
+              Text('${tr('liq_short_liq')} ${hasData ? _fmtUsdZh(short) : '--'}',
                   style: McText.mono(size: 12, color: _bull)),
             ],
           ),
@@ -772,7 +775,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader('总爆仓'),
+          _sectionHeader(tr('liq_total_title')),
           McSkeleton.card(lines: 5, height: 16),
         ],
       );
@@ -781,12 +784,12 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionHeader(
-          '总爆仓',
+          tr('liq_total_title'),
           trailingWidget: Row(
             children: [
               const McGlowDot(color: _bull, size: 6),
               const SizedBox(width: 4),
-              Text('全网多空清洗测度', style: McText.mono(size: 12, color: _onSurfaceVariant)),
+              Text(tr('liq_total_trailing'), style: McText.mono(size: 12, color: _onSurfaceVariant)),
             ],
           ),
         ),
@@ -796,14 +799,14 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           radius: 16,
           child: Column(
             children: [
-              _liqTimeRow(label: '1小时爆仓', total: _total1h, long: _long1h, short: _short1h),
+              _liqTimeRow(label: tr('liq_1h'), total: _total1h, long: _long1h, short: _short1h),
               const SizedBox(height: 10),
-              _liqTimeRow(label: '4小时爆仓', total: _total4h, long: _long4h, short: _short4h),
+              _liqTimeRow(label: tr('liq_4h'), total: _total4h, long: _long4h, short: _short4h),
               const SizedBox(height: 10),
-              _liqTimeRow(label: '12小时爆仓', total: _total12h, long: _long12h, short: _short12h),
+              _liqTimeRow(label: tr('liq_12h'), total: _total12h, long: _long12h, short: _short12h),
               const SizedBox(height: 10),
               _liqTimeRow(
-                label: '24小时爆仓',
+                label: tr('liq_24h'),
                 total: _total24,
                 long: _long24,
                 short: _short24,
@@ -822,12 +825,12 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                         text: TextSpan(
                           style: McText.sans(size: 12, color: _onSurfaceVariant, height: 1.5),
                           children: [
-                            const TextSpan(text: '最近24小时共记录 '),
+                            TextSpan(text: tr('liq_summary_24h_pre')),
                             TextSpan(
                               text: _liqCount,
                               style: McText.mono(size: 12, weight: FontWeight.w600, color: _primaryLight),
                             ),
-                            TextSpan(text: ' $_liqCountUnit，爆仓总金额为 '),
+                            TextSpan(text: ' $_liqCountUnit${tr('liq_summary_24h_mid')}'),
                             TextSpan(
                               text: _liqTotalText,
                               style: McText.mono(size: 12, weight: FontWeight.w600, color: _primaryLight),
@@ -842,12 +845,12 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                         text: TextSpan(
                           style: McText.sans(size: 12, color: _onSurfaceVariant, height: 1.5),
                           children: [
-                            const TextSpan(text: '最大单笔爆仓单发生在 '),
+                            TextSpan(text: tr('liq_largest_pre')),
                             TextSpan(
                               text: '--',
                               style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white),
                             ),
-                            const TextSpan(text: ' 价值 '),
+                            TextSpan(text: tr('liq_largest_mid')),
                             TextSpan(
                               text: '--',
                               style: McText.mono(size: 12, weight: FontWeight.w600, color: _primaryLight),
@@ -949,9 +952,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
           ),
           Row(
             children: [
-              _longShortCol('多单爆仓', long, _bullLight),
+              _longShortCol(tr('liq_long_pos'), long, _bullLight),
               const SizedBox(width: 24),
-              SizedBox(width: 70, child: _longShortCol('空单爆仓', short, _bearLight)),
+              SizedBox(width: 70, child: _longShortCol(tr('liq_short_pos'), short, _bearLight)),
             ],
           ),
         ],
@@ -976,7 +979,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader('交易所爆仓热力分布', trailing: '合约全网体量图'),
+          _sectionHeader(tr('liq_heatmap_title'), trailing: tr('liq_heatmap_trailing')),
           const McSkeleton(height: 250, radius: 16),
         ],
       );
@@ -984,7 +987,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('交易所爆仓热力分布', trailing: '合约全网体量图'),
+        _sectionHeader(tr('liq_heatmap_title'), trailing: tr('liq_heatmap_trailing')),
         McCard(
           color: McColors.surfaceContainerLow,
           padding: const EdgeInsets.all(16),
@@ -1020,7 +1023,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                               children: [
                                 Text('Binance',
                                     style: McText.sans(size: 17, weight: FontWeight.w700, color: Colors.white)),
-                                Text('币安合约',
+                                Text(tr('liq_binance_sub'),
                                     style: McText.sans(
                                         size: 12,
                                         weight: FontWeight.w500,
@@ -1036,7 +1039,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                     style: McText.mono(
                                         size: 21, weight: FontWeight.w800, color: Colors.white, height: 1)),
                                 const SizedBox(height: 2),
-                                Text('占比 ${_heatPct('Binance')}',
+                                Text('${tr('liq_share')} ${_heatPct('Binance')}',
                                     style: McText.sans(
                                         size: 12,
                                         weight: FontWeight.w500,
@@ -1125,7 +1128,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                                             Text('OKX',
                                                 style: McText.sans(
                                                     size: 12, weight: FontWeight.w700, color: Colors.white)),
-                                            Text('欧易',
+                                            Text(tr('liq_okx_sub'),
                                                 style: McText.sans(
                                                     size: 12,
                                                     color: Colors.white.withValues(alpha: 0.8))),
@@ -1283,9 +1286,9 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _legendDot(_bull, '多头清算主导'),
-                    _legendDot(_bear, '空头清算主导'),
-                    Text('实时根据成交刷新', style: McText.mono(size: 12, color: McColors.outline)),
+                    _legendDot(_bull, tr('liq_long_dominant')),
+                    _legendDot(_bear, tr('liq_short_dominant')),
+                    Text(tr('liq_realtime_note'), style: McText.mono(size: 12, color: McColors.outline)),
                   ],
                 ),
               ),
@@ -1312,7 +1315,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader('交易所爆仓统计'),
+          _sectionHeader(tr('liq_exchange_stats')),
           McSkeleton.card(lines: 5, height: 16),
         ],
       );
@@ -1321,7 +1324,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('交易所爆仓统计'),
+        _sectionHeader(tr('liq_exchange_stats')),
         McCard(
           color: McColors.surfaceContainerLow,
           padding: const EdgeInsets.all(16),
@@ -1339,11 +1342,11 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                       setState(() => _statsRange = v);
                       _loadRangeStats(v);
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: '1h', child: Text('1小时')),
-                      PopupMenuItem(value: '4h', child: Text('4小时')),
-                      PopupMenuItem(value: '12h', child: Text('12小时')),
-                      PopupMenuItem(value: '24h', child: Text('24小时')),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: '1h', child: Text(tr('liq_range_1h'))),
+                      PopupMenuItem(value: '4h', child: Text(tr('liq_range_4h'))),
+                      PopupMenuItem(value: '12h', child: Text(tr('liq_range_12h'))),
+                      PopupMenuItem(value: '24h', child: Text(tr('liq_range_24h'))),
                     ],
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1355,11 +1358,11 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                       child: Row(
                         children: [
                           Text(
-                            const {
-                              '1h': '1小时',
-                              '4h': '4小时',
-                              '12h': '12小时',
-                              '24h': '24小时',
+                            {
+                              '1h': tr('liq_range_1h'),
+                              '4h': tr('liq_range_4h'),
+                              '12h': tr('liq_range_12h'),
+                              '24h': tr('liq_range_24h'),
                             }[_statsRange]!,
                             style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white),
                           ),
@@ -1377,10 +1380,10 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _hairline))),
                 child: Row(
                   children: [
-                    Expanded(flex: 4, child: Text('交易所', style: _thStyle())),
+                    Expanded(flex: 4, child: Text(tr('liq_col_exchange'), style: _thStyle())),
                     Expanded(
                       flex: 3,
-                      child: Align(alignment: Alignment.centerRight, child: Text('占比', style: _thStyle())),
+                      child: Align(alignment: Alignment.centerRight, child: Text(tr('liq_col_share'), style: _thStyle())),
                     ),
                     Expanded(
                       flex: 5,
@@ -1389,8 +1392,8 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('多单爆仓', style: _thStyle()),
-                            Text('空单爆仓', style: _thStyle()),
+                            Text(tr('liq_long_pos'), style: _thStyle()),
+                            Text(tr('liq_short_pos'), style: _thStyle()),
                           ],
                         ),
                       ),
@@ -1402,7 +1405,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Center(
-                    child: Text('暂无数据', style: McText.sans(size: 12, color: _onSurfaceVariant)),
+                    child: Text(tr('no_data'), style: McText.sans(size: 12, color: _onSurfaceVariant)),
                   ),
                 )
               else
@@ -1514,7 +1517,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionHeader(
-          '实时爆仓',
+          tr('liq_realtime_title'),
           titleExtra: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
@@ -1538,12 +1541,12 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                     color: _surfaceContainer,
                     initialValue: _feedMinUsd,
                     onSelected: (v) => setState(() => _feedMinUsd = v),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 0, child: Text('全部')),
-                      PopupMenuItem(value: 1000, child: Text('≥ 1千')),
-                      PopupMenuItem(value: 10000, child: Text('≥ 1万')),
-                      PopupMenuItem(value: 100000, child: Text('≥ 10万')),
-                      PopupMenuItem(value: 1000000, child: Text('≥ 100万')),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 0, child: Text(tr('liq_all'))),
+                      PopupMenuItem(value: 1000, child: Text(tr('liq_ge_1k'))),
+                      PopupMenuItem(value: 10000, child: Text(tr('liq_ge_1w'))),
+                      PopupMenuItem(value: 100000, child: Text(tr('liq_ge_10w'))),
+                      PopupMenuItem(value: 1000000, child: Text(tr('liq_ge_100w'))),
                     ],
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1556,7 +1559,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                         children: [
                           Text(
                             _feedMinUsd <= 0
-                                ? '全部'
+                                ? tr('liq_all')
                                 : '≥ ${_fmtUsdZh(_feedMinUsd).replaceAll('\$', '')}',
                             style: McText.sans(size: 12, weight: FontWeight.w500, color: Colors.white),
                           ),
@@ -1588,18 +1591,18 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                 decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _hairline))),
                 child: Row(
                   children: [
-                    Expanded(flex: 4, child: Text('交易所', style: _thStyle())),
+                    Expanded(flex: 4, child: Text(tr('liq_col_exchange'), style: _thStyle())),
                     Expanded(
                       flex: 3,
-                      child: Center(child: Text('价格', style: _thStyle())),
+                      child: Center(child: Text(tr('liq_col_price'), style: _thStyle())),
                     ),
                     Expanded(
                       flex: 3,
-                      child: Align(alignment: Alignment.centerRight, child: Text('爆仓金额', style: _thStyle())),
+                      child: Align(alignment: Alignment.centerRight, child: Text(tr('liq_col_amount'), style: _thStyle())),
                     ),
                     Expanded(
                       flex: 2,
-                      child: Align(alignment: Alignment.centerRight, child: Text('时间', style: _thStyle())),
+                      child: Align(alignment: Alignment.centerRight, child: Text(tr('liq_col_time'), style: _thStyle())),
                     ),
                   ],
                 ),
@@ -1628,7 +1631,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
-                        child: Text('暂无符合筛选的爆仓单',
+                        child: Text(tr('liq_no_match'),
                             style: McText.sans(size: 12, color: _onSurfaceVariant)),
                       ),
                     );
@@ -1696,7 +1699,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    item.long ? '做多强平' : '做空强平',
+                    item.long ? tr('liq_long_forced') : tr('liq_short_forced'),
                     style: McText.sans(size: 12, weight: FontWeight.w600, color: sideColor),
                   ),
                 ),

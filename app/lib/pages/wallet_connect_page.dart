@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:reown_sign/reown_sign.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -79,14 +80,14 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
     setState(() {
       _phase = _Phase.connecting;
       _error = null;
-      _status = '生成连接中...';
+      _status = tr('wc_generating');
     });
     try {
       final (uri, sessionFuture) = await WalletService.connect(_network);
       if (!mounted) return;
       setState(() {
         _wcUri = uri?.toString();
-        _status = '等待钱包确认连接...';
+        _status = tr('wc_waiting');
       });
       final SessionData session = await sessionFuture.timeout(
         const Duration(minutes: 2),
@@ -97,7 +98,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       if (accs.isEmpty) {
         setState(() {
           _phase = _Phase.idle;
-          _error = '钱包未提供 $_networkLabel 账户, 请换 Trust/SafePal 重试';
+          _error = tr('wc_no_account').replaceAll('{network}', _networkLabel);
         });
         return;
       }
@@ -112,7 +113,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       setState(() {
         _phase = _Phase.idle;
         _wcUri = null;
-        _error = '连接失败或被取消, 可重试或手动转账后 txid 补单';
+        _error = tr('wc_connect_failed');
       });
     }
   }
@@ -125,7 +126,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
     try {
       await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
     } catch (_) {
-      _toast('未安装对应钱包, 可用二维码扫码连接');
+      _toast(tr('wc_no_wallet'));
     }
   }
 
@@ -135,7 +136,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
     final amountText = _amountCtrl.text.trim();
     final amount = double.tryParse(amountText);
     if (amount == null || amount <= 0) {
-      _toast('输入有效金额');
+      _toast(tr('wc_err_amount'));
       return;
     }
     final owner = _address;
@@ -143,7 +144,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
     setState(() {
       _phase = _Phase.paying;
       _error = null;
-      _status = '构造交易中...';
+      _status = tr('wc_building');
     });
     try {
       // 1. 后端构造未签名交易
@@ -157,13 +158,13 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       String txid = '';
       if (_isEvm) {
         // EVM: 钱包签名并广播, 直接返回交易哈希
-        setState(() => _status = '请在钱包中确认发送...');
+        setState(() => _status = tr('wc_confirm_send'));
         txid = await WalletService.sendEvmTransaction(
           network: _network,
           transaction: prep['transaction'] as Map<String, dynamic>,
         );
       } else {
-        setState(() => _status = '请在钱包中确认签名...');
+        setState(() => _status = tr('wc_confirm_sign'));
         // 2. 钱包签名 (部分钱包签名后直接广播)
         final result = await WalletService.signTransaction(
           ownerAddress: owner,
@@ -176,31 +177,31 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
           txid = (r['txid'] ?? r['transaction']?['txID'] ?? '').toString();
           if (txid.isEmpty) {
             if (!mounted) return;
-            setState(() => _status = '广播交易中...');
+            setState(() => _status = tr('wc_broadcasting'));
             txid = await FinanceApi.broadcastDeposit(r);
           }
         }
       }
-      if (txid.isEmpty) throw StateError('钱包未返回交易结果');
+      if (txid.isEmpty) throw StateError(tr('wc_no_result'));
 
       // 4. 核销入账
       if (!mounted) return;
-      setState(() => _status = '核销入账中...');
+      setState(() => _status = tr('wc_claiming'));
       final rec = await FinanceApi.claimDeposit(txid, network: _network);
       if (!mounted) return;
       final st = rec['status']?.toString();
       setState(() {
         _phase = _Phase.done;
         _status = st == 'credited'
-            ? '支付成功, 已入账本金账户'
-            : '支付已上链, 区块确认后自动入账 ($txid)';
+            ? tr('wc_pay_success')
+            : tr('wc_pay_onchain').replaceAll('{txid}', txid);
       });
     } on ApiException catch (e) {
       _payFail(e.message);
     } catch (e) {
       _payFail(e is StateError
           ? e.message
-          : '钱包未确认或网络错误; 若已扣款请用 txid 补单');
+          : tr('wc_pay_failed'));
     }
   }
 
@@ -224,7 +225,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       backgroundColor: McColors.surface,
       appBar: AppBar(
         backgroundColor: McColors.surface,
-        title: Text('连接钱包支付', style: McText.sans(size: 16, weight: FontWeight.w600)),
+        title: Text(tr('wc_title'), style: McText.sans(size: 16, weight: FontWeight.w600)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -258,12 +259,12 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
               size: 40, color: McColors.outline),
           const SizedBox(height: 12),
           Text(
-            '钱包连接未启用',
+            tr('wc_unavailable_title'),
             style: McText.sans(size: 15, weight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            '当前版本未配置 WalletConnect, 请返回充值页复制地址手动转账; 转账后可用 txid 补单自动入账。',
+            tr('wc_unavailable_body'),
             style: McText.sans(
                 size: 12, color: McColors.onSurfaceVariant, height: 1.5),
             textAlign: TextAlign.center,
@@ -282,12 +283,12 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
       child: Column(
         children: [
           Text(
-            '支持 Trust Wallet / SafePal / Binance Web3 等',
+            tr('wc_supported'),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
           if (!connecting)
-            _primaryBtn('连接钱包', Icons.link, _connect)
+            _primaryBtn(tr('wc_connect'), Icons.link, _connect)
           else ...[
             if (_wcUri != null)
               Container(
@@ -307,9 +308,9 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
               children: [
                 _walletBtn('Trust', () => _openWallet('trust://wc?uri=')),
                 _walletBtn('SafePal', () => _openWallet('safepal://wc?uri=')),
-                _walletBtn('复制链接', () {
+                _walletBtn(tr('wc_copy_link'), () {
                   Clipboard.setData(ClipboardData(text: _wcUri ?? ''));
-                  _toast('连接链接已复制, 粘贴到钱包的 WalletConnect');
+                  _toast(tr('wc_link_copied'));
                 }),
               ],
             ),
@@ -351,7 +352,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
                     });
                   }
                 },
-                child: Text('断开',
+                child: Text(tr('wc_disconnect'),
                     style: McText.sans(size: 12, color: McColors.bear)),
               ),
             ],
@@ -364,16 +365,16 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               style: McText.mono(size: 16),
-              decoration: const InputDecoration(
-                labelText: '充值金额 (USDT)',
-                hintText: '最小 10',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: tr('wc_amount_label'),
+                hintText: tr('wc_amount_hint'),
+                border: const OutlineInputBorder(),
                 suffixText: 'USDT',
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '将从您的钱包向专属充值地址转账 USDT-$_networkLabel, 区块确认后入账',
+              tr('wc_transfer_note').replaceAll('{network}', _networkLabel),
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
@@ -395,7 +396,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
                 ],
               )
               else
-                _primaryBtn('确认支付', Icons.payments_outlined, _pay),
+                _primaryBtn(tr('wc_confirm_pay'), Icons.payments_outlined, _pay),
           ] else ...[
             Row(
               children: [
@@ -411,7 +412,7 @@ class _WalletConnectPageState extends State<WalletConnectPage> {
               ],
             ),
             const SizedBox(height: 16),
-            _primaryBtn('完成', Icons.done, () => Navigator.pop(context)),
+            _primaryBtn(tr('wc_done'), Icons.done, () => Navigator.pop(context)),
           ],
         ],
       ),

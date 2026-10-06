@@ -1,6 +1,10 @@
+import '../core/l10n.dart';
 import 'api.dart';
 import 'auth.dart';
 import 'ticker_ws.dart' show BookLevel, TradePush;
+
+/// 资讯语言协商: 中文(简/繁)取中文, 其余语言取原文(英文).
+String get newsLang => L10n.instance.isChinese ? 'zh' : 'en';
 
 /// 资讯条目 (后端 /api/news 行).
 class NewsItem {
@@ -247,7 +251,8 @@ class McData {
     int pageSize = 20,
     String? keyword,
   }) async {
-    final q = StringBuffer('/api/news?page=$page&page_size=$pageSize');
+    final q = StringBuffer(
+        '/api/news?page=$page&page_size=$pageSize&lang=$newsLang');
     if (category != null) q.write('&category=$category');
     if (keyword != null && keyword.isNotEmpty) {
       q.write('&keyword=${Uri.encodeComponent(keyword)}');
@@ -261,7 +266,7 @@ class McData {
 
   /// 资讯详情 (后端 /api/news/{id}, 字段同列表项 + content).
   static Future<NewsItem> newsDetail(int id) async {
-    final resp = await McApi.get('/api/news/$id');
+    final resp = await McApi.get('/api/news/$id?lang=$newsLang');
     return NewsItem.fromJson(resp);
   }
 

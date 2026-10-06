@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
@@ -34,7 +35,7 @@ class _OrdersPageState extends State<OrdersPage> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -54,7 +55,7 @@ class _OrdersPageState extends State<OrdersPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('我的订单', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('ord_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
       body: _busy && _items.isEmpty
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -73,16 +74,16 @@ class _OrdersPageState extends State<OrdersPage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 80),
                       child: Center(
-                        child: Text('暂无订单, 去理财产品页看看吧',
+                        child: Text(tr('ord_empty'),
                             style: McText.sans(color: McColors.onSurfaceVariant)),
                       ),
                     ),
                   if (active.isNotEmpty) ...[
-                    _section('生效中 (${active.length})'),
+                    _section(tr('ord_active').replaceAll('{n}', '${active.length}')),
                     for (final o in active) _orderCard(o),
                   ],
                   if (done.isNotEmpty) ...[
-                    _section('已完成 (${done.length})'),
+                    _section(tr('ord_done').replaceAll('{n}', '${done.length}')),
                     for (final o in done) _orderCard(o),
                   ],
                 ],
@@ -150,7 +151,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('${o['amount']} USDT', style: McText.mono(size: 15, weight: FontWeight.w700)),
-                    Text('订单金额', style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
+                    Text(tr('ord_amount'), style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -162,7 +163,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       actualRate == null ? '-' : '${(FinanceApi.d(actualRate) * 100).toStringAsFixed(3)}%',
                       style: McText.mono(size: 15, weight: FontWeight.w700, color: McColors.goldBright),
                     ),
-                    Text('实际日收益率 (含VIP加成)', style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
+                    Text(tr('ord_actual_rate'), style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -173,7 +174,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     children: [
                       Text('≈${income.toStringAsFixed(2)}',
                           style: McText.mono(size: 15, weight: FontWeight.w700, color: McColors.tertiary)),
-                      Text('预期总收益', style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
+                      Text(tr('ord_expected_total'), style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -185,24 +186,24 @@ class _OrdersPageState extends State<OrdersPage> {
             runSpacing: 6,
             children: [
               _chip(FinLabels.returnMethods[o['return_method']] ?? '${o['return_method']}'),
-              _chip('周期 ${o['duration_days']} 天'),
+              _chip(tr('ord_period').replaceAll('{n}', '${o['duration_days']}')),
               if (vipLv != null) ...[
-                _chip('下单时 VIP$vipLv'),
-                if (o['team_level'] != null) _chip('团队${o['team_level']}级'),
-                _chip('锁定加成 +${(FinanceApi.d(bonus) * 100).toStringAsFixed(0)}%'),
+                _chip(tr('ord_vip_at').replaceAll('{n}', '$vipLv')),
+                if (o['team_level'] != null) _chip(tr('ord_team_at').replaceAll('{n}', '${o['team_level']}')),
+                _chip(tr('ord_lock_bonus').replaceAll('{n}', (FinanceApi.d(bonus) * 100).toStringAsFixed(0))),
               ],
-              _chip('规则 v${o['rule_version']}'),
+              _chip(tr('ord_rule_ver').replaceAll('{n}', '${o['rule_version']}')),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
-                child: Text('生效 ${FinanceApi.time(o['effective_at'])}',
+                child: Text(tr('ord_effective_at').replaceAll('{time}', FinanceApi.time(o['effective_at'])),
                     style: McText.mono(size: 11, color: McColors.onSurfaceVariant)),
               ),
               Expanded(
-                child: Text('到期 ${FinanceApi.time(o['expires_at'])}',
+                child: Text(tr('ord_expires_at').replaceAll('{time}', FinanceApi.time(o['expires_at'])),
                     style: McText.mono(size: 11, color: McColors.onSurfaceVariant)),
               ),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -16,12 +17,12 @@ class WalletMatrixPage extends StatefulWidget {
 }
 
 class _WalletMatrixPageState extends State<WalletMatrixPage> {
-  /// 网络元数据: (标签, 链名).
+  /// 网络元数据: (标签, 链名 key). 显示时 tr().
   static const _meta = {
-    'trc20': ('TRC20', 'Tron 主网'),
-    'erc20': ('ERC20', 'Ethereum'),
-    'bep20': ('BEP20', 'BNB Chain'),
-    'arbitrum': ('Arbitrum', 'Arbitrum One'),
+    'trc20': ('TRC20', 'dep_chain_tron'),
+    'erc20': ('ERC20', 'dep_chain_eth'),
+    'bep20': ('BEP20', 'dep_chain_bnb'),
+    'arbitrum': ('Arbitrum', 'dep_chain_arb'),
   };
 
   /// network → 专属地址 (null=加载中/失败占位 '').
@@ -66,7 +67,7 @@ class _WalletMatrixPageState extends State<WalletMatrixPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
-      _toast('网络错误, 下拉重试');
+      _toast(tr('net_error_retry'));
     }
   }
 
@@ -78,7 +79,7 @@ class _WalletMatrixPageState extends State<WalletMatrixPage> {
     final addr = _addresses[network];
     if (addr == null || addr.isEmpty) return;
     Clipboard.setData(ClipboardData(text: addr));
-    _toast('${_meta[network]!.$1} 地址已复制');
+    _toast(tr('wm_addr_copied').replaceAll('{network}', _meta[network]!.$1));
   }
 
   @override
@@ -87,7 +88,7 @@ class _WalletMatrixPageState extends State<WalletMatrixPage> {
       backgroundColor: McColors.surface,
       appBar: AppBar(
         backgroundColor: McColors.surface,
-        title: Text('钱包矩阵',
+        title: Text(tr('wm_title'),
             style: McText.sans(size: 16, weight: FontWeight.w600)),
       ),
       body: RefreshIndicator(
@@ -96,7 +97,7 @@ class _WalletMatrixPageState extends State<WalletMatrixPage> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             Text(
-              '每条链一个专属充值地址, 长期有效; 向该地址转 USDT 自动入账本金账户。',
+              tr('wm_intro'),
               style: McText.sans(
                   size: 12, color: McColors.onSurfaceVariant, height: 1.5),
             ),
@@ -110,7 +111,7 @@ class _WalletMatrixPageState extends State<WalletMatrixPage> {
               for (final e in _meta.entries) ...[
                 _NetworkAddrCard(
                   label: e.value.$1,
-                  chain: e.value.$2,
+                  chain: tr(e.value.$2),
                   address: _addresses[e.key],
                   total: _totals[e.key] ?? 0,
                   onCopy: () => _copy(e.key),
@@ -161,7 +162,7 @@ class _NetworkAddrCard extends StatelessWidget {
                       size: 12, color: McColors.onSurfaceVariant)),
               const Spacer(),
               Text(
-                '累计充值 ${total.toStringAsFixed(2)} USDT',
+                tr('wm_total_deposit').replaceAll('{n}', total.toStringAsFixed(2)),
                 style: McText.sans(size: 12, color: McColors.tertiary),
               ),
             ],
@@ -175,7 +176,7 @@ class _NetworkAddrCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: address == null
-                ? Text('加载中...',
+                ? Text(tr('loading'),
                     style: McText.sans(
                         size: 12, color: McColors.onSurfaceVariant))
                 : SelectableText(
@@ -188,11 +189,11 @@ class _NetworkAddrCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _miniBtn('复制地址', Icons.content_copy, onCopy),
+                child: _miniBtn(tr('wm_copy_addr'), Icons.content_copy, onCopy),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _miniBtn('去充值', Icons.input_outlined, onDeposit,
+                child: _miniBtn(tr('wm_go_deposit'), Icons.input_outlined, onDeposit,
                     primary: true),
               ),
             ],

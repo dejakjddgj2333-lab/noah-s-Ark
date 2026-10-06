@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
@@ -48,7 +49,7 @@ class _CommissionPageState extends State<CommissionPage> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -73,7 +74,7 @@ class _CommissionPageState extends State<CommissionPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text('邀请返佣', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('comm_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, size: 20, color: McColors.onSurfaceVariant),
@@ -122,13 +123,13 @@ class _CommissionPageState extends State<CommissionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('累计佣金 (USDT)',
+          Text(tr('comm_total'),
               style: McText.sans(size: 12, color: Colors.white.withValues(alpha: 0.8))),
           const SizedBox(height: 6),
           Text(total.toStringAsFixed(2),
               style: McText.mono(size: 32, weight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 4),
-          Text('今日 +${today.toStringAsFixed(2)}',
+          Text(tr('comm_today').replaceAll('{n}', today.toStringAsFixed(2)),
               style: McText.mono(size: 12, color: McColors.tertiary)),
           const SizedBox(height: 16),
           Row(
@@ -136,7 +137,7 @@ class _CommissionPageState extends State<CommissionPage> {
               Expanded(
                 child: _actionBtn(
                   icon: Icons.account_balance_wallet,
-                  label: '去提现',
+                  label: tr('comm_go_withdraw'),
                   primary: true,
                   onTap: () => Navigator.of(context).pushNamed('/withdraw'),
                 ),
@@ -145,7 +146,7 @@ class _CommissionPageState extends State<CommissionPage> {
               Expanded(
                 child: _actionBtn(
                   icon: Icons.person_add_alt,
-                  label: '邀请好友',
+                  label: tr('comm_go_invite'),
                   primary: false,
                   onTap: () => Navigator.of(context).pushNamed('/invite'),
                 ),
@@ -207,9 +208,9 @@ class _CommissionPageState extends State<CommissionPage> {
               children: [
                 const Icon(Icons.groups, size: 18, color: McColors.tertiary),
                 const SizedBox(width: 8),
-                Text('我的团队等级', style: McText.sans(size: 14, weight: FontWeight.w700)),
+                Text(tr('comm_my_team_level'), style: McText.sans(size: 14, weight: FontWeight.w700)),
                 const Spacer(),
-                Text('团队 $lv 级',
+                Text(tr('comm_team_level_num').replaceAll('{n}', '$lv'),
                     style: McText.display(size: 14, weight: FontWeight.w700, color: McColors.tertiary)),
                 const Icon(Icons.chevron_right, size: 16, color: McColors.onSurfaceVariant),
               ],
@@ -217,7 +218,7 @@ class _CommissionPageState extends State<CommissionPage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                for (final (label, key) in [('一代', 'gen1_rate'), ('二代', 'gen2_rate'), ('三代', 'gen3_rate')])
+                for (final (label, key) in [(tr('comm_gen1'), 'gen1_rate'), (tr('comm_gen2'), 'gen2_rate'), (tr('comm_gen3'), 'gen3_rate')])
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),
@@ -232,7 +233,7 @@ class _CommissionPageState extends State<CommissionPage> {
                             _team?[key] == null ? '—' : _pct(_team![key]),
                             style: McText.mono(size: 14, weight: FontWeight.w700, color: McColors.primarySoft),
                           ),
-                          Text('$label返佣',
+                          Text(tr('comm_gen_rebate').replaceAll('{label}', label),
                               style: McText.sans(size: 10, color: McColors.onSurfaceVariant)),
                         ],
                       ),
@@ -242,8 +243,15 @@ class _CommissionPageState extends State<CommissionPage> {
             ),
             const SizedBox(height: 10),
             Text(
-              '三代有效成员 $members 人 · 团队持仓 ${holding.toStringAsFixed(2)} USDT'
-              '${nextLv != null ? ' · 距 ${nextLv} 级还差 ${_team?['next_member_gap'] ?? 0} 人 / ${FinanceApi.d(_team?['next_holding_gap']).toStringAsFixed(0)} USDT' : ' · 已达最高等级'}',
+              tr('comm_team_meta')
+                  .replaceAll('{members}', '$members')
+                  .replaceAll('{holding}', holding.toStringAsFixed(2))
+                  .replaceAll('{gap}', nextLv != null
+                      ? tr('comm_team_gap')
+                          .replaceAll('{next}', '$nextLv')
+                          .replaceAll('{member_gap}', '${_team?['next_member_gap'] ?? 0}')
+                          .replaceAll('{holding_gap}', FinanceApi.d(_team?['next_holding_gap']).toStringAsFixed(0))
+                      : tr('comm_team_max')),
               style: McText.sans(size: 11, color: McColors.onSurfaceVariant, height: 1.5),
             ),
           ],
@@ -270,9 +278,9 @@ class _CommissionPageState extends State<CommissionPage> {
         children: [
           Row(
             children: [
-              Text('佣金明细', style: McText.sans(size: 14, weight: FontWeight.w700)),
+              Text(tr('comm_records_title'), style: McText.sans(size: 14, weight: FontWeight.w700)),
               const Spacer(),
-              Text('共 ${all.length} 笔',
+              Text(tr('comm_records_count').replaceAll('{n}', '${all.length}'),
                   style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
             ],
           ),
@@ -281,7 +289,7 @@ class _CommissionPageState extends State<CommissionPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (final (i, label) in [(0, '全部'), (1, '一代'), (2, '二代'), (3, '三代')]) ...[
+                for (final (i, label) in [(0, tr('comm_filter_all')), (1, tr('comm_gen1')), (2, tr('comm_gen2')), (3, tr('comm_gen3'))]) ...[
                   GestureDetector(
                     onTap: () => setState(() => _genFilter = i),
                     child: Container(
@@ -314,7 +322,7 @@ class _CommissionPageState extends State<CommissionPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('暂无佣金记录, 邀请好友购买产品后按结算收益返佣',
+                child: Text(tr('comm_empty'),
                     style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
               ),
             )
@@ -329,9 +337,9 @@ class _CommissionPageState extends State<CommissionPage> {
   }
 
   Widget _recordItem(Map<String, dynamic> r) {
-    const genLabels = {1: '一代', 2: '二代', 3: '三代'};
+    final genLabels = {1: tr('comm_gen1'), 2: tr('comm_gen2'), 3: tr('comm_gen3')};
     final gen = r['gen'] as int? ?? 0;
-    final buyer = (r['buyer_username'] ?? '用户#${r['buyer_id']}').toString();
+    final buyer = (r['buyer_username'] ?? tr('comm_user_prefix') + '${r['buyer_id']}').toString();
     final base = FinanceApi.d(r['base_amount']);
     final rate = FinanceApi.d(r['rate']);
     final amount = FinanceApi.d(r['amount']);
@@ -348,7 +356,7 @@ class _CommissionPageState extends State<CommissionPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
-              child: Text('${gen}代',
+              child: Text(tr('comm_gen_badge').replaceAll('{n}', '$gen'),
                   style: McText.sans(size: 11, weight: FontWeight.w700, color: McColors.primarySoft)),
             ),
           ),
@@ -360,7 +368,7 @@ class _CommissionPageState extends State<CommissionPage> {
                 Row(
                   children: [
                     Flexible(
-                      child: Text('来自 $buyer',
+                      child: Text(tr('comm_from').replaceAll('{name}', buyer),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: McText.sans(size: 13, weight: FontWeight.w600)),
@@ -372,19 +380,25 @@ class _CommissionPageState extends State<CommissionPage> {
                         color: McColors.tertiary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text('${genLabels[gen] ?? "$gen代"}返佣',
+                      child: Text(tr('comm_gen_rebate').replaceAll('{label}', genLabels[gen] ?? tr('comm_gen_badge').replaceAll('{n}', '$gen')),
                           style: McText.sans(size: 10, weight: FontWeight.w600, color: McColors.tertiary)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '订单#${r['order_id']} 第${r['period_no'] ?? '-'}期 · 基数 ${base.toStringAsFixed(2)} × ${_pct(rate)}',
+                  tr('comm_order_meta')
+                      .replaceAll('{order}', '${r['order_id']}')
+                      .replaceAll('{period}', '${r['period_no'] ?? '-'}')
+                      .replaceAll('{base}', base.toStringAsFixed(2))
+                      .replaceAll('{rate}', _pct(rate)),
                   style: McText.mono(size: 11, color: McColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '应结算 ${_fmtTime(r['settle_at']?.toString())} · 入账 ${_fmtTime(r['created_at']?.toString())}',
+                  tr('comm_settle_line')
+                      .replaceAll('{settle}', _fmtTime(r['settle_at']?.toString()))
+                      .replaceAll('{create}', _fmtTime(r['created_at']?.toString())),
                   style: McText.sans(size: 10, color: McColors.onSurfaceVariant),
                 ),
               ],
@@ -396,7 +410,7 @@ class _CommissionPageState extends State<CommissionPage> {
             children: [
               Text('+${amount.toStringAsFixed(2)}',
                   style: McText.mono(size: 14, weight: FontWeight.w700, color: McColors.tertiary)),
-              Text('已入账', style: McText.sans(size: 10, color: McColors.onSurfaceVariant)),
+              Text(tr('comm_credited'), style: McText.sans(size: 10, color: McColors.onSurfaceVariant)),
             ],
           ),
         ],

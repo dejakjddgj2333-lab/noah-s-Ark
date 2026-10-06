@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/coin_icon.dart';
+import '../core/color_pref.dart';
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -188,18 +190,25 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       final isAdd = action == 1;
       final isReduce = action == 2;
       final color = isReduce
-          ? McColors.bear
-          : (isAdd ? McColors.bull : McColors.primary);
-      final pill = isReduce ? '减仓离场' : (isAdd ? '加仓开仓' : '仓位异动');
+          ? ColorPref.instance.bearColor
+          : (isAdd ? ColorPref.instance.bullColor : McColors.primary);
+      final pill = isReduce
+          ? tr('whale_pill_reduce')
+          : (isAdd ? tr('whale_pill_add') : tr('whale_pill_move'));
       final emoji = isReduce ? '⚠️' : (isAdd ? '🐋' : '⚡');
-      final verb = isReduce ? '减仓/平仓' : (isAdd ? '加仓/开仓' : '调整仓位');
+      final verb = isReduce
+          ? tr('whale_verb_reduce')
+          : (isAdd ? tr('whale_verb_add') : tr('whale_verb_move'));
       out.add(_WhaleItem(
         emoji: emoji,
         pillText: pill,
         pillColor: color,
         time: _relTime(m['create_time'] ?? m['createTime'] ?? m['time']),
-        body:
-            '巨鲸地址 ${_shortAddr(user)} 在 Hyperliquid $verb $symbol，仓位规模约 ${_fmtUsdZh(usd)}。',
+        body: tr('ov_whale_body')
+            .replaceAll('{addr}', _shortAddr(user))
+            .replaceAll('{verb}', verb)
+            .replaceAll('{symbol}', symbol)
+            .replaceAll('{usd}', _fmtUsdZh(usd)),
       ));
       if (out.length >= 3) break;
     }
@@ -207,19 +216,23 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 
   static String _shortAddr(String addr) {
-    if (addr.length <= 10) return addr.isEmpty ? '匿名巨鲸' : addr;
+    if (addr.length <= 10) return addr.isEmpty ? tr('whale_anon') : addr;
     return '${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}';
   }
 
   static String _relTime(dynamic ts) {
     final ms = ts is num ? ts.toInt() : int.tryParse('$ts') ?? 0;
-    if (ms <= 0) return '刚刚';
+    if (ms <= 0) return tr('time_just_now');
     final dt = DateTime.fromMillisecondsSinceEpoch(ms > 100000000000 ? ms : ms * 1000);
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
-    if (diff.inHours < 24) return '${diff.inHours}小时前';
-    return '${diff.inDays}天前';
+    if (diff.inMinutes < 1) return tr('time_just_now');
+    if (diff.inMinutes < 60) {
+      return tr('time_minutes_ago').replaceAll('{n}', '${diff.inMinutes}');
+    }
+    if (diff.inHours < 24) {
+      return tr('time_hours_ago').replaceAll('{n}', '${diff.inHours}');
+    }
+    return tr('time_days_ago').replaceAll('{n}', '${diff.inDays}');
   }
 
   Future<void> _loadSentiment() async {
@@ -232,7 +245,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         _sentimentValue = v.round().toString();
         _sentimentLabel = label;
         _sentimentColor = color;
-        _sentimentSub = '实时 · $label';
+        _sentimentSub = tr('ov_senti_sub').replaceAll('{label}', label);
       });
     } on ApiException {
       // 保留空态.
@@ -353,11 +366,11 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 
   static (String, Color) _fearGreedLabel(double v) {
-    if (v < 25) return ('极度恐慌', McColors.bear);
-    if (v < 45) return ('恐慌', McColors.bear);
-    if (v < 56) return ('中性', McColors.onSurfaceVariant);
-    if (v < 75) return ('贪婪', McColors.bull);
-    return ('极度贪婪', McColors.bull);
+    if (v < 25) return (tr('senti_extreme_fear'), ColorPref.instance.bearColor);
+    if (v < 45) return (tr('senti_fear'), ColorPref.instance.bearColor);
+    if (v < 56) return (tr('senti_neutral'), McColors.onSurfaceVariant);
+    if (v < 75) return (tr('senti_greed'), ColorPref.instance.bullColor);
+    return (tr('senti_extreme_greed'), ColorPref.instance.bullColor);
   }
 
   static (double, double, double)? _liqSums(dynamic raw) {
@@ -493,8 +506,8 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           ),
           const SizedBox(height: 16),
           // 3. 主流资产速览
-          const McSectionHeader(
-            title: '主流资产速览',
+          McSectionHeader(
+            title: tr('ov_section_assets'),
             icon: Icons.trending_up,
             trailing: '24H',
           ),
@@ -502,10 +515,10 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           if (!_loaded) McSkeleton.card(lines: 4) else _assetList(),
           const SizedBox(height: 16),
           // 4. 巨鲸异动最新
-          const McSectionHeader(
-            title: '巨鲸异动速递',
+          McSectionHeader(
+            title: tr('ov_section_whale'),
             icon: Icons.radar,
-            trailing: '实时同步中',
+            trailing: tr('ov_whale_syncing'),
             trailingColor: McColors.bull,
           ),
           const SizedBox(height: 10),
@@ -546,7 +559,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           Row(
             children: [
               Flexible(
-                child: Text('全网市场全景',
+                child: Text(tr('ov_market_banner'),
                     overflow: TextOverflow.ellipsis,
                     style:
                         McText.sans(size: 13, weight: FontWeight.w600)),
@@ -565,9 +578,9 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
           const SizedBox(height: 14),
           Row(
             children: [
-              _vital('24H 总市值', _mcTotal, _mcDelta, _mcDeltaUp),
-              _vital('24H 成交额', _mcVolume, null, null),
-              _vital('多头主导指数', _longPct, null, null, bar: _longFrac),
+              _vital(tr('ov_mcap_24h'), _mcTotal, _mcDelta, _mcDeltaUp),
+              _vital(tr('ov_volume_24h'), _mcVolume, null, null),
+              _vital(tr('ov_long_index'), _longPct, null, null, bar: _longFrac),
             ],
           ),
         ],
@@ -592,11 +605,11 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
                 style: McText.mono(
                     size: 12,
                     weight: FontWeight.w600,
-                    color: up == true ? McColors.bull : McColors.bear)),
+                    color: up == true ? ColorPref.instance.bullColor : ColorPref.instance.bearColor)),
           ],
           if (bar != null) ...[
             const SizedBox(height: 6),
-            McProgressBar(fraction: bar, color: McColors.bull, height: 4),
+            McProgressBar(fraction: bar, color: ColorPref.instance.bullColor, height: 4),
           ],
         ],
       ),
@@ -610,7 +623,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Center(
-            child: Text('暂无资产数据',
+            child: Text(tr('ov_no_assets'),
                 style:
                     McText.mono(size: 12, color: McColors.onSurfaceVariant)),
           ),
@@ -634,7 +647,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 
   Widget _assetRow(_AssetRow r) {
-    final c = r.up ? McColors.bull : McColors.bear;
+    final c = r.up ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
@@ -692,7 +705,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Center(
-            child: Text('暂无巨鲸异动数据',
+            child: Text(tr('ov_no_whale'),
                 style:
                     McText.mono(size: 12, color: McColors.onSurfaceVariant)),
           ),
@@ -835,7 +848,7 @@ class _SentimentCard extends StatelessWidget {
               const Icon(Icons.psychology,
                   size: 15, color: McColors.primaryContainer),
               const SizedBox(width: 4),
-              Text('情绪指数',
+              Text(tr('ov_sentiment_index'),
                   style: McText.sans(
                       size: 12,
                       weight: FontWeight.w500,
@@ -879,7 +892,7 @@ class _SentimentCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text(sub ?? '暂无数据',
+          Text(sub ?? tr('no_data'),
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -933,7 +946,7 @@ class _LiquidationMiniCard extends StatelessWidget {
             children: [
               const McGlowDot(color: McColors.bear),
               const SizedBox(width: 4),
-              Text('24H 爆仓',
+              Text(tr('ov_liq_24h'),
                   style: McText.sans(
                       size: 12,
                       weight: FontWeight.w500,
@@ -970,8 +983,10 @@ class _LiquidationMiniCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
               longText == null
-                  ? '暂无数据'
-                  : '多 $longText · 空 ${shortText ?? '--'}',
+                  ? tr('no_data')
+                  : tr('ov_liq_long_short')
+                      .replaceAll('{long}', longText ?? '--')
+                      .replaceAll('{short}', shortText ?? '--'),
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -1000,7 +1015,7 @@ class _FundingMiniCard extends StatelessWidget {
                   size: 15, color: McColors.primaryContainer),
               const SizedBox(width: 4),
               Flexible(
-                child: Text('资金费率加权',
+                child: Text(tr('ov_funding_weighted'),
                     overflow: TextOverflow.ellipsis,
                     style: McText.sans(
                         size: 12,
@@ -1018,8 +1033,8 @@ class _FundingMiniCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
               rate == null
-                  ? '暂无数据'
-                  : '${neg ? '空头付费' : '多头付费'} · 8H结算',
+                  ? tr('no_data')
+                  : '${neg ? tr('ov_short_pays') : tr('ov_long_pays')} · ${tr('ov_settle_8h')}',
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -1046,7 +1061,7 @@ class _AltSeasonCard extends StatelessWidget {
                   size: 15, color: McColors.primaryContainer),
               const SizedBox(width: 4),
               Flexible(
-                child: Text('山寨季指数',
+                child: Text(tr('ov_alt_season'),
                     overflow: TextOverflow.ellipsis,
                     style: McText.sans(
                         size: 12,
@@ -1074,12 +1089,13 @@ class _AltSeasonCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
               v == null
-                  ? '暂无数据'
+                  ? tr('no_data')
                   : v >= 75
-                      ? '山寨季进行中'
+                      ? tr('ov_alt_in_season')
                       : v <= 25
-                          ? '比特币季'
-                          : '距山寨季差 ${(75 - v).round()} 点',
+                          ? tr('ov_btc_season')
+                          : tr('ov_alt_gap')
+                              .replaceAll('{n}', '${(75 - v).round()}'),
               style: McText.mono(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),

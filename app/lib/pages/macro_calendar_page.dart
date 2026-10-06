@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -42,8 +43,10 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
   }
 
   String get _dateLabel {
-    const weeks = ['一', '二', '三', '四', '五', '六', '日'];
-    return '$_dateStr 星期${weeks[_date.weekday - 1]}';
+    final wd = tr('cal_weekdays').split(',')[_date.weekday - 1];
+    return tr('cal_date_label')
+        .replaceAll('{date}', _dateStr)
+        .replaceAll('{week}', wd);
   }
 
   Future<void> _load() async {
@@ -96,7 +99,7 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('宏观日历',
+        title: Text(tr('cal_title'),
             style: McText.display(size: 16, weight: FontWeight.w700)),
         centerTitle: true,
       ),
@@ -139,7 +142,7 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
                   ),
                   if (_date == _today())
                     Text(
-                      '今天',
+                      tr('cal_today'),
                       style: McText.sans(size: 12, color: _amber),
                     ),
                 ],
@@ -195,7 +198,7 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
           const SizedBox(height: 200),
           Center(
             child: Text(
-              '当日无宏观事件',
+              tr('cal_no_events'),
               style: McText.sans(size: 13, color: McColors.onSurfaceVariant),
             ),
           ),
@@ -217,7 +220,7 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('加载失败',
+          Text(tr('news_load_failed'),
               style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 10),
           GestureDetector(
@@ -230,7 +233,7 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                '重试',
+                tr('news_retry'),
                 style: McText.mono(
                     size: 12,
                     weight: FontWeight.w700,
@@ -317,7 +320,11 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
 
   Widget _stars(int importance) {
     final n = importance.clamp(1, 3);
-    final label = importance >= 3 ? '高' : importance == 2 ? '中' : '低';
+    final label = importance >= 3
+        ? tr('cal_high')
+        : importance == 2
+            ? tr('cal_mid')
+            : tr('cal_low');
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -333,9 +340,9 @@ class _MacroCalendarPageState extends State<MacroCalendarPage> {
   Widget _valuesRow(MacroEventItem e) {
     return Row(
       children: [
-        Expanded(child: _value('前值', e.previous, muted: true)),
-        Expanded(child: _value('预期', e.forecast, muted: true)),
-        Expanded(child: _value('公布', e.actual, highlight: true)),
+        Expanded(child: _value(tr('cal_previous'), e.previous, muted: true)),
+        Expanded(child: _value(tr('cal_forecast'), e.forecast, muted: true)),
+        Expanded(child: _value(tr('cal_actual'), e.actual, highlight: true)),
       ],
     );
   }
@@ -415,7 +422,7 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
         if (d == null) {
           return Center(
             child: _error
-                ? Text('加载失败',
+                ? Text(tr('news_load_failed'),
                     style: McText.sans(
                         size: 13, color: McColors.onSurfaceVariant))
                 : const CircularProgressIndicator(),
@@ -487,7 +494,7 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
             // 解读
             if (d.descZh != null && d.descZh!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text('指标解读',
+              Text(tr('cal_interpretation'),
                   style: McText.sans(
                       size: 13, weight: FontWeight.w700)),
               const SizedBox(height: 8),
@@ -512,7 +519,7 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
             // 历史走势
             if (d.history.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text('历史走势 (近 ${d.history.length} 期)',
+              Text(tr('cal_history').replaceAll('{n}', '${d.history.length}'),
                   style: McText.sans(
                       size: 13, weight: FontWeight.w700)),
               const SizedBox(height: 8),
@@ -521,7 +528,7 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
               for (final p in d.history.reversed) _historyRow(p, d.unit),
             ] else ...[
               const SizedBox(height: 16),
-              Text('暂无历史数据',
+              Text(tr('cal_no_history'),
                   style: McText.sans(
                       size: 12, color: McColors.onSurfaceVariant)),
             ],
@@ -533,7 +540,11 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
 
   Widget _stars(int importance) {
     final n = importance.clamp(1, 3);
-    final label = importance >= 3 ? '高' : importance == 2 ? '中' : '低';
+    final label = importance >= 3
+        ? tr('cal_high')
+        : importance == 2
+            ? tr('cal_mid')
+            : tr('cal_low');
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -576,9 +587,9 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
 
     return Row(
       children: [
-        cell('前值', d.previous),
-        cell('预期', d.forecast),
-        cell('公布', d.actual, highlight: true),
+        cell(tr('cal_previous'), d.previous),
+        cell(tr('cal_forecast'), d.forecast),
+        cell(tr('cal_actual'), d.actual, highlight: true),
       ],
     );
   }
@@ -590,13 +601,13 @@ class _MacroDetailSheetState extends State<_MacroDetailSheet> {
     Color tagColor = McColors.onSurfaceVariant;
     if (actualNum != null && forecastNum != null) {
       if (actualNum > forecastNum) {
-        tag = '高于预期';
+        tag = tr('cal_above_forecast');
         tagColor = const Color(0xFF2EBD85);
       } else if (actualNum < forecastNum) {
-        tag = '低于预期';
+        tag = tr('cal_below_forecast');
         tagColor = const Color(0xFFF6465D);
       } else {
-        tag = '符合预期';
+        tag = tr('cal_meets_forecast');
       }
     }
     return Padding(

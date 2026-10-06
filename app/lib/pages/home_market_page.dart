@@ -3,11 +3,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/coin_icon.dart';
+import '../core/color_pref.dart';
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/data.dart';
 import '../services/ticker_ws.dart';
 import 'market_detail_page.dart';
+
+/// 板块分类内部键 (中文, 亦作 _categories 查询键) → 显示文案.
+String mktCatLabel(String key) {
+  switch (key) {
+    case '全部':
+      return tr('mkt_cat_all');
+    case 'Solana生态':
+      return tr('mkt_cat_solana');
+    default:
+      return key; // Layer 1 / DeFi / AI Agent / Meme / RWA 等拉丁名不译
+  }
+}
 
 /// 行情 board.
 /// Reference: stitch_ref/home_market.html (content body only).
@@ -23,6 +37,8 @@ class HomeMarketPage extends StatefulWidget {
   static const _secondary = Color(0xFF9AECFF); // secondary
   static const _bull = Color(0xFF00E388); // tertiary
   static const _bullCont = Color(0xFF007E49); // tertiary-container
+  // 涨跌红/绿已由 ColorPref 接管; _err 仅留作调色板定义 (跌色容器 _errCont 仍用).
+  // ignore: unused_field
   static const _err = Color(0xFFFFB4AB); // error
   static const _errCont = Color(0xFF93000A); // error-container
 
@@ -50,6 +66,7 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
   int _sortIndex = 0;
 
   /// 当前板块筛选: 全部 / 自选 / Layer 1 / DeFi / AI Agent (客户端过滤).
+  /// 值为 _categories 内部键 (中文), 显示时经 _catLabel 翻译.
   String _category = '全部';
 
   /// 真实行情行 (拉取成功后填充); 已加载但仍为空表示拉取失败.
@@ -132,9 +149,9 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
         _liveRows[idx] = _liveRows[idx].copyWith(
           vol: '24H ${_fmtVol(p.notionalUsd)}',
           price: _fmtPrice(p.last),
-          note: '高 ${_fmtPrice(p.high24h)}',
-          noteColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
-          sparkColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+          note: '${tr('mkt_high')} ${_fmtPrice(p.high24h)}',
+          noteColor: positive ? ColorPref.instance.bullColor : ColorPref.instance.bearColor,
+          sparkColor: positive ? ColorPref.instance.bullColor : ColorPref.instance.bearColor,
           delta: _fmtDelta(pct),
           positive: positive,
           notional: p.notionalUsd,
@@ -151,12 +168,12 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
       symbol: t.symbol,
       vol: '24H ${_fmtVol(_notional(t))}',
       price: _fmtPrice(t.last),
-      note: '高 ${_fmtPrice(t.high24h)}',
-      noteColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+      note: '${tr('mkt_high')} ${_fmtPrice(t.high24h)}',
+      noteColor: positive ? ColorPref.instance.bullColor : ColorPref.instance.bearColor,
       spark: (spark == null || spark.isEmpty)
           ? const [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
           : spark,
-      sparkColor: positive ? HomeMarketPage._bull : HomeMarketPage._err,
+      sparkColor: positive ? ColorPref.instance.bullColor : ColorPref.instance.bearColor,
       delta: _fmtDelta(pct),
       positive: positive,
       alt: false, // 斑马纹由渲染序号决定
@@ -203,16 +220,17 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
       final leader = rows.reduce((a, b) => a.pct >= b.pct ? a : b);
       final hot = avg.abs() >= 3;
       out.add(_HeatTile(
-        name: s,
+        name: mktCatLabel(s),
         pct: _fmtDelta(avg),
-        leader: '${avg >= 0 ? '领涨' : '领跌'}: ${leader.symbol}',
+        leader:
+            '${avg >= 0 ? tr('mkt_leader_up') : tr('mkt_leader_down')}: ${leader.symbol}',
         tag: avg >= 5
-            ? '爆发'
+            ? tr('mkt_tag_breakout')
             : avg >= 2
-                ? '放量'
+                ? tr('mkt_tag_volume')
                 : avg > -2
-                    ? '震荡'
-                    : '走弱',
+                    ? tr('mkt_tag_range')
+                    : tr('mkt_tag_weak'),
         hot: hot,
         overlay: (avg.abs() / 50).clamp(0.02, 0.15),
         borderAlpha: hot ? 0.20 : 0.15,
@@ -304,9 +322,9 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
           if (!_loaded)
             McSkeleton.card(lines: 6, height: 16)
           else if (_liveRows.isEmpty)
-            _emptyHint('行情加载失败, 下拉重试')
+            _emptyHint(tr('mkt_load_failed'))
           else if (rows.isEmpty)
-            _emptyHint('该板块暂无上榜币种')
+            _emptyHint(tr('mkt_sector_empty'))
           else
             _MarketListCard(rows: rows, onRowTap: _openDetail),
           const SizedBox(height: 20),
@@ -406,7 +424,7 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                         size: 18, color: McColors.primary),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text('全网市场热度',
+                      child: Text(tr('mkt_market_heat'),
                           overflow: TextOverflow.ellipsis,
                           style:
                               McText.sans(size: 13, weight: FontWeight.w600)),
@@ -445,7 +463,7 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
             children: [
                 Expanded(
                   child: _vital(
-                    '24H 总市值',
+                    tr('ov_mcap_24h'),
                     _mcTotal,
                     valueColor: McColors.onSurface,
                     sub: Row(
@@ -456,8 +474,8 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                                 : Icons.trending_down,
                             size: 12,
                             color: _mcDeltaUp
-                                ? HomeMarketPage._bull
-                                : HomeMarketPage._err),
+                                ? ColorPref.instance.bullColor
+                                : ColorPref.instance.bearColor),
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(_mcDelta,
@@ -466,8 +484,8 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                                   size: 12,
                                   weight: FontWeight.w600,
                                   color: _mcDeltaUp
-                                      ? HomeMarketPage._bull
-                                      : HomeMarketPage._err)),
+                                      ? ColorPref.instance.bullColor
+                                      : ColorPref.instance.bearColor)),
                         ),
                       ],
                     ),
@@ -476,10 +494,10 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _vital(
-                    '24H 全网成交',
+                    tr('mkt_volume_24h'),
                     _mcVolume,
                     valueColor: McColors.onSurface,
-                    sub: Text('极度活跃',
+                    sub: Text(tr('mkt_very_active'),
                         style: McText.sans(
                             size: 12, color: HomeMarketPage._outlineVar)),
                   ),
@@ -487,9 +505,9 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _vital(
-                    '多头主导指数',
+                    tr('ov_long_index'),
                     _longPct,
-                    valueColor: HomeMarketPage._bull,
+                    valueColor: ColorPref.instance.bullColor,
                     sub: ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: Container(
@@ -500,7 +518,7 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
                           widthFactor: _longFrac,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: HomeMarketPage._bull,
+                              color: ColorPref.instance.bullColor,
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
@@ -607,7 +625,7 @@ class _MarketVitalsCardState extends State<_MarketVitalsCard> {
               const SizedBox(width: 6),
             ],
             Text(
-              text,
+              mktCatLabel(text),
               style: McText.sans(
                 size: 12,
                 weight: active ? FontWeight.w600 : FontWeight.w500,
@@ -647,9 +665,9 @@ class _ListControlBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _capsule('成交额榜', index: 0),
-                _capsule('涨幅榜', index: 1),
-                _capsule('跌幅榜', index: 2),
+                _capsule(tr('mkt_sort_volume'), index: 0),
+                _capsule(tr('mkt_sort_gainers'), index: 1),
+                _capsule(tr('mkt_sort_losers'), index: 2),
               ],
             ),
           ),
@@ -728,16 +746,16 @@ class _MarketListCard extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: 5,
-                    child: Text('币种 / 成交额', style: _headStyle()),
+                    child: Text(tr('mkt_col_pair_vol'), style: _headStyle()),
                   ),
                   Expanded(
                     flex: 3,
-                    child: Text('现价 (USD)',
+                    child: Text(tr('mkt_col_price'),
                         textAlign: TextAlign.right, style: _headStyle()),
                   ),
                   Expanded(
                     flex: 4,
-                    child: Text('24H 趋势 / 涨跌',
+                    child: Text(tr('mkt_col_trend'),
                         textAlign: TextAlign.right, style: _headStyle()),
                   ),
                 ],
@@ -837,7 +855,7 @@ class _MarketRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deltaColor =
-        data.positive ? HomeMarketPage._bull : HomeMarketPage._err;
+        data.positive ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     final deltaBg = data.positive
         ? HomeMarketPage._bullCont.withValues(alpha: 0.3)
         : HomeMarketPage._errCont.withValues(alpha: 0.4);
@@ -992,7 +1010,7 @@ class _SectorHeatmapCard extends StatelessWidget {
                         size: 18, color: HomeMarketPage._secondary),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text('板块轮动动能 (24H Heatmap)',
+                      child: Text(tr('mkt_heatmap_title'),
                           overflow: TextOverflow.ellipsis,
                           style:
                               McText.sans(size: 13, weight: FontWeight.w600)),
@@ -1001,7 +1019,7 @@ class _SectorHeatmapCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('OKX 永续实时',
+              Text(tr('mkt_okx_realtime'),
                   style: McText.sans(
                       size: 12,
                       color: HomeMarketPage._outline,
@@ -1013,7 +1031,7 @@ class _SectorHeatmapCard extends StatelessWidget {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text('板块数据加载中…',
+                child: Text(tr('mkt_sector_loading'),
                     style: McText.sans(
                         size: 12, color: HomeMarketPage._outline)),
               ),
@@ -1066,8 +1084,8 @@ class _HeatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bull = HomeMarketPage._bull;
-    final accent = neg ? McColors.bear : bull;
+    final bull = ColorPref.instance.bullColor;
+    final accent = neg ? ColorPref.instance.bearColor : bull;
     final borderColor = hot
         ? accent.withValues(alpha: borderAlpha)
         : HomeMarketPage._outlineVar.withValues(alpha: 0.2);
@@ -1163,14 +1181,14 @@ class _HeartbeatBar extends StatelessWidget {
               children: [
                 const McGlowDot(color: HomeMarketPage._bull, size: 8),
                 const SizedBox(width: 8),
-                Text('数据源: OKX 永续合约',
+                Text(tr('mkt_data_source'),
                     style: McText.mono(
                         size: 12, color: HomeMarketPage._outline)),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text('24H 行情 · 下拉刷新',
+          Text(tr('mkt_heartbeat_right'),
               style: McText.mono(size: 12, color: HomeMarketPage._outline)),
         ],
       ),

@@ -79,6 +79,11 @@ class ProfileIn(BaseModel):
     nickname: str | None = Field(default=None, max_length=32)
 
 
+class ChangePasswordIn(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=8)
+
+
 class TokenOut(BaseModel):
     token: str
     user: UserOut
@@ -267,6 +272,33 @@ async def login(
 @router.get("/me", response_model=UserOut)
 async def me(user: HkUser = Depends(auth_service.get_current_user)):
     return UserOut.model_validate(user)
+
+
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """改登录密码: 校验旧密码, 通过则更新. 失败计入限流防暴力破解."""
+    if not auth_service.verify_password(data.old_password, me.password_hash):
+        ip = rate_limit_service.client_ip(request)
+        rate_limit_service.check(
+            f"changepw:{ip}:{me.username.lower()}",
+            config.login_rate_limit,
+            config.login_rate_window_sec,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="原密码不正确"
+        )
+    if data.old_password == data.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="新密码不能与原密码相同"
+        )
+    me.password_hash = auth_service.hash_password(data.new_password)
+    await db.commit()
+    return {"ok": True}
 
 
 # ---------- 个人资料 (昵称/头像) ----------

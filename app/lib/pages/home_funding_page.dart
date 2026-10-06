@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -49,11 +50,11 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
 
   // 头部健康标签: 由 BTC 费率符号与幅度推导.
   String get _healthLabel {
-    if (_btcRate >= 0.03) return '多头过热·高溢价';
-    if (_btcRate >= 0.005) return '健康多头·温和溢价';
-    if (_btcRate > -0.005) return '多空均衡';
-    if (_btcRate > -0.03) return '空头温和·贴水';
-    return '空头拥挤·深度贴水';
+    if (_btcRate >= 0.03) return tr('fund_health_long_overheat');
+    if (_btcRate >= 0.005) return tr('fund_health_long_healthy');
+    if (_btcRate > -0.005) return tr('fund_health_balanced');
+    if (_btcRate > -0.03) return tr('fund_health_short_mild');
+    return tr('fund_health_short_crowded');
   }
 
   // 费率矩阵行: 初始为空 (首屏骨架), 接口成功后按 symbol upsert.
@@ -201,7 +202,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         _rows = _sorted(next);
         if (symbol == 'BTC' && avgRate != null) {
           _btcRate = avgRate;
-          _indexRate8h = '${_fmtRate(avgRate, signed: false)} / 8h';
+          _indexRate8h = '${_fmtRate(avgRate, signed: false)} ${tr('fund_per_8h')}';
           _indexApy = _fmtApy(avgRate);
         }
       });
@@ -293,16 +294,16 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
 
   static (String, Color, Color, bool) _statusOf(double avg) {
     if (avg >= 0.03) {
-      return ('多头过热', _error, const Color(0x664E0002), true);
+      return (tr('fund_status_overheat'), _error, const Color(0x664E0002), true);
     }
     if (avg > 0.005) {
-      return ('适度看多', McColors.tertiary, const Color(0x66005A34), true);
+      return (tr('fund_status_mild_long'), McColors.tertiary, const Color(0x66005A34), true);
     }
     if (avg >= -0.005) {
-      return ('基准平稳', McColors.onSurfaceVariant,
+      return (tr('fund_status_stable'), McColors.onSurfaceVariant,
           McColors.surfaceContainerHigh, false);
     }
-    return ('空头拥挤', _error, const Color(0x664E0002), true);
+    return (tr('fund_status_short_crowded'), _error, const Color(0x664E0002), true);
   }
 
   // ---- 解析辅助 ----
@@ -373,7 +374,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        '全网加权资金费率指数',
+                        tr('fund_index_title'),
                         overflow: TextOverflow.ellipsis,
                         style: McText.sans(size: 15, weight: FontWeight.w700, color: Colors.white),
                       ),
@@ -386,7 +387,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(color: McColors.tertiary.withValues(alpha: 0.2)),
                       ),
-                      child: Text('8H结算',
+                      child: Text(tr('fund_settle_8h'),
                           style: McText.sans(size: 10, weight: FontWeight.w600, color: McColors.tertiary)),
                     ),
                   ],
@@ -419,7 +420,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('综合加权年化 (APY)',
+                    Text(tr('fund_apy_label'),
                         style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.onSurfaceVariant)),
                     const SizedBox(height: 4),
                     Row(
@@ -453,7 +454,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('距离下次结算',
+                  Text(tr('fund_next_settle'),
                       style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Container(
@@ -468,7 +469,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                             size: 20, weight: FontWeight.w700, color: McColors.primary, letterSpacing: 2)),
                   ),
                   const SizedBox(height: 6),
-                  Text('结算周期 UTC 00/08/16', style: McText.mono(size: 10, color: McColors.outline)),
+                  Text(tr('fund_settle_cycle'), style: McText.mono(size: 10, color: McColors.outline)),
                 ],
               ),
             ],
@@ -484,20 +485,20 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
-                      child: Text('极度恐慌贴水 (-100%)', style: McText.sans(size: 10, color: _error.withValues(alpha: 0.9))),
+                      child: Text(tr('fund_temp_low'), style: McText.sans(size: 10, color: _error.withValues(alpha: 0.9))),
                     ),
                   ),
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text('中性基准 (0%)', style: McText.sans(size: 10, color: McColors.outline)),
+                      child: Text(tr('fund_temp_mid'), style: McText.sans(size: 10, color: McColors.outline)),
                     ),
                   ),
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerRight,
-                      child: Text('极度过热溢价 (+100%)', style: McText.sans(size: 10, color: McColors.tertiary)),
+                      child: Text(tr('fund_temp_high'), style: McText.sans(size: 10, color: McColors.tertiary)),
                     ),
                   ),
                 ],
@@ -612,13 +613,13 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                     children: [
                       const Icon(Icons.currency_exchange, size: 20, color: McColors.secondary),
                       const SizedBox(width: 8),
-                      Text('期现套利年化推荐 (Basis Arbitrage)',
+                      Text(tr('fund_arb_title'),
                           style: McText.sans(size: 15, weight: FontWeight.w700, color: Colors.white)),
                     ],
                   ),
                 ),
               ),
-              Text('年化 = 8H费率×1095', style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.outline)),
+              Text(tr('fund_arb_formula'), style: McText.sans(size: 12, weight: FontWeight.w500, color: McColors.outline)),
             ],
           ),
         ),
@@ -626,7 +627,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
         if (picks.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text('当前无正费率合约, 暂无套利机会',
+            child: Text(tr('fund_arb_none'),
                 style: McText.sans(size: 12, color: McColors.outline)),
           )
         else
@@ -637,14 +638,14 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                 Expanded(
                   child: _arbCard(
                     symbol: picks[i].symbol,
-                    tag: i == 0 ? '首推' : '次选',
+                    tag: i == 0 ? tr('fund_pick_top') : tr('fund_pick_second'),
                     tagColor: i == 0 ? McColors.tertiary : McColors.primary,
                     tagBg: i == 0
                         ? const Color(0xFF005A34).withValues(alpha: 0.4)
                         : McColors.primaryContainer.withValues(alpha: 0.3),
                     apy: '+${(picks[i].rateNum * 1095).toStringAsFixed(2)}%',
                     rate: '8H: ${picks[i].rateNum.toStringAsFixed(4)}%',
-                    depth: '三所费率均值',
+                    depth: tr('fund_three_ex_avg'),
                   ),
                 ),
               ],
@@ -682,7 +683,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                     children: [
                       Text(symbol, style: McText.sans(size: 14, weight: FontWeight.w700, color: Colors.white)),
                       const SizedBox(width: 6),
-                      Text('基差对冲', style: McText.mono(size: 10, color: McColors.onSurfaceVariant)),
+                      Text(tr('fund_basis_hedge'), style: McText.mono(size: 10, color: McColors.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -700,10 +701,10 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
             ],
           ),
           const SizedBox(height: 4),
-          Text('做多现货 + 做空永续', style: McText.sans(size: 10, color: McColors.outline)),
+          Text(tr('fund_long_spot_short_perp'), style: McText.sans(size: 10, color: McColors.outline)),
           const SizedBox(height: 12),
           Text(apy, style: McText.mono(size: 24, weight: FontWeight.w900, color: McColors.tertiary)),
-          Text('预期 APY',
+          Text(tr('fund_expected_apy'),
               style: McText.sans(size: 10, weight: FontWeight.w500, color: McColors.tertiary.withValues(alpha: 0.8))),
           const SizedBox(height: 12),
           Container(
@@ -766,7 +767,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                       style: McText.mono(size: 11, color: McColors.outline)),
                   Text(md(now.subtract(const Duration(days: 2))),
                       style: McText.mono(size: 11, color: McColors.outline)),
-                  Text('今日 (${md(now)})',
+                  Text('${tr('fund_today')} (${md(now)})',
                       style: McText.mono(size: 11, weight: FontWeight.w700, color: McColors.primary)),
                 ],
               );
@@ -788,9 +789,9 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('全市场主流永续费率矩阵',
+              Text(tr('fund_matrix_title'),
                   style: McText.sans(size: 15, weight: FontWeight.w700, color: Colors.white)),
-              Text('已聚合主流3大所', style: McText.mono(size: 11, color: McColors.outline)),
+              Text(tr('fund_matrix_sub'), style: McText.mono(size: 11, color: McColors.outline)),
             ],
           ),
           const SizedBox(height: 16),
@@ -804,9 +805,9 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
             ),
             child: Row(
               children: [
-                Expanded(child: _filterPill('正费率 (多头拥挤)', 'pos')),
-                Expanded(child: _filterPill('负费率 (空头拥挤)', 'neg')),
-                _filterPill('异动激增', 'hot'),
+                Expanded(child: _filterPill(tr('fund_filter_pos'), 'pos')),
+                Expanded(child: _filterPill(tr('fund_filter_neg'), 'neg')),
+                _filterPill(tr('fund_filter_hot'), 'hot'),
               ],
             ),
           ),
@@ -816,12 +817,12 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                Expanded(flex: 4, child: Text('交易对 / 现价', style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.outline))),
+                Expanded(flex: 4, child: Text(tr('fund_col_pair'), style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.outline))),
                 Expanded(
                   flex: 5,
                   child: Column(
                     children: [
-                      Text('8H费率 (三所聚合)', style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.outline)),
+                      Text(tr('fund_col_rate'), style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.outline)),
                       Text('BIN / OKX / BYB', style: McText.mono(size: 9, color: McColors.outline.withValues(alpha: 0.8))),
                     ],
                   ),
@@ -830,7 +831,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                   flex: 3,
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: Text('年化 / 状态', style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.outline)),
+                    child: Text(tr('fund_col_apy'), style: McText.sans(size: 11, weight: FontWeight.w500, color: McColors.outline)),
                   ),
                 ),
               ],
@@ -854,7 +855,7 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
-                  child: Text('该分类下暂无合约',
+                  child: Text(tr('fund_empty_category'),
                       style: McText.sans(size: 12, color: McColors.outline)),
                 ),
               );
@@ -884,10 +885,10 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                 children: [
                   Text(
                     _expanding
-                        ? '加载中...'
+                        ? tr('fund_loading')
                         : _expanded
-                            ? '收起额外合约'
-                            : '展开更多合约费率',
+                            ? tr('fund_collapse')
+                            : tr('fund_expand'),
                     style: McText.sans(size: 12, weight: FontWeight.w600, color: McColors.onSurfaceVariant)),
                   const SizedBox(width: 6),
                   Icon(

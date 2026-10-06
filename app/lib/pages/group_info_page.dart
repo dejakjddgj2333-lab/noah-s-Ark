@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
@@ -58,7 +59,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainerLow,
-        title: Text('修改群名',
+        title: Text(tr('grp_edit_name'),
             style: McText.sans(size: 15, weight: FontWeight.w700)),
         content: TextField(
           controller: controller,
@@ -66,7 +67,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           maxLength: 30,
           style: McText.sans(size: 14),
           decoration: InputDecoration(
-            hintText: '输入群名',
+            hintText: tr('grp_name_input_hint'),
             hintStyle:
                 McText.sans(size: 14, color: McColors.onSurfaceVariant),
             counterStyle:
@@ -76,12 +77,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('取消',
+            child: Text(tr('cancel'),
                 style: McText.sans(color: McColors.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text('保存', style: McText.sans(color: McColors.primarySoft)),
+            child: Text(tr('save'), style: McText.sans(color: McColors.primarySoft)),
           ),
         ],
       ),
@@ -91,9 +92,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       await ChatApi.renameConversation(widget.conversation.id, name);
       if (!mounted) return;
       setState(() => _name = name);
-      _toast('群名已修改');
+      _toast(tr('grp_name_updated'));
     } catch (_) {
-      _toast('修改失败');
+      _toast(tr('grp_update_failed'));
     }
   }
 
@@ -104,19 +105,19 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainerLow,
-        title: Text('移除成员',
+        title: Text(tr('grp_remove_member'),
             style: McText.sans(size: 15, weight: FontWeight.w700)),
-        content: Text('将「${m.username}」移出群聊?',
+        content: Text(tr('grp_remove_member_hint').replaceAll('{name}', m.username),
             style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('取消',
+            child: Text(tr('cancel'),
                 style: McText.sans(color: McColors.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('移除', style: McText.sans(color: McColors.bear)),
+            child: Text(tr('grp_remove'), style: McText.sans(color: McColors.bear)),
           ),
         ],
       ),
@@ -126,9 +127,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       await ChatApi.removeMember(widget.conversation.id, m.id);
       if (!mounted) return;
       setState(() => _members.removeWhere((x) => x.id == m.id));
-      _toast('已移除');
+      _toast(tr('grp_removed'));
     } catch (_) {
-      _toast('移除失败');
+      _toast(tr('grp_remove_failed'));
     }
   }
 
@@ -141,19 +142,19 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       final ids = _members.map((m) => m.id).toSet();
       candidates = [for (final f in friends) if (!ids.contains(f.id)) f];
     } catch (_) {
-      _toast('加载好友失败');
+      _toast(tr('grp_load_friends_failed'));
       return;
     }
     if (!mounted) return;
     if (candidates.isEmpty) {
-      _toast('没有可添加的好友');
+      _toast(tr('grp_no_addable_friends'));
       return;
     }
     final picked = await showDialog<ChatUser>(
       context: context,
       builder: (ctx) => SimpleDialog(
         backgroundColor: McColors.surfaceContainerLow,
-        title: Text('选择好友加入群聊',
+        title: Text(tr('grp_pick_friend'),
             style: McText.sans(size: 15, weight: FontWeight.w700)),
         children: [
           for (final f in candidates)
@@ -178,10 +179,10 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     try {
       await ChatApi.addGroupMember(widget.conversation.id, picked.id);
       if (!mounted) return;
-      _toast('已添加 ${picked.username}');
+      _toast(tr('grp_added').replaceAll('{name}', picked.username));
       _load();
     } catch (_) {
-      _toast('添加失败');
+      _toast(tr('grp_add_failed'));
     }
   }
 
@@ -207,7 +208,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
         backgroundColor: McColors.surface,
         elevation: 0,
         iconTheme: const IconThemeData(color: McColors.onSurface),
-        title: Text('群聊信息',
+        title: Text(tr('grp_info_title'),
             style: McText.sans(size: 15, weight: FontWeight.w700)),
       ),
       body: _loading
@@ -226,7 +227,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   children: [
                     _nameCard(),
                     const SizedBox(height: 16),
-                    Text('成员 ${_members.length}',
+                    Text(tr('grp_members').replaceAll('{n}', '${_members.length}'),
                         style: McText.sans(
                             size: 12,
                             weight: FontWeight.w600,
@@ -257,7 +258,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('群名',
+                Text(tr('grp_name_label'),
                     style: McText.sans(
                         size: 12, color: McColors.onSurfaceVariant)),
                 const SizedBox(height: 2),
@@ -282,7 +283,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                       color:
                           McColors.primaryContainer.withValues(alpha: 0.4)),
                 ),
-                child: Text('编辑',
+                child: Text(tr('grp_edit'),
                     style: McText.sans(
                         size: 12,
                         weight: FontWeight.w600,
@@ -332,7 +333,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            '添加',
+            tr('frd_tab_add'),
             maxLines: 1,
             textAlign: TextAlign.center,
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
@@ -393,7 +394,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
           ),
           if (m.isOwner)
-            Text('群主',
+            Text(tr('grp_owner'),
                 style: McText.sans(
                     size: 12,
                     weight: FontWeight.w600,
@@ -411,7 +412,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           const Icon(Icons.error_outline,
               size: 40, color: McColors.outline),
           const SizedBox(height: 12),
-          Text('加载失败',
+          Text(tr('news_load_failed'),
               style:
                   McText.sans(size: 13, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 12),
@@ -423,7 +424,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               });
               _load();
             },
-            child: Text('重新加载',
+            child: Text(tr('grp_reload'),
                 style: McText.sans(size: 12, color: McColors.primarySoft)),
           ),
         ],

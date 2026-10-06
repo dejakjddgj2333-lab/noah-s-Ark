@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/coin_icon.dart';
+import '../core/color_pref.dart';
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -316,7 +318,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   @override
   Widget build(BuildContext context) {
     final pct = _changePct;
-    final pctColor = pct >= 0 ? McColors.bull : McColors.bear;
+    final pctColor = pct >= 0 ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     return Scaffold(
       backgroundColor: McColors.surface,
       body: SafeArea(
@@ -384,7 +386,9 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                     style: McText.sans(size: 16, weight: FontWeight.w700),
                   ),
                   Text(
-                    _isSwap ? '/USDT 永续' : '/USDT 现货',
+                    _isSwap
+                        ? '/USDT ${tr('mktd_perp')}'
+                        : '/USDT ${tr('mktd_spot')}',
                     style: McText.sans(
                         size: 13, color: McColors.onSurfaceVariant),
                   ),
@@ -438,19 +442,19 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   /// 24H 统计: 高 / 低 / 涨跌额 / 成交额 (2×2 网格).
   Widget _buildStatsRow() {
     final abs = _changeAbs;
-    final absColor = abs >= 0 ? McColors.bull : McColors.bear;
+    final absColor = abs >= 0 ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _stat('24H 最高',
-                  _high24h > 0 ? _fmtPrice(_high24h) : '--', McColors.bull),
+              child: _stat(tr('mktd_high_24h'),
+                  _high24h > 0 ? _fmtPrice(_high24h) : '--', ColorPref.instance.bullColor),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _stat('24H 最低',
-                  _low24h > 0 ? _fmtPrice(_low24h) : '--', McColors.bear),
+              child: _stat(tr('mktd_low_24h'),
+                  _low24h > 0 ? _fmtPrice(_low24h) : '--', ColorPref.instance.bearColor),
             ),
           ],
         ),
@@ -459,7 +463,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           children: [
             Expanded(
               child: _stat(
-                  '24H 涨跌额',
+                  tr('mktd_change_24h'),
                   _open24h > 0
                       ? '${abs >= 0 ? '+' : ''}${_fmtPrice(abs)}'
                       : '--',
@@ -467,7 +471,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _stat('24H 成交额',
+              child: _stat(tr('mktd_turnover_24h'),
                   _notional > 0 ? _fmtZh(_notional) : '--',
                   McColors.onSurface),
             ),
@@ -508,7 +512,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           const Icon(Icons.stacked_bar_chart,
               size: 15, color: McColors.secondary),
           const SizedBox(width: 8),
-          Text('持仓量',
+          Text(tr('mktd_open_interest'),
               style: McText.sans(size: 13, weight: FontWeight.w600)),
           const Spacer(),
           Text(
@@ -536,10 +540,10 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         indicatorWeight: 2.5,
         labelStyle: McText.sans(size: 13, weight: FontWeight.w700),
         unselectedLabelStyle: McText.sans(size: 13, weight: FontWeight.w500),
-        tabs: const [
-          Tab(text: 'K线'),
-          Tab(text: '盘口'),
-          Tab(text: '成交'),
+        tabs: [
+          Tab(text: tr('mktd_tab_kline')),
+          Tab(text: tr('mktd_tab_orderbook')),
+          Tab(text: tr('mktd_tab_trades')),
         ],
       ),
     );
@@ -570,7 +574,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('K线走势',
+              Text(tr('mktd_kline_trend'),
                   style: McText.sans(size: 13, weight: FontWeight.w600)),
               Row(
                 children: [
@@ -597,7 +601,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                   )
                 : _candles.isEmpty
                     ? Center(
-                        child: Text('暂无K线数据',
+                        child: Text(tr('mktd_no_kline'),
                             style: McText.sans(
                                 size: 12,
                                 color: McColors.onSurfaceVariant)),
@@ -608,8 +612,8 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                           candles: _candles,
                           lastPrice: _last,
                           bar: _bar,
-                          bull: McColors.bull,
-                          bear: McColors.bear,
+                          bull: ColorPref.instance.bullColor,
+                          bear: ColorPref.instance.bearColor,
                           gridColor: McColors.outlineVariant,
                           labelColor: McColors.onSurfaceVariant,
                         ),
@@ -669,7 +673,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
               ? Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
-                    child: Text('等待盘口数据…',
+                    child: Text(tr('mktd_waiting_orderbook'),
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant)),
                   ),
@@ -680,13 +684,13 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                     const SizedBox(height: 8),
                     // 卖盘 (上 5, 红).
                     for (final l in asks)
-                      _bookRow(l, McColors.bear, maxSz, Alignment.centerRight),
+                      _bookRow(l, ColorPref.instance.bearColor, maxSz, Alignment.centerRight),
                     const SizedBox(height: 8),
                     _spreadRow(),
                     const SizedBox(height: 8),
                     // 买盘 (下 5, 绿).
                     for (final l in bids)
-                      _bookRow(l, McColors.bull, maxSz, Alignment.centerRight),
+                      _bookRow(l, ColorPref.instance.bullColor, maxSz, Alignment.centerRight),
                   ],
                 ),
         ),
@@ -698,9 +702,9 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('价格 (USDT)',
+        Text(tr('mktd_price_usdt'),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
-        Text('数量 (${_symbol})',
+        Text(tr('mktd_amount').replaceAll('{symbol}', _symbol),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
       ],
     );
@@ -744,7 +748,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
     final bestBid = _bids.isNotEmpty ? _bids.first.px : 0.0;
     final bestAsk = _asks.isNotEmpty ? _asks.first.px : 0.0;
     final spread = (bestAsk > 0 && bestBid > 0) ? bestAsk - bestBid : 0.0;
-    final pctColor = _changePct >= 0 ? McColors.bull : McColors.bear;
+    final pctColor = _changePct >= 0 ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
@@ -759,11 +763,11 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                 size: 15, weight: FontWeight.w700, color: pctColor),
           ),
           const SizedBox(width: 6),
-          Text('标记',
+          Text(tr('mktd_mark'),
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const Spacer(),
           Text(
-            '价差 ${spread > 0 ? _fmtNum(spread) : '--'}',
+            '${tr('mktd_spread')} ${spread > 0 ? _fmtNum(spread) : '--'}',
             style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
           ),
         ],
@@ -781,18 +785,18 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
           child: Row(
             children: [
               Expanded(
-                child: Text('时间',
+                child: Text(tr('mktd_time'),
                     style: McText.sans(
                         size: 12, color: McColors.onSurfaceVariant)),
               ),
               Expanded(
-                child: Text('价格 (USDT)',
+                child: Text(tr('mktd_price_usdt'),
                     textAlign: TextAlign.center,
                     style: McText.sans(
                         size: 12, color: McColors.onSurfaceVariant)),
               ),
               Expanded(
-                child: Text('数量 (${_symbol})',
+                child: Text(tr('mktd_amount').replaceAll('{symbol}', _symbol),
                     textAlign: TextAlign.right,
                     style: McText.sans(
                         size: 12, color: McColors.onSurfaceVariant)),
@@ -804,7 +808,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         Expanded(
           child: _trades.isEmpty
               ? Center(
-                  child: Text('等待成交数据…',
+                  child: Text(tr('mktd_waiting_trades'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant)),
                 )
@@ -814,7 +818,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                   itemBuilder: (context, i) {
                     final t = _trades[i];
                     final buy = t.side == 'buy';
-                    final c = buy ? McColors.bull : McColors.bear;
+                    final c = buy ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
                     return SizedBox(
                       height: 26,
                       child: Row(
@@ -943,7 +947,7 @@ class _FundingCountdownCardState extends State<_FundingCountdownCard> {
   @override
   Widget build(BuildContext context) {
     final rate = widget.rate;
-    final rateColor = (rate ?? 0) >= 0 ? McColors.bull : McColors.bear;
+    final rateColor = (rate ?? 0) >= 0 ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     return McCard(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -953,7 +957,7 @@ class _FundingCountdownCardState extends State<_FundingCountdownCard> {
             children: [
               const Icon(Icons.percent, size: 15, color: McColors.secondary),
               const SizedBox(width: 6),
-              Text('资金费率',
+              Text(tr('mktd_funding_rate'),
                   style: McText.sans(size: 13, weight: FontWeight.w600)),
             ],
           ),
@@ -962,7 +966,7 @@ class _FundingCountdownCardState extends State<_FundingCountdownCard> {
             children: [
               Expanded(
                 child: _item(
-                  '当前费率',
+                  tr('mktd_current_rate'),
                   rate == null
                       ? '--'
                       : '${rate >= 0 ? '+' : ''}${(rate * 100).toStringAsFixed(4)}%',
@@ -970,7 +974,7 @@ class _FundingCountdownCardState extends State<_FundingCountdownCard> {
                 ),
               ),
               Expanded(
-                child: _item('下次结算', _countdown, McColors.onSurface),
+                child: _item(tr('mktd_next_settle'), _countdown, McColors.onSurface),
               ),
             ],
           ),
@@ -1341,7 +1345,7 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
               onChanged: (v) => setState(() => _query = v),
               style: McText.sans(size: 14),
               decoration: InputDecoration(
-                hintText: '搜索币种',
+                hintText: tr('mktd_search_coin'),
                 hintStyle:
                     McText.sans(size: 14, color: McColors.onSurfaceVariant),
                 prefixIcon: const Icon(Icons.search,
@@ -1363,7 +1367,7 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Row(
               children: [
-                for (final (type, label) in [('SWAP', '合约'), ('SPOT', '现货')])
+                for (final (type, label) in [('SWAP', tr('mktd_contract')), ('SPOT', tr('mktd_spot'))])
                   Expanded(
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
@@ -1409,7 +1413,7 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
           else if (list.isEmpty)
             Expanded(
               child: Center(
-                child: Text('无匹配币种',
+                child: Text(tr('mktd_no_match'),
                     style: McText.sans(
                         size: 13, color: McColors.onSurfaceVariant)),
               ),
@@ -1430,7 +1434,7 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
   Widget _row(OkxTicker t) {
     final isCurrent = t.instId == widget.current;
     final pct = t.changePct;
-    final pctColor = pct >= 0 ? McColors.bull : McColors.bear;
+    final pctColor = pct >= 0 ? ColorPref.instance.bullColor : ColorPref.instance.bearColor;
     return InkWell(
       onTap: () => widget.onSelect(t.instId),
       child: Padding(
@@ -1456,7 +1460,7 @@ class _SymbolSwitcherSheetState extends State<_SymbolSwitcherSheet> {
                         color: McColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(3),
                       ),
-                      child: Text('永续',
+                      child: Text(tr('mktd_perp'),
                           style: McText.sans(
                               size: 10,
                               weight: FontWeight.w600,

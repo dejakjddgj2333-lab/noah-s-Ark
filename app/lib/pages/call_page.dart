@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/call_service.dart';
 
@@ -67,15 +68,15 @@ class _CallPageState extends State<CallPage> {
   String _statusText(CallState? call) {
     switch (call?.phase) {
       case CallPhase.outgoing:
-        return '对方振铃…';
+        return tr('call_ringing');
       case CallPhase.incoming:
-        return '邀请你语音通话';
+        return tr('call_invite');
       case CallPhase.connected:
-        return '通话中 ${_two(_seconds ~/ 60)}:${_two(_seconds % 60)}';
+        return '${tr('call_in_call')} ${_two(_seconds ~/ 60)}:${_two(_seconds % 60)}';
       case CallPhase.ended:
-        return call?.endReason ?? '通话已结束';
+        return call?.endReason ?? tr('call_ended');
       default:
-        return '呼叫中…';
+        return tr('call_calling');
     }
   }
 
@@ -86,7 +87,7 @@ class _CallPageState extends State<CallPage> {
       builder: (context, call, _) {
         final phase = call?.phase ?? CallPhase.ended;
         final isIncomingRinging = phase == CallPhase.incoming;
-        final name = call?.peerName ?? '对方';
+        final name = call?.peerName ?? tr('call_peer');
         return Scaffold(
           backgroundColor: McColors.surfaceContainerLowest,
           body: SafeArea(
@@ -160,7 +161,7 @@ class _CallPageState extends State<CallPage> {
           _circleBtn(
             icon: Icons.call_end,
             color: McColors.bear,
-            label: '拒绝',
+            label: tr('call_reject'),
             onTap: () {
               CallService.instance.reject();
               _popSelf();
@@ -169,7 +170,7 @@ class _CallPageState extends State<CallPage> {
           _circleBtn(
             icon: Icons.call,
             color: McColors.bull,
-            label: '接听',
+            label: tr('call_accept'),
             onTap: () => CallService.instance.accept(),
           ),
         ],
@@ -183,14 +184,14 @@ class _CallPageState extends State<CallPage> {
       children: [
         _smallBtn(
           icon: muted ? Icons.mic_off : Icons.mic,
-          label: muted ? '已静音' : '静音',
+          label: muted ? tr('call_muted') : tr('call_mute'),
           active: muted,
           onTap: () => CallService.instance.toggleMute(),
         ),
         _circleBtn(
           icon: Icons.call_end,
           color: McColors.bear,
-          label: '挂断',
+          label: tr('call_hangup'),
           onTap: () {
             CallService.instance.hangup();
             _popSelf();
@@ -200,7 +201,7 @@ class _CallPageState extends State<CallPage> {
         if (!kIsWeb)
           _smallBtn(
             icon: speakerOn ? Icons.volume_up : Icons.volume_down,
-            label: speakerOn ? '免提' : '听筒',
+            label: speakerOn ? tr('call_speaker') : tr('call_earpiece'),
             active: speakerOn,
             onTap: () => CallService.instance.toggleSpeaker(),
           ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/chat_api.dart';
@@ -97,7 +98,7 @@ class _FriendsPageState extends State<FriendsPage> {
             builder: (_) => ChatConversationPage(conversation: conv)),
       );
     } catch (_) {
-      _toast('打开会话失败');
+      _toast(tr('frd_open_failed'));
     }
   }
 
@@ -106,19 +107,19 @@ class _FriendsPageState extends State<FriendsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainerLow,
-        title: Text('删除好友',
+        title: Text(tr('frd_delete_friend'),
             style: McText.sans(size: 15, weight: FontWeight.w700)),
-        content: Text('确定删除好友 ${u.username} 吗?',
+        content: Text(tr('frd_delete_friend_hint').replaceAll('{name}', u.username),
             style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('取消',
+            child: Text(tr('cancel'),
                 style: McText.sans(color: McColors.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('删除', style: McText.sans(color: McColors.bear)),
+            child: Text(tr('delete'), style: McText.sans(color: McColors.bear)),
           ),
         ],
       ),
@@ -128,9 +129,9 @@ class _FriendsPageState extends State<FriendsPage> {
       await ChatApi.deleteFriend(u.id);
       if (!mounted) return;
       setState(() => _friends.removeWhere((x) => x.id == u.id));
-      _toast('已删除');
+      _toast(tr('frd_deleted'));
     } catch (_) {
-      _toast('删除失败');
+      _toast(tr('frd_delete_failed'));
     }
   }
 
@@ -140,11 +141,11 @@ class _FriendsPageState extends State<FriendsPage> {
     try {
       await ChatApi.acceptFriend(r.id);
       if (!mounted) return;
-      _toast('已接受');
+      _toast(tr('frd_accepted'));
       _loadRequests();
       _loadFriends();
     } catch (_) {
-      _toast('操作失败');
+      _toast(tr('frd_op_failed'));
     }
   }
 
@@ -152,10 +153,10 @@ class _FriendsPageState extends State<FriendsPage> {
     try {
       await ChatApi.rejectFriend(r.id);
       if (!mounted) return;
-      _toast('已拒绝');
+      _toast(tr('frd_rejected'));
       _loadRequests();
     } catch (_) {
-      _toast('操作失败');
+      _toast(tr('frd_op_failed'));
     }
   }
 
@@ -197,7 +198,7 @@ class _FriendsPageState extends State<FriendsPage> {
     try {
       await ChatApi.sendFriendRequest(u.id);
       if (!mounted) return;
-      _toast('请求已发送');
+      _toast(tr('frd_request_sent'));
       // 就地更新按钮状态.
       setState(() {
         final idx = _results.indexWhere((x) => x.id == u.id);
@@ -207,7 +208,7 @@ class _FriendsPageState extends State<FriendsPage> {
         }
       });
     } catch (_) {
-      _toast('发送失败');
+      _toast(tr('frd_send_failed'));
     }
   }
 
@@ -222,7 +223,7 @@ class _FriendsPageState extends State<FriendsPage> {
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: McColors.onSurface),
-        title: Text('新朋友',
+        title: Text(tr('frd_title'),
             style: McText.sans(size: 16, weight: FontWeight.w700)),
       ),
       body: Column(
@@ -236,7 +237,7 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   Widget _buildTabs() {
-    final labels = ['好友', '请求', '添加'];
+    final labels = [tr('frd_tab_friends'), tr('frd_tab_requests'), tr('frd_tab_add')];
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
       child: Row(
@@ -318,7 +319,7 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Widget _buildFriends() {
     if (_loadingFriends) return _spinner();
-    if (_friends.isEmpty) return _empty('还没有好友, 去「添加」找人吧');
+    if (_friends.isEmpty) return _empty(tr('frd_no_friends'));
     return RefreshIndicator(
       onRefresh: _loadFriends,
       color: McColors.primarySoft,
@@ -352,18 +353,18 @@ class _FriendsPageState extends State<FriendsPage> {
     final incoming = _requests.incoming;
     final outgoing = _requests.outgoing;
     if (incoming.isEmpty && outgoing.isEmpty) {
-      return _empty('暂无好友请求');
+      return _empty(tr('frd_no_requests'));
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
       children: [
         if (incoming.isNotEmpty) ...[
-          _sectionLabel('收到的请求'),
+          _sectionLabel(tr('frd_incoming')),
           for (final r in incoming) _incomingTile(r),
           const SizedBox(height: 12),
         ],
         if (outgoing.isNotEmpty) ...[
-          _sectionLabel('我发出的'),
+          _sectionLabel(tr('frd_outgoing')),
           for (final r in outgoing) _outgoingTile(r),
         ],
       ],
@@ -381,9 +382,9 @@ class _FriendsPageState extends State<FriendsPage> {
             child: Text(r.username,
                 style: McText.sans(size: 14, weight: FontWeight.w600)),
           ),
-          _smallButton('接受', McColors.bull, () => _accept(r)),
+          _smallButton(tr('frd_accept'), McColors.bull, () => _accept(r)),
           const SizedBox(width: 8),
-          _smallButton('拒绝', McColors.bear, () => _reject(r), outlined: true),
+          _smallButton(tr('frd_reject'), McColors.bear, () => _reject(r), outlined: true),
         ],
       ),
     );
@@ -400,7 +401,7 @@ class _FriendsPageState extends State<FriendsPage> {
             child: Text(r.username,
                 style: McText.sans(size: 14, weight: FontWeight.w600)),
           ),
-          Text('等待验证',
+          Text(tr('frd_pending'),
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
         ],
       ),
@@ -427,7 +428,7 @@ class _FriendsPageState extends State<FriendsPage> {
               decoration: InputDecoration(
                 icon: const Icon(Icons.search,
                     size: 18, color: McColors.onSurfaceVariant),
-                hintText: '搜索用户名',
+                hintText: tr('frd_search_hint'),
                 hintStyle:
                     McText.sans(size: 13, color: McColors.onSurfaceVariant),
                 border: InputBorder.none,
@@ -444,8 +445,8 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Widget _buildResults() {
     if (_searching) return _spinner();
-    if (!_searched) return _empty('输入用户名搜索');
-    if (_results.isEmpty) return _empty('未找到该用户');
+    if (!_searched) return _empty(tr('frd_search_prompt'));
+    if (_results.isEmpty) return _empty(tr('frd_not_found'));
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
       itemCount: _results.length,
@@ -474,18 +475,18 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget _relationButton(ChatUser u) {
     switch (u.relation) {
       case 'self':
-        return Text('自己',
+        return Text(tr('frd_self'),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant));
       case 'friend':
-        return const McPill('好友', color: McColors.bull, bold: false);
+        return McPill(tr('frd_tab_friends'), color: McColors.bull, bold: false);
       case 'outgoing':
-        return const McPill('已发送', color: McColors.onSurfaceVariant,
+        return McPill(tr('frd_sent'), color: McColors.onSurfaceVariant,
             bold: false);
       case 'incoming':
-        return _smallButton('接受', McColors.bull, () => _accept(
+        return _smallButton(tr('frd_accept'), McColors.bull, () => _accept(
             FriendRequest(id: u.id, username: u.username)));
       default: // none
-        return _smallButton('加好友', McColors.primarySoft, () => _sendRequest(u));
+        return _smallButton(tr('frd_add_friend'), McColors.primarySoft, () => _sendRequest(u));
     }
   }
 

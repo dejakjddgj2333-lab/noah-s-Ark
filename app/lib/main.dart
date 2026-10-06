@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'core/l10n.dart';
+import 'core/color_pref.dart';
+import 'core/notify_pref.dart';
 import 'core/theme.dart';
 import 'core/widgets.dart';
 import 'pages/assets_page.dart';
@@ -38,6 +42,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ChatDb.init(); // 本地消息库 (先于 runApp, 聊天页秒开)
   await AuthStore.instance.load();
+  await L10n.instance.load(); // 语言选择持久化
+  await ColorPref.instance.load(); // 涨跌配色持久化
+  await NotifyPref.instance.load(); // 通知开关持久化
   // 已登录则启动聊天长连接.
   if (AuthStore.instance.loggedIn) ChatWs.instance.connect();
   runApp(const MingceApp());
@@ -48,39 +55,64 @@ class MingceApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Noah’s Ark',
-      debugShowCheckedModeBanner: false,
-      theme: buildMcTheme(),
-      routes: {
-        '/login': (_) => const LoginPage(),
-      },
-      onGenerateRoute: (settings) {
-        // 需登录的 push 路由
-        final gated = <String, Widget>{
-          '/deposit': const DepositPage(),
-          '/commission': const CommissionPage(),
-          '/invite': const InvitePage(),
-          // V0.7 邀请返佣与等级体系
-          '/products': const ProductsPage(),
-          '/vip': const VipPage(),
-          '/team': const TeamPage(),
-          '/orders': const OrdersPage(),
-          '/funds': const FundsPage(),
-          '/withdraw': const WithdrawPage(),
-          '/wallet-connect': const WalletConnectPage(),
-          '/wallet-matrix': const WalletMatrixPage(),
-        };
-        final page = gated[settings.name];
-        if (page == null) return null;
-        return MaterialPageRoute(
-          builder: (_) =>
-              AuthStore.instance.loggedIn ? page : const LoginPage(),
+    // 语言/涨跌配色切换时整树重建 (locale 变化驱动; 配色靠 shell key).
+    return ListenableBuilder(
+      listenable: Listenable.merge([L10n.instance, ColorPref.instance]),
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Noah’s Ark',
+          debugShowCheckedModeBanner: false,
+          theme: buildMcTheme(),
+          locale: _mcLocale(L10n.instance.code),
+          supportedLocales: [
+            for (final l in L10n.languages) _mcLocale(l.code),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          routes: {
+            '/login': (_) => const LoginPage(),
+          },
+          onGenerateRoute: (settings) {
+            // 需登录的 push 路由
+            final gated = <String, Widget>{
+              '/deposit': const DepositPage(),
+              '/commission': const CommissionPage(),
+              '/invite': const InvitePage(),
+              // V0.7 邀请返佣与等级体系
+              '/products': const ProductsPage(),
+              '/vip': const VipPage(),
+              '/team': const TeamPage(),
+              '/orders': const OrdersPage(),
+              '/funds': const FundsPage(),
+              '/withdraw': const WithdrawPage(),
+              '/wallet-connect': const WalletConnectPage(),
+              '/wallet-matrix': const WalletMatrixPage(),
+            };
+            final page = gated[settings.name];
+            if (page == null) return null;
+            return MaterialPageRoute(
+              builder: (_) =>
+                  AuthStore.instance.loggedIn ? page : const LoginPage(),
+            );
+          },
+          // key 随语言/配色变化 → 切换时整个 shell(含所有 tab 页)强制重建.
+          home: McShell(
+              key: ValueKey('${L10n.instance.code}|${ColorPref.instance.redUp}')),
         );
       },
-      home: const McShell(),
     );
   }
+}
+
+/// 'zh-CN' → Locale('zh','CN'), 'en' → Locale('en').
+Locale _mcLocale(String code) {
+  final parts = code.split('-');
+  return parts.length == 2
+      ? Locale(parts[0], parts[1])
+      : Locale(parts[0]);
 }
 
 /// App shell: fixed top header + 4-tab bottom nav.
@@ -130,7 +162,7 @@ class _McShellState extends State<McShell> {
       ..showSnackBar(SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: McColors.surfaceContainerHigh,
-        content: Text('已识别邀请人, 注册时将自动填写邀请码',
+        content: Text(tr('invite_recognized'),
             style: McText.sans(size: 13, color: McColors.onSurface)),
       ));
   }
@@ -150,17 +182,17 @@ class _McShellState extends State<McShell> {
     }
     if (e['type'] != 'friend_request') return;
     final from = e['from_user'];
-    final name = from is Map ? (from['username'] ?? '对方') : '对方';
+    final name = from is Map ? (from['username'] ?? tr('peer_default')) : tr('peer_default');
     ChatApi.friendRequestCount.value++;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: McColors.surfaceContainerHigh,
-        content: Text('$name 请求添加你为好友',
+        content: Text(tr('friend_request_body').replaceAll('{name}', '$name'),
             style: McText.sans(size: 13, color: McColors.onSurface)),
         action: SnackBarAction(
-          label: '查看',
+          label: tr('view'),
           textColor: McColors.primarySoft,
           onPressed: () => setState(() => _index = 2),
         ),
@@ -176,7 +208,7 @@ class _McShellState extends State<McShell> {
     final fromId = from['id'] is int
         ? from['id'] as int
         : int.tryParse(from['id']?.toString() ?? '') ?? 0;
-    final fromName = (from['username'] ?? '对方').toString();
+    final fromName = (from['username'] ?? tr('peer_default')).toString();
     CallService.instance.ringIncoming(callId, fromId, fromName);
     // ringIncoming 占线时会自动拒绝并保持空闲, 只在真正振铃时弹页.
     final call = CallService.instance.activeCall.value;
@@ -253,8 +285,8 @@ class _McShellState extends State<McShell> {
                 final loggedIn = AuthStore.instance.loggedIn;
                 // 聊天/我的 需登录
                 final gated = {
-                  2: loggedIn ? const ChatPage() : const _LoginGate('聊天'),
-                  3: loggedIn ? const AssetsPage() : const _LoginGate('我的'),
+                  2: loggedIn ? const ChatPage() : _LoginGate(tr('nav_chat')),
+                  3: loggedIn ? const AssetsPage() : _LoginGate(tr('nav_mine')),
                 };
                 return IndexedStack(
                   index: _index,
@@ -302,10 +334,10 @@ class _LoginGate extends StatelessWidget {
                   size: 28, color: McColors.primarySoft),
             ),
             const SizedBox(height: 16),
-            Text('登录后使用$name',
+            Text(tr('login_gate_title').replaceAll('{name}', name),
                 style: McText.display(size: 16, weight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text('终端功能需要验证身份',
+            Text(tr('login_gate_sub'),
                 style: McText.sans(
                     size: 12, color: McColors.onSurfaceVariant)),
             const SizedBox(height: 20),
@@ -321,7 +353,7 @@ class _LoginGate extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: Text('去登录',
+                child: Text(tr('go_login'),
                     style: McText.sans(
                         size: 13, weight: FontWeight.w700, letterSpacing: 2)),
               ),
@@ -486,8 +518,8 @@ class McBottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _item(0, Icons.radar, '首页'),
-              _item(1, Icons.query_stats, '资讯'),
+              _item(0, Icons.radar, tr('nav_home')),
+              _item(1, Icons.query_stats, tr('nav_news')),
               ValueListenableBuilder<int>(
                 valueListenable: ChatApi.unreadCount,
                 builder: (context, unread, _) => ValueListenableBuilder<int>(
@@ -497,13 +529,13 @@ class McBottomNav extends StatelessWidget {
                     return _item(
                       2,
                       Icons.chat_bubble_outline,
-                      '聊天',
+                      tr('nav_chat'),
                       badge: count > 0 ? (count > 99 ? '99+' : '$count') : null,
                     );
                   },
                 ),
               ),
-              _item(3, Icons.account_balance_wallet, '我的'),
+              _item(3, Icons.account_balance_wallet, tr('nav_mine')),
             ],
           ),
         ),
@@ -592,7 +624,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _tab = 0;
 
-  static const _tabs = ['综合', '行情', '多维指数', '多空爆仓', '巨鲸雷达', '资金费率'];
+  static List<String> get _tabs => [
+        tr('home_tab_overview'),
+        tr('home_tab_market'),
+        tr('home_tab_terminal'),
+        tr('home_tab_liquidation'),
+        tr('home_tab_whale'),
+        tr('home_tab_funding'),
+      ];
 
   @override
   Widget build(BuildContext context) {

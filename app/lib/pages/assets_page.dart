@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
@@ -87,8 +88,7 @@ class _AssetsPageState extends State<AssetsPage> {
         _financeCenterCard(),
         const SizedBox(height: 20),
         _commissionCard(),
-        const SizedBox(height: 20),
-        _settingsCard(),
+        // 联系客服卡片已隐藏 (需求).
       ],
     );
   }
@@ -184,8 +184,8 @@ class _AssetsPageState extends State<AssetsPage> {
                                           const SizedBox(width: 4),
                                           Text(
                                             _team == null
-                                                ? '团队'
-                                                : '团队 ${_team!['team_level'] ?? 0} 级',
+                                                ? tr('assets_team')
+                                                : tr('assets_team_level').replaceAll('{n}', '${_team!['team_level'] ?? 0}'),
                                             style: McText.mono(
                                               size: 11,
                                               weight: FontWeight.w700,
@@ -229,7 +229,7 @@ class _AssetsPageState extends State<AssetsPage> {
           GestureDetector(
             onTap: _inviteCode == null
                 ? null
-                : () => _copy(_inviteCode!, '已复制邀请码'),
+                : () => _copy(_inviteCode!, tr('assets_invite_copied')),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
@@ -240,13 +240,13 @@ class _AssetsPageState extends State<AssetsPage> {
               ),
               child: Row(
                 children: [
-                  Text('邀请码',
+                  Text(tr('assets_invite_code'),
                       style: McText.sans(
                           size: 12, color: McColors.onSurfaceVariant)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _inviteCode ?? '加载中…',
+                      _inviteCode ?? tr('assets_loading'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: McText.mono(
@@ -289,7 +289,7 @@ class _AssetsPageState extends State<AssetsPage> {
                   size: 18, color: cobalt),
               const SizedBox(width: 4),
               Text(
-                '终端资产总值 (USDT)',
+                tr('assets_total_value'),
                 style: McText.mono(
                   size: 12,
                   weight: FontWeight.w600,
@@ -311,22 +311,26 @@ class _AssetsPageState extends State<AssetsPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text.rich(
-                TextSpan(
-                  text: '可用: ',
-                  style: McText.mono(
-                      size: 12,
-                      weight: FontWeight.w700,
-                      color: McColors.onSurfaceVariant),
-                  children: [
-                    TextSpan(
-                      text: _acct == null ? '--' : available.toStringAsFixed(2),
-                      style: McText.mono(
-                          size: 12,
-                          weight: FontWeight.w700,
-                          color: McColors.onSurface),
-                    ),
-                  ],
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    text: tr('assets_available'),
+                    style: McText.mono(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: McColors.onSurfaceVariant),
+                    children: [
+                      TextSpan(
+                        text: _acct == null ? '--' : available.toStringAsFixed(2),
+                        style: McText.mono(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: McColors.onSurface),
+                      ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
               const SizedBox(width: 12),
@@ -338,22 +342,26 @@ class _AssetsPageState extends State<AssetsPage> {
                     color: McColors.onSurfaceVariant),
               ),
               const SizedBox(width: 12),
-              Text.rich(
-                TextSpan(
-                  text: '持仓中: ',
-                  style: McText.mono(
-                      size: 12,
-                      weight: FontWeight.w700,
-                      color: McColors.onSurfaceVariant),
-                  children: [
-                    TextSpan(
-                      text: _vip == null ? '--' : holding.toStringAsFixed(2),
-                      style: McText.mono(
-                          size: 12,
-                          weight: FontWeight.w700,
-                          color: McColors.onSurface),
-                    ),
-                  ],
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    text: tr('assets_holding'),
+                    style: McText.mono(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: McColors.onSurfaceVariant),
+                    children: [
+                      TextSpan(
+                        text: _vip == null ? '--' : holding.toStringAsFixed(2),
+                        style: McText.mono(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: McColors.onSurface),
+                      ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
               const SizedBox(width: 12),
@@ -365,22 +373,26 @@ class _AssetsPageState extends State<AssetsPage> {
                     color: McColors.onSurfaceVariant),
               ),
               const SizedBox(width: 12),
-              Text.rich(
-                TextSpan(
-                  text: '提现中: ',
-                  style: McText.mono(
-                      size: 12,
-                      weight: FontWeight.w700,
-                      color: McColors.onSurfaceVariant),
-                  children: [
-                    TextSpan(
-                      text: _acct == null ? '--' : pending.toStringAsFixed(2),
-                      style: McText.mono(
-                          size: 12,
-                          weight: FontWeight.w700,
-                          color: McColors.onSurface),
-                    ),
-                  ],
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    text: tr('assets_pending'),
+                    style: McText.mono(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: McColors.onSurfaceVariant),
+                    children: [
+                      TextSpan(
+                        text: _acct == null ? '--' : pending.toStringAsFixed(2),
+                        style: McText.mono(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: McColors.onSurface),
+                      ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -393,7 +405,7 @@ class _AssetsPageState extends State<AssetsPage> {
                 child: _actionBtn(
                   icon: Icons.bolt,
                   iconColor: Colors.white,
-                  text: '链上充值',
+                  text: tr('assets_deposit'),
                   primary: true,
                   onTap: () => Navigator.pushNamed(context, '/deposit'),
                 ),
@@ -403,7 +415,7 @@ class _AssetsPageState extends State<AssetsPage> {
                 child: _actionBtn(
                   icon: Icons.arrow_outward,
                   iconColor: McColors.onSurfaceVariant,
-                  text: '链上提现',
+                  text: tr('assets_withdraw'),
                   onTap: () => Navigator.pushNamed(context, '/withdraw'),
                 ),
               ),
@@ -412,7 +424,7 @@ class _AssetsPageState extends State<AssetsPage> {
                 child: _actionBtn(
                   icon: Icons.sync_alt,
                   iconColor: cobaltSoft,
-                  text: '钱包矩阵',
+                  text: tr('assets_wallet_matrix'),
                   onTap: () => Navigator.pushNamed(context, '/wallet-matrix'),
                 ),
               ),
@@ -425,7 +437,7 @@ class _AssetsPageState extends State<AssetsPage> {
             child: Row(
               children: [
                 Text(
-                  '支持多链:',
+                  tr('assets_multi_chain'),
                   style: McText.mono(
                       size: 12,
                       weight: FontWeight.w700,
@@ -523,7 +535,7 @@ class _AssetsPageState extends State<AssetsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '理财中心',
+            tr('assets_finance_center'),
             style: McText.display(size: 16, weight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
@@ -537,12 +549,12 @@ class _AssetsPageState extends State<AssetsPage> {
             childAspectRatio: 1.5,
             children: [
               for (final (route, icon, label) in [
-                ('/products', Icons.savings_outlined, '理财产品'),
-                ('/vip', Icons.workspace_premium_outlined, '我的VIP'),
-                ('/team', Icons.groups_outlined, '我的团队'),
-                ('/orders', Icons.receipt_long_outlined, '我的订单'),
-                ('/funds', Icons.account_balance_wallet_outlined, '资金明细'),
-                ('/withdraw', Icons.outbox_outlined, '提现'),
+                ('/products', Icons.savings_outlined, tr('assets_products')),
+                ('/vip', Icons.workspace_premium_outlined, tr('assets_my_vip')),
+                ('/team', Icons.groups_outlined, tr('assets_my_team')),
+                ('/orders', Icons.receipt_long_outlined, tr('assets_my_orders')),
+                ('/funds', Icons.account_balance_wallet_outlined, tr('assets_fund_details')),
+                ('/withdraw', Icons.outbox_outlined, tr('assets_withdraw_short')),
               ])
                 Material(
                   color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
@@ -578,10 +590,14 @@ class _AssetsPageState extends State<AssetsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 6,
@@ -593,7 +609,7 @@ class _AssetsPageState extends State<AssetsPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '合伙人分佣体系',
+                    tr('assets_partner_system'),
                     style: McText.display(size: 16, weight: FontWeight.w700),
                   ),
                 ],
@@ -611,7 +627,7 @@ class _AssetsPageState extends State<AssetsPage> {
                   ],
                 ),
                 child: Text(
-                  '协议返佣分润系统',
+                  tr('assets_protocol_system'),
                   style: McText.mono(
                       size: 12, weight: FontWeight.w700, color: cobaltSoft),
                 ),
@@ -640,7 +656,7 @@ class _AssetsPageState extends State<AssetsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '累计分佣收益 (USDT)',
+                          tr('assets_total_commission'),
                           style: McText.mono(
                               size: 12,
                               weight: FontWeight.w700,
@@ -663,7 +679,7 @@ class _AssetsPageState extends State<AssetsPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '佣金随产品收益同步结算',
+                          tr('assets_commission_settle_note'),
                           style: McText.mono(
                               size: 12, color: McColors.tertiary),
                         ),
@@ -693,7 +709,7 @@ class _AssetsPageState extends State<AssetsPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                '今日佣金',
+                                tr('assets_today_commission'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: McText.mono(
@@ -722,7 +738,7 @@ class _AssetsPageState extends State<AssetsPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '收益按产品周期结算',
+                          tr('assets_income_settle_note'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: McText.mono(size: 12, color: cobaltSoft),
@@ -740,19 +756,19 @@ class _AssetsPageState extends State<AssetsPage> {
           Row(
             children: [
               _metricCell(
-                  '有效受邀者',
-                  _team == null ? '--' : '${_team!['member_count'] ?? 0} 人',
+                  tr('assets_valid_invitees'),
+                  _team == null ? '--' : tr('assets_people').replaceAll('{n}', '${_team!['member_count'] ?? 0}'),
                   McColors.onSurface),
               const SizedBox(width: 10),
               _metricCell(
-                  '今日佣金',
+                  tr('assets_today_commission'),
                   _commSummary == null
                       ? '--'
                       : '+${FinanceApi.d(_commSummary!['today']).toStringAsFixed(2)}',
                   McColors.tertiary),
               const SizedBox(width: 10),
               _metricCell(
-                  '团队等级',
+                  tr('assets_team_level_label'),
                   _team == null
                       ? '--'
                       : 'Lv${_team!['team_level'] ?? 0}'
@@ -776,7 +792,7 @@ class _AssetsPageState extends State<AssetsPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '专属邀请码',
+                      tr('assets_exclusive_invite_code'),
                       style: McText.mono(
                           size: 12, color: McColors.onSurfaceVariant),
                     ),
@@ -797,7 +813,7 @@ class _AssetsPageState extends State<AssetsPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _inviteCode ?? '加载中…',
+                        _inviteCode ?? tr('assets_loading'),
                         style: McText.mono(
                             size: 16,
                             weight: FontWeight.w700,
@@ -807,7 +823,7 @@ class _AssetsPageState extends State<AssetsPage> {
                       GestureDetector(
                         onTap: _inviteCode == null
                             ? null
-                            : () => _copy(_inviteCode!, '已复制邀请码'),
+                            : () => _copy(_inviteCode!, tr('assets_invite_copied')),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -815,7 +831,7 @@ class _AssetsPageState extends State<AssetsPage> {
                                 size: 15, color: cobaltSoft),
                             const SizedBox(width: 4),
                             Text(
-                              '复制',
+                              tr('assets_copy'),
                               style: McText.mono(
                                   size: 12,
                                   weight: FontWeight.w700,
@@ -850,7 +866,7 @@ class _AssetsPageState extends State<AssetsPage> {
                               size: 16, color: McColors.primarySoft),
                           const SizedBox(width: 6),
                           Text(
-                            '邀请好友 · 邀请码与补填',
+                            tr('assets_invite_friends'),
                             style: McText.display(
                                 size: 13,
                                 weight: FontWeight.w600,
@@ -884,7 +900,7 @@ class _AssetsPageState extends State<AssetsPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '直达合伙人分佣中心看板',
+                            tr('assets_goto_commission_center'),
                             style: McText.display(
                                 size: 13,
                                 weight: FontWeight.w700,
@@ -907,7 +923,7 @@ class _AssetsPageState extends State<AssetsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '最近返佣记录',
+                tr('assets_recent_commissions'),
                 style: McText.mono(
                     size: 12,
                     weight: FontWeight.w700,
@@ -917,7 +933,7 @@ class _AssetsPageState extends State<AssetsPage> {
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/commission'),
                 child: Text(
-                  '查看全部明细',
+                  tr('assets_view_all'),
                   style: McText.mono(
                       size: 12, weight: FontWeight.w700, color: cobaltSoft),
                 ),
@@ -931,7 +947,7 @@ class _AssetsPageState extends State<AssetsPage> {
               padding: const EdgeInsets.symmetric(vertical: 14),
               alignment: Alignment.center,
               child: Text(
-                '暂无返佣记录, 邀请好友购买产品后按结算收益返佣',
+                tr('assets_no_commission'),
                 style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
               ),
             )
@@ -942,9 +958,9 @@ class _AssetsPageState extends State<AssetsPage> {
                 iconColor: McColors.tertiary,
                 iconBg: McColors.tertiary.withValues(alpha: 0.1),
                 title:
-                    '来自 ${(r['buyer_username'] ?? '用户#${r['buyer_id']}')} · ${r['gen'] ?? '-'}代返佣',
+                    tr('assets_commission_from').replaceAll('{name}', '${r['buyer_username'] ?? '${tr('assets_user_prefix')}${r['buyer_id']}'}').replaceAll('{gen}', '${r['gen'] ?? '-'}'),
                 sub:
-                    '订单#${r['order_id']} 第${r['period_no'] ?? '-'}期 · 比例 ${(FinanceApi.d(r['rate']) * 100).toStringAsFixed(2)}%',
+                    tr('assets_commission_sub').replaceAll('{order}', '${r['order_id']}').replaceAll('{period}', '${r['period_no'] ?? '-'}').replaceAll('{rate}', (FinanceApi.d(r['rate']) * 100).toStringAsFixed(2)),
                 amount: '+${FinanceApi.d(r['amount']).toStringAsFixed(2)}',
               ),
               const SizedBox(height: 8),
@@ -1070,76 +1086,6 @@ class _AssetsPageState extends State<AssetsPage> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // ---- 4. 客服支持 ----
-  Widget _settingsCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDeco(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.support_agent, size: 18, color: cobaltSoft),
-              const SizedBox(width: 4),
-              Text(
-                '客服支持',
-                style: McText.display(size: 16, weight: FontWeight.w700),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _linkTile(Icons.support_agent, McColors.tertiary, '7x24 在线客服'),
-        ],
-      ),
-    );
-  }
-
-  Widget _linkTile(IconData icon, Color iconColor, String text) {
-    return Material(
-      color: McColors.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {},
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-                color: McColors.surfaceContainerHigh.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(icon, size: 18, color: iconColor),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        text,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: McText.display(
-                            size: 13,
-                            weight: FontWeight.w500,
-                            color: McColors.onSurface),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right,
-                  size: 16, color: McColors.onSurfaceVariant),
-            ],
-          ),
-        ),
       ),
     );
   }

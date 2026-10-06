@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/finance_api.dart';
@@ -93,11 +94,11 @@ class _WithdrawPageState extends State<WithdrawPage> {
     final amount = _amountCtrl.text.trim();
     final addr = _addrCtrl.text.trim();
     if (amount.isEmpty || (double.tryParse(amount) ?? 0) <= 0) {
-      _toast('请输入有效金额');
+      _toast(tr('wd_err_amount'));
       return;
     }
     if (addr.isEmpty) {
-      _toast('请输入 $_networkLabel 提币地址');
+      _toast(tr('wd_err_addr').replaceAll('{network}', _networkLabel));
       return;
     }
     // 提交前以服务端报价二次确认 (报价接口无需登录, 提交时服务端重算为准)
@@ -115,22 +116,22 @@ class _WithdrawPageState extends State<WithdrawPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: McColors.surfaceContainer,
-        title: Text('确认提现', style: McText.display(size: 15, weight: FontWeight.w700)),
+        title: Text(tr('wd_confirm_title'), style: McText.display(size: 15, weight: FontWeight.w700)),
         content: Text(
-          '${_account == 'income' ? '收益' : '本金'}账户提现 ${q!['amount']} USDT ($_networkLabel)\n'
-          '服务费 ${q['service_fee']} + 网络费 ${q['network_fee']}\n'
-          '实际到账 ${q['arrive_amount']} USDT\n'
-          '地址 ${addr.length > 20 ? '${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}' : addr}',
+          '${tr(_account == 'income' ? 'wd_acct_income' : 'wd_acct_principal')}${tr('wd_confirm_line1').replaceAll('{amount}', '${q!['amount']}').replaceAll('{network}', _networkLabel)}\n'
+          '${tr('wd_confirm_line2').replaceAll('{service}', '${q['service_fee']}').replaceAll('{network_fee}', '${q['network_fee']}')}\n'
+          '${tr('wd_confirm_line3').replaceAll('{arrive}', '${q['arrive_amount']}')}\n'
+          '${tr('wd_confirm_addr')} ${addr.length > 20 ? '${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}' : addr}',
           style: McText.mono(size: 12, height: 1.7),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('取消', style: McText.sans(color: McColors.onSurfaceVariant)),
+            child: Text(tr('cancel'), style: McText.sans(color: McColors.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('确认提交', style: McText.sans(color: McColors.goldBright, weight: FontWeight.w700)),
+            child: Text(tr('wd_confirm_submit'), style: McText.sans(color: McColors.goldBright, weight: FontWeight.w700)),
           ),
         ],
       ),
@@ -146,7 +147,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
         'amount': amount,
       });
       if (!mounted) return;
-      _toast('提现申请已提交, 等待审核');
+      _toast(tr('wd_submitted'));
       _amountCtrl.clear();
       _addrCtrl.clear();
       setState(() => _quote = null);
@@ -154,7 +155,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
     } on ApiException catch (e) {
       if (mounted) _toast(e.message);
     } catch (_) {
-      if (mounted) _toast('网络错误, 请稍后重试');
+      if (mounted) _toast(tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -186,7 +187,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('提现', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('wd_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
@@ -199,8 +200,8 @@ class _WithdrawPageState extends State<WithdrawPage> {
           Row(
             children: [
               for (final (key, label, bal, color) in [
-                ('income', '收益账户', iBal, McColors.tertiary),
-                ('principal', '本金账户', pBal, McColors.primarySoft),
+                ('income', tr('wd_acct_income_full'), iBal, McColors.tertiary),
+                ('principal', tr('wd_acct_principal_full'), pBal, McColors.primarySoft),
               ])
                 Expanded(
                   child: GestureDetector(
@@ -237,13 +238,13 @@ class _WithdrawPageState extends State<WithdrawPage> {
           const SizedBox(height: 6),
           Text(
             _account == 'income'
-                ? '收益账户: 满 50 USDT 可提, 收取 3% 服务费 + 网络费'
-                : '本金账户: 无门槛, 不收取服务费, 仅收网络费',
+                ? tr('wd_income_rule')
+                : tr('wd_principal_rule'),
             style: McText.sans(size: 11, color: McColors.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
           // 网络选择
-          Text('提现网络', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          Text(tr('wd_network'), style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
           Wrap(
             spacing: 8,
@@ -251,11 +252,11 @@ class _WithdrawPageState extends State<WithdrawPage> {
             children: [
               for (final n in (_networks.isNotEmpty
                   ? _networks
-                  : const [
-                      {'network': 'trc20', 'label': 'TRC20 (波场)'},
-                      {'network': 'erc20', 'label': 'ERC20 (以太坊)'},
-                      {'network': 'bep20', 'label': 'BEP20 (BNB Chain)'},
-                      {'network': 'arbitrum', 'label': 'Arbitrum'},
+                  : [
+                      {'network': 'trc20', 'label': tr('wd_net_trc20')},
+                      {'network': 'erc20', 'label': tr('wd_net_erc20')},
+                      {'network': 'bep20', 'label': tr('wd_net_bep20')},
+                      {'network': 'arbitrum', 'label': tr('wd_net_arb')},
                     ]))
                 GestureDetector(
                   onTap: () => setState(() {
@@ -290,7 +291,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
           ),
           const SizedBox(height: 16),
           // 金额
-          Text('提现金额 (USDT)', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          Text(tr('wd_amount'), style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
           TextField(
             controller: _amountCtrl,
@@ -298,7 +299,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             style: McText.mono(size: 16),
             decoration: InputDecoration(
-              hintText: '可提 ${avail.toStringAsFixed(2)}',
+              hintText: tr('wd_available').replaceAll('{n}', avail.toStringAsFixed(2)),
               hintStyle: McText.mono(size: 13, color: McColors.onSurfaceVariant),
               filled: true,
               fillColor: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
@@ -308,19 +309,19 @@ class _WithdrawPageState extends State<WithdrawPage> {
                   _amountCtrl.text = avail > 0 ? avail.toStringAsFixed(2) : '';
                   _doQuote();
                 },
-                child: Text('全部', style: McText.sans(size: 12, color: McColors.primarySoft, weight: FontWeight.w600)),
+                child: Text(tr('wd_all'), style: McText.sans(size: 12, color: McColors.primarySoft, weight: FontWeight.w600)),
               ),
             ),
           ),
           const SizedBox(height: 14),
           // 地址
-          Text('$_networkLabel 提币地址', style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
+          Text(tr('wd_addr_label').replaceAll('{network}', _networkLabel), style: McText.sans(size: 12, color: McColors.onSurfaceVariant)),
           const SizedBox(height: 6),
           TextField(
             controller: _addrCtrl,
             style: McText.mono(size: 13),
             decoration: InputDecoration(
-              hintText: _isEvm ? '0x 开头的 42 位地址' : 'T 开头的 34 位地址',
+              hintText: _isEvm ? tr('wd_addr_hint_evm') : tr('wd_addr_hint_tron'),
               hintStyle: McText.mono(size: 13, color: McColors.onSurfaceVariant),
               filled: true,
               fillColor: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
@@ -344,11 +345,11 @@ class _WithdrawPageState extends State<WithdrawPage> {
               ),
               child: Column(
                 children: [
-                  _quoteRow('提现金额', '${_quote!['amount']}'),
-                  _quoteRow('服务费 (3%)', '-${_quote!['service_fee']}'),
-                  _quoteRow('网络费 ($_networkLabel)', '-${_quote!['network_fee']}'),
+                  _quoteRow(tr('wd_quote_amount'), '${_quote!['amount']}'),
+                  _quoteRow(tr('wd_quote_service'), '-${_quote!['service_fee']}'),
+                  _quoteRow(tr('wd_quote_network').replaceAll('{network}', _networkLabel), '-${_quote!['network_fee']}'),
                   const Divider(height: 14, color: McColors.outlineVariant),
-                  _quoteRow('实际到账', '${_quote!['arrive_amount']}', highlight: true),
+                  _quoteRow(tr('wd_quote_arrive'), '${_quote!['arrive_amount']}', highlight: true),
                 ],
               ),
             ),
@@ -367,12 +368,12 @@ class _WithdrawPageState extends State<WithdrawPage> {
                       width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: McColors.onPrimaryContainer),
                     )
-                  : Text('提交提现申请', style: McText.display(size: 14, weight: FontWeight.w700, color: McColors.onPrimaryContainer)),
+                  : Text(tr('wd_submit'), style: McText.display(size: 14, weight: FontWeight.w700, color: McColors.onPrimaryContainer)),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            '费用从申请金额内扣除, 实际到账 = 金额 - 服务费 - 网络费。申请后金额进入"处理中", 审核通过即打款; 被拒绝将退回申请金额。费用以提交时服务端报价为准, 之后不会追加。',
+            tr('wd_note'),
             style: McText.sans(size: 11, color: McColors.onSurfaceVariant, height: 1.6),
           ),
         ],

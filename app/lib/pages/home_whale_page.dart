@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -94,18 +95,18 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             ? Icons.warning
             : (isLong ? Icons.download_for_offline : Icons.sync_alt),
         pillText: isShort
-            ? '巨鲸减仓 · 空头异动'
-            : (isLong ? '巨鲸加仓 · 多头异动' : '巨鲸仓位异动'),
+            ? tr('whale_feed_short')
+            : (isLong ? tr('whale_feed_long') : tr('whale_feed_move')),
         pillColor: accent,
         chain: 'Hyperliquid',
         time: _relTime(ts),
         amount: sizeUsd > 0
             ? '$symbol ${_fmtUsd(sizeUsd)}'
-            : '$symbol 仓位变动',
-        usd: sizeUsd > 0 ? '≈ ${_fmtUsd(sizeUsd)} USD' : '仓位规模更新',
+            : tr('whale_position_change').replaceAll('{symbol}', symbol),
+        usd: sizeUsd > 0 ? '≈ ${_fmtUsd(sizeUsd)} USD' : tr('whale_position_update'),
         usdColor: accent,
         from: _shortAddr(user),
-        to: isShort ? '减仓/平仓' : (isLong ? '加仓/开仓' : '仓位调整'),
+        to: isShort ? tr('whale_verb_reduce') : (isLong ? tr('whale_verb_add') : tr('whale_verb_move')),
         fromColor: McColors.onSurfaceVariant,
         toColor: accent,
         arrowColor: accent,
@@ -144,7 +145,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   }
 
   static String _shortAddr(String addr) {
-    if (addr.length <= 10) return addr.isEmpty ? '匿名巨鲸' : addr;
+    if (addr.length <= 10) return addr.isEmpty ? tr('whale_anon') : addr;
     return '${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}';
   }
 
@@ -173,14 +174,18 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
 
   static String _relTime(dynamic ts) {
     final ms = ts is num ? ts.toInt() : int.tryParse('$ts') ?? 0;
-    if (ms <= 0) return '刚刚';
+    if (ms <= 0) return tr('time_just_now');
     final dt =
         DateTime.fromMillisecondsSinceEpoch(ms > 100000000000 ? ms : ms * 1000);
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
-    if (diff.inHours < 24) return '${diff.inHours}小时前';
-    return '${diff.inDays}天前';
+    if (diff.inMinutes < 1) return tr('time_just_now');
+    if (diff.inMinutes < 60) {
+      return tr('time_minutes_ago').replaceAll('{n}', '${diff.inMinutes}');
+    }
+    if (diff.inHours < 24) {
+      return tr('time_hours_ago').replaceAll('{n}', '${diff.inHours}');
+    }
+    return tr('time_days_ago').replaceAll('{n}', '${diff.inDays}');
   }
 
   @override
@@ -227,7 +232,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                   const Icon(Icons.radar, size: 20, color: McColors.primary),
                   const SizedBox(width: 8),
                   Text(
-                    '链上流动性异动总览',
+                    tr('whale_liq_overview'),
                     style: McText.display(size: 18, weight: FontWeight.w600),
                   ),
                 ],
@@ -244,7 +249,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                     const McGlowDot(color: McColors.tertiary, size: 6),
                     const SizedBox(width: 6),
                     Text(
-                      '24H 连续监听',
+                      tr('whale_listening_24h'),
                       style: McText.sans(
                           size: 12,
                           weight: FontWeight.w600,
@@ -261,27 +266,27 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             children: [
               Expanded(
                 child: _metricBox(
-                  label: '稳定币总流通',
+                  label: tr('whale_stable_total'),
                   value: stableTotal != null ? _fmtCap(stableTotal) : '--',
                   valueColor: McColors.onSurface,
                   delta: stableTotal != null ? _fmtPct(stableChg) : '--',
                   deltaColor: stableTotal != null
                       ? _pctColor(stableChg)
                       : McColors.onSurfaceVariant,
-                  caption: 'DefiLlama 全稳定币 24H',
+                  caption: tr('whale_stable_caption'),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: _metricBox(
-                  label: 'DeFi 总锁仓 TVL',
+                  label: tr('whale_tvl_total'),
                   value: tvlTotal != null ? _fmtCap(tvlTotal) : '--',
                   valueColor: McColors.onSurface,
                   delta: tvlTotal != null ? _fmtPct(tvlChg) : '--',
                   deltaColor: tvlTotal != null
                       ? _pctColor(tvlChg)
                       : McColors.onSurfaceVariant,
-                  caption: 'DefiLlama 全链锁仓 24H',
+                  caption: tr('whale_tvl_caption'),
                 ),
               ),
             ],
@@ -309,7 +314,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                             size: 14, color: McColors.primary),
                         const SizedBox(width: 6),
                         Text(
-                          'TOP 稳定币 · 24H',
+                          tr('whale_top_stable'),
                           style: McText.sans(
                               size: 12,
                               weight: FontWeight.w600,
@@ -318,7 +323,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                       ],
                     ),
                     Text(
-                      '流通 / 涨跌',
+                      tr('whale_circ_change'),
                       style: McText.sans(size: 12, color: McColors.outline),
                     ),
                   ],
@@ -327,7 +332,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                 if (tops.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('暂无数据',
+                    child: Text(tr('no_data'),
                         style: McText.sans(
                             size: 12, color: McColors.onSurfaceVariant)),
                   )
@@ -348,8 +353,8 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _filterPill('全部', value: ''),
-                _filterPill('合约仓位异动', value: '异动'),
+                _filterPill(tr('whale_filter_all'), value: ''),
+                _filterPill(tr('whale_filter_position'), value: '异动'),
               ],
             ),
           ),
@@ -549,7 +554,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                       size: 18, color: McColors.primaryContainer),
                   const SizedBox(width: 8),
                   Text(
-                    '实时异动高精时间线',
+                    tr('whale_feed_title'),
                     style: McText.display(size: 18, weight: FontWeight.w600),
                   ),
                 ],
@@ -559,7 +564,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                   const McGlowDot(color: McColors.tertiary, size: 6),
                   const SizedBox(width: 6),
                   Text(
-                    'WebSocket 已连通',
+                    tr('whale_ws_connected'),
                     style: McText.sans(size: 12, color: McColors.tertiary),
                   ),
                 ],
@@ -572,7 +577,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text('当前筛选下暂无异动',
+              child: Text(tr('whale_no_feed'),
                   style: McText.sans(size: 12, color: McColors.outline)),
             ),
           )
@@ -745,7 +750,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                   child: Row(
                     children: [
                       Text(
-                        '研判详情',
+                        tr('whale_detail_link'),
                         style: McText.sans(size: 12, color: McColors.primary),
                       ),
                       const Icon(Icons.chevron_right,
@@ -816,15 +821,15 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
               ],
             ),
             const SizedBox(height: 14),
-            _detailRow('金额', item.amount),
-            _detailRow('估值', item.usd),
-            _detailRow('链/网络', item.chain),
-            _detailRow('转出方', item.from),
-            _detailRow('接收方', item.to),
+            _detailRow(tr('whale_detail_amount'), item.amount),
+            _detailRow(tr('whale_detail_value'), item.usd),
+            _detailRow(tr('whale_detail_chain'), item.chain),
+            _detailRow(tr('whale_detail_from'), item.from),
+            _detailRow(tr('whale_detail_to'), item.to),
             _detailRow('TxHash', item.txHash),
             const SizedBox(height: 12),
             Text(
-              '解读: 大额${item.to.contains('冷钱包') ? '提币至冷钱包通常意味着长线囤积, 短期抛压减小' : item.to.contains('减仓') || item.to.contains('平仓') ? '减仓平仓, 该巨鲸短期看空或止盈' : item.to.contains('加仓') || item.to.contains('开仓') ? '加仓开仓, 该巨鲸短期看多' : '转入交易所通常被视为潜在卖出信号, 需关注后续盘口承接'}。',
+              _interpretation(item),
               style: McText.sans(
                   size: 12, height: 1.6, color: McColors.onSurfaceVariant),
             ),
@@ -834,8 +839,17 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
     );
   }
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
+  // 解读文案: 依据当前语言的动词标签判断方向 (item.to 已是译文).
+  String _interpretation(_WhaleFeedItem item) {
+    final body = item.to == tr('whale_verb_reduce')
+        ? tr('whale_interpret_reduce')
+        : item.to == tr('whale_verb_add')
+            ? tr('whale_interpret_add')
+            : tr('whale_interpret_move');
+    return tr('whale_interpret_prefix').replaceAll('{text}', body);
+  }
+
+  Widget _detailRow(String label, String value) {    return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -856,8 +870,8 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
 
   // 预警阈值: 选择后只显示 >= 阈值的异动.
   void _pickThreshold() {
-    const options = <(String, double)>[
-      ('全部', 0),
+    final options = <(String, double)>[
+      (tr('whale_filter_all'), 0),
       ('≥ \$1M', 1e6),
       ('≥ \$10M', 1e7),
       ('≥ \$50M', 5e7),
@@ -874,7 +888,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            Text('巨鲸预警阈值',
+            Text(tr('whale_threshold_title'),
                 style: McText.sans(size: 14, weight: FontWeight.w700)),
             const SizedBox(height: 8),
             for (final (label, v) in options)
@@ -921,8 +935,8 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
               const SizedBox(width: 8),
               Text(
                 _minUsd > 0
-                    ? '预警阈值: ≥ ${_fmtUsd(_minUsd)}'
-                    : '设置巨鲸预警阈值',
+                    ? tr('whale_threshold_set').replaceAll('{v}', _fmtUsd(_minUsd))
+                    : tr('whale_threshold_cta'),
                 style: McText.sans(
                     size: 12,
                     weight: FontWeight.w600,

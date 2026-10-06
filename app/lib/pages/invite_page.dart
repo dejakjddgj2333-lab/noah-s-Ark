@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/invite_api.dart';
@@ -44,7 +45,7 @@ class _InvitePageState extends State<InvitePage> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -53,7 +54,7 @@ class _InvitePageState extends State<InvitePage> {
   Future<void> _bind() async {
     final code = _bindCtrl.text.trim();
     if (code.isEmpty) {
-      _toast('请输入邀请码');
+      _toast(tr('inv_err_empty'));
       return;
     }
     setState(() {
@@ -64,12 +65,12 @@ class _InvitePageState extends State<InvitePage> {
       final info = await InviteApi.bind(code);
       if (mounted) {
         setState(() => _info = info);
-        _toast('绑定成功, 上级关系永久固定');
+        _toast(tr('inv_bind_success'));
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = '网络错误, 请稍后重试');
+      if (mounted) setState(() => _error = tr('net_error_retry'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -112,7 +113,7 @@ class _InvitePageState extends State<InvitePage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('邀请好友', style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(tr('inv_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
       body: _busy && _info == null
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -165,7 +166,7 @@ class _InvitePageState extends State<InvitePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('我的专属邀请码', style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          Text(tr('inv_my_code'), style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -184,11 +185,11 @@ class _InvitePageState extends State<InvitePage> {
                 ),
               ),
               const SizedBox(width: 10),
-              _copyButton('复制', () => _copy(_info!.inviteCode, '邀请码已复制')),
+              _copyButton(tr('assets_copy'), () => _copy(_info!.inviteCode, tr('inv_code_copied'))),
             ],
           ),
           const SizedBox(height: 12),
-          Text('邀请链接', style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          Text(tr('inv_link'), style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -201,11 +202,11 @@ class _InvitePageState extends State<InvitePage> {
                 ),
               ),
               const SizedBox(width: 10),
-              _copyButton('复制链接', () => _copy(_inviteLink, '邀请链接已复制')),
+              _copyButton(tr('inv_copy_link'), () => _copy(_inviteLink, tr('inv_link_copied'))),
             ],
           ),
           const SizedBox(height: 12),
-          Text('APP 直开链接', style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          Text(tr('inv_app_link'), style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -218,7 +219,7 @@ class _InvitePageState extends State<InvitePage> {
                 ),
               ),
               const SizedBox(width: 10),
-              _copyButton('复制', () => _copy(_inviteAppLink, 'APP链接已复制')),
+              _copyButton(tr('assets_copy'), () => _copy(_inviteAppLink, tr('inv_app_link_copied'))),
             ],
           ),
         ],
@@ -257,7 +258,7 @@ class _InvitePageState extends State<InvitePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('我的上级', style: McText.display(size: 15, weight: FontWeight.w700)),
+          Text(tr('inv_my_inviter'), style: McText.display(size: 15, weight: FontWeight.w700)),
           const SizedBox(height: 12),
           if (info.bound) ...[
             Container(
@@ -274,17 +275,17 @@ class _InvitePageState extends State<InvitePage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      info.inviterUsername ?? '用户 #${info.inviterId}',
+                      info.inviterUsername ?? '${tr('assets_user_prefix')}${info.inviterId}',
                       style: McText.sans(size: 14, weight: FontWeight.w600),
                     ),
                   ),
-                  Text('已绑定 · 永久固定', style: McText.mono(size: 11, color: McColors.tertiary)),
+                  Text(tr('inv_bound_fixed'), style: McText.mono(size: 11, color: McColors.tertiary)),
                 ],
               ),
             ),
           ] else if (info.canBind) ...[
             Text(
-              '尚未绑定上级, 可补填邀请码',
+              tr('inv_can_bind'),
               style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
             ),
             const SizedBox(height: 10),
@@ -296,7 +297,7 @@ class _InvitePageState extends State<InvitePage> {
                     style: McText.mono(size: 13),
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
-                      hintText: '输入邀请码',
+                      hintText: tr('inv_code_hint'),
                       hintStyle: McText.sans(size: 13, color: McColors.onSurfaceVariant),
                       filled: true,
                       fillColor: McColors.surfaceContainerLowest,
@@ -317,7 +318,7 @@ class _InvitePageState extends State<InvitePage> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                _copyButton('绑定', _busy ? () {} : _bind),
+                _copyButton(tr('inv_bind'), _busy ? () {} : _bind),
               ],
             ),
           ] else ...[
@@ -338,10 +339,10 @@ class _InvitePageState extends State<InvitePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('不可补填邀请码', style: McText.sans(size: 13, weight: FontWeight.w700, color: McColors.bear)),
+                        Text(tr('inv_cannot_bind'), style: McText.sans(size: 13, weight: FontWeight.w700, color: McColors.bear)),
                         const SizedBox(height: 4),
                         Text(
-                          info.bindBlockReason ?? '当前不满足补绑条件',
+                          info.bindBlockReason ?? tr('inv_cannot_bind_default'),
                           style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
                         ),
                       ],
@@ -372,15 +373,12 @@ class _InvitePageState extends State<InvitePage> {
             children: [
               const Icon(Icons.info_outline, size: 16, color: McColors.primarySoft),
               const SizedBox(width: 6),
-              Text('绑定规则', style: McText.sans(size: 13, weight: FontWeight.w700)),
+              Text(tr('inv_rules_title'), style: McText.sans(size: 13, weight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            '· 上下级关系一旦绑定永久固定, 不能更换上级\n'
-            '· 没有邀请码也可以正常注册和购买产品\n'
-            '· 本人或任意层级下级购买成功后, 将无法补填邀请码绑定上级\n'
-            '· 返佣仅统计三代内下级, 补绑资格检查覆盖全部层级',
+            tr('inv_rules_body'),
             style: McText.sans(size: 12, color: McColors.onSurfaceVariant, height: 1.7),
           ),
         ],
