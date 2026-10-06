@@ -10,7 +10,8 @@ from models.hk import HkBase, utc_now
 
 # 收益返还方式 (需求文档第二节):
 # daily=每满24小时; period_7d=每隔7天; period_30d=每隔30天; expiry=到期一次性
-RETURN_METHODS = ("daily", "period_7d", "period_30d", "expiry")
+# period_1h=每小时 (收益测试用, 非文档原始节奏)
+RETURN_METHODS = ("daily", "period_7d", "period_30d", "expiry", "period_1h")
 
 # 产品状态: draft=草稿/待上架; published=已上架可购买; offline=已下架
 PRODUCT_STATUSES = ("draft", "published", "offline")

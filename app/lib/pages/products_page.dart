@@ -258,8 +258,18 @@ class _PurchaseSheet extends StatefulWidget {
 class _PurchaseSheetState extends State<_PurchaseSheet> {
   final _amountCtrl = TextEditingController();
   bool _busy = false;
+  String? _amountError;
 
   dynamic get _p => widget.product;
+
+  @override
+  void initState() {
+    super.initState();
+    // 输入即清除错误提示
+    _amountCtrl.addListener(() {
+      if (_amountError != null) setState(() => _amountError = null);
+    });
+  }
 
   @override
   void dispose() {
@@ -270,6 +280,9 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
   Future<void> _submit() async {
     final amount = _amountCtrl.text.trim();
     if (amount.isEmpty || (double.tryParse(amount) ?? 0) <= 0) {
+      // 购买弹层是覆盖在 Scaffold 上的 modal, SnackBar 会被遮住看不见,
+      // 故校验错误直接在弹层内红字展示
+      setState(() => _amountError = '请输入有效金额');
       _toast(tr('prod_err_amount'));
       return;
     }
@@ -311,10 +324,12 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
 
       await FinanceApi.buy(_p['id'] as int, amount);
       if (!mounted) return;
+      // 成功后先弹提示再关弹层: SnackBar 挂在页面 Scaffold 上, 弹层关闭后可见
       _toast(tr('prod_buy_success'));
       Navigator.of(context).pop(true);
     } on ApiException catch (e) {
-      if (mounted) _toast(e.message);
+      // 服务端错误 (余额不足/超范围/等级不够等) 也在弹层内联展示, 不被 modal 遮住
+      if (mounted) setState(() => _amountError = e.message);
     } catch (_) {
       if (mounted) _toast(tr('net_error_retry'));
     } finally {
@@ -393,6 +408,16 @@ class _PurchaseSheetState extends State<_PurchaseSheet> {
               ),
               suffixText: 'USDT',
               suffixStyle: McText.sans(size: 12, color: McColors.onSurfaceVariant),
+              errorText: _amountError,  // 校验失败在输入框内联红字展示
+              errorStyle: McText.sans(size: 12, color: McColors.bear),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: McColors.bear),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: McColors.bear),
+              ),
             ),
           ),
           const SizedBox(height: 8),

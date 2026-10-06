@@ -25,6 +25,7 @@ from services import (
     admin_service,
     auth_service,
     balance_log_service,
+    concurrency,
     invite_service,
     team_service,
     vip_service,
@@ -325,14 +326,18 @@ async def update_user(
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "会形成循环绑定, 已拒绝"
             )
-        # 与补绑同口径: 本人或任意层级下级已有成功购买 → 永久失去改绑资格
-        if await invite_service.has_any_purchase(db, u.id):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "该用户或其下级已有成功购买, 不可改绑上级",
-            )
-        changes.append(f"inviter {invite.inviter_id}->{inviter.user_id}")
-        invite.inviter_id = inviter.user_id
+        # 与补绑同口径: 本人或任意层级下级已有成功购买 → 永久失去改绑资格.
+        # 校验与写入整体在锁内: 防检查和写入之间并发插入购买记录
+        from models.hk import utc_now
+        async with concurrency.bind_purchase_lock:
+            if await invite_service.has_any_purchase(db, u.id):
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    "该用户或其下级已有成功购买, 不可改绑上级",
+                )
+            changes.append(f"inviter {invite.inviter_id}->{inviter.user_id}")
+            invite.inviter_id = inviter.user_id
+            invite.bound_at = utc_now()
     if not changes:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "没有需要修改的内容")
     await admin_service.audit(db, user, "user_update", "user", u.id,

@@ -37,23 +37,28 @@ from services.team_service import truncate_2dp
 
 log = logging.getLogger("settlement")
 
-# 返还节奏 → 每期天数 (expiry 单独处理: 一期 = 整个周期)
-PERIOD_DAYS = {"daily": 1, "period_7d": 7, "period_30d": 30}
+# 返还节奏 → 每期小时数 (expiry 单独处理: 一期 = 整个周期)
+PERIOD_HOURS = {"daily": 24, "period_7d": 168, "period_30d": 720, "period_1h": 1}
 
 
-def period_days(order: HkOrder) -> int:
+def period_hours(order: HkOrder) -> int:
     if order.return_method == "expiry":
-        return order.duration_days
-    return PERIOD_DAYS[order.return_method]
+        return order.duration_days * 24
+    return PERIOD_HOURS[order.return_method]
+
+
+def period_days(order: HkOrder) -> Decimal:
+    """本期天数 (小时节奏可为分数, 如 1/24)."""
+    return Decimal(period_hours(order)) / Decimal(24)
 
 
 def total_periods(order: HkOrder) -> int:
     if order.return_method == "expiry":
         return 1
-    return max(1, order.duration_days // PERIOD_DAYS[order.return_method])
+    return max(1, (order.duration_days * 24) // PERIOD_HOURS[order.return_method])
 
 
-def period_income(order: HkOrder, days: int) -> Decimal:
+def period_income(order: HkOrder, days: Decimal) -> Decimal:
     """本期收益 = 本金 × 订单锁定实际日收益率 × 天数, 截断 2 位小数."""
     rate = order.actual_daily_rate
     if rate is None:  # Phase 1 旧订单无锁定加成
@@ -62,12 +67,12 @@ def period_income(order: HkOrder, days: int) -> Decimal:
 
 
 def first_settle_at(effective_at: datetime, duration_days: int, return_method: str) -> datetime:
-    """首期应结算时点 = 生效时间 + 一期天数."""
+    """首期应结算时点 = 生效时间 + 一期时长."""
     if return_method == "expiry":
-        days = duration_days
+        hours = duration_days * 24
     else:
-        days = PERIOD_DAYS[return_method]
-    return effective_at + timedelta(days=days)
+        hours = PERIOD_HOURS[return_method]
+    return effective_at + timedelta(hours=hours)
 
 
 async def _credit(
@@ -152,10 +157,11 @@ async def _settle_commissions(
 
 async def settle_order(db: AsyncSession, order: HkOrder, now: datetime) -> int:
     """结算一笔订单所有到期期数. 调用方 commit; 返回新结算期数."""
+    ph = period_hours(order)
     pd = period_days(order)
     total = total_periods(order)
     if order.next_settle_at is None:  # 兼容 Phase 1 旧订单
-        order.next_settle_at = order.effective_at + timedelta(days=pd)
+        order.next_settle_at = order.effective_at + timedelta(hours=ph)
         if order.next_settle_at > now:
             await db.flush()
             return 0
@@ -163,7 +169,7 @@ async def settle_order(db: AsyncSession, order: HkOrder, now: datetime) -> int:
     settled = 0
     while order.settled_periods < total and order.status == "effective":
         period_no = order.settled_periods + 1
-        due_at = order.effective_at + timedelta(days=pd * period_no)
+        due_at = order.effective_at + timedelta(hours=ph * period_no)
         if due_at > now:
             break
         exists = (
@@ -209,7 +215,7 @@ async def settle_order(db: AsyncSession, order: HkOrder, now: datetime) -> int:
             # 等级变动日志: 到期移除持仓, 记录本人与上级们的最新等级 (自动降级留痕)
             await level_log_service.record_event(db, order.user_id, source="settle")
         else:
-            order.next_settle_at = order.effective_at + timedelta(days=pd * (period_no + 1))
+            order.next_settle_at = order.effective_at + timedelta(hours=ph * (period_no + 1))
     await db.flush()
     return settled
 

@@ -138,6 +138,7 @@ class FinLabels {
     'period_7d': '每 7 天返还',
     'period_30d': '每 30 天返还',
     'expiry': '到期一次性返还',
+    'period_1h': '每小时返还',
   };
 
   static const orderStatus = {
