@@ -1,51 +1,128 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><title>隐私政策</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>隐私政策</title></head>
 <body>
-<h1>隐私政策 / Privacy Policy</h1>
+<h1>隐私政策</h1>
 <p><em>更新日期：2026年10月6日 &nbsp;|&nbsp; 生效日期：2026年10月6日</em></p>
 
-<h2>一、引言</h2>
-<p>明策（MINGCE，下称"本 App"或"我们"）由重庆超玩潮品运营。本隐私政策说明我们在您使用本加密货币行情终端服务时，如何收集、使用、存储和保护您的个人信息。使用本 App 即表示您同意本政策。</p>
+<h2>一、引言与适用范围</h2>
+<p>本《隐私政策》由<strong>重庆潮玩潮品电子商务有限公司</strong>（以下简称"我们"或"本公司"）制定并发布，适用于我们运营的"明策（MINGCE）"移动应用程序（以下简称"本 App"）及其提供的全部产品与服务。</p>
+<p>我们深知个人信息安全的重要性，并将严格按照《中华人民共和国个人信息保护法》《中华人民共和国网络安全法》《中华人民共和国数据安全法》等法律法规，以及本政策的约定，收集、使用、存储、共享和保护您的个人信息。请您在使用本 App 前仔细阅读并充分理解本政策；您开始使用本 App，即表示您已阅读并同意本政策的全部内容。如您不同意，请立即停止使用。</p>
 
-<h2>二、我们收集的信息</h2>
+<h2>二、我们收集的个人信息及用途</h2>
+<p>我们遵循合法、正当、必要和最小化原则，仅为实现下列功能之目的收集相关信息：</p>
+
+<h3>（一）账户注册与登录</h3>
 <ul>
-<li><strong>账户信息</strong>：用户名、邮箱地址、加密存储的密码、昵称、头像。</li>
-<li><strong>安全设置</strong>：资金密码（加密存储）、谷歌验证密钥、防钓鱼码、登录设备信息（设备名、平台、IP、登录时间）。</li>
-<li><strong>推送标识</strong>：APNs 设备令牌（device token），用于向您发送行情预警、新消息、提现到账等通知。</li>
-<li><strong>社交内容</strong>：您主动发送的聊天消息、图片、语音、视频及好友关系。服务端仅作中继转发，定期清理。</li>
-<li><strong>行情偏好</strong>：您设置的价格预警、自选语言、涨跌配色等使用偏好。</li>
-<li><strong>设备与日志</strong>：为保障服务安全而记录的必要日志（如登录限流、异常检测）。</li>
+<li><strong>收集信息</strong>：用户名、电子邮箱地址、登录密码（仅以 bcrypt 加盐哈希形式存储，我们无法获取明文）。</li>
+<li><strong>用途</strong>：创建并验证您的账户、保障账户安全、提供登录服务。</li>
 </ul>
 
-<h2>三、信息的使用</h2>
-<p>我们仅将收集的信息用于：提供行情展示与预警服务、账户安全验证、社交功能、推送通知、改进产品体验及防范欺诈滥用。我们不会将您的个人信息用于无关用途。</p>
-
-<h2>四、信息的共享</h2>
-<p>我们不出售您的个人信息。仅在以下情形共享：</p>
+<h3>（二）账户安全设置</h3>
 <ul>
-<li>行情数据来自公开交易所 API（Binance、Bybit、OKX 等），仅传输必要的行情查询请求，不含您的身份信息。</li>
-<li>APNs 推送经苹果推送服务送达，仅包含通知标题与内容。</li>
-<li>法律法规要求或监管机构依法调取时。</li>
+<li><strong>收集信息</strong>：资金密码（加密哈希存储）、谷歌两步验证（TOTP）密钥、防钓鱼码、登录设备信息（设备名称、操作系统平台、IP 地址、登录及活跃时间）。</li>
+<li><strong>用途</strong>：增强账户安全防护、异常登录识别、支持您远程管理并下线登录设备。</li>
 </ul>
 
-<h2>五、信息的存储与安全</h2>
-<p>密码与资金密码采用 bcrypt 加盐哈希存储，传输全程 HTTPS 加密。聊天媒体文件定期自动清理。我们采取合理的技术与管理措施保护信息安全，但无法保证绝对安全，请您妥善保管账户凭证。</p>
+<h3>（三）消息推送</h3>
+<ul>
+<li><strong>收集信息</strong>：苹果推送通知服务（APNs）设备令牌（Device Token）。</li>
+<li><strong>用途</strong>：在您授权后向您发送行情预警、新聊天消息、好友请求、提现到账等通知。您可随时在 App 内或系统设置中关闭。</li>
+</ul>
 
-<h2>六、您的权利</h2>
-<p>您可在 App 内：修改昵称/头像、管理登录设备并远程下线、设置或关闭推送、开启/解绑两步验证。如需注销账户或删除个人数据，请联系我们。</p>
+<h3>（四）社交与通讯功能</h3>
+<ul>
+<li><strong>收集信息</strong>：您在使用聊天、群组、音视频通话功能时主动发送的文字、图片、语音、视频内容，以及您建立的好友关系。</li>
+<li><strong>用途</strong>：实现消息的中继转发与通话连接。服务端仅作传输中继，聊天媒体文件将定期自动清理。</li>
+</ul>
 
-<h2>七、未成年人</h2>
-<p>本 App 不面向 17 周岁以下未成年人，我们不会故意收集未成年人信息。</p>
+<h3>（五）行情与个性化偏好</h3>
+<ul>
+<li><strong>收集信息</strong>：您设置的价格预警（交易对与目标价）、界面语言、涨跌配色等使用偏好。</li>
+<li><strong>用途</strong>：为您提供个性化行情提醒与界面展示。</li>
+</ul>
 
-<h2>八、政策更新</h2>
-<p>本政策更新时将在本页面公布并注明生效日期，重大变更将通过 App 内公告提示。</p>
+<h3>（六）设备权限的使用</h3>
+<p>以下系统权限仅在您使用对应功能时才会申请，且您可拒绝而不影响其它功能：</p>
+<ul>
+<li><strong>相机</strong>：用于扫描二维码、拍摄头像照片、进行音视频通话。</li>
+<li><strong>相册</strong>：用于选择图片发送或设置为头像，以及保存图片到本地。</li>
+<li><strong>麦克风</strong>：用于发送语音消息及音视频通话。</li>
+<li><strong>通知</strong>：用于接收上述各类消息提醒。</li>
+</ul>
 
-<h2>九、联系我们</h2>
-<p>如对本隐私政策有任何疑问，请通过 App 内客服或运营方联系渠道与我们取得联系。</p>
+<h3>（七）日志信息</h3>
+<ul>
+<li><strong>收集信息</strong>：为保障服务安全所必需的操作与访问日志（如登录失败限流、异常请求检测）。</li>
+<li><strong>用途</strong>：防范欺诈、滥用与网络攻击，维护服务稳定运行。</li>
+</ul>
+
+<h2>三、我们如何使用 Cookie 及同类技术</h2>
+<p>本 App 主要通过本地存储保存您的登录凭证与偏好设置，以维持登录状态和提升使用体验。我们不会将此类技术用于本政策未载明的其它目的。</p>
+
+<h2>四、个人信息的共享、转让与公开披露</h2>
+<p><strong>我们不会向任何第三方出售您的个人信息。</strong>仅在以下情形下共享必要信息：</p>
+<ul>
+<li><strong>行情数据服务</strong>：行情数据来自公开的第三方交易所 API（包括但不限于 Binance、Bybit、OKX）。相关请求仅包含行情查询参数，不含您的任何身份信息。</li>
+<li><strong>推送服务</strong>：通知内容经苹果 APNs 服务送达您的设备，仅包含通知标题与正文。</li>
+<li><strong>法律要求</strong>：根据法律法规的强制性规定、司法或行政机关的合法要求，或为保护我们及用户的合法权益、防范重大安全风险所必需时。</li>
+</ul>
+<p>我们不会转让您的个人信息，除非涉及合并、收购或资产转让，并将要求受让方继续受本政策约束。我们不会公开披露您的个人信息，除非获得您的明示同意或基于法律强制要求。</p>
+
+<h2>五、个人信息的存储与跨境传输</h2>
+<ul>
+<li><strong>存储地点</strong>：您的个人信息存储于我们位于境内的服务器。</li>
+<li><strong>存储期限</strong>：我们仅在实现本政策所述目的所必需的最短期限内保留您的个人信息；账户注销后，我们将按法律要求删除或匿名化处理，法律法规另有规定的除外。</li>
+<li><strong>跨境传输</strong>：除向您推送通知需经苹果境外服务节点外，我们不会将您的个人信息传输至境外。</li>
+</ul>
+
+<h2>六、个人信息安全保护</h2>
+<p>我们采取符合业界标准的技术与管理措施保护您的信息安全，包括但不限于：密码与资金密码的 bcrypt 加盐哈希存储、全链路 HTTPS 加密传输、访问权限控制与安全审计。请您理解，互联网环境并非绝对安全，任何安全措施都存在被突破的可能。如发生个人信息安全事件，我们将按法律要求及时告知您并向主管部门报告。请您务必妥善保管账户凭证，勿将其透露给他人。</p>
+
+<h2>七、您的权利</h2>
+<p>依据相关法律法规，您对自己的个人信息享有以下权利：</p>
+<ul>
+<li><strong>访问与更正</strong>：您可在 App 内查看并修改昵称、头像等个人资料。</li>
+<li><strong>设备管理</strong>：您可查看全部登录设备并远程下线任何设备。</li>
+<li><strong>授权管理</strong>：您可随时开启/关闭推送通知、绑定/解绑两步验证、开启/关闭各类系统权限。</li>
+<li><strong>删除与注销</strong>：您可请求删除个人信息或注销账户。注销后我们将依法删除或匿名化您的个人信息。</li>
+</ul>
+<p>如您希望行使上述权利或对我们的处理活动有任何疑问，可通过本政策载明的方式与我们联系，我们将在合理期限内予以响应。</p>
+
+<h2>八、未成年人保护</h2>
+<p>本 App 面向成年用户，不面向 17 周岁以下的未成年人。我们不会故意收集未成年人的个人信息；如发现误收集，将尽快删除。若您所在司法辖区对加密资产相关服务设有年龄限制，请您自觉遵守。</p>
+
+<h2>九、本政策的更新</h2>
+<p>我们可能适时修订本政策。更新后的政策将在本页面公布并注明生效日期；涉及重大变更时，我们将通过 App 内公告等显著方式另行提示。修订后的政策自公布之日起生效，您继续使用本 App 即视为接受修订后的政策。</p>
+
+<h2>十、如何联系我们</h2>
+<p>如对本隐私政策或个人信息保护有任何疑问、意见或投诉，您可通过本 App 内的客服渠道，或通过以下方式与本公司联系：</p>
+<p><strong>重庆潮玩潮品电子商务有限公司</strong><br>（联系邮箱 / 地址：以 App 内公示及公司登记信息为准）</p>
+<p>我们将在核实您身份后的合理期限内（通常不超过 15 个工作日）予以答复。</p>
 
 <hr>
-<h1>Privacy Policy (English Summary)</h1>
-<p>Mingce ("the App"), operated by Chongqing Chaowan Chaopin, provides a crypto market terminal. We collect: account info (username, email, hashed password, nickname, avatar); security settings (hashed fund password, TOTP secret, anti-phishing code, login devices); APNs device tokens for notifications; social content you send (relayed and periodically purged); market preferences (price alerts, language); and necessary security logs. We use data only to provide the service, secure your account, and send notifications. We do not sell personal data. Market data comes from public exchange APIs without your identity. Passwords are bcrypt-hashed and traffic is HTTPS-encrypted. You may edit your profile, manage devices, toggle notifications, and enable 2FA in-app, and may request account deletion via support. The App is not directed at minors under 17. Updates will be posted here.</p>
+<h1>Privacy Policy (English)</h1>
+<p><em>Last updated: October 6, 2026</em></p>
+<p>This Privacy Policy is issued by <strong>Chongqing Chaowan Chaopin E-Commerce Co., Ltd.</strong> ("we", "us") for the "Mingce (MINGCE)" mobile application (the "App"). By using the App you agree to this Policy.</p>
+<h3>1. Information We Collect</h3>
+<ul>
+<li><strong>Account</strong>: username, email, password (bcrypt-hashed only).</li>
+<li><strong>Security</strong>: hashed fund password, TOTP (2FA) secret, anti-phishing code, login devices (name, platform, IP, timestamps).</li>
+<li><strong>Notifications</strong>: APNs device token, used to send price alerts, messages, friend requests and withdrawal notices (you may disable anytime).</li>
+<li><strong>Social</strong>: chat content (text/image/voice/video) and friend relationships you create; the server relays content and periodically purges media.</li>
+<li><strong>Preferences</strong>: price alerts, language, chart color settings.</li>
+<li><strong>Device permissions</strong>: camera (scan/avatar/calls), photo library (send/avatar/save), microphone (voice/calls), notifications — requested only when needed.</li>
+<li><strong>Logs</strong>: security logs for abuse and attack prevention.</li>
+</ul>
+<h3>2. Sharing</h3>
+<p>We do not sell personal data. Market data is fetched from public exchange APIs (Binance/Bybit/OKX) without your identity. Notifications are delivered via Apple APNs. We may disclose data only where required by law.</p>
+<h3>3. Storage & Security</h3>
+<p>Data is stored on servers in-country and retained only as long as necessary. Passwords are bcrypt-hashed and all traffic is HTTPS-encrypted. No method is 100% secure; please safeguard your credentials.</p>
+<h3>4. Your Rights</h3>
+<p>You may access and edit your profile, manage and remotely sign out devices, toggle notifications and 2FA, and request deletion or account cancellation by contacting us.</p>
+<h3>5. Minors</h3>
+<p>The App is not directed at users under 17 and we do not knowingly collect their data.</p>
+<h3>6. Changes & Contact</h3>
+<p>Updates will be posted here with the effective date. Questions may be sent to Chongqing Chaowan Chaopin E-Commerce Co., Ltd. via the in-app support channel.</p>
 </body>
 </html>

@@ -1,11 +1,12 @@
 ════════════════════════════════════════════════════════════
-  明策 MINGCE — iOS App Store 上架资料
+  Noah's Ark 明策 — iOS App Store 上架资料
 ════════════════════════════════════════════════════════════
 
 【一】App 名称 (Name, 30字符内)
 ────────────────────────────────
-中文：明策 - 加密货币行情终端
-英文：Mingce - Crypto Market Terminal
+英文（主）：Noah's Ark
+中文（副）：明策 - 加密货币行情终端
+（App Store 名称建议直接用 Noah's Ark；本地化中文区可填 明策）
 
 
 【二】副标题 (Subtitle, 30字符内)
@@ -30,7 +31,7 @@ in one pro terminal.
 ────────────────────────────────
 —— 中文版 ——
 
-明策是一款专业级加密货币行情终端，为交易者提供多维度市场数据、
+Noah's Ark（明策）是一款专业级加密货币行情终端，为交易者提供多维度市场数据、
 链上巨鲸动向与实时风险预警，帮你在瞬息万变的市场中抢占先机。
 
 ◆ 多维市场指数
@@ -60,7 +61,7 @@ in one pro terminal.
 
 —— English ——
 
-Mingce is a professional crypto market terminal for traders, delivering
+Noah's Ark is a professional crypto market terminal for traders, delivering
 multi-dimensional market data, on-chain whale tracking and real-time
 risk alerts to keep you ahead of the market.
 
@@ -116,7 +117,8 @@ bitcoin,crypto,market,futures,liquidation,funding,whale,alerts,trading
 
 【八】版权 (Copyright)
 ────────────────────────────────
-© 2026 重庆超玩潮品 (或你的公司主体全称)
+© 2026 Chongqing Chaowan Chaopin E-Commerce Co., Ltd.
+（重庆潮玩潮品电子商务有限公司）
 
 
 【九】审核信息 (Review Notes, 给苹果审核员看)
@@ -129,11 +131,26 @@ bitcoin,crypto,market,futures,liquidation,funding,whale,alerts,trading
 • 相机/相册/麦克风用途：扫码、设置头像、发送图片/语音、音视频通话。
 
 
-【十】还需你准备（我做不了）
+【十】协议地址（已上线，直接填）
 ────────────────────────────────
-□ 截图：6.7" (1290×2796) 和 6.5" (1242×2688) 各 3-8 张
-   （首页综合/行情/爆仓/巨鲸/聊天/预警，我可帮你用模拟器截）
-□ 隐私政策 URL：必填，金融类审核必查（需一个可访问的网页）
+隐私政策 (Privacy Policy URL)：
+  http://shipapi.bdxapi.com/api/legal/privacy
+用户协议 (Terms of Service)：
+  http://shipapi.bdxapi.com/api/legal/terms
+（内容可在 后台管理系统 → 系统 → 协议管理 在线编辑）
+
+
+【十一】截图（已备好，在 上架截图/ 目录）
+────────────────────────────────
+iPhone 6.3" (1206×2622) 三张：
+  iphone_行情_1206.png / iphone_多维指数_1206.png / iphone_资讯_1206.png
+iPad 13" (2064×2752) 一张：
+  ipad13_01_home.png
+
+
+【十二】还需你准备（我做不了）
+────────────────────────────────
 □ App 隐私标签：声明收集 邮箱/设备token/聊天内容/用户名 等
-□ 技术支持 URL：可填官网或联系页
+□ 技术支持 URL：可填官网或联系页（也可暂填隐私协议同域）
+□ 演示账号：后台先建好测试号（密码登录，别用邮箱验证码）
 □ 贸易合规：已设 ITSAppUsesNonExEncryption=false，选"否"即可
