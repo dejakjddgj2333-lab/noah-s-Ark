@@ -249,8 +249,11 @@ async def approve(db: AsyncSession, w: HkWithdrawal, txid: str | None) -> None:
 
     w.processed_at = utc_now()
     await db.flush()
+    # 资金明细: 审核通过只留痕不动账 —— 余额在申请时已全额扣除,
+    # 这里再记 -amount 会让明细显示成"扣了两次"而余额只减一次, 对不上账.
+    # 故记 0 额事件行 (balance_after 不变, 链式校验不断).
     await log_balance(
-        db, w.user_id, w.account, "withdraw_approve", -Decimal(w.amount),
+        db, w.user_id, w.account, "withdraw_approve", Decimal("0"),
         ref_type="withdrawal", ref_id=w.id,
     )
     await push_if_offline(

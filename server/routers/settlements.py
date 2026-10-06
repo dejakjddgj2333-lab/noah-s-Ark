@@ -22,7 +22,8 @@ class SettlementOut(BaseModel):
     id: int
     order_id: int
     period_no: int
-    period_days: int
+    # 本期天数: 小时节奏为分数 (如 1/24=0.041667), 不能用 int (会 500)
+    period_days: Decimal
     income_amount: Decimal
     principal_amount: Decimal
     due_at: datetime | None  # 应结算时点 (文档第八节)

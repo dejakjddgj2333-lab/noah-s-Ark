@@ -178,6 +178,7 @@ class FinLabels {
     'withdraw_approve': '提现通过',
     'convert_out': '转化出账(收益)',
     'convert_in': '转化入账(本金)',
+    'admin_adjust': '后台调账',
   };
 
   static String changeType(dynamic v) =>

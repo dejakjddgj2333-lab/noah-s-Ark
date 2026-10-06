@@ -25,6 +25,8 @@ class _FundsPageState extends State<FundsPage> with SingleTickerProviderStateMix
   List<dynamic> _levelLogs = [];
   bool _busy = false;
   String? _error;
+  // 资金明细账户筛选: 本金/收益各自独立计余额, 混排时余额列跳跃易误读
+  String _logAcc = 'all';
 
   @override
   void initState() {
@@ -201,45 +203,76 @@ class _FundsPageState extends State<FundsPage> with SingleTickerProviderStateMix
 
   // ── 资金明细 ──
   Widget _logList() {
-    if (_logs.isEmpty) return _empty(tr('funds_empty_detail'));
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-      itemCount: _logs.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: McColors.outlineVariant),
-      itemBuilder: (_, i) {
-        final l = _logs[i];
-        final amt = FinanceApi.d(l['amount']);
-        final isPrincipal = l['account'] == 'principal';
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+    final logs = _logAcc == 'all'
+        ? _logs
+        : _logs.where((l) => l['account'] == _logAcc).toList();
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
           child: Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(FinLabels.changeType(l['change_type']),
-                        style: McText.sans(size: 13, weight: FontWeight.w600)),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${isPrincipal ? tr('funds_principal_short') : tr('funds_income_short')} · ${tr('funds_balance')} ${l['balance_after']} · ${FinanceApi.time(l['created_at'])}',
-                      style: McText.sans(size: 11, color: McColors.onSurfaceVariant),
-                    ),
-                  ],
+              for (final (key, label) in [
+                ('all', tr('comm_filter_all')),
+                ('principal', tr('funds_principal_short')),
+                ('income', tr('funds_income_short')),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(label, style: McText.sans(size: 11)),
+                    selected: _logAcc == key,
+                    onSelected: (_) => setState(() => _logAcc = key),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
-              ),
-              Text(
-                '${amt >= 0 ? '+' : ''}${amt.toStringAsFixed(2)}',
-                style: McText.mono(
-                  size: 14,
-                  weight: FontWeight.w700,
-                  color: amt >= 0 ? McColors.bull : McColors.bear,
-                ),
-              ),
             ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: logs.isEmpty
+              ? _empty(tr('funds_empty_detail'))
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
+                  itemCount: logs.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: McColors.outlineVariant),
+                  itemBuilder: (_, i) {
+                    final l = logs[i];
+                    final amt = FinanceApi.d(l['amount']);
+                    final isPrincipal = l['account'] == 'principal';
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(FinLabels.changeType(l['change_type']),
+                                    style: McText.sans(size: 13, weight: FontWeight.w600)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${isPrincipal ? tr('funds_principal_short') : tr('funds_income_short')} · ${tr('funds_balance')} ${l['balance_after']} · ${FinanceApi.time(l['created_at'])}',
+                                  style: McText.sans(size: 11, color: McColors.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            amt == 0 ? '0.00' : '${amt > 0 ? '+' : ''}${amt.toStringAsFixed(2)}',
+                            style: McText.mono(
+                              size: 14,
+                              weight: FontWeight.w700,
+                              color: amt >= 0 ? McColors.bull : McColors.bear,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
