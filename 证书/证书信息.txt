@@ -6,6 +6,8 @@
 ios包名：com.hkmc.noahsark
 密码：caonima
 
+p8的Key ID:26N93J78HW
+
 Issuer ID：179ed838-15a7-4b56-82d0-a4d9f65eaeb9
 密钥ID：553U88DHNG
 p8密钥文本：
