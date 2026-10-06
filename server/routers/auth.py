@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
 from database import get_db
-from models.hk import HkEmailCode, HkUser, utc_now
+from models.hk import HkEmailCode, HkLoginDevice, HkUser, utc_now
 from services import auth_service, email_service, invite_service, rate_limit_service
 
 router = APIRouter(prefix="/auth", tags=["认证"])
@@ -63,6 +63,8 @@ class RegisterIn(BaseModel):
 class LoginIn(BaseModel):
     username: str
     password: str
+    device_name: str | None = None  # 登录设备名 (前端上报)
+    platform: str | None = None  # ios / android / web
 
 
 class UserOut(BaseModel):
@@ -71,8 +73,25 @@ class UserOut(BaseModel):
     email: str
     nickname: str | None = None
     avatar_url: str | None = None
+    has_fund_password: bool = False
+    has_2fa: bool = False
+    anti_phishing_code: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_user(cls, user: HkUser) -> "UserOut":
+        """从 ORM 构造: has_fund_password/has_2fa 由列是否为 NULL 推出."""
+        return cls(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            nickname=user.nickname,
+            avatar_url=user.avatar_url,
+            has_fund_password=user.fund_password_hash is not None,
+            has_2fa=user.totp_secret is not None,
+            anti_phishing_code=user.anti_phishing_code,
+        )
 
 
 class ProfileIn(BaseModel):
@@ -82,6 +101,39 @@ class ProfileIn(BaseModel):
 class ChangePasswordIn(BaseModel):
     old_password: str
     new_password: str = Field(min_length=8)
+
+
+def _fund_password_6(v: str) -> str:
+    if not (len(v) == 6 and v.isdigit()):
+        raise ValueError("资金密码须为6位数字")
+    return v
+
+
+class FundPasswordSetIn(BaseModel):
+    fund_password: str
+    login_password: str
+
+    _check_fund = field_validator("fund_password")(_fund_password_6)
+
+
+class FundPasswordChangeIn(BaseModel):
+    old_fund_password: str
+    new_fund_password: str
+
+    _check_new = field_validator("new_fund_password")(_fund_password_6)
+
+
+class TwoFACodeIn(BaseModel):
+    code: str
+
+
+class TwoFASetupOut(BaseModel):
+    secret: str
+    otpauth_url: str
+
+
+class AntiPhishingIn(BaseModel):
+    code: str = Field(default="", max_length=32)
 
 
 class TokenOut(BaseModel):
@@ -237,7 +289,7 @@ async def register(
     await db.refresh(user)
 
     token = auth_service.create_access_token(user)
-    return TokenOut(token=token, user=UserOut.model_validate(user))
+    return TokenOut(token=token, user=UserOut.from_user(user))
 
 
 @router.post("/login", response_model=TokenOut)
@@ -265,13 +317,96 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="账号已被禁用"
         )
-    token = auth_service.create_access_token(user)
-    return TokenOut(token=token, user=UserOut.model_validate(user))
+    # 设备会话: 生成 jti, 记录登录设备, 签发带 jti 的 token (设备下线即失效)
+    jti = uuid4().hex
+    ip = rate_limit_service.client_ip(request)
+    db.add(
+        HkLoginDevice(
+            user_id=user.id,
+            jti=jti,
+            device_name=(data.device_name or "").strip()[:128],
+            platform=(data.platform or "").strip()[:32],
+            ip=ip,
+        )
+    )
+    await db.commit()
+    token = auth_service.create_access_token(user, jti=jti)
+    return TokenOut(token=token, user=UserOut.from_user(user))
+
+
+# ---------- 登录设备管理 ----------
+
+
+class DeviceOut(BaseModel):
+    id: int
+    device_name: str
+    platform: str
+    ip: str
+    created_at: str
+    last_seen_at: str
+    current: bool
+
+
+def _device_out(d: HkLoginDevice, current_jti: str | None) -> DeviceOut:
+    def _iso(v):
+        return v.isoformat() if v is not None else ""
+
+    return DeviceOut(
+        id=d.id,
+        device_name=d.device_name,
+        platform=d.platform,
+        ip=d.ip,
+        created_at=_iso(d.created_at),
+        last_seen_at=_iso(d.last_seen_at),
+        current=(current_jti is not None and d.jti == current_jti),
+    )
+
+
+@router.get("/devices", response_model=list[DeviceOut])
+async def list_devices(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """我的登录设备列表, 当前设备标 current=True."""
+    # 从 Authorization 头解出当前 jti
+    current_jti = None
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        payload = auth_service.decode_token(auth[7:].strip())
+        if payload:
+            current_jti = payload.get("jti")
+    result = await db.execute(
+        select(HkLoginDevice)
+        .where(HkLoginDevice.user_id == me.id)
+        .order_by(HkLoginDevice.last_seen_at.desc())
+    )
+    return [_device_out(d, current_jti) for d in result.scalars().all()]
+
+
+@router.delete("/devices/{device_id}")
+async def remove_device(
+    device_id: int,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """下线指定设备 (删除会话记录 → 该设备 token 立即失效)."""
+    result = await db.execute(
+        select(HkLoginDevice).where(
+            HkLoginDevice.id == device_id, HkLoginDevice.user_id == me.id
+        )
+    )
+    dev = result.scalar_one_or_none()
+    if dev is None:
+        raise HTTPException(status_code=404, detail="设备不存在")
+    await db.delete(dev)
+    await db.commit()
+    return {"ok": True}
 
 
 @router.get("/me", response_model=UserOut)
 async def me(user: HkUser = Depends(auth_service.get_current_user)):
-    return UserOut.model_validate(user)
+    return UserOut.from_user(user)
 
 
 @router.post("/change-password")
@@ -301,6 +436,140 @@ async def change_password(
     return {"ok": True}
 
 
+# ---------- 资金密码 ----------
+
+
+@router.post("/fund-password/set")
+async def set_fund_password(
+    data: FundPasswordSetIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """首次设置资金密码: 需校验登录密码. 已设置则走 change."""
+    if me.fund_password_hash is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="资金密码已设置"
+        )
+    if not auth_service.verify_password(data.login_password, me.password_hash):
+        ip = rate_limit_service.client_ip(request)
+        rate_limit_service.check(
+            f"fundpw:{ip}:{me.username.lower()}",
+            config.login_rate_limit,
+            config.login_rate_window_sec,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="登录密码错误"
+        )
+    me.fund_password_hash = auth_service.hash_password(data.fund_password)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/fund-password/change")
+async def change_fund_password(
+    data: FundPasswordChangeIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """改资金密码: 校验原资金密码."""
+    if me.fund_password_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="请先设置资金密码"
+        )
+    if not auth_service.verify_password(
+        data.old_fund_password, me.fund_password_hash
+    ):
+        ip = rate_limit_service.client_ip(request)
+        rate_limit_service.check(
+            f"fundpw:{ip}:{me.username.lower()}",
+            config.login_rate_limit,
+            config.login_rate_window_sec,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="原资金密码错误"
+        )
+    me.fund_password_hash = auth_service.hash_password(data.new_fund_password)
+    await db.commit()
+    return {"ok": True}
+
+
+# ---------- 谷歌验证 2FA (TOTP) ----------
+
+
+@router.post("/2fa/setup", response_model=TwoFASetupOut)
+async def twofa_setup(
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """生成 TOTP secret 暂存并返回 otpauth_url; enable 校验通过后才生效."""
+    secret = auth_service.generate_totp_secret()
+    me.totp_secret = secret
+    await db.commit()
+    otpauth_url = (
+        f"otpauth://totp/Mingce:{me.username}?secret={secret}&issuer=Mingce"
+    )
+    return TwoFASetupOut(secret=secret, otpauth_url=otpauth_url)
+
+
+def _check_totp_or_400(me: HkUser, request: Request, code: str) -> None:
+    """校验 TOTP; 失败计入限流并抛 400."""
+    if not me.totp_secret or not auth_service.verify_totp(me.totp_secret, code):
+        ip = rate_limit_service.client_ip(request)
+        rate_limit_service.check(
+            f"2fa:{ip}:{me.username.lower()}",
+            config.login_rate_limit,
+            config.login_rate_window_sec,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误"
+        )
+
+
+@router.post("/2fa/enable")
+async def twofa_enable(
+    data: TwoFACodeIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """enable: 验证用户扫对了 secret (has_2fa 由 totp_secret 非 NULL 决定)."""
+    _check_totp_or_400(me, request, data.code)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/2fa/disable")
+async def twofa_disable(
+    data: TwoFACodeIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """disable: 验证通过则清除 secret 关闭 2FA."""
+    _check_totp_or_400(me, request, data.code)
+    me.totp_secret = None
+    await db.commit()
+    return {"ok": True}
+
+
+# ---------- 防钓鱼码 ----------
+
+
+@router.post("/anti-phishing")
+async def set_anti_phishing(
+    data: AntiPhishingIn,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """设置防钓鱼码; 空串/纯空格 = 清除."""
+    code = data.code.strip()
+    me.anti_phishing_code = code or None
+    await db.commit()
+    return {"ok": True}
+
+
 # ---------- 个人资料 (昵称/头像) ----------
 
 AVATAR_DIR = Path(config.upload_dir) / "avatars"
@@ -319,7 +588,7 @@ async def update_profile(
         me.nickname = data.nickname.strip() or None
     await db.commit()
     await db.refresh(me)
-    return UserOut.model_validate(me)
+    return UserOut.from_user(me)
 
 
 @router.post("/avatar", status_code=201)

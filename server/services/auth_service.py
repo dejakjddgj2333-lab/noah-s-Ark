@@ -1,7 +1,13 @@
 """认证服务: bcrypt 哈希、JWT 签发/解析、当前用户依赖."""
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import logging
+import secrets
+import struct
+import time
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -13,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
 from database import get_db
-from models.hk import HkUser
+from models.hk import HkLoginDevice, HkUser
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +42,39 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(user: HkUser) -> str:
+# ---------- TOTP (谷歌验证, 纯标准库) ----------
+
+
+def generate_totp_secret() -> str:
+    return base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
+
+
+def _totp_at(secret: str, counter: int) -> str:
+    padding = "=" * (-len(secret) % 8)
+    key = base64.b32decode(secret + padding)
+    msg = struct.pack(">Q", counter)
+    digest = hmac.new(key, msg, hashlib.sha1).digest()
+    off = digest[-1] & 0x0F
+    code = (struct.unpack(">I", digest[off : off + 4])[0] & 0x7FFFFFFF) % 1_000_000
+    return str(code).zfill(6)
+
+
+def verify_totp(secret: str, code: str, window: int = 1) -> bool:
+    code = (code or "").strip()
+    if not code.isdigit():
+        return False
+    counter = int(time.time() // 30)
+    return any(
+        hmac.compare_digest(_totp_at(secret, counter + d), code)
+        for d in range(-window, window + 1)
+    )
+
+
+def create_access_token(user: HkUser, jti: str | None = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(hours=config.jwt_expire_hours)
     payload = {"sub": str(user.id), "username": user.username, "exp": expire}
+    if jti:
+        payload["jti"] = jti  # 登录设备会话标识, 设备下线即 token 失效
     return jwt.encode(payload, config.secret_key, algorithm=_ALGORITHM)
 
 
@@ -74,4 +110,12 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="账号已被禁用"
         )
+    # 设备会话校验: token 带 jti 时, 对应设备记录必须存在(被下线则拒绝)
+    jti = payload.get("jti")
+    if jti:
+        dev = await db.execute(
+            select(HkLoginDevice).where(HkLoginDevice.jti == jti)
+        )
+        if dev.scalar_one_or_none() is None:
+            raise credentials_exc
     return user

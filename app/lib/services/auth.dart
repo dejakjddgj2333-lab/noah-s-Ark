@@ -25,6 +25,17 @@ class AuthStore extends ChangeNotifier {
   String? email;
   String? nickname;
   String? avatarUrl; // 相对路径 /api/auth/avatars/<uuid>
+  bool hasFundPassword = false; // 资金密码已设置
+  bool has2fa = false; // 谷歌验证已绑定
+  String? antiPhishingCode; // 防钓鱼码
+
+  /// 从 /me 或 login 的 user 对象同步安全设置状态.
+  void _applySecurity(Map<String, dynamic> user) {
+    hasFundPassword = user['has_fund_password'] == true;
+    has2fa = user['has_2fa'] == true;
+    final ap = (user['anti_phishing_code'] ?? '').toString();
+    antiPhishingCode = ap.isEmpty ? null : ap;
+  }
 
   /// 展示名: 昵称优先, 空回退用户名.
   String get displayName =>
@@ -84,6 +95,7 @@ class AuthStore extends ChangeNotifier {
       final av = (resp['avatar_url'] ?? '').toString();
       avatarUrl = av.isEmpty ? null : av;
       email = (resp['email'] ?? email)?.toString();
+      _applySecurity(resp);
       await _save();
       notifyListeners();
     } catch (_) {/* 静默 */}
@@ -159,8 +171,95 @@ class AuthStore extends ChangeNotifier {
     final resp = await McApi.post('/api/auth/login', {
       'username': username,
       'password': password,
+      'device_name': _deviceName(),
+      'platform': _platform(),
     });
     await _applyToken(resp);
+  }
+
+  /// 设备名/平台上报 (登录设备管理用).
+  static String _platform() {
+    if (kIsWeb) return 'web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.linux:
+        return 'linux';
+      case TargetPlatform.fuchsia:
+        return 'fuchsia';
+    }
+  }
+
+  static String _deviceName() {
+    if (kIsWeb) return 'Web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'iPhone';
+      case TargetPlatform.android:
+        return 'Android';
+      case TargetPlatform.macOS:
+        return 'Mac';
+      case TargetPlatform.windows:
+        return 'Windows PC';
+      case TargetPlatform.linux:
+        return 'Linux';
+      case TargetPlatform.fuchsia:
+        return 'Fuchsia';
+    }
+  }
+
+  // ---------- 安全设置 ----------
+
+  /// 资金密码: 设置 (需登录密码).
+  Future<void> setFundPassword(String fundPassword, String loginPassword) async {
+    await McApi.post('/api/auth/fund-password/set', {
+      'fund_password': fundPassword,
+      'login_password': loginPassword,
+    }, token: token);
+  }
+
+  /// 资金密码: 修改.
+  Future<void> changeFundPassword(String oldPw, String newPw) async {
+    await McApi.post('/api/auth/fund-password/change', {
+      'old_fund_password': oldPw,
+      'new_fund_password': newPw,
+    }, token: token);
+  }
+
+  /// 2FA: 生成密钥, 返回 {secret, otpauth_url}.
+  Future<Map<String, dynamic>> totpSetup() async {
+    return McApi.post('/api/auth/2fa/setup', {}, token: token);
+  }
+
+  /// 2FA: 绑定 (校验验证码).
+  Future<void> totpEnable(String code) async {
+    await McApi.post('/api/auth/2fa/enable', {'code': code}, token: token);
+  }
+
+  /// 2FA: 解绑 (校验验证码).
+  Future<void> totpDisable(String code) async {
+    await McApi.post('/api/auth/2fa/disable', {'code': code}, token: token);
+  }
+
+  /// 防钓鱼码: 设置 (空串=清除).
+  Future<void> setAntiPhishing(String code) async {
+    await McApi.post('/api/auth/anti-phishing', {'code': code}, token: token);
+  }
+
+  /// 登录设备列表.
+  Future<List<dynamic>> devices() async {
+    return McApi.getList('/api/auth/devices', token: token);
+  }
+
+  /// 下线设备.
+  Future<void> removeDevice(int id) async {
+    await McApi.del('/api/auth/devices/$id', token: token);
   }
 
   Future<void> _applyToken(Map<String, dynamic> resp) async {
@@ -173,6 +272,7 @@ class AuthStore extends ChangeNotifier {
     nickname = nick.isEmpty ? null : nick;
     final av = (user['avatar_url'] ?? '').toString();
     avatarUrl = av.isEmpty ? null : av;
+    _applySecurity(user);
     await _save();
     notifyListeners();
     // 登录/注册成功后启动聊天长连接.

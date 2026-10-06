@@ -36,10 +36,30 @@ class HkUser(HkBase):
     email = Column(String(128), unique=True, nullable=False, index=True)
     email_verified = Column(Boolean, nullable=False, default=True)  # 注册即验证
     avatar_url = Column(String(512), nullable=True)
+    fund_password_hash = Column(String(128), nullable=True)  # 资金密码, NULL=未设置
+    totp_secret = Column(String(64), nullable=True)  # 谷歌验证密钥, NULL=未绑定
+    anti_phishing_code = Column(String(32), nullable=True)  # 防钓鱼码, NULL=未设置
     status = Column(String(16), nullable=False, default="active")  # active/banned
     role_id = Column(Integer, ForeignKey("hk_roles.id"), nullable=True)  # 后台角色, NULL=普通用户
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class HkLoginDevice(HkBase):
+    """登录设备/会话: 每次登录记一条, jti 写入 JWT, 下线即删记录使 token 失效."""
+
+    __tablename__ = "hk_login_devices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    jti = Column(String(64), unique=True, nullable=False, index=True)  # JWT 会话标识
+    device_name = Column(String(128), nullable=False, default="")  # 前端上报的设备名
+    platform = Column(String(32), nullable=False, default="")  # ios/android/...
+    ip = Column(String(64), nullable=False, default="")
+    created_at = Column(DateTime, default=utc_now)  # 登录时间
+    last_seen_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class HkRole(HkBase):

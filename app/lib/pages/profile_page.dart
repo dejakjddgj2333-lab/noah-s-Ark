@@ -8,6 +8,10 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
 import 'change_password_page.dart';
+import 'fund_password_page.dart';
+import 'totp_page.dart';
+import 'anti_phishing_page.dart';
+import 'devices_page.dart';
 import 'language_page.dart';
 
 /// 用户中心: 顶部用户卡 + 三个 tab (个人资料 / 安全设置 / 偏好设置).
@@ -304,16 +308,20 @@ class _ProfilePageState extends State<ProfilePage>
         const SizedBox(height: 10),
         _row(
           label: tr('sec_fund_password'),
-          value: tr('status_unset'),
+          value: _auth.hasFundPassword
+              ? tr('status_set')
+              : tr('status_unset'),
           trailing: _chevron(),
-          onTap: _todo,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const FundPasswordPage())),
         ),
         const SizedBox(height: 10),
         _row(
           label: tr('sec_2fa'),
-          value: tr('status_unbound'),
+          value: _auth.has2fa ? tr('status_bound') : tr('status_unbound'),
           trailing: _chevron(),
-          onTap: _todo,
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TotpPage())),
         ),
         const SizedBox(height: 24),
         _sectionTitle(tr('sec_device_verify')),
@@ -321,29 +329,24 @@ class _ProfilePageState extends State<ProfilePage>
         _row(
           label: tr('sec_email_verify'),
           value: _auth.email ?? tr('status_unbound'),
-          trailing: _chevron(),
-          onTap: _todo,
-        ),
-        const SizedBox(height: 10),
-        _row(
-          label: tr('sec_phone_verify'),
-          value: tr('status_unbound'),
-          trailing: _chevron(),
-          onTap: _todo,
         ),
         const SizedBox(height: 10),
         _row(
           label: tr('sec_devices'),
           value: '',
           trailing: _chevron(),
-          onTap: _todo,
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const DevicesPage())),
         ),
         const SizedBox(height: 24),
         _row(
           label: tr('sec_anti_phishing'),
-          value: tr('status_unset'),
+          value: _auth.antiPhishingCode != null
+              ? tr('status_set')
+              : tr('status_unset'),
           trailing: _chevron(),
-          onTap: _todo,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const AntiPhishingPage())),
         ),
       ],
     );

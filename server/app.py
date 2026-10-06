@@ -136,6 +136,10 @@ _MIGRATIONS = [
     ("hk_commission_records", "status", "VARCHAR(16) DEFAULT 'settled'"),
     ("hk_orders", "team_level", "INTEGER"),
     ("hk_email_codes", "attempts", "INTEGER DEFAULT 0"),
+    # 安全设置: 资金密码 / 谷歌验证 / 防钓鱼码
+    ("hk_users", "fund_password_hash", "VARCHAR(128)"),
+    ("hk_users", "totp_secret", "VARCHAR(64)"),
+    ("hk_users", "anti_phishing_code", "VARCHAR(32)"),
 ]
 
 
