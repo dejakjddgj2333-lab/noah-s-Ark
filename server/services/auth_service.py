@@ -19,7 +19,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
 from database import get_db
-from models.hk import HkLoginDevice, HkUser
+from models.hk import (
+    HkComment,
+    HkConversationMember,
+    HkFavorite,
+    HkFriendRequest,
+    HkFriendship,
+    HkLike,
+    HkLoginDevice,
+    HkMessageReaction,
+    HkPriceAlert,
+    HkPushToken,
+    HkUser,
+)
+from sqlalchemy import delete, or_
 
 logger = logging.getLogger(__name__)
 
@@ -119,3 +132,49 @@ async def get_current_user(
         if dev.scalar_one_or_none() is None:
             raise credentials_exc
     return user
+
+
+async def deactivate_account(db: AsyncSession, user: HkUser) -> None:
+    """注销账号: 停用 + 清场个人数据 + 释放用户名/邮箱 (App Store 5.1.1).
+
+    - status→deleted: get_current_user 对非 active 一律拒绝, 旧 token 立即失效.
+    - 用户名/邮箱改成墓碑值: 释放占用, 允许同邮箱/用户名重新注册.
+    - 删个人数据: 会话/推送token/预警/好友/聊天成员/点赞收藏评论/表情回应.
+    - 保留: 订单/资金/结算/佣金等记录 (合规与审计).
+    """
+    uid = user.id
+    # 聊天/社交/个人偏好数据
+    await db.execute(delete(HkLoginDevice).where(HkLoginDevice.user_id == uid))
+    await db.execute(delete(HkPushToken).where(HkPushToken.user_id == uid))
+    await db.execute(delete(HkPriceAlert).where(HkPriceAlert.user_id == uid))
+    await db.execute(delete(HkFavorite).where(HkFavorite.user_id == uid))
+    await db.execute(delete(HkLike).where(HkLike.user_id == uid))
+    await db.execute(delete(HkComment).where(HkComment.user_id == uid))
+    await db.execute(
+        delete(HkMessageReaction).where(HkMessageReaction.user_id == uid)
+    )
+    await db.execute(
+        delete(HkConversationMember).where(HkConversationMember.user_id == uid)
+    )
+    await db.execute(
+        delete(HkFriendRequest).where(
+            or_(HkFriendRequest.from_user_id == uid, HkFriendRequest.to_user_id == uid)
+        )
+    )
+    await db.execute(
+        delete(HkFriendship).where(
+            or_(HkFriendship.user_id == uid, HkFriendship.friend_id == uid)
+        )
+    )
+    # 账号本体: 停用 + 释放标识 + 抹除敏感凭据
+    tomb = f"deleted_{uid}_{secrets.token_hex(4)}"
+    user.status = "deleted"
+    user.username = tomb[:32]
+    user.email = f"{tomb[:24]}@deleted.local"
+    user.nickname = None
+    user.avatar_url = None
+    user.password_hash = hash_password(secrets.token_hex(16))  # 旧密码不可再用
+    user.fund_password_hash = None
+    user.totp_secret = None
+    user.anti_phishing_code = None
+    await db.commit()

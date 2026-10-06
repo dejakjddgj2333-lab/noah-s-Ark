@@ -136,6 +136,72 @@ class _ProfilePageState extends State<ProfilePage>
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _deleteAccount() async {
+    final pwCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: McColors.surfaceContainerLow,
+        title: Text(tr('delete_account'),
+            style: McText.sans(size: 15, weight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(tr('delete_account_warn'),
+                style:
+                    McText.sans(size: 13, color: McColors.onSurfaceVariant)),
+            const SizedBox(height: 14),
+            TextField(
+              controller: pwCtrl,
+              obscureText: true,
+              style: McText.sans(size: 14),
+              decoration: InputDecoration(
+                hintText: tr('delete_account_pw_hint'),
+                hintStyle:
+                    McText.sans(size: 13, color: McColors.onSurfaceVariant),
+                isDense: true,
+                filled: true,
+                fillColor: McColors.surfaceContainerHigh,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('cancel'),
+                style: McText.sans(color: McColors.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('delete_account_confirm'),
+                style: McText.sans(color: McColors.bear)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final pw = pwCtrl.text;
+    if (pw.isEmpty) {
+      _toast(tr('delete_account_pw_hint'));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await _auth.deleteAccount(pw);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      _toast(e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -348,6 +414,27 @@ class _ProfilePageState extends State<ProfilePage>
           trailing: _chevron(),
           onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => const AntiPhishingPage())),
+        ),
+        const SizedBox(height: 24),
+
+        // 注销账号
+        GestureDetector(
+          onTap: _busy ? null : _deleteAccount,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            decoration: BoxDecoration(
+              color: McColors.bear.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: McColors.bear.withValues(alpha: 0.35)),
+            ),
+            alignment: Alignment.center,
+            child: Text(tr('delete_account'),
+                style: McText.sans(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: McColors.bear)),
+          ),
         ),
       ],
     );

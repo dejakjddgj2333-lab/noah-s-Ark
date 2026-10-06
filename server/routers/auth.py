@@ -650,3 +650,36 @@ async def get_avatar(name: str):
     if not matches:
         raise HTTPException(status_code=404, detail="头像不存在")
     return FileResponse(matches[0])
+
+
+# ---------- 注销账号 ----------
+
+
+class DeleteAccountIn(BaseModel):
+    password: str  # 登录密码确认
+
+
+@router.post("/delete-account")
+async def delete_account(
+    data: DeleteAccountIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """注销账号 (App Store 5.1.1): 校验登录密码后停用并清场个人数据.
+
+    采用软删除 + 释放标识: status→deleted, 用户名/邮箱改成墓碑值释放占用,
+    清掉会话/推送token/预警/好友/聊天成员等个人数据. 订单/资金类记录保留(合规).
+    """
+    if not auth_service.verify_password(data.password, me.password_hash):
+        ip = rate_limit_service.client_ip(request)
+        rate_limit_service.check(
+            f"delacct:{ip}:{me.username.lower()}",
+            config.login_rate_limit,
+            config.login_rate_window_sec,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="密码不正确"
+        )
+    await auth_service.deactivate_account(db, me)
+    return {"ok": True}

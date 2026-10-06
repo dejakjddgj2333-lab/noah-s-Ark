@@ -263,6 +263,16 @@ class AuthStore extends ChangeNotifier {
     await McApi.del('/api/auth/devices/$id', token: token);
   }
 
+  /// 注销账号: 服务端校验密码后停用并清场. 成功后本地等同登出.
+  Future<void> deleteAccount(String password) async {
+    await McApi.post(
+      '/api/auth/delete-account',
+      {'password': password},
+      token: token,
+    );
+    await logout();
+  }
+
   Future<void> _applyToken(Map<String, dynamic> resp) async {
     token = resp['token'] as String;
     final user = resp['user'] as Map<String, dynamic>;
