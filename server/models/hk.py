@@ -308,6 +308,18 @@ class HkLiqEvent(HkBase):
     notional_usd = Column(Float, nullable=False, default=0)
 
 
+class HkLegalDoc(HkBase):
+    """协议文档 (隐私政策/用户协议): doc_key 唯一, content 存完整 HTML."""
+
+    __tablename__ = "hk_legal_docs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doc_key = Column(String(32), unique=True, nullable=False, index=True)  # privacy/terms
+    title = Column(String(128), nullable=False, default="")
+    content = Column(Text, nullable=False, default="")  # 完整 HTML
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
 class HkPriceAlert(HkBase):
     """行情预警: 价格 涨破/跌破 目标值时 APNs 推送, 触发一次后不再重复."""
 

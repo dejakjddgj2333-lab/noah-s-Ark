@@ -69,6 +69,12 @@ const routes = [
         component: () => import('@/views/admin/roles.vue'),
         meta: { title: '角色权限', icon: 'Lock', perm: 'page:roles', group: '系统' },
       },
+      {
+        path: 'legal',
+        name: 'Legal',
+        component: () => import('@/views/legal/index.vue'),
+        meta: { title: '协议管理', icon: 'Document', perm: 'page:legal', group: '系统' },
+      },
     ],
   },
   {

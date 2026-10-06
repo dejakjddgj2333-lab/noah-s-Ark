@@ -1,0 +1,139 @@
+════════════════════════════════════════════════════════════
+  明策 MINGCE — iOS App Store 上架资料
+════════════════════════════════════════════════════════════
+
+【一】App 名称 (Name, 30字符内)
+────────────────────────────────
+中文：明策 - 加密货币行情终端
+英文：Mingce - Crypto Market Terminal
+
+
+【二】副标题 (Subtitle, 30字符内)
+────────────────────────────────
+中文：多维行情·巨鲸追踪·实时预警
+英文：Market Insights & Whale Alerts
+
+
+【三】推广文本 (Promotional Text, 170字符内, 可随时改)
+────────────────────────────────
+中文：
+实时追踪全网多空爆仓、巨鲸大额转账与资金费率，自定义行情预警，
+把握加密市场每一次波动。聊天、好友、行情一站集成，专业交易者的随身终端。
+
+English:
+Track liquidations, whale transfers & funding rates in real time.
+Custom price alerts catch every market move. Chat, friends & markets
+in one pro terminal.
+
+
+【四】简介 (Description, 4000字符内)
+────────────────────────────────
+—— 中文版 ——
+
+明策是一款专业级加密货币行情终端，为交易者提供多维度市场数据、
+链上巨鲸动向与实时风险预警，帮你在瞬息万变的市场中抢占先机。
+
+◆ 多维市场指数
+• 综合行情总览：恐慌贪婪指数、多空对比、全网热度一目了然
+• 多空爆仓：实时监控 Binance/Bybit 强平数据，洞察杠杆风险
+• 资金费率：主流交易所永续合约费率对比与历史走势
+• 巨鲸雷达：追踪链上大额转账与持仓异动，紧跟聪明钱
+
+◆ 实时行情与预警
+• 全市场行情列表，涨跌幅、成交额实时刷新
+• 自定义价格预警：涨破/跌破目标价即时推送
+• 专业 K 线与盘口深度，支撑位压力位清晰可见
+
+◆ 资讯与社区
+• 7×24 快讯、深度资讯与官方公告，多语言阅读
+• 内置聊天：好友私聊、群组讨论，文字/图片/语音/视频
+• 音视频通话，与伙伴实时沟通行情
+
+◆ 安全与账户
+• 登录密码、资金密码、谷歌验证 (2FA) 多重保护
+• 登录设备管理，异常设备一键下线
+• 防钓鱼码，识别官方通知真伪
+
+◆ 智能推送
+行情预警、新消息、好友请求、提现到账——在线即时提醒，
+离线 APNs 推送，重要动态绝不错过。
+
+—— English ——
+
+Mingce is a professional crypto market terminal for traders, delivering
+multi-dimensional market data, on-chain whale tracking and real-time
+risk alerts to keep you ahead of the market.
+
+◆ Multi-Dimensional Indices
+• Market overview: Fear & Greed index, long/short ratio, global heat
+• Liquidations: real-time Binance/Bybit liquidation monitoring
+• Funding rates: perpetual funding comparison & history
+• Whale radar: track large on-chain transfers & position shifts
+
+◆ Real-Time Quotes & Alerts
+• Full market list with live price & volume updates
+• Custom price alerts: notified instantly on breakout/breakdown
+• Pro candlesticks & order book depth
+
+◆ News & Community
+• 24/7 flash news, articles & official announcements, multilingual
+• Built-in chat: DMs & groups with text/image/voice/video
+• Voice & video calls to discuss the market live
+
+◆ Security & Account
+• Login password, fund password & Google Authenticator (2FA)
+• Device management: sign out any device remotely
+• Anti-phishing code to verify official notifications
+
+◆ Smart Notifications
+Price alerts, new messages, friend requests & withdrawal arrivals —
+instant in-app alerts online, APNs push when offline. Never miss a move.
+
+
+【五】关键词 (Keywords, 100字符内, 逗号分隔, 不重复名称/类别词)
+────────────────────────────────
+中文/通用：
+比特币,行情,加密货币,合约,爆仓,资金费率,巨鲸,链上数据,交易,预警,btc
+
+English:
+bitcoin,crypto,market,futures,liquidation,funding,whale,alerts,trading
+
+（中英文版本各填对应语言；词之间用英文逗号、无空格更省字符）
+
+
+【六】类别 (Category)
+────────────────────────────────
+主要类别：财务 (Finance)
+次要类别：工具 (Utilities)
+
+
+【七】内容分级 (Age Rating)
+────────────────────────────────
+建议：17+（含不受限的金融/加密交易内容）
+金融类 App 苹果通常要求较高分级；若选择 12+ 需在问卷中如实勾选
+"无赌博/无模拟博彩"。加密行情工具一般判为 17+ (Unrestricted Web/Financial)。
+
+
+【八】版权 (Copyright)
+────────────────────────────────
+© 2026 重庆超玩潮品 (或你的公司主体全称)
+
+
+【九】审核信息 (Review Notes, 给苹果审核员看)
+────────────────────────────────
+• 登录演示账号：需提供测试账号+密码（务必先在后台建好，密码别含验证码）
+• 说明：本 App 为行情数据展示与社交工具，不提供法币充值/真实交易撮合，
+  所有数据来自公开交易所 API（Binance/Bybit/OKX）。
+• 加密货币行情数据仅供参考，不构成投资建议。
+• 推送用途：行情预警、新消息、提现到账通知。
+• 相机/相册/麦克风用途：扫码、设置头像、发送图片/语音、音视频通话。
+
+
+【十】还需你准备（我做不了）
+────────────────────────────────
+□ 截图：6.7" (1290×2796) 和 6.5" (1242×2688) 各 3-8 张
+   （首页综合/行情/爆仓/巨鲸/聊天/预警，我可帮你用模拟器截）
+□ 隐私政策 URL：必填，金融类审核必查（需一个可访问的网页）
+□ App 隐私标签：声明收集 邮箱/设备token/聊天内容/用户名 等
+□ 技术支持 URL：可填官网或联系页
+□ 贸易合规：已设 ITSAppUsesNonExEncryption=false，选"否"即可

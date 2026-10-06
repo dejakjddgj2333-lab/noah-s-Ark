@@ -15,6 +15,7 @@ from database import SessionLocal, engine
 from models.hk import HkBase, HkChatMessage, HkMessageReaction, utc_now
 from routers import (
     admin_deposit,
+    admin_legal,
     admin_products,
     admin_rbac,
     admin_sweep,
@@ -25,6 +26,7 @@ from routers import (
     deposit,
     interaction,
     invite,
+    legal,
     market,
     news,
     orders,
@@ -237,6 +239,10 @@ async def lifespan(app: FastAPI):
         from services import admin_service as _admin_svc
 
         await _admin_svc.seed_roles(db)
+        # 协议文档: 表空则插入隐私政策/用户协议种子
+        from services import legal_seed as _legal_seed
+
+        await _legal_seed.seed_legal_docs(db)
     # 充值扫链监听 (自动到账); 测试可设 DEPOSIT_MONITOR_ENABLED=false 关闭
     monitor_task = None
     if config.deposit_monitor_enabled:
@@ -310,6 +316,8 @@ app.include_router(overview.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(push.router, prefix="/api")
 app.include_router(price_alert.router, prefix="/api")
+app.include_router(legal.router, prefix="/api")
+app.include_router(admin_legal.router, prefix="/api")
 
 
 @app.get("/health")
