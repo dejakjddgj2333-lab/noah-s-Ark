@@ -13,6 +13,11 @@ final Map<String, Map<String, String>> table = {
     'ja': 'チーム Lv{n}', 'ko': '팀 Lv{n}', 'es': 'Equipo Nv{n}',
     'pt': 'Equipe Nv{n}', 'hi': 'टीम Lv{n}',
   },
+  'assets_vip_level': {
+    'zh-CN': 'VIP {n} 级', 'zh-TW': 'VIP {n} 級', 'en': 'VIP {n}',
+    'ja': 'VIP {n}', 'ko': 'VIP {n}', 'es': 'VIP {n}',
+    'pt': 'VIP {n}', 'hi': 'VIP {n}',
+  },
   'assets_invite_code': {
     'zh-CN': '邀请码', 'zh-TW': '邀請碼', 'en': 'Invite Code',
     'ja': '招待コード', 'ko': '초대 코드', 'es': 'Código de invitación',
@@ -65,6 +70,12 @@ final Map<String, Map<String, String>> table = {
     'ja': 'ウォレットマトリクス', 'ko': '지갑 매트릭스',
     'es': 'Matriz de billetera', 'pt': 'Matriz de carteira',
     'hi': 'वॉलेट मैट्रिक्स',
+  },
+  'assets_convert': {
+    'zh-CN': '收益转本金', 'zh-TW': '收益轉本金', 'en': 'Income to Principal',
+    'ja': '収益を元本に', 'ko': '수익을 원금으로',
+    'es': 'Ingresos a principal', 'pt': 'Rendimentos p/ principal',
+    'hi': 'आय को मूलधन में',
   },
   'assets_multi_chain': {
     'zh-CN': '支持多链:', 'zh-TW': '支援多鏈:', 'en': 'Multi-chain:',

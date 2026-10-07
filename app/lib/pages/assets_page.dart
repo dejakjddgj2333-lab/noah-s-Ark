@@ -7,6 +7,7 @@ import '../core/widgets.dart';
 import '../services/auth.dart';
 import '../services/finance_api.dart';
 import '../services/invite_api.dart';
+import '../widgets/convert_sheet.dart';
 import 'profile_page.dart';
 
 /// 我的 / 资产 — bottom-nav tab content body (header + bottom nav live in shell).
@@ -74,6 +75,13 @@ class _AssetsPageState extends State<AssetsPage> {
         backgroundColor: McColors.surfaceContainerHighest,
       ),
     );
+  }
+
+  /// 收益→本金转化入口: 打开公共转化弹层, 成功后刷新资产数据.
+  Future<void> _openConvert() async {
+    final incomeBal = FinanceApi.d(_acct?['income_balance']);
+    final done = await showConvertSheet(context, incomeBal);
+    if (done) _loadData();
   }
 
   @override
@@ -263,7 +271,85 @@ class _AssetsPageState extends State<AssetsPage> {
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          // VIP / 团队等级条 (含升级差距, 点击进详情页)
+          _levelStrip(),
         ],
+      ),
+    );
+  }
+
+  /// 等级条: VIP / 团队当前等级 + 升级差距 (数据同 /vip /team 详情页).
+  Widget _levelStrip() {
+    final vipLv = _vip?['vip_level'] as int? ?? 0;
+    final vipGap = _vip?['gap_to_next'];
+    final vipNext = _vip?['next_level'] as int?;
+    final teamLv = _team?['team_level'] as int? ?? 0;
+    final teamNext = _team?['next_level'] as int?;
+    final memberGap = _team?['next_member_gap'] as int? ?? 0;
+    final holdingGap = FinanceApi.d(_team?['next_holding_gap']);
+
+    final vipSub = _vip == null
+        ? tr('assets_loading')
+        : (vipGap == null || vipNext == null)
+            ? tr('vip_max_level')
+            : '${tr('vip_to_next').replaceAll('{n}', '$vipNext')} ${FinanceApi.d(vipGap).toStringAsFixed(0)} USDT';
+    final teamSub = _team == null
+        ? tr('assets_loading')
+        : teamNext == null
+            ? tr('team_max_level')
+            : tr('team_to_next')
+                .replaceAll('{next}', '$teamNext')
+                .replaceAll('{member_gap}', '$memberGap')
+                .replaceAll('{holding_gap}', holdingGap.toStringAsFixed(0));
+
+    return Row(
+      children: [
+        Expanded(
+          child: _levelCell(
+            tr('assets_vip_level').replaceAll('{n}', '$vipLv'),
+            vipSub,
+            McColors.goldBright,
+            () => Navigator.pushNamed(context, '/vip'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _levelCell(
+            tr('assets_team_level').replaceAll('{n}', '$teamLv'),
+            teamSub,
+            cobaltSoft,
+            () => Navigator.pushNamed(context, '/team'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _levelCell(String title, String sub, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: McColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: McText.mono(size: 12, weight: FontWeight.w700, color: color)),
+            const SizedBox(height: 3),
+            Text(
+              sub,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: McText.sans(size: 11, color: McColors.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -426,6 +512,20 @@ class _AssetsPageState extends State<AssetsPage> {
                   iconColor: cobaltSoft,
                   text: tr('assets_wallet_matrix'),
                   onTap: () => Navigator.pushNamed(context, '/wallet-matrix'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // 收益→本金转化 (收服务费, 报价确认后执行; 与资金明细页同一弹层)
+          Row(
+            children: [
+              Expanded(
+                child: _actionBtn(
+                  icon: Icons.currency_exchange,
+                  iconColor: McColors.goldBright,
+                  text: tr('assets_convert'),
+                  onTap: _openConvert,
                 ),
               ),
             ],
