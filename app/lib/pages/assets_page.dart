@@ -93,8 +93,21 @@ class _AssetsPageState extends State<AssetsPage> {
       children: [
         _identityCard(),
         const SizedBox(height: 20),
-        _assetCard(),
-        const SizedBox(height: 20),
+        // 终端资产总值卡片: 钱包开关关闭时整卡隐藏 (含充值/提现/总值)
+        ListenableBuilder(
+          listenable: FeatureFlag.instance,
+          builder: (context, _) {
+            if (!FeatureFlag.instance.walletEnabled) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              children: [
+                _assetCard(),
+                const SizedBox(height: 20),
+              ],
+            );
+          },
+        ),
         _financeCenterCard(),
         const SizedBox(height: 20),
         _commissionCard(),
@@ -486,101 +499,89 @@ class _AssetsPageState extends State<AssetsPage> {
             ],
           ),
           const SizedBox(height: 16),
-          // Action buttons (钱包功能按后台开关显隐)
-          ListenableBuilder(
-            listenable: FeatureFlag.instance,
-            builder: (context, _) {
-              if (!FeatureFlag.instance.walletEnabled) {
-                return const SizedBox.shrink();
-              }
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionBtn(
-                          icon: Icons.bolt,
-                          iconColor: Colors.white,
-                          text: tr('assets_deposit'),
-                          primary: true,
-                          onTap: () => Navigator.pushNamed(context, '/deposit'),
-                        ),
+          // Action buttons (整卡由外层 FeatureFlag 控制显隐, 这里直接渲染)
+          Row(
+            children: [
+              Expanded(
+                child: _actionBtn(
+                  icon: Icons.bolt,
+                  iconColor: Colors.white,
+                  text: tr('assets_deposit'),
+                  primary: true,
+                  onTap: () => Navigator.pushNamed(context, '/deposit'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _actionBtn(
+                  icon: Icons.arrow_outward,
+                  iconColor: McColors.onSurfaceVariant,
+                  text: tr('assets_withdraw'),
+                  onTap: () => Navigator.pushNamed(context, '/withdraw'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _actionBtn(
+                  icon: Icons.sync_alt,
+                  iconColor: cobaltSoft,
+                  text: tr('assets_wallet_matrix'),
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/wallet-matrix'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // 收益→本金转化 (收服务费, 报价确认后执行; 与资金明细页同一弹层)
+          Row(
+            children: [
+              Expanded(
+                child: _actionBtn(
+                  icon: Icons.currency_exchange,
+                  iconColor: McColors.goldBright,
+                  text: tr('assets_convert'),
+                  onTap: _openConvert,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Supported chains
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Text(
+                  tr('assets_multi_chain'),
+                  style: McText.mono(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: McColors.onSurfaceVariant,
+                      letterSpacing: 1),
+                ),
+                const SizedBox(width: 6),
+                for (final c in ['TRC20', 'ERC20', 'BEP20', 'Arbitrum'])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: McColors.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                            color: McColors.surfaceContainerHigh),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _actionBtn(
-                          icon: Icons.arrow_outward,
-                          iconColor: McColors.onSurfaceVariant,
-                          text: tr('assets_withdraw'),
-                          onTap: () => Navigator.pushNamed(context, '/withdraw'),
-                        ),
+                      child: Text(
+                        c,
+                        style: McText.mono(
+                            size: 12, color: McColors.onSurface),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _actionBtn(
-                          icon: Icons.sync_alt,
-                          iconColor: cobaltSoft,
-                          text: tr('assets_wallet_matrix'),
-                          onTap: () =>
-                              Navigator.pushNamed(context, '/wallet-matrix'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  // 收益→本金转化 (收服务费, 报价确认后执行; 与资金明细页同一弹层)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionBtn(
-                          icon: Icons.currency_exchange,
-                          iconColor: McColors.goldBright,
-                          text: tr('assets_convert'),
-                          onTap: _openConvert,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Supported chains
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        Text(
-                          tr('assets_multi_chain'),
-                          style: McText.mono(
-                              size: 12,
-                              weight: FontWeight.w700,
-                              color: McColors.onSurfaceVariant,
-                              letterSpacing: 1),
-                        ),
-                        const SizedBox(width: 6),
-                        for (final c in ['TRC20', 'ERC20', 'BEP20', 'Arbitrum'])
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: McColors.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                    color: McColors.surfaceContainerHigh),
-                              ),
-                              child: Text(
-                                c,
-                                style: McText.mono(
-                                    size: 12, color: McColors.onSurface),
-                              ),
-                            ),
-                          ),
-                      ],
                     ),
                   ),
-                ],
-              );
-            },
+              ],
+            ),
           ),
         ],
       ),

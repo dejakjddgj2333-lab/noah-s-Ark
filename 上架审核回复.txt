@@ -3,31 +3,27 @@
   粘贴到 App Store Connect → App 审核信息 → 备注 (Notes)
 ════════════════════════════════════════════════════════════
 
-【1】App 用途与目标用户 (Purpose & Target Audience)
+============================================================
+【中文版】
+============================================================
 
-明策（Noah's Ark / Mingce）是一款加密货币市场行情数据终端与社交工具。
-面向加密货币投资者与交易者，解决"市场信息分散、链上动向难追踪、
-风险预警不及时"的问题，提供多维市场指数（恐慌贪婪、多空爆仓、
-资金费率、巨鲸雷达）、实时行情与自定义价格预警、7×24 资讯、
-以及内置的好友聊天与音视频通话，帮助用户在一个终端内掌握市场全貌。
+一、App 用途与目标用户
 
-明策 (Mingce) is a crypto market data terminal and social tool for crypto
-investors and traders. It solves the problems of scattered market information,
-hard-to-track on-chain movements and delayed risk alerts, by providing
-multi-dimensional indices (Fear & Greed, liquidations, funding rates, whale
-radar), live quotes with custom price alerts, 24/7 news, and built-in chat
-with voice/video calls — everything in one terminal.
+明策（Mingce）是一款加密货币市场行情数据终端与社交工具，面向加密货币
+投资者与交易者。它解决"市场信息分散、链上动向难追踪、风险预警不及时"
+的问题，提供多维市场指数（恐慌贪婪、多空爆仓、资金费率、巨鲸雷达）、
+实时行情与自定义价格预警、7×24 资讯，以及内置好友聊天与音视频通话，
+帮助用户在一个终端内掌握市场全貌。
 
-The App is a data-display and social tool ONLY. It does NOT provide fiat
-deposits, crypto trading/matching, custody, clearing, investment advisory,
-or asset management. All market data comes from public third-party exchange
-APIs and is for reference only.
+本 App 仅为行情数据展示与社交工具，不提供法币充值、加密货币交易撮合、
+资金托管、投资顾问或资产管理服务。所有行情数据来自公开的第三方交易所
+API，仅供参考。
 
-【2】主功能使用方法 + 演示账号 (Demo Account)
+二、主功能使用方法 + 演示账号
 
 演示账号（后台已建，密码登录，无验证码）：
-  用户名：demo_user
-  密码：  Demopass123  （← 请替换为后台实际创建的账号密码）
+  用户名：ceshi
+  密码：  12345678 
 
 主要功能入口：
 - 首页四页首屏：综合 / 行情 / 多维指数 / 多空爆仓，下拉刷新数据
@@ -38,9 +34,10 @@ APIs and is for reference only.
 - 聊天：好友申请、私聊、群聊，长按消息可举报，右上角菜单可拉黑
 - 我的 → 安全设置：改密码、资金密码、谷歌验证、设备管理、防钓鱼码、注销账号
 
-【3】外部服务 / 数据源 (External Services)
+三、外部服务 / 数据源
 
-本 App 仅展示公开行情数据，不接入任何支付处理。所用外部服务：
+本 App 仅展示公开行情数据，不接入任何支付处理，无应用内购买（IAP）。
+所用外部服务：
 - Binance / Bybit / OKX / CoinGecko / CoinGlass — 公开行情、资金费率、爆仓数据
 - Alternative.me — 恐慌贪婪指数
 - TronGrid / Etherscan / BSCScan / Arbiscan — 链上转账与地址查询
@@ -48,36 +45,94 @@ APIs and is for reference only.
 - DeepSeek — 资讯摘要与宏观日历中文翻译（AI 生成，非核心功能）
 - Apple APNs — 推送通知
 
-No payment processors are used. The App does not sell digital goods or
-subscriptions; there is no In-App Purchase.
+四、地区差异
 
-【4】地区差异 (Regional Differences)
+本 App 功能在所有地区一致，无地区差异。行情与资讯为全球通用内容，
+支持 8 种界面语言（中文简体/繁体、英、日、韩、西、葡、印地语）。
 
-本 App 功能在所有地区一致，无地区差异。
-行情与资讯为全球通用内容；支持 8 种界面语言（中/英/日/韩/西/葡/印地语）。
-The App functions consistently across all regions, with no regional
-differences. It supports 8 UI languages.
-
-【5】资质 / 受监管行业 (Credentials)
+五、资质 / 受监管行业
 
 本 App 为行情数据展示与社交工具，不提供法币充值、加密货币交易撮合、
 资金托管、投资顾问或资产管理服务，因此不涉及需持牌经营的服务。
 所有数据来自公开第三方 API，仅供参考，不构成投资建议。
+
+六、账号删除
+
+已支持账号注销：我的 → 安全设置 → 注销账号（输入登录密码确认后永久停用）。
+同时支持用户内容举报与拉黑：聊天长按消息举报，右上角菜单拉黑用户，
+后台管理系统可处理举报（删消息/封号）。
+
+
+============================================================
+【English】
+============================================================
+
+1. Purpose & Target Audience
+
+Mingce is a crypto market data terminal and social tool for crypto investors
+and traders. It solves the problems of scattered market information,
+hard-to-track on-chain movements and delayed risk alerts, by providing
+multi-dimensional indices (Fear & Greed, liquidations, funding rates, whale
+radar), live quotes with custom price alerts, 24/7 news, and built-in chat
+with voice/video calls — everything in one terminal.
+
+The App is a data-display and social tool ONLY. It does NOT provide fiat
+deposits, crypto trading/matching, custody, clearing, investment advisory,
+or asset management. All market data comes from public third-party exchange
+APIs and is for reference only.
+
+2. Main Features & Demo Account
+
+Demo account (password login, no verification code):
+  Username: ceshi
+  Password: 12345678
+
+Main features:
+- Home: Overview / Market / Indices / Liquidations, pull-to-refresh
+- Indices: Fear & Greed, funding rate comparison, whale radar
+- Market: full list, tap into detail for candlesticks and order book
+- Price alerts: set up/down target price, push on trigger
+- News: flash / announcements / articles
+- Chat: friend requests, DMs, groups; long-press a message to report,
+  top-right menu to block a user
+- Me → Security: change password, fund password, 2FA, device management,
+  anti-phishing code, delete account
+
+3. External Services
+
+The App only displays public market data and uses no payment processor and
+no In-App Purchase. External services used:
+- Binance / Bybit / OKX / CoinGecko / CoinGlass — public quotes, funding rates, liquidations
+- Alternative.me — Fear & Greed index
+- TronGrid / Etherscan / BSCScan / Arbiscan — on-chain transfers & address lookup
+- APITube — news collection
+- DeepSeek — news summaries and macro calendar Chinese translation (AI-generated, non-core)
+- Apple APNs — push notifications
+
+4. Regional Differences
+
+The App functions consistently across all regions, with no regional
+differences. It supports 8 UI languages (Simplified/Traditional Chinese,
+English, Japanese, Korean, Spanish, Portuguese, Hindi).
+
+5. Credentials / Regulated Industry
 
 The App is a data display and social tool. It does not offer fiat deposits,
 crypto trading, custody, investment advisory or asset management, and thus
 does not fall under licensed financial services. All data is from public
 third-party APIs for reference only.
 
-【6】账号删除 (Account Deletion)
+6. Account Deletion
 
-已支持账号注销：我的 → 安全设置 → 注销账号（输入登录密码确认后永久停用）。
-同时支持用户内容举报与拉黑：聊天长按消息举报，右上角菜单拉黑用户，
-后台管理系统可处理举报（删消息/封号）。
+Account deletion is supported: Me → Security → Delete Account (enter login
+password to confirm). User-generated content moderation is also supported:
+long-press a chat message to report, use the top-right menu to block a user,
+and an admin console handles reports (delete message / ban user).
 
-========================================
+
+============================================================
   附：录屏脚本 (Screen Recording Script)
-========================================
+============================================================
 用真机（最新 iOS）录制，按以下顺序，总时长 2-4 分钟：
 
 1. 冷启动 App（从桌面点击图标开始）
