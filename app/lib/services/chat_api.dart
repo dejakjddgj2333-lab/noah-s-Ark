@@ -214,6 +214,63 @@ class ChatApi {
         token: _token);
     return Reaction.parseList(resp['reactions']);
   }
+
+  // ---------- 举报 / 拉黑 ----------
+
+  /// 举报用户或某条消息.
+  static Future<void> report({
+    required int targetUserId,
+    int? messageId,
+    int? conversationId,
+    String reason = 'other',
+    String detail = '',
+  }) =>
+      McApi.post('$_prefix/reports', {
+        'target_user_id': targetUserId,
+        if (messageId != null) 'message_id': messageId,
+        if (conversationId != null) 'conversation_id': conversationId,
+        'reason': reason,
+        'detail': detail,
+      }, token: _token);
+
+  /// 拉黑用户 (双向屏蔽, 解除好友).
+  static Future<void> blockUser(int userId) =>
+      McApi.post('$_prefix/blocks', {'user_id': userId}, token: _token);
+
+  /// 取消拉黑.
+  static Future<void> unblockUser(int userId) =>
+      McApi.del('$_prefix/blocks/$userId', token: _token);
+
+  /// 我拉黑的用户列表.
+  static Future<List<BlockedUser>> blockedUsers() async {
+    final raw = await McApi.getList('$_prefix/blocks', token: _token);
+    return [for (final e in raw) BlockedUser.fromJson(e)];
+  }
+}
+
+/// 被拉黑的用户.
+class BlockedUser {
+  const BlockedUser({
+    required this.userId,
+    required this.username,
+    this.nickname,
+    this.avatarUrl,
+  });
+
+  factory BlockedUser.fromJson(Map<String, dynamic> j) => BlockedUser(
+        userId: j['user_id'] as int,
+        username: j['username'] as String? ?? '',
+        nickname: j['nickname'] as String?,
+        avatarUrl: j['avatar_url'] as String?,
+      );
+
+  final int userId;
+  final String username;
+  final String? nickname;
+  final String? avatarUrl;
+
+  String get displayName =>
+      (nickname != null && nickname!.isNotEmpty) ? nickname! : username;
 }
 
 /// 用户 (搜索结果 / 好友). relation 仅搜索接口返回.

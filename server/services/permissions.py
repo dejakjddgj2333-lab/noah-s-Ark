@@ -71,6 +71,20 @@ PERMISSION_TREE: list[dict] = [
             {"code": "btn:legal:edit", "name": "编辑协议"},
         ],
     },
+    {
+        "code": "page:report",
+        "name": "举报管理",
+        "children": [
+            {"code": "btn:report:handle", "name": "处理举报"},
+        ],
+    },
+    {
+        "code": "page:feature",
+        "name": "功能开关",
+        "children": [
+            {"code": "btn:feature:edit", "name": "修改开关"},
+        ],
+    },
 ]
 
 ALL_CODES: set[str] = {

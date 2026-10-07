@@ -5,6 +5,7 @@ import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
+import '../services/feature_flag.dart';
 import '../services/finance_api.dart';
 import '../services/invite_api.dart';
 import '../widgets/convert_sheet.dart';
@@ -61,6 +62,7 @@ class _AssetsPageState extends State<AssetsPage> {
       safe(() async => _commSummary = await FinanceApi.commissionSummary()),
       safe(() async =>
           _recentComms = (await FinanceApi.commissions()).take(2).toList()),
+      safe(() => FeatureFlag.instance.refresh()), // 钱包开关, 进页刷新
     ]);
     if (mounted) setState(() {});
   }
@@ -484,88 +486,101 @@ class _AssetsPageState extends State<AssetsPage> {
             ],
           ),
           const SizedBox(height: 16),
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: _actionBtn(
-                  icon: Icons.bolt,
-                  iconColor: Colors.white,
-                  text: tr('assets_deposit'),
-                  primary: true,
-                  onTap: () => Navigator.pushNamed(context, '/deposit'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _actionBtn(
-                  icon: Icons.arrow_outward,
-                  iconColor: McColors.onSurfaceVariant,
-                  text: tr('assets_withdraw'),
-                  onTap: () => Navigator.pushNamed(context, '/withdraw'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _actionBtn(
-                  icon: Icons.sync_alt,
-                  iconColor: cobaltSoft,
-                  text: tr('assets_wallet_matrix'),
-                  onTap: () => Navigator.pushNamed(context, '/wallet-matrix'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // 收益→本金转化 (收服务费, 报价确认后执行; 与资金明细页同一弹层)
-          Row(
-            children: [
-              Expanded(
-                child: _actionBtn(
-                  icon: Icons.currency_exchange,
-                  iconColor: McColors.goldBright,
-                  text: tr('assets_convert'),
-                  onTap: _openConvert,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Supported chains
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                Text(
-                  tr('assets_multi_chain'),
-                  style: McText.mono(
-                      size: 12,
-                      weight: FontWeight.w700,
-                      color: McColors.onSurfaceVariant,
-                      letterSpacing: 1),
-                ),
-                const SizedBox(width: 6),
-                for (final c in ['TRC20', 'ERC20', 'BEP20', 'Arbitrum'])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: McColors.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                            color: McColors.surfaceContainerHigh),
+          // Action buttons (钱包功能按后台开关显隐)
+          ListenableBuilder(
+            listenable: FeatureFlag.instance,
+            builder: (context, _) {
+              if (!FeatureFlag.instance.walletEnabled) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _actionBtn(
+                          icon: Icons.bolt,
+                          iconColor: Colors.white,
+                          text: tr('assets_deposit'),
+                          primary: true,
+                          onTap: () => Navigator.pushNamed(context, '/deposit'),
+                        ),
                       ),
-                      child: Text(
-                        c,
-                        style: McText.mono(
-                            size: 12, color: McColors.onSurface),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _actionBtn(
+                          icon: Icons.arrow_outward,
+                          iconColor: McColors.onSurfaceVariant,
+                          text: tr('assets_withdraw'),
+                          onTap: () => Navigator.pushNamed(context, '/withdraw'),
+                        ),
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _actionBtn(
+                          icon: Icons.sync_alt,
+                          iconColor: cobaltSoft,
+                          text: tr('assets_wallet_matrix'),
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/wallet-matrix'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // 收益→本金转化 (收服务费, 报价确认后执行; 与资金明细页同一弹层)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _actionBtn(
+                          icon: Icons.currency_exchange,
+                          iconColor: McColors.goldBright,
+                          text: tr('assets_convert'),
+                          onTap: _openConvert,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Supported chains
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Text(
+                          tr('assets_multi_chain'),
+                          style: McText.mono(
+                              size: 12,
+                              weight: FontWeight.w700,
+                              color: McColors.onSurfaceVariant,
+                              letterSpacing: 1),
+                        ),
+                        const SizedBox(width: 6),
+                        for (final c in ['TRC20', 'ERC20', 'BEP20', 'Arbitrum'])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: McColors.surfaceContainerLowest,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                    color: McColors.surfaceContainerHigh),
+                              ),
+                              child: Text(
+                                c,
+                                style: McText.mono(
+                                    size: 12, color: McColors.onSurface),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -639,43 +654,52 @@ class _AssetsPageState extends State<AssetsPage> {
             style: McText.display(size: 16, weight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
-          GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            padding: EdgeInsets.zero, // 否则 primary 滚动视图自动吃状态栏 inset, 标题下出现大空隙
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.5,
-            children: [
-              for (final (route, icon, label) in [
+          ListenableBuilder(
+            listenable: FeatureFlag.instance,
+            builder: (context, _) {
+              final walletOn = FeatureFlag.instance.walletEnabled;
+              final items = [
                 ('/products', Icons.savings_outlined, tr('assets_products')),
                 ('/vip', Icons.workspace_premium_outlined, tr('assets_my_vip')),
                 ('/team', Icons.groups_outlined, tr('assets_my_team')),
                 ('/orders', Icons.receipt_long_outlined, tr('assets_my_orders')),
                 ('/funds', Icons.account_balance_wallet_outlined, tr('assets_fund_details')),
-                ('/withdraw', Icons.outbox_outlined, tr('assets_withdraw_short')),
-              ])
-                Material(
-                  color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => Navigator.pushNamed(context, route),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(icon, size: 22, color: McColors.primarySoft),
-                        const SizedBox(height: 6),
-                        Text(
-                          label,
-                          style: McText.sans(size: 12, weight: FontWeight.w600),
+                // 提现入口随钱包开关显隐
+                if (walletOn)
+                  ('/withdraw', Icons.outbox_outlined, tr('assets_withdraw_short')),
+              ];
+              return GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                padding: EdgeInsets.zero, // 否则 primary 滚动视图自动吃状态栏 inset, 标题下出现大空隙
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1.5,
+                children: [
+                  for (final (route, icon, label) in items)
+                    Material(
+                      color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => Navigator.pushNamed(context, route),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(icon, size: 22, color: McColors.primarySoft),
+                            const SizedBox(height: 6),
+                            Text(
+                              label,
+                              style: McText.sans(size: 12, weight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              );
+            },
           ),
         ],
       ),

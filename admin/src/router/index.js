@@ -81,6 +81,18 @@ const routes = [
         component: () => import('@/views/legal/index.vue'),
         meta: { title: '协议管理', icon: 'Document', perm: 'page:legal', group: '系统' },
       },
+      {
+        path: 'reports',
+        name: 'Reports',
+        component: () => import('@/views/report/index.vue'),
+        meta: { title: '举报管理', icon: 'Warning', perm: 'page:report', group: '运营' },
+      },
+      {
+        path: 'features',
+        name: 'Features',
+        component: () => import('@/views/feature/index.vue'),
+        meta: { title: '功能开关', icon: 'Switch', perm: 'page:feature', group: '系统' },
+      },
     ],
   },
   {

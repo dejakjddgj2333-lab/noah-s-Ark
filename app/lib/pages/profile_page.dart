@@ -11,6 +11,7 @@ import 'change_password_page.dart';
 import 'fund_password_page.dart';
 import 'totp_page.dart';
 import 'anti_phishing_page.dart';
+import 'blocked_users_page.dart';
 import 'devices_page.dart';
 import 'language_page.dart';
 import 'price_alerts_page.dart';
@@ -414,6 +415,14 @@ class _ProfilePageState extends State<ProfilePage>
           trailing: _chevron(),
           onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => const AntiPhishingPage())),
+        ),
+        const SizedBox(height: 10),
+        _row(
+          label: tr('blocked_users'),
+          value: '',
+          trailing: _chevron(),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const BlockedUsersPage())),
         ),
         const SizedBox(height: 24),
 

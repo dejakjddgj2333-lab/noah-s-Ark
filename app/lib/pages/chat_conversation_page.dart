@@ -522,6 +522,110 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       ));
   }
 
+  // ---------- 举报 / 拉黑 ----------
+
+  /// 弹举报原因选择, 返回 reason key 或 null.
+  Future<String?> _pickReason() {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: McColors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(tr('report_title'),
+                  style: McText.sans(size: 15, weight: FontWeight.w700)),
+            ),
+            for (final (key, label) in [
+              ('spam', tr('report_spam')),
+              ('abuse', tr('report_abuse')),
+              ('fraud', tr('report_fraud')),
+              ('porn', tr('report_porn')),
+              ('other', tr('report_other')),
+            ])
+              ListTile(
+                title: Text(label, style: McText.sans(size: 14)),
+                onTap: () => Navigator.pop(ctx, key),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _reportMessage(ChatMessage msg) async {
+    final reason = await _pickReason();
+    if (reason == null) return;
+    try {
+      await ChatApi.report(
+        targetUserId: msg.senderId,
+        messageId: msg.id,
+        conversationId: widget.conversation.id,
+        reason: reason,
+      );
+      _toast(tr('report_done'));
+    } catch (e) {
+      _toast(e.toString());
+    }
+  }
+
+  /// 举报用户 (不针对具体消息).
+  Future<void> _reportUser(int userId) async {
+    final reason = await _pickReason();
+    if (reason == null) return;
+    try {
+      await ChatApi.report(
+        targetUserId: userId,
+        conversationId: widget.conversation.id,
+        reason: reason,
+      );
+      _toast(tr('report_done'));
+    } catch (e) {
+      _toast(e.toString());
+    }
+  }
+
+  Future<void> _blockUser(int userId, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: McColors.surfaceContainerLow,
+        title: Text(tr('block_title'),
+            style: McText.sans(size: 15, weight: FontWeight.w700)),
+        content: Text(tr('block_confirm').replaceAll('{name}', name),
+            style: McText.sans(size: 13, color: McColors.onSurfaceVariant)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('cancel'),
+                style: McText.sans(color: McColors.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                Text(tr('block_confirm_btn'), style: McText.sans(color: McColors.bear)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ChatApi.blockUser(userId);
+      _toast(tr('block_done'));
+      // 拉黑后返回会话列表, 该会话/好友已解除
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      _toast(e.toString());
+    }
+  }
+
+
   void _closeAttach() {
     if (_attachOpen) setState(() => _attachOpen = false);
   }
@@ -581,6 +685,31 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             IconButton(
               icon: const Icon(Icons.call_outlined, color: McColors.onSurface),
               onPressed: _startVoiceCall,
+            ),
+          // 私聊: 更多菜单 (拉黑/举报对方)
+          if (!_isGroup && widget.conversation.otherUser != null)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: McColors.onSurface),
+              color: McColors.surfaceContainerLow,
+              onSelected: (v) {
+                final other = widget.conversation.otherUser!;
+                if (v == 'block') {
+                  _blockUser(other.id, other.displayName);
+                } else if (v == 'report') {
+                  _reportUser(other.id);
+                }
+              },
+              itemBuilder: (ctx) => [
+                PopupMenuItem(
+                  value: 'report',
+                  child: Text(tr('report'), style: McText.sans(size: 14)),
+                ),
+                PopupMenuItem(
+                  value: 'block',
+                  child: Text(tr('block_user'),
+                      style: McText.sans(size: 14, color: McColors.bear)),
+                ),
+              ],
             ),
           if (_isGroup)
             IconButton(
@@ -1219,6 +1348,11 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                 _actionTile(ctx, Icons.copy, tr('chat_copy'), () {
                   Clipboard.setData(ClipboardData(text: msg.content));
                   _toast(tr('chat_copied'));
+                }),
+              // 举报: 仅他人消息.
+              if (msg.senderId != _myId)
+                _actionTile(ctx, Icons.flag_outlined, tr('report'), () {
+                  _reportMessage(msg);
                 }),
               const SizedBox(height: 8),
             ],

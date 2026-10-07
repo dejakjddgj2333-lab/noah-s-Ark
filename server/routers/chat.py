@@ -36,7 +36,9 @@ from models.hk import (
     HkFriendRequest,
     HkFriendship,
     HkMessageReaction,
+    HkReport,
     HkUser,
+    HkUserBlock,
 )
 from services import auth_service, push_service
 from services.chat_ws import chat_ws
@@ -46,6 +48,34 @@ router = APIRouter(prefix="/chat", tags=["聊天"])
 logger = logging.getLogger(__name__)
 
 ALLOWED_EMOJIS = ("👍", "❤️", "🔥", "😂", "😮", "😢")
+
+
+async def _blocked_pairs(db: AsyncSession, a: int, b: int) -> bool:
+    """a 与 b 之间是否存在任一方向拉黑."""
+    row = (
+        await db.execute(
+            select(HkUserBlock.id).where(
+                ((HkUserBlock.user_id == a) & (HkUserBlock.blocked_id == b))
+                | ((HkUserBlock.user_id == b) & (HkUserBlock.blocked_id == a))
+            )
+        )
+    ).first()
+    return row is not None
+
+
+async def _my_blocked_ids(db: AsyncSession, uid: int) -> set[int]:
+    """我拉黑的人 + 拉黑我的人 (消息/列表双向过滤用)."""
+    rows = (
+        await db.execute(
+            select(HkUserBlock.user_id, HkUserBlock.blocked_id).where(
+                (HkUserBlock.user_id == uid) | (HkUserBlock.blocked_id == uid)
+            )
+        )
+    ).all()
+    out: set[int] = set()
+    for u, b in rows:
+        out.add(b if u == uid else u)
+    return out
 
 # 富媒体消息
 MSG_TYPES = ("text", "image", "audio", "video")
@@ -397,6 +427,8 @@ async def send_friend_request(
     target = await db.get(HkUser, data.to_user_id)
     if target is None:
         raise HTTPException(status_code=404, detail="用户不存在")
+    if await _blocked_pairs(db, me.id, data.to_user_id):
+        raise HTTPException(status_code=403, detail="无法添加该用户")
     if await _are_friends(db, me.id, data.to_user_id):
         raise HTTPException(status_code=400, detail="已是好友")
     dup = (
@@ -624,6 +656,8 @@ async def create_direct_conversation(
     other = await db.get(HkUser, data.other_user_id)
     if other is None:
         raise HTTPException(status_code=404, detail="用户不存在")
+    if await _blocked_pairs(db, me.id, data.other_user_id):
+        raise HTTPException(status_code=403, detail="无法发起单聊")
     if not await _are_friends(db, me.id, data.other_user_id):
         raise HTTPException(status_code=400, detail="非好友不能发起单聊")
     # 复用已有单聊: 我的会话中与对方共存的 direct 会话
@@ -939,6 +973,10 @@ async def list_messages(
         HkChatMessage.conversation_id == conversation_id,
         HkChatMessage.status == "visible",
     )
+    # 拉黑双向屏蔽: 我拉黑的 + 拉黑我的人发的消息不返回
+    blocked = await _my_blocked_ids(db, me.id)
+    if blocked:
+        stmt = stmt.where(HkChatMessage.sender_id.notin_(blocked))
     if before_id is not None:
         stmt = stmt.where(HkChatMessage.id < before_id)
     msgs = (
@@ -961,6 +999,17 @@ async def send_message(
     me: HkUser = Depends(auth_service.get_current_user),
 ):
     await _require_member(db, conversation_id, me.id)
+    # 单聊拉黑拦截: 任一方向拉黑则禁止发送
+    conv = await db.get(HkConversation, conversation_id)
+    if conv is not None and conv.type == "direct":
+        others = [
+            m
+            for m in await _member_ids(db, conversation_id)
+            if m != me.id
+        ]
+        for other in others:
+            if await _blocked_pairs(db, me.id, other):
+                raise HTTPException(status_code=403, detail="无法发送消息")
     if data.reply_to_id is not None:
         parent = await db.get(HkChatMessage, data.reply_to_id)
         if parent is None or parent.conversation_id != conversation_id:
@@ -980,9 +1029,12 @@ async def send_message(
     await db.refresh(msg)
     out = await _message_out(db, msg, me.id, reactions=[])
     member_ids = await _member_ids(db, conversation_id)
+    # 拉黑我的人不接收我的消息 (WS 与推送都跳过)
+    blocked = await _my_blocked_ids(db, me.id)
+    deliver_ids = [u for u in member_ids if u not in blocked]
     # jsonable_encoder: created_at datetime 需转 ISO, send_json 直接 json.dumps
     await chat_ws.deliver_to_users(
-        member_ids,
+        deliver_ids,
         {
             "type": "message",
             "conversation_id": conversation_id,
@@ -1001,7 +1053,7 @@ async def send_message(
         push_body = data.content[:50]
     else:
         push_body = _msg_preview.get(data.msg_type, "[新消息]")
-    for uid in member_ids:
+    for uid in deliver_ids:
         if uid == me.id:
             continue
         await push_service.push_if_offline(
@@ -1160,6 +1212,140 @@ async def _relay_call(me: HkUser, frame: dict) -> None:
     # 注入主叫身份后原样转发
     frame["from_user"] = {"id": me.id, "username": me.username}
     await chat_ws.deliver_to_user(to_user_id, frame)
+
+
+# ---------- 举报 / 拉黑 (App Store 1.2 UGC) ----------
+
+REPORT_REASONS = ("spam", "abuse", "fraud", "porn", "other")
+
+
+class ReportIn(BaseModel):
+    target_user_id: int
+    message_id: int | None = None
+    conversation_id: int | None = None
+    reason: str = "other"
+    detail: str = Field(default="", max_length=500)
+
+
+@router.post("/reports", status_code=201)
+async def create_report(
+    data: ReportIn,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """举报用户或某条消息."""
+    if data.target_user_id == me.id:
+        raise HTTPException(status_code=400, detail="不能举报自己")
+    if data.reason not in REPORT_REASONS:
+        raise HTTPException(status_code=400, detail="非法举报类型")
+    target = await db.get(HkUser, data.target_user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    if data.message_id is not None:
+        msg = await db.get(HkChatMessage, data.message_id)
+        if msg is None:
+            raise HTTPException(status_code=404, detail="消息不存在")
+    db.add(
+        HkReport(
+            reporter_id=me.id,
+            target_user_id=data.target_user_id,
+            message_id=data.message_id,
+            conversation_id=data.conversation_id,
+            reason=data.reason,
+            detail=data.detail,
+        )
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+class BlockIn(BaseModel):
+    user_id: int
+
+
+@router.post("/blocks", status_code=201)
+async def block_user(
+    data: BlockIn,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """拉黑用户: 双向屏蔽消息/好友/单聊. 幂等."""
+    if data.user_id == me.id:
+        raise HTTPException(status_code=400, detail="不能拉黑自己")
+    target = await db.get(HkUser, data.user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    dup = (
+        await db.scalars(
+            select(HkUserBlock).where(
+                HkUserBlock.user_id == me.id,
+                HkUserBlock.blocked_id == data.user_id,
+            )
+        )
+    ).first()
+    if dup is None:
+        db.add(HkUserBlock(user_id=me.id, blocked_id=data.user_id))
+    # 拉黑同时解除双向好友关系与待处理申请
+    await db.execute(
+        delete(HkFriendship).where(
+            ((HkFriendship.user_id == me.id) & (HkFriendship.friend_id == data.user_id))
+            | ((HkFriendship.user_id == data.user_id) & (HkFriendship.friend_id == me.id))
+        )
+    )
+    await db.execute(
+        delete(HkFriendRequest).where(
+            ((HkFriendRequest.from_user_id == me.id) & (HkFriendRequest.to_user_id == data.user_id))
+            | ((HkFriendRequest.from_user_id == data.user_id) & (HkFriendRequest.to_user_id == me.id))
+        )
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/blocks/{user_id}", status_code=204)
+async def unblock_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """取消拉黑."""
+    await db.execute(
+        delete(HkUserBlock).where(
+            HkUserBlock.user_id == me.id,
+            HkUserBlock.blocked_id == user_id,
+        )
+    )
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/blocks")
+async def list_blocks(
+    db: AsyncSession = Depends(get_db),
+    me: HkUser = Depends(auth_service.get_current_user),
+):
+    """我拉黑的用户列表."""
+    rows = (
+        await db.scalars(
+            select(HkUserBlock).where(HkUserBlock.user_id == me.id)
+        )
+    ).all()
+    ids = [r.blocked_id for r in rows]
+    users = {}
+    if ids:
+        for u in (
+            (await db.scalars(select(HkUser).where(HkUser.id.in_(ids)))).all()
+        ):
+            users[u.id] = u
+    return [
+        {
+            "user_id": r.blocked_id,
+            "username": (users.get(r.blocked_id).username if users.get(r.blocked_id) else str(r.blocked_id)),
+            "nickname": (users.get(r.blocked_id).nickname if users.get(r.blocked_id) else None),
+            "avatar_url": (users.get(r.blocked_id).avatar_url if users.get(r.blocked_id) else None),
+        }
+        for r in rows
+    ]
 
 
 @router.websocket("/ws")

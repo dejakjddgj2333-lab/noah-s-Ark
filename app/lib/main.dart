@@ -37,6 +37,7 @@ import 'services/chat_api.dart';
 import 'services/chat_db.dart';
 import 'services/chat_ws.dart';
 import 'services/push_service.dart';
+import 'services/feature_flag.dart';
 import 'services/invite_link.dart';
 
 void main() async {
@@ -47,6 +48,7 @@ void main() async {
   await ColorPref.instance.load(); // 涨跌配色持久化
   await NotifyPref.instance.load(); // 通知开关持久化
   await PushService.instance.init(); // 本地通知 + APNs token 接收
+  FeatureFlag.instance.refresh(); // 功能开关 (充值提现显隐), 异步不阻塞启动
   // 已登录则启动聊天长连接.
   if (AuthStore.instance.loggedIn) {
     ChatWs.instance.connect();

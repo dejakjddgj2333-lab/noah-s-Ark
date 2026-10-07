@@ -1,0 +1,103 @@
+════════════════════════════════════════════════════════════
+  App Store 审核回复 (Guideline 2.1 - Information Needed)
+  粘贴到 App Store Connect → App 审核信息 → 备注 (Notes)
+════════════════════════════════════════════════════════════
+
+【1】App 用途与目标用户 (Purpose & Target Audience)
+
+明策（Noah's Ark / Mingce）是一款加密货币市场行情数据终端与社交工具。
+面向加密货币投资者与交易者，解决"市场信息分散、链上动向难追踪、
+风险预警不及时"的问题，提供多维市场指数（恐慌贪婪、多空爆仓、
+资金费率、巨鲸雷达）、实时行情与自定义价格预警、7×24 资讯、
+以及内置的好友聊天与音视频通话，帮助用户在一个终端内掌握市场全貌。
+
+明策 (Mingce) is a crypto market data terminal and social tool for crypto
+investors and traders. It solves the problems of scattered market information,
+hard-to-track on-chain movements and delayed risk alerts, by providing
+multi-dimensional indices (Fear & Greed, liquidations, funding rates, whale
+radar), live quotes with custom price alerts, 24/7 news, and built-in chat
+with voice/video calls — everything in one terminal.
+
+The App is a data-display and social tool ONLY. It does NOT provide fiat
+deposits, crypto trading/matching, custody, clearing, investment advisory,
+or asset management. All market data comes from public third-party exchange
+APIs and is for reference only.
+
+【2】主功能使用方法 + 演示账号 (Demo Account)
+
+演示账号（后台已建，密码登录，无验证码）：
+  用户名：demo_user
+  密码：  Demopass123  （← 请替换为后台实际创建的账号密码）
+
+主要功能入口：
+- 首页四页首屏：综合 / 行情 / 多维指数 / 多空爆仓，下拉刷新数据
+- 多维指数：恐慌贪婪指数、资金费率对比、巨鲸雷达
+- 行情：全市场列表，点进详情看 K 线与盘口
+- 行情预警：设置涨破/跌破目标价，触发后推送
+- 资讯：快讯 / 公告 / 深度文章
+- 聊天：好友申请、私聊、群聊，长按消息可举报，右上角菜单可拉黑
+- 我的 → 安全设置：改密码、资金密码、谷歌验证、设备管理、防钓鱼码、注销账号
+
+【3】外部服务 / 数据源 (External Services)
+
+本 App 仅展示公开行情数据，不接入任何支付处理。所用外部服务：
+- Binance / Bybit / OKX / CoinGecko / CoinGlass — 公开行情、资金费率、爆仓数据
+- Alternative.me — 恐慌贪婪指数
+- TronGrid / Etherscan / BSCScan / Arbiscan — 链上转账与地址查询
+- APITube — 资讯采集
+- DeepSeek — 资讯摘要与宏观日历中文翻译（AI 生成，非核心功能）
+- Apple APNs — 推送通知
+
+No payment processors are used. The App does not sell digital goods or
+subscriptions; there is no In-App Purchase.
+
+【4】地区差异 (Regional Differences)
+
+本 App 功能在所有地区一致，无地区差异。
+行情与资讯为全球通用内容；支持 8 种界面语言（中/英/日/韩/西/葡/印地语）。
+The App functions consistently across all regions, with no regional
+differences. It supports 8 UI languages.
+
+【5】资质 / 受监管行业 (Credentials)
+
+本 App 为行情数据展示与社交工具，不提供法币充值、加密货币交易撮合、
+资金托管、投资顾问或资产管理服务，因此不涉及需持牌经营的服务。
+所有数据来自公开第三方 API，仅供参考，不构成投资建议。
+
+The App is a data display and social tool. It does not offer fiat deposits,
+crypto trading, custody, investment advisory or asset management, and thus
+does not fall under licensed financial services. All data is from public
+third-party APIs for reference only.
+
+【6】账号删除 (Account Deletion)
+
+已支持账号注销：我的 → 安全设置 → 注销账号（输入登录密码确认后永久停用）。
+同时支持用户内容举报与拉黑：聊天长按消息举报，右上角菜单拉黑用户，
+后台管理系统可处理举报（删消息/封号）。
+
+========================================
+  附：录屏脚本 (Screen Recording Script)
+========================================
+用真机（最新 iOS）录制，按以下顺序，总时长 2-4 分钟：
+
+1. 冷启动 App（从桌面点击图标开始）
+2. 注册流程：输入用户名/邮箱/密码 → 收验证码 → 完成注册
+3. 登录流程：退出后重新登录
+4. 浏览首页四页首屏（综合/行情/多维指数/多空爆仓），下拉刷新
+5. 点进一个行情详情看 K 线
+6. 设置一个价格预警
+7. 聊天：发好友请求 → 对方通过 → 发消息
+8. 长按消息 → 举报 → 选择原因提交
+9. 右上角菜单 → 拉黑该用户
+10. 我的 → 安全设置 → 注销账号 → 输入密码确认
+（第 8/9/10 步是苹果重点核查项，务必录制）
+
+========================================
+  仍需你手动完成 (App Store Connect 操作)
+========================================
+□ 把上面内容贴到 App 审核信息 → 备注 (Notes) 字段
+□ 审核信息 → 登录信息：填演示账号密码
+□ 上传真机录屏视频（审核附件或 YouTube 私链）
+□ 隐私标签：声明收集 邮箱/用户名/聊天内容/APNs token/登录设备信息
+□ 技术支持 URL
+□ 内容分级问卷如实勾选（金融类建议 17+）

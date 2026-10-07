@@ -334,3 +334,57 @@ class HkPriceAlert(HkBase):
     target_price = Column(Float, nullable=False)
     triggered = Column(Boolean, nullable=False, default=False)  # 触发后置 True
     created_at = Column(DateTime, default=utc_now)
+
+
+class HkUserBlock(HkBase):
+    """拉黑: user_id 拉黑 blocked_id, 双向屏蔽消息/好友/单聊 (App Store 1.2 UGC)."""
+
+    __tablename__ = "hk_user_blocks"
+    __table_args__ = (
+        UniqueConstraint("user_id", "blocked_id", name="uq_hk_block_pair"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    blocked_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    created_at = Column(DateTime, default=utc_now)
+
+
+class HkReport(HkBase):
+    """用户举报: 针对消息或用户, 后台处理 (App Store 1.2 UGC)."""
+
+    __tablename__ = "hk_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reporter_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    target_user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    message_id = Column(
+        Integer, ForeignKey("hk_chat_messages.id"), nullable=True
+    )  # 举报具体消息, 举报用户时为空
+    conversation_id = Column(Integer, nullable=True)
+    reason = Column(String(32), nullable=False, default="other")  # spam/abuse/fraud/porn/other
+    detail = Column(String(500), nullable=False, default="")
+    status = Column(String(16), nullable=False, default="pending")  # pending/resolved/dismissed
+    handled_by = Column(Integer, nullable=True)  # 处理的管理员 user_id
+    created_at = Column(DateTime, default=utc_now, index=True)
+    handled_at = Column(DateTime, nullable=True)
+
+
+class HkConfig(HkBase):
+    """功能开关/站点配置 (key-value): 充值提现等模块开关, 后台可改, app 公开读."""
+
+    __tablename__ = "hk_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(64), unique=True, nullable=False, index=True)
+    value = Column(String(256), nullable=False, default="")
+    label = Column(String(128), nullable=False, default="")  # 后台显示名
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
