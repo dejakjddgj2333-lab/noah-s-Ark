@@ -93,7 +93,9 @@ class ChatWs {
     _connected = false;
     _sub?.cancel();
     _sub = null;
-    _channel?.sink.close();
+    try {
+      _channel?.sink.close();
+    } catch (_) {}
     _channel = null;
   }
 

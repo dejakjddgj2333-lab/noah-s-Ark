@@ -105,33 +105,44 @@ class _HomeMarketPageState extends State<HomeMarketPage> {
       final top = majors.where((t) => seen.add(t.symbol)).take(10).toList();
       if (top.isEmpty) throw StateError('no major tickers');
 
-      // 并行拉取前 6 行的分时线, 单个失败回退平线.
-      final sparkSymbols = top.take(6).map((t) => t.symbol).toList();
-      final sparks = await Future.wait(
-        top.take(6).map((t) => McData.sparkline(t.instId).catchError(
-            (_) => const <double>[0.5, 0.5, 0.5, 0.5, 0.5, 0.5])),
-      );
-      final sparkMap = <String, List<double>>{
-        for (var i = 0; i < sparkSymbols.length; i++)
-          sparkSymbols[i]: sparks[i].isEmpty
-              ? const [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-              : sparks[i],
-      };
-
-      final rows = [
-        for (final t in top) _buildRow(t, sparkMap[t.symbol]),
-      ];
+      // 先渲染榜单 (分时线用平线占位), 脱离骨架屏; 分时线后台并行补齐.
+      final rows = [for (final t in top) _buildRow(t, null)];
       if (!mounted) return;
       setState(() {
         _liveRows = rows;
         _loaded = true;
       });
       _subscribeLive(top.map((t) => t.instId).toSet());
+      _loadSparks(top.take(6).toList());
     } catch (_) {
       // 后端不可用 / 数据异常 -> 标记已加载, 列表区显示空态而非假数据.
       if (!mounted) return;
       setState(() => _loaded = true);
     }
+  }
+
+  /// 后台并行拉分时线, 逐个就位刷新对应行 (失败保留平线).
+  Future<void> _loadSparks(List<OkxTicker> top) async {
+    await Future.wait(top.map((t) async {
+      List<double> spark;
+      try {
+        spark = await McData.sparkline(t.instId);
+      } catch (_) {
+        spark = const [0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+      }
+      if (spark.isEmpty) spark = const [0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+      if (!mounted) return;
+      final idx = _liveRows.indexWhere((r) => r.instId == t.instId);
+      if (idx < 0) return;
+      setState(() {
+        _liveRows[idx] = _liveRows[idx].copyWith(
+          spark: spark,
+          sparkColor: _liveRows[idx].positive
+              ? ColorPref.instance.bullColor
+              : ColorPref.instance.bearColor,
+        );
+      });
+    }));
   }
 
   /// REST 加载成功后订阅 OKX WS 实时推送, 就地更新对应行.
@@ -820,6 +831,7 @@ class _RowData {
     String? price,
     String? note,
     Color? noteColor,
+    List<double>? spark,
     Color? sparkColor,
     String? delta,
     bool? positive,
@@ -832,7 +844,7 @@ class _RowData {
         price: price ?? this.price,
         note: note ?? this.note,
         noteColor: noteColor ?? this.noteColor,
-        spark: spark,
+        spark: spark ?? this.spark,
         sparkColor: sparkColor ?? this.sparkColor,
         delta: delta ?? this.delta,
         positive: positive ?? this.positive,

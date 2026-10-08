@@ -168,7 +168,7 @@ class TickerWs {
     _resubscribeAll();
     // OKX 要求 30s 内必须有消息, 25s 心跳.
     _pingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-      _channel?.sink.add('ping');
+      _sinkAdd('ping');
     });
   }
 
@@ -182,7 +182,17 @@ class TickerWs {
 
   void _send(List<Map<String, String>> args) {
     if (args.isEmpty) return;
-    _channel?.sink.add(jsonEncode({'op': 'subscribe', 'args': args}));
+    _sinkAdd(jsonEncode({'op': 'subscribe', 'args': args}));
+  }
+
+  /// 安全发送: 连接已断/被 reset 时 sink.add 会抛, 静默吞掉由重连兜底.
+  void _sinkAdd(String s) {
+    try {
+      _channel?.sink.add(s);
+    } catch (_) {
+      // 连接已死, 触发重连.
+      _scheduleReconnect();
+    }
   }
 
   void _onMessage(dynamic raw) {
@@ -283,7 +293,9 @@ class TickerWs {
     _pingTimer = null;
     _sub?.cancel();
     _sub = null;
-    _channel?.sink.close();
+    try {
+      _channel?.sink.close();
+    } catch (_) {}
     _channel = null;
     if (!keepController) {
       _reconnectTimer?.cancel();

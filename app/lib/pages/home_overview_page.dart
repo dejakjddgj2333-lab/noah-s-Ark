@@ -106,21 +106,23 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 
   Future<void> _load() async {
-    // 各数据源独立尝试, 任一失败不影响其它. 首次完成后脱离骨架屏.
+    // 快数据(行情/资金费率/情绪/多空)先出, 完成即脱离骨架屏;
+    // 慢数据(山寨季/全局市值/巨鲸)后台继续, 到了各自 setState 刷新, 不阻塞首屏.
     try {
       await Future.wait([
         _loadSentiment(),
         _loadLiquidation(),
         _loadFunding(),
-        _loadAltSeason(),
         _loadAssets(),
-        _loadGlobalBanner(),
         _loadLongShort(),
-        _loadWhales(),
       ]);
     } finally {
       if (mounted && !_loaded) setState(() => _loaded = true);
     }
+    // 慢源: 不 await, 后台填充.
+    _loadAltSeason();
+    _loadGlobalBanner();
+    _loadWhales();
   }
 
   Future<void> _loadGlobalBanner() async {
