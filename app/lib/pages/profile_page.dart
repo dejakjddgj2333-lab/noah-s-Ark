@@ -8,7 +8,6 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/auth.dart';
 import 'change_password_page.dart';
-import 'fund_password_page.dart';
 import 'totp_page.dart';
 import 'anti_phishing_page.dart';
 import 'blocked_users_page.dart';
@@ -372,16 +371,6 @@ class _ProfilePageState extends State<ProfilePage>
           trailing: _chevron(),
           onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => const ChangePasswordPage())),
-        ),
-        const SizedBox(height: 10),
-        _row(
-          label: tr('sec_fund_password'),
-          value: _auth.hasFundPassword
-              ? tr('status_set')
-              : tr('status_unset'),
-          trailing: _chevron(),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const FundPasswordPage())),
         ),
         const SizedBox(height: 10),
         _row(

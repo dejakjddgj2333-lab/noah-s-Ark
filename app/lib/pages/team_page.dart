@@ -13,8 +13,7 @@ class TeamPage extends StatefulWidget {
   State<TeamPage> createState() => _TeamPageState();
 }
 
-/// 文档第四节团队等级表 (等级, 有效人数≥, 有效持仓≥, 一代/二代/三代比例).
-/// 0 级仅一代 5%; 1 级一/二代; 2 级起三代; 比例 0 表示无资格, 不越级转移.
+/// 团队等级表 (等级, 有效人数≥, 有效持仓≥, 直推返佣比例). 合规: 仅直推一代.
 const _kTeamTable = [
   (0, 0, 0, 5.0, 0.0, 0.0),
   (1, 5, 6000, 5.0, 3.0, 0.0),
@@ -62,9 +61,7 @@ class _TeamPageState extends State<TeamPage> {
     final lv = _info?['team_level'] as int? ?? 0;
     final members = _info?['member_count'] as int? ?? 0;
     final holding = FinanceApi.d(_info?['total_holding']);
-    final g1 = _info?['gen1_rate'];
-    final g2 = _info?['gen2_rate'];
-    final g3 = _info?['gen3_rate'];
+    final g1 = _info?['gen1_rate']; // 合规: 仅直推一代
     final nextLv = _info?['next_level'] as int?;
     final memberGap = _info?['next_member_gap'] as int?;
     final holdingGap = _info?['next_holding_gap'];
@@ -149,7 +146,7 @@ class _TeamPageState extends State<TeamPage> {
                         const SizedBox(height: 14),
                         Row(
                           children: [
-                            for (final (label, v) in [(tr('comm_gen1'), g1), (tr('comm_gen2'), g2), (tr('comm_gen3'), g3)]) ...[
+                            for (final (label, v) in [(tr('comm_gen1'), g1)]) ...[
                               Expanded(
                                 child: Container(
                                   margin: const EdgeInsets.only(right: 8),
@@ -220,7 +217,7 @@ class _TeamPageState extends State<TeamPage> {
   }
 
   Widget _teamRow((int, int, int, double, double, double) row, int current) {
-    final (lv, members, holding, g1, g2, g3) = row;
+    final (lv, members, holding, g1, g2, g3) = row; // g2/g3 不再展示
     final isCurrent = lv == current;
     String rate(double v) => v <= 0 ? '—' : '${v.toStringAsFixed(1)}%';
     return Container(
@@ -244,7 +241,7 @@ class _TeamPageState extends State<TeamPage> {
           ),
           Expanded(
             flex: 3,
-            child: Text('${rate(g1)} / ${rate(g2)} / ${rate(g3)}',
+            child: Text(rate(g1),
                 textAlign: TextAlign.right,
                 style: McText.mono(
                   size: 11,

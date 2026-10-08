@@ -20,7 +20,6 @@ class _CommissionPageState extends State<CommissionPage> {
   List<dynamic>? _records;
   bool _busy = false;
   String? _error;
-  int _genFilter = 0; // 0 全部, 1/2/3 代数
 
   @override
   void initState() {
@@ -218,7 +217,7 @@ class _CommissionPageState extends State<CommissionPage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                for (final (label, key) in [(tr('comm_gen1'), 'gen1_rate'), (tr('comm_gen2'), 'gen2_rate'), (tr('comm_gen3'), 'gen3_rate')])
+                for (final (label, key) in [(tr('comm_gen1'), 'gen1_rate')])
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),
@@ -262,10 +261,10 @@ class _CommissionPageState extends State<CommissionPage> {
 
   // ---- 佣金明细 ----
   Widget _recordsCard() {
-    final all = _records ?? const [];
-    final list = _genFilter == 0
-        ? all
-        : all.where((r) => r is Map && r['gen'] == _genFilter).toList();
+    // 合规: 仅展示直推 (一代) 返佣
+    final list = (_records ?? const [])
+        .where((r) => r is Map && r['gen'] == 1)
+        .toList();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -280,42 +279,9 @@ class _CommissionPageState extends State<CommissionPage> {
             children: [
               Text(tr('comm_records_title'), style: McText.sans(size: 14, weight: FontWeight.w700)),
               const Spacer(),
-              Text(tr('comm_records_count').replaceAll('{n}', '${all.length}'),
+              Text(tr('comm_records_count').replaceAll('{n}', '${list.length}'),
                   style: McText.sans(size: 11, color: McColors.onSurfaceVariant)),
             ],
-          ),
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final (i, label) in [(0, tr('comm_filter_all')), (1, tr('comm_gen1')), (2, tr('comm_gen2')), (3, tr('comm_gen3'))]) ...[
-                  GestureDetector(
-                    onTap: () => setState(() => _genFilter = i),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _genFilter == i
-                            ? McColors.primaryContainer
-                            : McColors.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        label,
-                        style: McText.sans(
-                          size: 12,
-                          weight: _genFilter == i ? FontWeight.w700 : FontWeight.w500,
-                          color: _genFilter == i
-                              ? McColors.onPrimaryContainer
-                              : McColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
           ),
           const SizedBox(height: 10),
           if (list.isEmpty)
@@ -337,8 +303,6 @@ class _CommissionPageState extends State<CommissionPage> {
   }
 
   Widget _recordItem(Map<String, dynamic> r) {
-    final genLabels = {1: tr('comm_gen1'), 2: tr('comm_gen2'), 3: tr('comm_gen3')};
-    final gen = r['gen'] as int? ?? 0;
     final buyer = (r['buyer_username'] ?? tr('comm_user_prefix') + '${r['buyer_id']}').toString();
     final base = FinanceApi.d(r['base_amount']);
     final rate = FinanceApi.d(r['rate']);
@@ -355,9 +319,8 @@ class _CommissionPageState extends State<CommissionPage> {
               color: McColors.primaryContainer.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Center(
-              child: Text(tr('comm_gen_badge').replaceAll('{n}', '$gen'),
-                  style: McText.sans(size: 11, weight: FontWeight.w700, color: McColors.primarySoft)),
+            child: const Center(
+              child: Icon(Icons.handshake_outlined, size: 16, color: McColors.primarySoft),
             ),
           ),
           const SizedBox(width: 10),
@@ -372,16 +335,6 @@ class _CommissionPageState extends State<CommissionPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: McText.sans(size: 13, weight: FontWeight.w600)),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: McColors.tertiary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(tr('comm_gen_rebate').replaceAll('{label}', genLabels[gen] ?? tr('comm_gen_badge').replaceAll('{n}', '$gen')),
-                          style: McText.sans(size: 10, weight: FontWeight.w600, color: McColors.tertiary)),
                     ),
                   ],
                 ),
