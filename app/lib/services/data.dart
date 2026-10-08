@@ -551,6 +551,16 @@ class McInteraction {
     await McApi.del('/api/interaction/comments/$commentId', token: _token);
   }
 
+  /// 举报评论. 需登录; reason ∈ spam/abuse/fraud/porn/other.
+  static Future<void> reportComment(int commentId,
+      {String reason = 'other', String detail = ''}) async {
+    await McApi.post(
+      '/api/interaction/comments/$commentId/report',
+      {'reason': reason, 'detail': detail},
+      token: _token,
+    );
+  }
+
   /// 点赞/取消点赞. 返回 (liked, likeCount). 需登录.
   static Future<(bool, int)> toggleLike(int newsId) async {
     final resp = await McApi.post(

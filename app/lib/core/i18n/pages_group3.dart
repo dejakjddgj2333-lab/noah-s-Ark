@@ -187,6 +187,11 @@ final Map<String, Map<String, String>> table = {
     'ja': 'コメントを削除', 'ko': '댓글 삭제', 'es': 'Eliminar comentario',
     'pt': 'Excluir comentário', 'hi': 'टिप्पणी हटाएँ',
   },
+  'news_report': {
+    'zh-CN': '举报', 'zh-TW': '舉報', 'en': 'Report',
+    'ja': '報告', 'ko': '신고', 'es': 'Denunciar',
+    'pt': 'Denunciar', 'hi': 'रिपोर्ट',
+  },
   'news_delete_comment_hint': {
     'zh-CN': '确定删除这条评论吗?', 'zh-TW': '確定刪除這條評論嗎?', 'en': 'Delete this comment?',
     'ja': 'このコメントを削除しますか?', 'ko': '이 댓글을 삭제하시겠습니까?', 'es': '¿Eliminar este comentario?',

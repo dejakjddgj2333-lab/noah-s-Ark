@@ -27,8 +27,9 @@ async function fetchList() {
 }
 
 async function handle(row, action, ban = false) {
+  const noun = row.comment_id ? '评论' : '消息'
   const tip = {
-    delete_message: '删除该消息' + (ban ? '并封禁该用户' : '') + '?',
+    delete_message: `删除该${noun}` + (ban ? '并封禁该用户' : '') + '?',
     ban_user: '封禁该用户?',
     dismiss: '驳回该举报?',
   }[action]
@@ -68,7 +69,14 @@ onMounted(fetchList)
         <el-table-column label="原因" width="110">
           <template #default="{ row }">{{ REASONS[row.reason] || row.reason }}</template>
         </el-table-column>
-        <el-table-column prop="message_content" label="相关消息" min-width="160" show-overflow-tooltip>
+        <el-table-column label="类型" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.comment_id ? 'primary' : 'info'" effect="plain">
+              {{ row.comment_id ? '评论' : (row.message_id ? '消息' : '用户') }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="message_content" label="相关内容" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">{{ row.message_content || '—' }}</template>
         </el-table-column>
         <el-table-column prop="detail" label="补充说明" min-width="140" show-overflow-tooltip>
@@ -84,8 +92,8 @@ onMounted(fetchList)
         <el-table-column label="操作" width="250" align="center" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
-              <el-button v-if="row.message_id" v-perm="'btn:report:handle'" size="small" type="danger" plain
-                @click="handle(row, 'delete_message')">删消息</el-button>
+              <el-button v-if="row.message_id || row.comment_id" v-perm="'btn:report:handle'" size="small" type="danger" plain
+                @click="handle(row, 'delete_message')">{{ row.comment_id ? '删评论' : '删消息' }}</el-button>
               <el-button v-perm="'btn:report:handle'" size="small" type="danger" plain
                 @click="handle(row, 'ban_user')">封号</el-button>
               <el-button v-perm="'btn:report:handle'" size="small" plain

@@ -370,6 +370,9 @@ class HkReport(HkBase):
         Integer, ForeignKey("hk_chat_messages.id"), nullable=True
     )  # 举报具体消息, 举报用户时为空
     conversation_id = Column(Integer, nullable=True)
+    comment_id = Column(
+        Integer, ForeignKey("hk_comments.id"), nullable=True
+    )  # 举报评论时指向 hk_comments.id
     reason = Column(String(32), nullable=False, default="other")  # spam/abuse/fraud/porn/other
     detail = Column(String(500), nullable=False, default="")
     status = Column(String(16), nullable=False, default="pending")  # pending/resolved/dismissed

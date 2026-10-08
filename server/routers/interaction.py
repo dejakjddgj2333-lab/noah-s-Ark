@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkComment, HkFavorite, HkLike, HkUser
+from models.hk import HkComment, HkFavorite, HkLike, HkReport, HkUser
 from services import auth_service
 
 router = APIRouter(prefix="/interaction", tags=["互动"])
@@ -48,6 +48,14 @@ class CommentCreateIn(BaseModel):
 class TargetIn(BaseModel):
     target_type: str = Field(pattern="^(news)$")
     target_id: int
+
+
+class CommentReportIn(BaseModel):
+    reason: str = "other"
+    detail: str = Field(default="", max_length=500)
+
+
+REPORT_REASONS = ("spam", "abuse", "fraud", "porn", "other")
 
 
 # ---------- Helpers ----------
@@ -204,6 +212,55 @@ async def delete_comment(
         )
     comment.status = "deleted"
     await db.commit()
+
+
+@router.post("/comments/{comment_id}/report", status_code=201)
+async def report_comment(
+    comment_id: int,
+    data: CommentReportIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: HkUser = Depends(auth_service.get_current_user),
+):
+    """举报评论 (App Store 1.2 UGC): 复用 hk_reports, comment_id 标记评论."""
+    comment = await db.get(HkComment, comment_id)
+    if comment is None or comment.status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在"
+        )
+    if comment.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="不能举报自己的评论"
+        )
+    if data.reason not in REPORT_REASONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="非法举报类型"
+        )
+    dup = await db.scalar(
+        select(func.count()).select_from(
+            select(HkReport)
+            .where(
+                HkReport.reporter_id == current_user.id,
+                HkReport.comment_id == comment_id,
+                HkReport.status == "pending",
+            )
+            .subquery()
+        )
+    )
+    if dup:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="已举报过, 等待处理"
+        )
+    db.add(
+        HkReport(
+            reporter_id=current_user.id,
+            target_user_id=comment.user_id,
+            comment_id=comment_id,
+            reason=data.reason,
+            detail=data.detail,
+        )
+    )
+    await db.commit()
+    return {"ok": True}
 
 
 # ---------- 点赞 / 收藏 ----------

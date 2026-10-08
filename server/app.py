@@ -165,6 +165,8 @@ _MIGRATIONS = [
     ("hk_users", "totp_secret", "VARCHAR(64)"),
     ("hk_users", "anti_phishing_code", "VARCHAR(32)"),
     ("hk_orders", "idempotency_key", "VARCHAR(64)"),
+    # 资讯评论举报
+    ("hk_reports", "comment_id", "INTEGER"),
 ]
 
 

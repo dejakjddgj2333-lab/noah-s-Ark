@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkChatMessage, HkReport, HkUser, utc_now
+from models.hk import HkChatMessage, HkComment, HkReport, HkUser, utc_now
 from services import admin_service
 
 router = APIRouter(prefix="/admin/reports", tags=["后台-举报"])
@@ -22,6 +22,7 @@ def _out(r: HkReport, reporter: str, target: str, msg: str | None) -> dict:
         "target": target,
         "message_id": r.message_id,
         "message_content": msg,
+        "comment_id": r.comment_id,
         "conversation_id": r.conversation_id,
         "reason": r.reason,
         "detail": r.detail,
@@ -69,6 +70,14 @@ async def list_reports(
             )).scalars().all()
         ):
             msgs[m.id] = m.content[:100]
+    comment_ids = {r.comment_id for r in rows if r.comment_id}
+    if comment_ids:
+        for cm in (
+            (await db.execute(
+                select(HkComment).where(HkComment.id.in_(comment_ids))
+            )).scalars().all()
+        ):
+            msgs[f"c{cm.id}"] = cm.content[:100]
 
     return {
         "total": total,
@@ -77,7 +86,7 @@ async def list_reports(
                 r,
                 users.get(r.reporter_id, str(r.reporter_id)),
                 users.get(r.target_user_id, str(r.target_user_id)),
-                msgs.get(r.message_id),
+                msgs.get(r.message_id) or msgs.get(f"c{r.comment_id}"),
             )
             for r in rows
         ],
@@ -111,6 +120,10 @@ async def handle_report(
             ).scalar_one_or_none()
             if msg is not None:
                 msg.status = "deleted"
+        if r.comment_id:
+            cm = await db.get(HkComment, r.comment_id)
+            if cm is not None:
+                cm.status = "deleted"
         if data.ban:
             await _ban(db, r.target_user_id)
         r.status = "resolved"

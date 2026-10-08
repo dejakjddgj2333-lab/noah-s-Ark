@@ -302,6 +302,58 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     }
   }
 
+  /// 弹举报原因选择, 返回 reason key 或 null.
+  Future<String?> _pickReportReason() {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: McColors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(tr('report_title'),
+                  style: McText.sans(size: 15, weight: FontWeight.w700)),
+            ),
+            for (final (key, label) in [
+              ('spam', tr('report_spam')),
+              ('abuse', tr('report_abuse')),
+              ('fraud', tr('report_fraud')),
+              ('porn', tr('report_porn')),
+              ('other', tr('report_other')),
+            ])
+              ListTile(
+                title: Text(label, style: McText.sans(size: 14)),
+                onTap: () => Navigator.pop(ctx, key),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _reportComment(McComment c) async {
+    if (!AuthStore.instance.loggedIn) {
+      _requireLogin();
+      return;
+    }
+    final reason = await _pickReportReason();
+    if (reason == null) return;
+    try {
+      await McInteraction.reportComment(c.id, reason: reason);
+      if (!mounted) return;
+      _toast(tr('report_done'));
+    } catch (_) {
+      if (!mounted) return;
+      _toast(tr('news_publish_failed'));
+    }
+  }
+
   void _setReplyTo(McComment c) {
     if (!AuthStore.instance.loggedIn) {
       _requireLogin();
@@ -1008,6 +1060,18 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                               size: 12,
                               weight: FontWeight.w600,
                               color: McColors.bear),
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(width: 16),
+                      GestureDetector(
+                        onTap: () => _reportComment(c),
+                        child: Text(
+                          tr('news_report'),
+                          style: McText.sans(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: McColors.onSurfaceVariant),
                         ),
                       ),
                     ],
