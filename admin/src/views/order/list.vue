@@ -89,7 +89,7 @@ onMounted(fetchList)
             <div style="color: #909399; font-size: 12px">ID {{ row.user_id }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="product_name" label="产品" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="product_name" label="产品" width="180" show-overflow-tooltip />
         <el-table-column prop="amount" label="金额" width="100" align="right" />
         <el-table-column label="日化率" width="90" align="right">
           <template #default="{ row }">
@@ -120,10 +120,10 @@ onMounted(fetchList)
             <el-tag :type="STATUS_MAP[row.status]?.type">{{ STATUS_MAP[row.status]?.label || row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="购买时间" width="160">
+        <el-table-column label="购买时间" min-width="160">
           <template #default="{ row }">{{ fmt(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right" align="center">
           <template #default="{ row }">
             <el-button size="small" type="primary" plain @click="openDetail(row)">收益明细</el-button>
           </template>
@@ -146,7 +146,7 @@ onMounted(fetchList)
           <el-table-column label="应结算时点" width="160">
             <template #default="{ row }">{{ fmt(row.due_at) }}</template>
           </el-table-column>
-          <el-table-column label="实际入账" width="160">
+          <el-table-column label="实际入账" min-width="160">
             <template #default="{ row }">{{ fmt(row.created_at) }}</template>
           </el-table-column>
         </el-table>
@@ -154,7 +154,7 @@ onMounted(fetchList)
         <template v-if="detail.commissions.length">
           <div style="margin: 16px 0 8px; font-weight: 600">触发的佣金 (平台额外支出)</div>
           <el-table :data="detail.commissions" border size="small" max-height="240">
-            <el-table-column label="接收人" width="120">
+            <el-table-column label="接收人" min-width="120" show-overflow-tooltip>
               <template #default="{ row }">
                 {{ row.receiver_username }}
                 <span style="color: #909399; font-size: 12px">({{ row.gen }}代)</span>
@@ -169,7 +169,7 @@ onMounted(fetchList)
                 <span style="color: #e6a23c; font-weight: 600">{{ row.amount }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="入账时间" width="160">
+            <el-table-column label="入账时间" min-width="160">
               <template #default="{ row }">{{ fmt(row.created_at) }}</template>
             </el-table-column>
           </el-table>
