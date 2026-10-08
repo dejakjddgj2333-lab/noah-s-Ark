@@ -86,7 +86,7 @@ onMounted(() => {
 
       <el-table v-loading="loading" :data="list" border stripe>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="username" label="用户" width="110" />
+        <el-table-column prop="username" label="用户" width="120" show-overflow-tooltip />
         <el-table-column prop="network" label="网络" width="90">
           <template #default="{ row }">{{ row.network.toUpperCase() }}</template>
         </el-table-column>

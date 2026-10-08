@@ -85,11 +85,11 @@ onMounted(fetchAll)
       </div>
       <el-table :data="admins" border stripe>
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="username" label="用户名" min-width="110" />
+        <el-table-column prop="username" label="用户名" min-width="110" show-overflow-tooltip />
         <el-table-column prop="nickname" label="昵称" min-width="100">
           <template #default="{ row }">{{ row.nickname || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="email" label="邮箱" min-width="170" />
+        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
         <el-table-column label="角色" min-width="120">
           <template #default="{ row }">
             <el-tag :type="row.role?.code === 'superadmin' ? 'danger' : 'primary'" effect="dark" size="small">
@@ -107,7 +107,7 @@ onMounted(fetchAll)
         <el-table-column prop="created_at" label="注册时间" width="160">
           <template #default="{ row }">{{ String(row.created_at).replace('T', ' ').slice(0, 19) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="170" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'btn:admin:manage'" size="small" type="primary" plain @click="openEdit(row)">改角色</el-button>
             <el-button

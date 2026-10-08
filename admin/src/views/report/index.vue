@@ -55,8 +55,8 @@ onMounted(fetchList)
 
       <el-table :data="list" border stripe>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="reporter" label="举报人" min-width="110" />
-        <el-table-column prop="target" label="被举报人" min-width="110" />
+        <el-table-column prop="reporter" label="举报人" min-width="110" show-overflow-tooltip />
+        <el-table-column prop="target" label="被举报人" min-width="110" show-overflow-tooltip />
         <el-table-column label="原因" width="110">
           <template #default="{ row }">{{ REASONS[row.reason] || row.reason }}</template>
         </el-table-column>
@@ -73,7 +73,7 @@ onMounted(fetchList)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" align="center">
+        <el-table-column label="操作" width="250" align="center" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
               <el-button v-if="row.message_id" v-perm="'btn:report:handle'" size="small" type="danger" plain

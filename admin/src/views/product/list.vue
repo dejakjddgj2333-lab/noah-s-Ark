@@ -115,7 +115,7 @@ onMounted(fetchList)
 
       <el-table :data="list" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="name" label="产品名称" min-width="120" />
+        <el-table-column prop="name" label="产品名称" min-width="130" show-overflow-tooltip />
         <el-table-column label="基础日收益率" width="110" align="center">
           <template #default="{ row }">{{ (Number(row.base_daily_rate) * 100).toFixed(2) }}%</template>
         </el-table-column>

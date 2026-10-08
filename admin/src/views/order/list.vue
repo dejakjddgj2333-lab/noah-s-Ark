@@ -75,7 +75,7 @@ onMounted(fetchList)
 
       <el-table :data="list" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column label="用户" width="110">
+        <el-table-column label="用户" width="120">
           <template #default="{ row }">
             <div>{{ row.username }}</div>
             <div style="color: #909399; font-size: 12px">ID {{ row.user_id }}</div>

@@ -137,8 +137,8 @@ onMounted(fetchList)
 
       <el-table :data="list" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="username" label="用户名" min-width="100" />
-        <el-table-column prop="email" label="邮箱" min-width="160" />
+        <el-table-column prop="username" label="用户名" min-width="110" show-overflow-tooltip />
+        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 'banned' ? 'danger' : 'success'" effect="dark" size="small">
@@ -165,10 +165,10 @@ onMounted(fetchList)
         <el-table-column label="处理中" width="100" align="right">
           <template #default="{ row }">{{ Number(row.principal_pending) + Number(row.income_pending) }}</template>
         </el-table-column>
-        <el-table-column prop="created_at" label="注册时间" width="160">
+        <el-table-column prop="created_at" label="注册时间" width="165">
           <template #default="{ row }">{{ fmt(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="290" fixed="right" align="center">
           <template #default="{ row }">
             <el-button size="small" type="primary" plain @click="openProfile(row)">档案</el-button>
             <el-button

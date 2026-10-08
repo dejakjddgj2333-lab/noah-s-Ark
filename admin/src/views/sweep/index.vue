@@ -180,7 +180,7 @@ onMounted(() => {
         <el-table-column label="gas 余额" width="130" align="right">
           <template #default="{ row }">{{ row.native }} {{ row.native_symbol }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="110" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button
               v-perm="'btn:sweep:run'"
@@ -212,7 +212,7 @@ onMounted(() => {
         <el-table-column prop="txid" label="TXID" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.txid || row.error || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="operator" label="操作人" width="90" />
+        <el-table-column prop="operator" label="操作人" width="110" show-overflow-tooltip />
         <el-table-column label="时间" width="160">
           <template #default="{ row }">{{ fmt(row.created_at) }}</template>
         </el-table-column>

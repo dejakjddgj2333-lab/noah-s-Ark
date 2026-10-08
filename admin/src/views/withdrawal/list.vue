@@ -90,7 +90,7 @@ onMounted(fetchList)
         <el-table-column label="网络" width="90" align="center">
           <template #default="{ row }">{{ row.network?.toUpperCase() }}</template>
         </el-table-column>
-        <el-table-column label="地址" min-width="140">
+        <el-table-column label="地址" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
             <el-tooltip :content="row.address"><span>{{ shortAddr(row.address) }}</span></el-tooltip>
           </template>
@@ -100,11 +100,11 @@ onMounted(fetchList)
             <el-tag :type="STATUS_MAP[row.status]?.type">{{ STATUS_MAP[row.status]?.label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="txid" label="TXID" width="120" show-overflow-tooltip />
+        <el-table-column prop="txid" label="TXID" min-width="150" show-overflow-tooltip />
         <el-table-column label="申请时间" width="160">
           <template #default="{ row }">{{ row.created_at?.replace('T', ' ')?.slice(0, 19) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
               <el-button v-perm="'btn:withdrawal:audit'" size="small" type="success" @click="approve(row)">通过</el-button>
