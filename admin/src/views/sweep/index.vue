@@ -247,7 +247,7 @@ onMounted(() => {
 .net-addr {
   font-family: monospace;
   font-size: 12px;
-  color: #303133;
+  color: #e8eaf0;
   word-break: break-all;
   margin-top: 2px;
 }

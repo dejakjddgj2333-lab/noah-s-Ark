@@ -94,7 +94,11 @@ function handleLogout() {
 
       <!-- 主内容 -->
       <el-main class="app-main">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </el-main>
     </el-container>
   </el-container>
@@ -106,8 +110,8 @@ function handleLogout() {
 }
 
 .layout-sidebar {
-  background: linear-gradient(180deg, #101736 0%, #0b1026 100%);
-  box-shadow: 2px 0 12px rgba(10, 16, 40, 0.35);
+  background: linear-gradient(180deg, #0d1220 0%, #080b14 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .layout-logo {
@@ -180,9 +184,9 @@ function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(11, 14, 20, 0.85);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #edf0f7;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -193,7 +197,7 @@ function handleLogout() {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #303133;
+  color: #e8eaf0;
 }
 
 .user-avatar {

@@ -21,6 +21,10 @@ function fmt(v) {
 const NET_LABEL = { trc20: 'TRC20', erc20: 'ERC20', bep20: 'BEP20', arbitrum: 'Arbitrum' }
 const WD_LABEL = { pending: '待审核', approved: '已打款', rejected: '已拒绝' }
 
+const AXIS = { axisLabel: { color: '#9aa3b5' }, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.12)' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } }, nameTextStyle: { color: '#9aa3b5' } }
+const LEGEND_TXT = { textStyle: { color: '#9aa3b5' } }
+const TT = { backgroundColor: '#161b26', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#e8eaf0' } }
+
 function renderCharts() {
   charts.forEach((c) => c.dispose())
   charts = []
@@ -29,13 +33,13 @@ function renderCharts() {
   if (trendRef.value) {
     const c = echarts.init(trendRef.value)
     c.setOption({
-      tooltip: { trigger: 'axis' },
-      legend: { data: ['新增用户', '入账 USDT'], top: 0 },
+      tooltip: { trigger: 'axis', ...TT },
+      legend: { data: ['新增用户', '入账 USDT'], top: 0, ...LEGEND_TXT },
       grid: { left: 50, right: 50, top: 36, bottom: 28 },
-      xAxis: { type: 'category', data: dates, boundaryGap: false },
+      xAxis: { type: 'category', data: dates, boundaryGap: false, ...AXIS },
       yAxis: [
-        { type: 'value', name: '用户', minInterval: 1 },
-        { type: 'value', name: 'USDT', splitLine: { show: false } },
+        { type: 'value', name: '用户', minInterval: 1, ...AXIS },
+        { type: 'value', name: 'USDT', splitLine: { show: false }, ...AXIS },
       ],
       series: [
         {
@@ -81,10 +85,10 @@ function renderCharts() {
   if (orderRef.value) {
     const c = echarts.init(orderRef.value)
     c.setOption({
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', ...TT },
       grid: { left: 60, right: 20, top: 30, bottom: 28 },
-      xAxis: { type: 'category', data: dates },
-      yAxis: { type: 'value', name: 'USDT' },
+      xAxis: { type: 'category', data: dates, ...AXIS },
+      yAxis: { type: 'value', name: 'USDT', ...AXIS },
       series: [
         {
           name: '下单金额',
@@ -114,16 +118,16 @@ function renderCharts() {
     }))
     const c = echarts.init(networkRef.value)
     c.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} USDT ({d}%)' },
-      legend: { bottom: 0 },
+      tooltip: { trigger: 'item', formatter: '{b}: {c} USDT ({d}%)', ...TT },
+      legend: { bottom: 0, ...LEGEND_TXT },
       series: [
         {
           type: 'pie',
           radius: ['45%', '70%'],
           center: ['50%', '45%'],
-          itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+          itemStyle: { borderRadius: 6, borderColor: '#10131a', borderWidth: 2 },
           label: { show: false },
-          data: data.length ? data : [{ name: '暂无入账', value: 1, itemStyle: { color: '#e4e7ed' } }],
+          data: data.length ? data : [{ name: '暂无入账', value: 1, itemStyle: { color: '#2a3040' } }],
           color: ['#26a17b', '#627eea', '#f0b90b', '#28a0f0'],
         },
       ],
@@ -138,16 +142,16 @@ function renderCharts() {
     }))
     const c = echarts.init(withdrawRef.value)
     c.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} 笔 ({d}%)' },
-      legend: { bottom: 0 },
+      tooltip: { trigger: 'item', formatter: '{b}: {c} 笔 ({d}%)', ...TT },
+      legend: { bottom: 0, ...LEGEND_TXT },
       series: [
         {
           type: 'pie',
           radius: ['45%', '70%'],
           center: ['50%', '45%'],
-          itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+          itemStyle: { borderRadius: 6, borderColor: '#10131a', borderWidth: 2 },
           label: { show: false },
-          data: data.length ? data : [{ name: '暂无提现', value: 1, itemStyle: { color: '#e4e7ed' } }],
+          data: data.length ? data : [{ name: '暂无提现', value: 1, itemStyle: { color: '#2a3040' } }],
           color: ['#f7b733', '#22c1a3', '#ff5f6d'],
         },
       ],
@@ -282,7 +286,7 @@ onBeforeUnmount(() => {
 
 .chart-title {
   font-weight: 600;
-  color: #303133;
+  color: #e8eaf0;
   margin-bottom: 8px;
 }
 
