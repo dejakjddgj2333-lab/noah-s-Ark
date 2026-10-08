@@ -9,7 +9,11 @@ import '../services/feature_flag.dart';
 import '../services/finance_api.dart';
 import '../services/invite_api.dart';
 import '../widgets/convert_sheet.dart';
+import 'change_password_page.dart';
+import 'devices_page.dart';
+import 'price_alerts_page.dart';
 import 'profile_page.dart';
+import 'totp_page.dart';
 
 /// 我的 / 资产 — bottom-nav tab content body (header + bottom nav live in shell).
 /// Content body only: scrollable, h-pad 14, top 16, bottom 32.
@@ -125,7 +129,136 @@ class _AssetsPageState extends State<AssetsPage> {
           },
         ),
         // 联系客服卡片已隐藏 (需求).
+        _quickToolsCard(),
+        const SizedBox(height: 20),
+        _securityCard(),
       ],
+    );
+  }
+
+  // ---- 快捷功能 (信息/工具类, 审核安全) ----
+  Widget _quickToolsCard() {
+    final items = [
+      (Icons.notifications_active_outlined, tr('assets_qt_price_alert'),
+          () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const PriceAlertsPage()))),
+      (Icons.devices_outlined, tr('assets_qt_devices'),
+          () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const DevicesPage()))),
+      (Icons.lock_reset_outlined, tr('assets_qt_change_pw'),
+          () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ChangePasswordPage()))),
+      (Icons.settings_outlined, tr('assets_qt_settings'),
+          () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ProfilePage()))),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('assets_qt_title'),
+              style: McText.display(size: 16, weight: FontWeight.w700)),
+          const SizedBox(height: 14),
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.95,
+            children: [
+              for (final (icon, label, onTap) in items)
+                Material(
+                  color: McColors.surfaceContainerHigh.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: onTap,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 22, color: McColors.primarySoft),
+                        const SizedBox(height: 6),
+                        Text(label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: McText.sans(size: 12, weight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- 账号安全状态 ----
+  Widget _securityCard() {
+    return ListenableBuilder(
+      listenable: AuthStore.instance,
+      builder: (context, _) {
+        final auth = AuthStore.instance;
+        Widget row(IconData icon, String label, bool ok, Widget page) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            child: InkWell(
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: (_) => page)),
+              child: Row(
+                children: [
+                  Icon(icon, size: 18, color: McColors.onSurfaceVariant),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(label,
+                        style: McText.sans(size: 13, weight: FontWeight.w600)),
+                  ),
+                  Icon(
+                    ok ? Icons.check_circle : Icons.error_outline,
+                    size: 16,
+                    color: ok ? McColors.tertiary : McColors.goldBright,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    ok ? tr('status_set') : tr('status_unset'),
+                    style: McText.sans(
+                        size: 11,
+                        color: ok ? McColors.tertiary : McColors.goldBright),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right,
+                      size: 16, color: McColors.onSurfaceVariant),
+                ],
+              ),
+            ),
+          );
+        }
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: _cardDeco(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tr('assets_sec_title'),
+                  style: McText.display(size: 16, weight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              row(Icons.lock_outline, tr('sec_login_password'), true,
+                  const ChangePasswordPage()),
+              const Divider(height: 1, color: McColors.outlineVariant),
+              row(Icons.verified_user_outlined, tr('sec_2fa'), auth.has2fa,
+                  const TotpPage()),
+              const Divider(height: 1, color: McColors.outlineVariant),
+              row(Icons.mail_outline, tr('assets_sec_email'),
+                  (auth.email ?? '').isNotEmpty, const ProfilePage()),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -263,7 +396,8 @@ class _AssetsPageState extends State<AssetsPage> {
             ),
           ),
           const SizedBox(height: 12),
-          // 邀请码整行 chip (点击复制)
+          // 邀请码整行 chip: 理财开关关闭时隐藏 (资质待批)
+          if (FeatureFlag.instance.financeEnabled)
           GestureDetector(
             onTap: _inviteCode == null
                 ? null

@@ -88,6 +88,41 @@ final Map<String, Map<String, String>> table = {
     'es': 'Centro financiero', 'pt': 'Centro financeiro',
     'hi': 'फाइनेंस सेंटर',
   },
+  'assets_qt_title': {
+    'zh-CN': '快捷功能', 'zh-TW': '快捷功能', 'en': 'Quick Tools',
+    'ja': 'クイック機能', 'ko': '빠른 기능', 'es': 'Herramientas',
+    'pt': 'Ferramentas', 'hi': 'क्विक टूल्स',
+  },
+  'assets_qt_price_alert': {
+    'zh-CN': '价格预警', 'zh-TW': '價格預警', 'en': 'Price Alerts',
+    'ja': '価格アラート', 'ko': '가격 알림', 'es': 'Alertas',
+    'pt': 'Alertas', 'hi': 'प्राइस अलर्ट',
+  },
+  'assets_qt_devices': {
+    'zh-CN': '设备管理', 'zh-TW': '裝置管理', 'en': 'Devices',
+    'ja': 'デバイス管理', 'ko': '기기 관리', 'es': 'Dispositivos',
+    'pt': 'Dispositivos', 'hi': 'डिवाइस',
+  },
+  'assets_qt_change_pw': {
+    'zh-CN': '修改密码', 'zh-TW': '修改密碼', 'en': 'Password',
+    'ja': 'パスワード変更', 'ko': '비밀번호 변경', 'es': 'Contraseña',
+    'pt': 'Senha', 'hi': 'पासवर्ड',
+  },
+  'assets_qt_settings': {
+    'zh-CN': '个人设置', 'zh-TW': '個人設定', 'en': 'Settings',
+    'ja': '個人設定', 'ko': '개인 설정', 'es': 'Ajustes',
+    'pt': 'Ajustes', 'hi': 'सेटिंग्स',
+  },
+  'assets_sec_title': {
+    'zh-CN': '账号安全', 'zh-TW': '帳號安全', 'en': 'Account Security',
+    'ja': 'アカウントセキュリティ', 'ko': '계정 보안',
+    'es': 'Seguridad', 'pt': 'Segurança', 'hi': 'खाता सुरक्षा',
+  },
+  'assets_sec_email': {
+    'zh-CN': '绑定邮箱', 'zh-TW': '綁定郵箱', 'en': 'Email',
+    'ja': 'メール連携', 'ko': '이메일 연동', 'es': 'Correo',
+    'pt': 'E-mail', 'hi': 'ईमेल',
+  },
   'assets_products': {
     'zh-CN': '理财产品', 'zh-TW': '理財產品', 'en': 'Products',
     'ja': '理財商品', 'ko': '재테크 상품', 'es': 'Productos',
