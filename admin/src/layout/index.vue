@@ -59,8 +59,8 @@ function handleLogout() {
         :default-active="activeMenu"
         class="sidebar-menu"
         background-color="transparent"
-        text-color="rgba(255, 255, 255, 0.65)"
-        active-text-color="#ffffff"
+        :text-color="isDark ? 'rgba(255,255,255,0.65)' : 'rgba(48,49,51,0.7)'"
+        :active-text-color="isDark ? '#ffffff' : '#4c6fff'"
         router
       >
         <el-menu-item-group v-for="group in menuGroups" :key="group.title">
@@ -130,8 +130,8 @@ function handleLogout() {
 }
 
 .layout-sidebar {
-  background: linear-gradient(180deg, #0d1220 0%, #080b14 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--sb-bg);
+  border-right: 1px solid var(--sb-line);
 }
 
 .layout-logo {
@@ -157,14 +157,14 @@ function handleLogout() {
 }
 
 .logo-text .logo-name {
-  color: #fff;
+  color: var(--sb-logo-name);
   font-size: 14px;
   font-weight: 600;
   line-height: 1.2;
 }
 
 .logo-text .logo-sub {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--sb-logo-sub);
   font-size: 11px;
 }
 
@@ -181,12 +181,12 @@ function handleLogout() {
 }
 
 .sidebar-menu :deep(.el-menu-item:hover) {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--sb-hover);
 }
 
 .sidebar-menu :deep(.el-menu-item.is-active) {
-  background: linear-gradient(90deg, rgba(76, 111, 255, 0.85), rgba(138, 92, 255, 0.65));
-  box-shadow: 0 4px 12px rgba(76, 111, 255, 0.35);
+  background: var(--sb-active-bg);
+  box-shadow: var(--sb-active-shadow);
 }
 
 .sidebar-menu :deep(.el-menu-item-group__title) {
@@ -196,7 +196,7 @@ function handleLogout() {
 .menu-group-title {
   font-size: 11px;
   letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--sb-group);
 }
 
 .layout-header {

@@ -10,6 +10,18 @@
   --app-text: #303133;
   --app-text-2: #5a607f;
 
+  /* 侧栏 (浅色) */
+  --sb-bg: linear-gradient(180deg, #ffffff 0%, #f4f6fb 100%);
+  --sb-line: rgba(16, 24, 64, 0.08);
+  --sb-text: rgba(48, 49, 51, 0.7);
+  --sb-text-active: #4c6fff;
+  --sb-group: rgba(48, 49, 51, 0.4);
+  --sb-hover: rgba(76, 111, 255, 0.08);
+  --sb-active-bg: linear-gradient(90deg, rgba(76, 111, 255, 0.14), rgba(138, 92, 255, 0.08));
+  --sb-active-shadow: none;
+  --sb-logo-name: #303133;
+  --sb-logo-sub: rgba(48, 49, 51, 0.45);
+
   --el-color-primary: #4c6fff;
   --el-color-primary-light-3: #7a93ff;
   --el-color-primary-light-5: #a3b4ff;
@@ -53,6 +65,18 @@ html.dark {
   --el-mask-color: rgba(5, 8, 16, 0.7);
 
   --app-header-bg: rgba(11, 14, 20, 0.85);
+
+  /* 侧栏 (深色) */
+  --sb-bg: linear-gradient(180deg, #0d1220 0%, #080b14 100%);
+  --sb-line: rgba(255, 255, 255, 0.06);
+  --sb-text: rgba(255, 255, 255, 0.65);
+  --sb-text-active: #ffffff;
+  --sb-group: rgba(255, 255, 255, 0.35);
+  --sb-hover: rgba(255, 255, 255, 0.06);
+  --sb-active-bg: linear-gradient(90deg, rgba(76, 111, 255, 0.85), rgba(138, 92, 255, 0.65));
+  --sb-active-shadow: 0 4px 12px rgba(76, 111, 255, 0.35);
+  --sb-logo-name: #ffffff;
+  --sb-logo-sub: rgba(255, 255, 255, 0.45);
 }
 
 * {
