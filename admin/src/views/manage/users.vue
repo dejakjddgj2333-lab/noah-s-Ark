@@ -146,14 +146,16 @@ onMounted(fetchList)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="VIP" width="70" align="center">
+        <el-table-column label="VIP" width="80" align="center">
           <template #default="{ row }">
-            <el-tag type="primary" effect="plain">VIP{{ row.vip_level }}</el-tag>
+            <el-tag v-if="row.vip_level > 0" type="primary" effect="dark" size="small">VIP{{ row.vip_level }}</el-tag>
+            <span v-else class="cell-muted">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="团队等级" width="80" align="center">
+        <el-table-column label="团队等级" width="90" align="center">
           <template #default="{ row }">
-            <el-tag type="success" effect="plain">{{ row.team_level }} 级</el-tag>
+            <el-tag v-if="row.team_level > 0" type="success" effect="plain" size="small">{{ row.team_level }} 级</el-tag>
+            <span v-else class="cell-muted">—</span>
           </template>
         </el-table-column>
         <el-table-column label="本金余额" width="110" align="right">
@@ -334,4 +336,5 @@ onMounted(fetchList)
 <style scoped>
 .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
 .block { margin-bottom: 18px; }
+.cell-muted { color: #5a607f; }
 </style>
