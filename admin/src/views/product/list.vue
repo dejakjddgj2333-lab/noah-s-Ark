@@ -102,6 +102,14 @@ onMounted(fetchList)
 
 <template>
   <div>
+    <div class="page-head ph-violet">
+      <div class="ph-icon"><el-icon><Goods /></el-icon></div>
+      <div>
+        <div class="ph-title">产品管理</div>
+        <div class="ph-sub">理财产品配置 · 上下架</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar">
         <el-select v-model="query.status" placeholder="状态" clearable style="width: 130px" @change="fetchList">

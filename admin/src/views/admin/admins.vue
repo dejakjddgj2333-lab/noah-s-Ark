@@ -78,6 +78,14 @@ onMounted(fetchAll)
 
 <template>
   <div v-loading="loading">
+    <div class="page-head ph-violet">
+      <div class="ph-icon"><el-icon><Avatar /></el-icon></div>
+      <div>
+        <div class="ph-title">管理员</div>
+        <div class="ph-sub">后台账号 · 角色绑定</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar">
         <el-button v-perm="'btn:admin:manage'" type="primary" @click="openAdd">添加管理员</el-button>

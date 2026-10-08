@@ -59,6 +59,14 @@ onMounted(fetchList)
 
 <template>
   <div>
+    <div class="page-head ph-orange">
+      <div class="ph-icon"><el-icon><CreditCard /></el-icon></div>
+      <div>
+        <div class="ph-title">提现审核</div>
+        <div class="ph-sub">提现申请 · 打款 · 拒绝</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar">
         <el-select v-model="query.status" placeholder="状态" clearable style="width: 130px" @change="fetchList">

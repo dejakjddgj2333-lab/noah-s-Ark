@@ -33,6 +33,14 @@ onMounted(fetchAll)
 
 <template>
   <div v-loading="loading">
+    <div class="page-head ph-gold">
+      <div class="ph-icon"><el-icon><Switch /></el-icon></div>
+      <div>
+        <div class="ph-title">功能开关</div>
+        <div class="ph-sub">充值 / 提现入口开关</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <el-alert type="warning" :closable="false" show-icon style="margin-bottom: 14px">
         <template #title>

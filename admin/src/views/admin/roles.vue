@@ -83,6 +83,14 @@ onMounted(fetchAll)
 
 <template>
   <div v-loading="loading">
+    <div class="page-head ph-pink">
+      <div class="ph-icon"><el-icon><Lock /></el-icon></div>
+      <div>
+        <div class="ph-title">角色权限</div>
+        <div class="ph-sub">角色定义 · 权限分配</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar">
         <el-button v-perm="'btn:role:manage'" type="primary" @click="openCreate">新建角色</el-button>

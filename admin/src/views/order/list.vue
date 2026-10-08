@@ -56,6 +56,14 @@ onMounted(fetchList)
 
 <template>
   <div>
+    <div class="page-head ph-blue">
+      <div class="ph-icon"><el-icon><ShoppingCart /></el-icon></div>
+      <div>
+        <div class="ph-title">订单管理</div>
+        <div class="ph-sub">申购订单 · 结算 · 佣金</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar">
         <el-input

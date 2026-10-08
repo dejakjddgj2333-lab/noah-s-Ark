@@ -43,6 +43,14 @@ onMounted(fetchList)
 
 <template>
   <div v-loading="loading">
+    <div class="page-head ph-pink">
+      <div class="ph-icon"><el-icon><Warning /></el-icon></div>
+      <div>
+        <div class="ph-title">举报处理</div>
+        <div class="ph-sub">用户举报审核 · 结案</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar" style="margin-bottom: 14px; display: flex; gap: 10px">
         <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px" @change="fetchList">

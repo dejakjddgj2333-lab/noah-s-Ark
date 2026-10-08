@@ -50,6 +50,14 @@ onMounted(() => {
 
 <template>
   <div>
+    <div class="page-head ph-teal">
+      <div class="ph-icon"><el-icon><Money /></el-icon></div>
+      <div>
+        <div class="ph-title">充值记录</div>
+        <div class="ph-sub">链上入账监控 · 确认进度</div>
+      </div>
+    </div>
+
     <!-- 概览卡片 -->
     <el-row :gutter="12" class="stat-row">
       <el-col :span="5">

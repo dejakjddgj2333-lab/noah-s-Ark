@@ -128,6 +128,14 @@ onMounted(fetchList)
 
 <template>
   <div>
+    <div class="page-head ph-blue">
+      <div class="ph-icon"><el-icon><User /></el-icon></div>
+      <div>
+        <div class="ph-title">用户管理</div>
+        <div class="ph-sub">用户查询 · 冻结 · 调账 · 档案</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <div class="toolbar">
         <el-input v-model="keyword" placeholder="用户名 / 邮箱" clearable style="width: 240px" @keyup.enter="fetchList" />

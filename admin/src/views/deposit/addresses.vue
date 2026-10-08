@@ -55,6 +55,14 @@ onMounted(() => {
 
 <template>
   <div>
+    <div class="page-head ph-teal">
+      <div class="ph-icon"><el-icon><Wallet /></el-icon></div>
+      <div>
+        <div class="ph-title">充值地址池</div>
+        <div class="ph-sub">地址分配 · 池水位管理</div>
+      </div>
+    </div>
+
     <el-row :gutter="12" class="stat-row">
       <el-col :span="6">
         <el-card shadow="never"><div class="stat-num">{{ stats.pool_free ?? '-' }}</div><div class="stat-label">空闲地址</div></el-card>

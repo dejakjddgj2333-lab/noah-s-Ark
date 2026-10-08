@@ -130,6 +130,14 @@ onMounted(() => {
 
 <template>
   <div>
+    <div class="page-head ph-gold">
+      <div class="ph-icon"><el-icon><Coin /></el-icon></div>
+      <div>
+        <div class="ph-title">资金归集</div>
+        <div class="ph-sub">主钱包设置 · 批量归集 · 记录</div>
+      </div>
+    </div>
+
     <!-- 主钱包设置 -->
     <el-row :gutter="16">
       <el-col v-for="n in NETWORKS" :key="n.key" :xs="24" :sm="12" :md="6">

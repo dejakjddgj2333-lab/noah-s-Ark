@@ -52,6 +52,14 @@ onMounted(fetchAll)
 
 <template>
   <div v-loading="loading">
+    <div class="page-head ph-teal">
+      <div class="ph-icon"><el-icon><Document /></el-icon></div>
+      <div>
+        <div class="ph-title">法务文档</div>
+        <div class="ph-sub">协议内容维护</div>
+      </div>
+    </div>
+
     <el-card shadow="never">
       <el-tabs v-model="active">
         <el-tab-pane
