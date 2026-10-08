@@ -145,6 +145,11 @@ const REF_TYPE_LABEL = {
   withdrawal: '提现', convert: '闪兑', admin: '后台',
 }
 const refLabel = (row) => `${REF_TYPE_LABEL[row.ref_type] || row.ref_type}#${row.ref_id}`
+// 等级变动日志
+const LEVEL_KIND_LABEL = { vip: 'VIP', team: '团队' }
+const LEVEL_SOURCE_LABEL = { purchase: '申购', settle: '结算' }
+const levelKindLabel = (v) => LEVEL_KIND_LABEL[v] || v
+const levelSourceLabel = (v) => LEVEL_SOURCE_LABEL[v] || v
 
 onMounted(fetchList)
 </script>
@@ -363,11 +368,19 @@ onMounted(fetchList)
             </el-tab-pane>
             <el-tab-pane :label="`等级变动 (${p.level_logs.length})`">
               <el-table :data="p.level_logs" size="small" border>
-                <el-table-column prop="kind" label="类型" width="70" />
+                <el-table-column label="类型" width="80" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.kind === 'vip' ? 'primary' : 'success'" effect="plain" size="small">
+                      {{ levelKindLabel(row.kind) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="level" label="等级" width="60" align="center" />
                 <el-table-column prop="holding" label="依据持仓" width="100" align="right" />
                 <el-table-column prop="member_count" label="人数" width="70" align="center" />
-                <el-table-column prop="source" label="来源" min-width="90" />
+                <el-table-column label="来源" min-width="90">
+                  <template #default="{ row }">{{ levelSourceLabel(row.source) }}</template>
+                </el-table-column>
                 <el-table-column label="时间" width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
               </el-table>
             </el-tab-pane>
