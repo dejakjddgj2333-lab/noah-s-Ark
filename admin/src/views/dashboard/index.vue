@@ -21,9 +21,13 @@ function fmt(v) {
 const NET_LABEL = { trc20: 'TRC20', erc20: 'ERC20', bep20: 'BEP20', arbitrum: 'Arbitrum' }
 const WD_LABEL = { pending: '待审核', approved: '已打款', rejected: '已拒绝' }
 
-const AXIS = { axisLabel: { color: '#9aa3b5' }, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.12)' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } }, nameTextStyle: { color: '#9aa3b5' } }
+// 主题感知图表配色 (渲染时读取当前明暗)
+const isDark = () => document.documentElement.classList.contains('dark')
+const axisConf = () => ({ axisLabel: { color: '#9aa3b5' }, axisLine: { lineStyle: { color: isDark() ? 'rgba(255,255,255,0.12)' : 'rgba(16,24,64,0.15)' } }, splitLine: { lineStyle: { color: isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(16,24,64,0.07)' } }, nameTextStyle: { color: '#9aa3b5' } })
+const ttConf = () => ({ backgroundColor: isDark() ? '#161b26' : '#ffffff', borderColor: isDark() ? 'rgba(255,255,255,0.1)' : 'rgba(16,24,64,0.12)', textStyle: { color: isDark() ? '#e8eaf0' : '#303133' } })
+const pieBorder = () => (isDark() ? '#10131a' : '#ffffff')
+const pieEmpty = () => (isDark() ? '#2a3040' : '#e4e7ed')
 const LEGEND_TXT = { textStyle: { color: '#9aa3b5' } }
-const TT = { backgroundColor: '#161b26', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#e8eaf0' } }
 
 function renderCharts() {
   charts.forEach((c) => c.dispose())
@@ -33,13 +37,13 @@ function renderCharts() {
   if (trendRef.value) {
     const c = echarts.init(trendRef.value)
     c.setOption({
-      tooltip: { trigger: 'axis', ...TT },
+      tooltip: { trigger: 'axis', ...ttConf() },
       legend: { data: ['新增用户', '入账 USDT'], top: 0, ...LEGEND_TXT },
       grid: { left: 50, right: 50, top: 36, bottom: 28 },
-      xAxis: { type: 'category', data: dates, boundaryGap: false, ...AXIS },
+      xAxis: { type: 'category', data: dates, boundaryGap: false, ...axisConf() },
       yAxis: [
-        { type: 'value', name: '用户', minInterval: 1, ...AXIS },
-        { type: 'value', name: 'USDT', splitLine: { show: false }, ...AXIS },
+        { type: 'value', name: '用户', minInterval: 1, ...axisConf() },
+        { type: 'value', name: 'USDT', splitLine: { show: false }, ...axisConf() },
       ],
       series: [
         {
@@ -85,10 +89,10 @@ function renderCharts() {
   if (orderRef.value) {
     const c = echarts.init(orderRef.value)
     c.setOption({
-      tooltip: { trigger: 'axis', ...TT },
+      tooltip: { trigger: 'axis', ...ttConf() },
       grid: { left: 60, right: 20, top: 30, bottom: 28 },
-      xAxis: { type: 'category', data: dates, ...AXIS },
-      yAxis: { type: 'value', name: 'USDT', ...AXIS },
+      xAxis: { type: 'category', data: dates, ...axisConf() },
+      yAxis: { type: 'value', name: 'USDT', ...axisConf() },
       series: [
         {
           name: '下单金额',
@@ -118,16 +122,16 @@ function renderCharts() {
     }))
     const c = echarts.init(networkRef.value)
     c.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} USDT ({d}%)', ...TT },
+      tooltip: { trigger: 'item', formatter: '{b}: {c} USDT ({d}%)', ...ttConf() },
       legend: { bottom: 0, ...LEGEND_TXT },
       series: [
         {
           type: 'pie',
           radius: ['45%', '70%'],
           center: ['50%', '45%'],
-          itemStyle: { borderRadius: 6, borderColor: '#10131a', borderWidth: 2 },
+          itemStyle: { borderRadius: 6, borderColor: pieBorder(), borderWidth: 2 },
           label: { show: false },
-          data: data.length ? data : [{ name: '暂无入账', value: 1, itemStyle: { color: '#2a3040' } }],
+          data: data.length ? data : [{ name: '暂无入账', value: 1, itemStyle: { color: pieEmpty() } }],
           color: ['#26a17b', '#627eea', '#f0b90b', '#28a0f0'],
         },
       ],
@@ -142,16 +146,16 @@ function renderCharts() {
     }))
     const c = echarts.init(withdrawRef.value)
     c.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} 笔 ({d}%)', ...TT },
+      tooltip: { trigger: 'item', formatter: '{b}: {c} 笔 ({d}%)', ...ttConf() },
       legend: { bottom: 0, ...LEGEND_TXT },
       series: [
         {
           type: 'pie',
           radius: ['45%', '70%'],
           center: ['50%', '45%'],
-          itemStyle: { borderRadius: 6, borderColor: '#10131a', borderWidth: 2 },
+          itemStyle: { borderRadius: 6, borderColor: pieBorder(), borderWidth: 2 },
           label: { show: false },
-          data: data.length ? data : [{ name: '暂无提现', value: 1, itemStyle: { color: '#2a3040' } }],
+          data: data.length ? data : [{ name: '暂无提现', value: 1, itemStyle: { color: pieEmpty() } }],
           color: ['#f7b733', '#22c1a3', '#ff5f6d'],
         },
       ],
@@ -286,7 +290,7 @@ onBeforeUnmount(() => {
 
 .chart-title {
   font-weight: 600;
-  color: #e8eaf0;
+  color: var(--app-text);
   margin-bottom: 8px;
 }
 

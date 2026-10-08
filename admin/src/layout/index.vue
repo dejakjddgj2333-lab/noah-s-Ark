@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 
@@ -8,6 +8,16 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const activeMenu = computed(() => route.path)
+
+// 明暗主题: html.dark class + localStorage 记忆 (index.html 内联脚本先初始化)
+const isDark = ref(document.documentElement.classList.contains('dark'))
+function toggleTheme() {
+  isDark.value = !isDark.value
+  document.documentElement.classList.toggle('dark', isDark.value)
+  localStorage.setItem('admin-theme', isDark.value ? 'dark' : 'light')
+  // ECharts 等实例按主题初始化, 刷新确保全量重绘
+  window.location.reload()
+}
 
 const GROUP_ORDER = ['概览', '用户', '资金', '运营', '系统']
 
@@ -75,21 +85,31 @@ function handleLogout() {
           </el-breadcrumb-item>
         </el-breadcrumb>
 
-        <el-dropdown @command="handleLogout">
-          <span class="layout-user">
-            <span class="user-avatar">{{ (userStore.info?.username || 'A')[0].toUpperCase() }}</span>
-            {{ userStore.info?.nickname || userStore.info?.username || '管理员' }}
-            <el-tag v-if="userStore.role" size="small" effect="dark" class="role-tag">
-              {{ userStore.role.name }}
-            </el-tag>
-            <el-icon><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="logout">退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <div class="header-right">
+          <el-tooltip :content="isDark ? '切换浅色' : '切换深色'" placement="bottom">
+            <button class="theme-toggle" @click="toggleTheme">
+              <el-icon :size="17">
+                <Sunny v-if="isDark" />
+                <Moon v-else />
+              </el-icon>
+            </button>
+          </el-tooltip>
+          <el-dropdown @command="handleLogout">
+            <span class="layout-user">
+              <span class="user-avatar">{{ (userStore.info?.username || 'A')[0].toUpperCase() }}</span>
+              {{ userStore.info?.nickname || userStore.info?.username || '管理员' }}
+              <el-tag v-if="userStore.role" size="small" effect="dark" class="role-tag">
+                {{ userStore.role.name }}
+              </el-tag>
+              <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </el-header>
 
       <!-- 主内容 -->
@@ -184,12 +204,37 @@ function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(11, 14, 20, 0.85);
+  background: var(--app-header-bg, rgba(255, 255, 255, 0.85));
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--app-line);
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.theme-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--app-line);
+  background: var(--app-surface-2);
+  color: var(--app-text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  color: #4c6fff;
+  border-color: rgba(76, 111, 255, 0.4);
 }
 
 .layout-user {
@@ -197,7 +242,7 @@ function handleLogout() {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #e8eaf0;
+  color: var(--app-text);
 }
 
 .user-avatar {

@@ -1,7 +1,14 @@
 <!doctype html>
-<html lang="zh-CN" class="dark">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <!-- 主题: 默认深色, localStorage 记忆; 在 CSS 加载前设好 class 避免闪烁 -->
+    <script>
+      ;(function () {
+        var t = localStorage.getItem('admin-theme') || 'dark'
+        if (t === 'dark') document.documentElement.classList.add('dark')
+      })()
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Noah Ark 后台管理</title>
