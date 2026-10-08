@@ -2,27 +2,34 @@
 
 对应审核回复 Submission 188809b4 (Version 1.0.0 (8), iPad Air 11 M3)。
 
-## C4 — Guideline 5 (多级返佣 MLM) App 端整改
+**最终方案（用户拍板）**：分佣多级改动已全部还原，改为**整体隐藏**——理财与返佣本次上架不出现，资质下来后后台一键打开。
 
-### 改动内容 (commit 见 git log)
+## C4 — Guideline 5 (多级返佣 MLM) + 理财占位 (2.1(a)) 隐藏方案
 
-**app/lib/pages/commission_page.dart (分佣页)**
-- 佣金明细只显示直推（一代）记录：`gen == 1` 过滤，二代/三代不再展示
-- 删除代数筛选胶囊（全部/一代/二代/三代）
-- 团队等级卡返佣比例只显示一代（gen1_rate），删除二代/三代比例
-- 记录项删除「N 代」数字徽章与「X 代返佣」标签，改中性图标
+### 新增功能开关 `finance_enabled`（默认 0=隐藏）
 
-**app/lib/pages/team_page.dart (团队页)**
-- 等级卡返佣比例只显示一代
-- 等级规则表每行只显示一代返佣比例，删除「一代/二代/三代」三列展示
+**server/services/config_service.py**
+- `_DEFAULTS` 加 `("finance_enabled", "0", "理财/返佣功能开关")`
+- `PUBLIC_KEYS` 加 `finance_enabled`（App 公开读取）
+- 后台「功能开关」页可切换，无需发版
 
-### 未动（保留）
-- `FinanceApi.teamMe()` 接口返回字段不变（gen2/gen3 字段仍在，App 不渲染）
-- 后端结算逻辑本轮未改（App 先行，后端砍多代结算另议）
-- assets_page.dart 原本就只展示一代比例，无需改
+**app/lib/services/feature_flag.dart**
+- 新增 `financeEnabled`，`/api/config` 拉取，失败默认隐藏
+
+### App 隐藏点（finance_enabled=0 时）
+
+**app/lib/pages/assets_page.dart**
+- 理财中心卡（产品/VIP/团队/订单/资金明细入口）整卡隐藏
+- 合伙人分佣卡（累计佣金/今日佣金/邀请码/分佣入口）整卡隐藏
+- 身份卡团队等级徽章隐藏
+- VIP/团队等级条（_levelStrip）隐藏
+
+### 已还原（不再做删改，等资质后原样放出来）
+- commission_page.dart / team_page.dart 回到 c0ccbcf 前状态（多级展示代码保留）
+- 后端结算多代返佣逻辑不动
 
 ### 恢复方式
-回滚本 commit 即恢复多级展示。
+后台「功能开关」把 `finance_enabled` 打开即可，App 端无需发版。
 
 ---
 
@@ -42,5 +49,4 @@
 
 1. **2.3.8** 商店名 `Noah Quant` → 与设备名「明策」对齐（如「明策量化」）
 2. **2.3.6** 年龄分级 → 「用户生成内容」选「是」
-3. **2.1(a)** 后台产品管理删除/替换理财中心占位产品
-4. **2.1** 回复审核问题（交易功能否认 + 资金密码用途说明已随功能移除）
+3. **2.1** 回复审核问题（无交易功能；资金密码功能已从本版本移除）

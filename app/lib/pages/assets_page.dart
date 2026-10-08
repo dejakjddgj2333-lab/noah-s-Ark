@@ -108,9 +108,22 @@ class _AssetsPageState extends State<AssetsPage> {
             );
           },
         ),
-        _financeCenterCard(),
-        const SizedBox(height: 20),
-        _commissionCard(),
+        // 理财中心 + 合伙人分佣: finance_enabled 开关关闭时整卡隐藏 (资质待批)
+        ListenableBuilder(
+          listenable: FeatureFlag.instance,
+          builder: (context, _) {
+            if (!FeatureFlag.instance.financeEnabled) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              children: [
+                _financeCenterCard(),
+                const SizedBox(height: 20),
+                _commissionCard(),
+              ],
+            );
+          },
+        ),
         // 联系客服卡片已隐藏 (需求).
       ],
     );
@@ -188,36 +201,38 @@ class _AssetsPageState extends State<AssetsPage> {
                                     const SizedBox(width: 4),
                                     const Icon(Icons.verified,
                                         size: 16, color: cobalt),
-                                    const SizedBox(width: 6),
-                                    // 团队等级徽章 (紧跟昵称, 真实数据).
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 7, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: cobalt.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                            color: cobalt.withValues(alpha: 0.4)),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.diamond,
-                                              size: 16, color: cobaltSoft),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            _team == null
-                                                ? tr('assets_team')
-                                                : tr('assets_team_level').replaceAll('{n}', '${_team!['team_level'] ?? 0}'),
-                                            style: McText.mono(
-                                              size: 11,
-                                              weight: FontWeight.w700,
-                                              color: cobaltSoft,
+                                    // 团队等级徽章: 理财开关关闭时隐藏 (资质待批)
+                                    if (FeatureFlag.instance.financeEnabled) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 7, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: cobalt.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                              color: cobalt.withValues(alpha: 0.4)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.diamond,
+                                                size: 16, color: cobaltSoft),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              _team == null
+                                                  ? tr('assets_team')
+                                                  : tr('assets_team_level').replaceAll('{n}', '${_team!['team_level'] ?? 0}'),
+                                              style: McText.mono(
+                                                size: 11,
+                                                weight: FontWeight.w700,
+                                                color: cobaltSoft,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 2),
@@ -286,9 +301,11 @@ class _AssetsPageState extends State<AssetsPage> {
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          // VIP / 团队等级条 (含升级差距, 点击进详情页)
-          _levelStrip(),
+          // VIP / 团队等级条: 理财开关关闭时隐藏 (资质待批)
+          if (FeatureFlag.instance.financeEnabled) ...[
+            const SizedBox(height: 10),
+            _levelStrip(),
+          ],
         ],
       ),
     );

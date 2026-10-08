@@ -9,10 +9,11 @@ from models.hk import HkConfig
 # 默认配置种子 (key, 默认值, 后台显示名)
 _DEFAULTS = (
     ("wallet_enabled", "0", "充值/提现功能开关"),  # 0=隐藏 1=显示
+    ("finance_enabled", "0", "理财/返佣功能开关"),  # 0=隐藏 1=显示 (资质下来后打开)
 )
 
 # 允许 app 公开读取的 key 白名单 (不整表倒出, 防泄露内部配置)
-PUBLIC_KEYS = ("wallet_enabled",)
+PUBLIC_KEYS = ("wallet_enabled", "finance_enabled")
 
 
 async def seed_configs(db: AsyncSession) -> None:
