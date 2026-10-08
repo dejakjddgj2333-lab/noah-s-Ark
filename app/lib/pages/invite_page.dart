@@ -94,7 +94,9 @@ class _InvitePageState extends State<InvitePage> {
 
   String get _inviteLink {
     final base = Uri.base;
-    final origin = base.hasScheme ? base.origin : McApi.baseUrl;
+    // origin 仅对 http/https 有效; 本地调试 Uri.base 是 file:// 会抛 StateError.
+    final isWeb = base.scheme == 'http' || base.scheme == 'https';
+    final origin = isWeb ? base.origin : McApi.baseUrl;
     return '$origin/?invite=${_info?.inviteCode ?? ''}';
   }
 
