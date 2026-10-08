@@ -277,7 +277,7 @@ onMounted(fetchList)
       </template>
     </el-dialog>
 
-    <el-drawer v-model="drawerVisible" title="用户全量档案（只读）" size="72%">
+    <el-drawer v-model="drawerVisible" title="用户全量档案（只读）" size="880px">
       <div v-loading="profileLoading">
         <template v-if="p">
           <el-descriptions :column="3" border size="small" class="block">
