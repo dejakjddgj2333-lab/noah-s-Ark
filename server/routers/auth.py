@@ -25,7 +25,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import config
 from database import get_db
 from models.hk import HkEmailCode, HkLoginDevice, HkUser, utc_now
-from services import auth_service, email_service, invite_service, rate_limit_service
+from services import (
+    auth_service,
+    param_service,
+    email_service,
+    invite_service,
+    rate_limit_service,
+)
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -170,7 +176,7 @@ async def send_email_code(
     ip = rate_limit_service.client_ip(request)
     rate_limit_service.check(
         f"emailcode:{ip}",
-        config.email_code_rate_limit,
+        int(param_service.get("email_code_rate_limit")),
         config.email_code_rate_window_sec,
     )
     if data.purpose == "register":
@@ -225,7 +231,7 @@ async def register(
     ip = rate_limit_service.client_ip(request)
     rate_limit_service.check(
         f"register:{ip}",
-        config.register_rate_limit,
+        int(param_service.get("register_rate_limit")),
         config.register_rate_window_sec,
     )
     if not _USERNAME_RE.match(data.username):
@@ -307,7 +313,7 @@ async def login(
         ip = rate_limit_service.client_ip(request)
         rate_limit_service.check(
             f"login:{ip}:{data.username.lower()}",
-            config.login_rate_limit,
+            int(param_service.get("login_rate_limit")),
             config.login_rate_window_sec,
         )
         raise HTTPException(
@@ -421,7 +427,7 @@ async def change_password(
         ip = rate_limit_service.client_ip(request)
         rate_limit_service.check(
             f"changepw:{ip}:{me.username.lower()}",
-            config.login_rate_limit,
+            int(param_service.get("login_rate_limit")),
             config.login_rate_window_sec,
         )
         raise HTTPException(
@@ -455,7 +461,7 @@ async def set_fund_password(
         ip = rate_limit_service.client_ip(request)
         rate_limit_service.check(
             f"fundpw:{ip}:{me.username.lower()}",
-            config.login_rate_limit,
+            int(param_service.get("login_rate_limit")),
             config.login_rate_window_sec,
         )
         raise HTTPException(
@@ -484,7 +490,7 @@ async def change_fund_password(
         ip = rate_limit_service.client_ip(request)
         rate_limit_service.check(
             f"fundpw:{ip}:{me.username.lower()}",
-            config.login_rate_limit,
+            int(param_service.get("login_rate_limit")),
             config.login_rate_window_sec,
         )
         raise HTTPException(
@@ -519,7 +525,7 @@ def _check_totp_or_400(me: HkUser, request: Request, code: str) -> None:
         ip = rate_limit_service.client_ip(request)
         rate_limit_service.check(
             f"2fa:{ip}:{me.username.lower()}",
-            config.login_rate_limit,
+            int(param_service.get("login_rate_limit")),
             config.login_rate_window_sec,
         )
         raise HTTPException(
@@ -675,7 +681,7 @@ async def delete_account(
         ip = rate_limit_service.client_ip(request)
         rate_limit_service.check(
             f"delacct:{ip}:{me.username.lower()}",
-            config.login_rate_limit,
+            int(param_service.get("login_rate_limit")),
             config.login_rate_window_sec,
         )
         raise HTTPException(

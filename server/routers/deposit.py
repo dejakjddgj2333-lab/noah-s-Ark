@@ -14,6 +14,7 @@ from models.hk import HkUser
 from services import (
     account_service,
     auth_service,
+    param_service,
     deposit_service,
     rate_limit_service,
 )
@@ -104,7 +105,7 @@ async def claim_deposit(
     TronGrid/Etherscan API, 无效 txid 高频刷会耗光链上查询额度.
     """
     rate_limit_service.check(
-        f"deposit_claim:{user.id}", config.deposit_claim_rate_limit, 60
+        f"deposit_claim:{user.id}", int(param_service.get("deposit_claim_rate_limit")), 60
     )
     return await deposit_service.claim_by_txid(
         db, user.id, data.network, data.txid

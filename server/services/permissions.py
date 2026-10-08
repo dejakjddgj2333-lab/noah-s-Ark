@@ -44,6 +44,15 @@ PERMISSION_TREE: list[dict] = [
     },
     {"code": "page:orders", "name": "购买订单", "children": []},
     {
+        # 运营参数 (费率/限额/限流): 改动直接影响资金口径, 编辑码默认只给超管,
+        # 需要他人改时在角色管理里单独授 btn:config:edit
+        "code": "page:config",
+        "name": "参数配置",
+        "children": [
+            {"code": "btn:config:edit", "name": "保存参数"},
+        ],
+    },
+    {
         "code": "page:withdrawals",
         "name": "提现审核",
         "children": [
@@ -122,6 +131,7 @@ BUILTIN_ROLES: list[tuple[str, str, list[str]]] = [
             "page:withdrawals",
             "btn:withdrawal:audit",
             "page:orders",
+            "page:config",
         ],
     ),
     (

@@ -93,6 +93,12 @@ const routes = [
         component: () => import('@/views/feature/index.vue'),
         meta: { title: '功能开关', icon: 'Switch', perm: 'page:feature', group: '系统' },
       },
+      {
+        path: 'config',
+        name: 'Config',
+        component: () => import('@/views/config/index.vue'),
+        meta: { title: '参数配置', icon: 'Setting', perm: 'page:config', group: '系统' },
+      },
     ],
   },
   {

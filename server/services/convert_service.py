@@ -20,26 +20,31 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import config
 from models.account import HkAccount, HkConvertRecord
+from services import param_service
 from services.account_service import get_or_create_account
 from services.balance_log_service import log as log_balance
 from services.team_service import truncate_2dp
 
 
 def quote(amount: Decimal) -> dict:
-    """转化报价: 校验金额, 算出服务费与实际到账."""
+    """转化报价: 校验金额, 算出服务费与实际到账.
+
+    费率/下限走 param_service (后台参数配置可改, 即时生效), env 仅为默认值.
+    """
+    convert_min = Decimal(str(param_service.get("income_convert_min")))
+    convert_rate = Decimal(str(param_service.get("income_convert_rate")))
     amount = Decimal(amount)
     if not amount.is_finite() or amount <= 0:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "转化金额必须为正数")
     if amount != amount.quantize(Decimal("0.01")):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "转化金额最多两位小数")
-    if amount < config.income_convert_min:
+    if amount < convert_min:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"收益转化单笔至少 {config.income_convert_min} USDT",
+            f"收益转化单笔至少 {convert_min} USDT",
         )
-    service_fee = truncate_2dp(amount * config.income_convert_rate)
+    service_fee = truncate_2dp(amount * convert_rate)
     arrive_amount = amount - service_fee
     if arrive_amount <= 0:
         raise HTTPException(
@@ -49,8 +54,8 @@ def quote(amount: Decimal) -> dict:
     return {
         "amount": amount,
         "service_fee": service_fee,
-        "rate": config.income_convert_rate,
-        "min_amount": config.income_convert_min,
+        "rate": convert_rate,
+        "min_amount": convert_min,
         "arrive_amount": arrive_amount,
     }
 

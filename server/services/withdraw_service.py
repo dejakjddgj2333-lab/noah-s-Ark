@@ -21,26 +21,27 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import config
+from config import config  # noqa: F401 仅保留 import 防外部引用断裂, 数值请走 param_service
 from models.account import HkAccount, HkWithdrawal
+from services import param_service
 from services.account_service import get_or_create_account
 from services.balance_log_service import log as log_balance
 from services.push_service import push_if_offline
 from services.team_service import truncate_2dp
 
-# 各网络提现参数. network_fee 走配置 (WITHDRAW_FEE_*, 文档第六节待拍板数值)
+# 各网络提现参数. network_fee 走 param_service (后台「参数配置」可改, 即时生效)
 WITHDRAW_NETWORKS: dict[str, dict[str, object]] = {
-    "trc20": {"label": "TRC20 (波场)", "network_fee": config.withdraw_fee_trc20},
-    "erc20": {"label": "ERC20 (以太坊)", "network_fee": config.withdraw_fee_erc20},
-    "bep20": {"label": "BEP20 (BNB Chain)", "network_fee": config.withdraw_fee_bep20},
-    "arbitrum": {"label": "Arbitrum", "network_fee": config.withdraw_fee_arbitrum},
+    "trc20": {"label": "TRC20 (波场)", "fee_key": "withdraw_fee_trc20"},
+    "erc20": {"label": "ERC20 (以太坊)", "fee_key": "withdraw_fee_erc20"},
+    "bep20": {"label": "BEP20 (BNB Chain)", "fee_key": "withdraw_fee_bep20"},
+    "arbitrum": {"label": "Arbitrum", "fee_key": "withdraw_fee_arbitrum"},
 }
 
 _EVM_NETWORKS = ("erc20", "bep20", "arbitrum")
 
-# 收益账户提现规则 (文档第六节), 数值走配置
-INCOME_MIN_AMOUNT = config.income_min_withdraw
-INCOME_SERVICE_RATE = config.income_service_rate
+
+def _num(key: str) -> Decimal:
+    return Decimal(str(param_service.get(key)))
 
 
 def list_networks() -> list[dict]:
@@ -49,9 +50,9 @@ def list_networks() -> list[dict]:
         {
             "network": net,
             "label": str(cfg["label"]),
-            "network_fee": cfg["network_fee"],
-            "income_min_amount": INCOME_MIN_AMOUNT,
-            "income_service_rate": INCOME_SERVICE_RATE,
+            "network_fee": _num(str(cfg["fee_key"])),
+            "income_min_amount": _num("income_min_withdraw"),
+            "income_service_rate": _num("income_service_rate"),
         }
         for net, cfg in WITHDRAW_NETWORKS.items()
     ]
@@ -91,19 +92,24 @@ def quote(account: str, amount: Decimal, network: str) -> dict:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "提现金额必须为正数")
     if amount != amount.quantize(Decimal("0.01")):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "提现金额最多两位小数")
-    if config.withdraw_max_per_request > 0 and amount > config.withdraw_max_per_request:
+    max_per = _num("withdraw_max_per_request")
+    if max_per > 0 and amount > max_per:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"单笔提现不能超过 {config.withdraw_max_per_request} USDT",
+            f"单笔提现不能超过 {max_per} USDT",
         )
-    if account == "income" and amount < INCOME_MIN_AMOUNT:
+    income_min = _num("income_min_withdraw")
+    if account == "income" and amount < income_min:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "收益账户提现单笔至少 50 USDT"
+            status.HTTP_400_BAD_REQUEST,
+            f"收益账户提现单笔至少 {income_min} USDT",
         )
     service_fee = (
-        truncate_2dp(amount * INCOME_SERVICE_RATE) if account == "income" else Decimal(0)
+        truncate_2dp(amount * _num("income_service_rate"))
+        if account == "income"
+        else Decimal(0)
     )
-    network_fee = Decimal(str(WITHDRAW_NETWORKS[network]["network_fee"]))
+    network_fee = _num(str(WITHDRAW_NETWORKS[network]["fee_key"]))
     # 费用从申请金额内扣除 (文档第六节): 到账 = 金额 - 服务费 - 网络费, 必须为正数
     arrive_amount = amount - service_fee - network_fee
     if arrive_amount <= 0:
@@ -143,7 +149,8 @@ async def create_request(
         if existing is not None:
             return existing
     q = quote(account, amount, network)
-    if config.withdraw_daily_limit > 0:
+    daily_limit = _num("withdraw_daily_limit")
+    if daily_limit > 0:
         from datetime import datetime, timezone
 
         day_start = datetime.now(timezone.utc).replace(
@@ -158,10 +165,10 @@ async def create_request(
                 )
             )
         ).scalar_one()
-        if Decimal(used) + q["amount"] > config.withdraw_daily_limit:
+        if Decimal(used) + q["amount"] > daily_limit:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"超出单日提现上限 {config.withdraw_daily_limit} USDT",
+                f"超出单日提现上限 {daily_limit} USDT",
             )
     address = _validate_address(network, address)
     try:

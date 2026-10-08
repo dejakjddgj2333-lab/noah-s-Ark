@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from config import config
 from models.hk import HkUser
-from services import auth_service, order_service, rate_limit_service
+from services import auth_service, param_service, order_service, rate_limit_service
 
 router = APIRouter(prefix="/orders", tags=["订单"])
 
@@ -57,7 +57,7 @@ async def buy(
     同幂等键只扣一次; 按用户限流防脚本刷单 (配置 PURCHASE_RATE_LIMIT 次/分钟).
     """
     rate_limit_service.check(
-        f"buy:{user.id}", config.purchase_rate_limit, 60
+        f"buy:{user.id}", int(param_service.get("purchase_rate_limit")), 60
     )
     order = await order_service.create_order(
         db, user, data.product_id, data.amount, data.idempotency_key
