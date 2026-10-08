@@ -208,7 +208,11 @@ onMounted(() => {
     <el-card shadow="never" style="margin-top: 16px">
       <div class="toolbar"><span class="card-title">归集记录</span></div>
       <el-table :data="records" v-loading="recLoading" border stripe>
-        <el-table-column prop="network" label="网络" width="90" />
+        <el-table-column label="网络" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag effect="plain" size="small">{{ row.network.toUpperCase() }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="from_address" label="来源地址" min-width="180" show-overflow-tooltip />
         <el-table-column prop="to_address" label="主钱包" min-width="180" show-overflow-tooltip />
         <el-table-column prop="amount" label="金额 (USDT)" width="110" align="right" />

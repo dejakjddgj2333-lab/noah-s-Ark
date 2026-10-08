@@ -150,6 +150,12 @@ const LEVEL_KIND_LABEL = { vip: 'VIP', team: '团队' }
 const LEVEL_SOURCE_LABEL = { purchase: '申购', settle: '结算' }
 const levelKindLabel = (v) => LEVEL_KIND_LABEL[v] || v
 const levelSourceLabel = (v) => LEVEL_SOURCE_LABEL[v] || v
+// 订单/充值/提现状态 + 网络
+const ORDER_STATUS_LABEL = { effective: '生效中', finished: '已完成' }
+const DEPOSIT_STATUS_LABEL = { confirming: '确认中', credited: '已入账', failed: '失败' }
+const WITHDRAW_STATUS_LABEL = { pending: '待审核', approved: '已打款', rejected: '已拒绝' }
+const WITHDRAW_STATUS_TYPE = { pending: 'warning', approved: 'success', rejected: 'danger' }
+const netLabel = (v) => (v || '').toUpperCase()
 
 onMounted(fetchList)
 </script>
@@ -292,7 +298,13 @@ onMounted(fetchList)
                 <el-table-column prop="id" label="ID" width="60" />
                 <el-table-column prop="product_name" label="产品" min-width="110" />
                 <el-table-column prop="amount" label="金额" width="90" align="right" />
-                <el-table-column prop="status" label="状态" width="80" />
+                <el-table-column label="状态" width="90" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.status === 'effective' ? 'success' : 'info'" size="small">
+                      {{ ORDER_STATUS_LABEL[row.status] || row.status }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
                 <el-table-column label="锁定VIP/加成" width="110" align="center">
                   <template #default="{ row }">VIP{{ row.vip_level }} / {{ row.lock_bonus_rate }}</template>
                 </el-table-column>
@@ -302,11 +314,21 @@ onMounted(fetchList)
             </el-tab-pane>
             <el-tab-pane :label="`充值 (${p.deposits.length})`">
               <el-table :data="p.deposits" size="small" border>
-                <el-table-column prop="network" label="网络" width="70" />
+                <el-table-column label="网络" width="90" align="center">
+                  <template #default="{ row }">
+                    <el-tag effect="plain" size="small">{{ netLabel(row.network) }}</el-tag>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="amount" label="金额" width="100" align="right" />
                 <el-table-column prop="txid" label="TXID" min-width="160" show-overflow-tooltip />
                 <el-table-column prop="confirmations" label="确认数" width="70" align="center" />
-                <el-table-column prop="status" label="状态" width="80" />
+                <el-table-column label="状态" width="90" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.status === 'credited' ? 'success' : 'warning'" size="small">
+                      {{ DEPOSIT_STATUS_LABEL[row.status] || row.status }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
                 <el-table-column label="入账时间" width="150"><template #default="{ row }">{{ fmt(row.credited_at) }}</template></el-table-column>
               </el-table>
             </el-tab-pane>
@@ -331,12 +353,24 @@ onMounted(fetchList)
             </el-tab-pane>
             <el-tab-pane :label="`提现 (${p.withdrawals.length})`">
               <el-table :data="p.withdrawals" size="small" border>
-                <el-table-column prop="account" label="账户" width="80" />
+                <el-table-column label="账户" width="70" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.account === 'principal' ? 'primary' : 'success'" effect="plain" size="small">
+                      {{ accountLabel(row.account) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="amount" label="金额" width="90" align="right" />
                 <el-table-column prop="service_fee" label="服务费" width="80" align="right" />
                 <el-table-column prop="network_fee" label="网络费" width="80" align="right" />
                 <el-table-column prop="address" label="地址" min-width="140" show-overflow-tooltip />
-                <el-table-column prop="status" label="状态" width="80" />
+                <el-table-column label="状态" width="90" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="WITHDRAW_STATUS_TYPE[row.status] || 'info'" size="small">
+                      {{ WITHDRAW_STATUS_LABEL[row.status] || row.status }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="txid" label="TXID" width="120" show-overflow-tooltip />
               </el-table>
             </el-tab-pane>
