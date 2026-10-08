@@ -123,6 +123,29 @@ function fmt(t) {
   return t && t !== 'None' ? String(t).replace('T', ' ').slice(0, 19) : '-'
 }
 
+// 资金明细: 枚举值 -> 中文 (与 server balance_log 写入值对应)
+const ACCOUNT_LABEL = { principal: '本金', income: '收益' }
+const CHANGE_TYPE_LABEL = {
+  deposit_credited: '充值入账',
+  purchase: '申购扣款',
+  income_settled: '收益结算',
+  principal_returned: '本金返还',
+  commission: '返佣入账',
+  withdraw_request: '提现申请',
+  withdraw_approve: '提现审核通过',
+  withdraw_reject: '提现驳回退款',
+  convert_in: '闪兑转入',
+  convert_out: '闪兑转出',
+  admin_adjust: '人工调整',
+}
+const accountLabel = (v) => ACCOUNT_LABEL[v] || v
+const changeTypeLabel = (v) => CHANGE_TYPE_LABEL[v] || v
+const REF_TYPE_LABEL = {
+  deposit: '充值', order: '订单', settlement: '结算',
+  withdrawal: '提现', convert: '闪兑', admin: '后台',
+}
+const refLabel = (row) => `${REF_TYPE_LABEL[row.ref_type] || row.ref_type}#${row.ref_id}`
+
 onMounted(fetchList)
 </script>
 
@@ -314,12 +337,26 @@ onMounted(fetchList)
             </el-tab-pane>
             <el-tab-pane :label="`资金明细 (${p.balance_logs.length})`">
               <el-table :data="p.balance_logs" size="small" border>
-                <el-table-column prop="account" label="账户" width="80" />
-                <el-table-column prop="change_type" label="类型" min-width="130" show-overflow-tooltip />
-                <el-table-column prop="amount" label="金额" width="100" align="right" />
+                <el-table-column label="账户" width="70" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.account === 'principal' ? 'primary' : 'success'" effect="plain" size="small">
+                      {{ accountLabel(row.account) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="类型" min-width="110" show-overflow-tooltip>
+                  <template #default="{ row }">{{ changeTypeLabel(row.change_type) }}</template>
+                </el-table-column>
+                <el-table-column label="金额" width="110" align="right">
+                  <template #default="{ row }">
+                    <span :style="{ color: Number(row.amount) >= 0 ? '#22c1a3' : '#ff5f6d', fontWeight: 600 }">
+                      {{ Number(row.amount) >= 0 ? '+' : '' }}{{ row.amount }}
+                    </span>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="balance_after" label="变动后余额" width="110" align="right" />
-                <el-table-column label="关联" width="120" align="center">
-                  <template #default="{ row }">{{ row.ref_type }}#{{ row.ref_id }}</template>
+                <el-table-column label="关联" min-width="100" align="center">
+                  <template #default="{ row }">{{ refLabel(row) }}</template>
                 </el-table-column>
                 <el-table-column label="时间" width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
               </el-table>
