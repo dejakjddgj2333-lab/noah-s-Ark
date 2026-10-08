@@ -14,7 +14,7 @@
 已将 App Store Connect 中的商店名称修改为与设备显示名称一致的「明策量化」，用户下载后可轻松找到本应用。Bundle Identifier 未做变更。
 
 **2. Guideline 2.3.6 — 年龄分级**
-已在 App 信息页的年龄分级中将「用户生成内容」一项设置为「是」。App 内的聊天功能均有内容审核机制，违规内容可被举报并由运营团队处理。
+已在 App 信息页的年龄分级中将「用户生成内容」一项设置为「是」。App 内的聊天消息与资讯评论均设有内容审核机制：用户可对违规消息和评论进行举报（垃圾信息/辱骂骚扰/诈骗/色情/其他），举报由运营团队在后台统一处理，可删除违规内容并封禁违规用户。
 
 **3. Guideline 2.1 — 补充信息**
 1. 本 App **不提供任何交易或兑换功能**。行情、K线、爆仓等数据仅为信息展示；App 不连接任何交易所，不提供下单、撮合、兑换服务。
@@ -42,7 +42,7 @@ Thank you for your feedback. We have addressed each issue as follows:
 We have updated the marketplace app name in App Store Connect to "明策量化" (MingCe Quant), which matches the on-device name "明策" so users can easily find the app after download. The Bundle Identifier is unchanged.
 
 **2. Guideline 2.3.6 — Age Rating**
-We have set "User-Generated Content" to "Yes" in the Age Rating section. The in-app chat includes moderation: users can report content, and our operations team reviews reports.
+We have set "User-Generated Content" to "Yes" in the Age Rating section. Both in-app chat messages and news comments include moderation: users can report offending messages and comments (spam / abuse / fraud / pornography / other). Reports are reviewed by our operations team in the admin console, where reported content can be removed and offending users banned.
 
 **3. Guideline 2.1 — Information Needed**
 1. The app offers **no trading or exchange features whatsoever**. Market data, candlestick charts, and liquidation statistics are for informational display only. The app does not connect to any exchange and provides no order placement, matching, or exchange services.
