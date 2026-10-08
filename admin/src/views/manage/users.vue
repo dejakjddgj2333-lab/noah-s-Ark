@@ -288,7 +288,7 @@ onMounted(fetchList)
                 <el-table-column prop="period_no" label="期数" width="60" align="center" />
                 <el-table-column prop="income_amount" label="收益" width="100" align="right" />
                 <el-table-column prop="principal_amount" label="返本" width="100" align="right" />
-                <el-table-column label="时间" width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
+                <el-table-column label="时间" min-width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
               </el-table>
             </el-tab-pane>
             <el-tab-pane :label="`佣金 (${p.commissions.length})`">
@@ -298,7 +298,7 @@ onMounted(fetchList)
                 <el-table-column prop="receiver_team_level" label="当时团队等级" width="100" align="center" />
                 <el-table-column prop="rate" label="比例" width="80" align="center" />
                 <el-table-column prop="amount" label="金额" width="100" align="right" />
-                <el-table-column label="时间" width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
+                <el-table-column label="时间" min-width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
               </el-table>
             </el-tab-pane>
             <el-tab-pane :label="`提现 (${p.withdrawals.length})`">
@@ -315,7 +315,7 @@ onMounted(fetchList)
             <el-tab-pane :label="`资金明细 (${p.balance_logs.length})`">
               <el-table :data="p.balance_logs" size="small" border>
                 <el-table-column prop="account" label="账户" width="80" />
-                <el-table-column prop="change_type" label="类型" width="130" />
+                <el-table-column prop="change_type" label="类型" min-width="130" show-overflow-tooltip />
                 <el-table-column prop="amount" label="金额" width="100" align="right" />
                 <el-table-column prop="balance_after" label="变动后余额" width="110" align="right" />
                 <el-table-column label="关联" width="120" align="center">
@@ -330,7 +330,7 @@ onMounted(fetchList)
                 <el-table-column prop="level" label="等级" width="60" align="center" />
                 <el-table-column prop="holding" label="依据持仓" width="100" align="right" />
                 <el-table-column prop="member_count" label="人数" width="70" align="center" />
-                <el-table-column prop="source" label="来源" width="90" />
+                <el-table-column prop="source" label="来源" min-width="90" />
                 <el-table-column label="时间" width="160"><template #default="{ row }">{{ fmt(row.created_at) }}</template></el-table-column>
               </el-table>
             </el-tab-pane>
