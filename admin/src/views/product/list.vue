@@ -123,7 +123,7 @@ onMounted(fetchList)
 
       <el-table :data="list" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="name" label="产品名称" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="name" label="产品名称" width="180" show-overflow-tooltip />
         <el-table-column label="基础日收益率" width="110" align="center">
           <template #default="{ row }">{{ (Number(row.base_daily_rate) * 100).toFixed(2) }}%</template>
         </el-table-column>
@@ -131,7 +131,7 @@ onMounted(fetchList)
         <el-table-column label="返还方式" width="100" align="center">
           <template #default="{ row }">{{ METHOD_MAP[row.return_method] }}</template>
         </el-table-column>
-        <el-table-column label="金额范围" width="160" align="center">
+        <el-table-column label="金额范围" min-width="160" align="center">
           <template #default="{ row }">{{ row.min_amount }} ~ {{ row.max_amount }}</template>
         </el-table-column>
         <el-table-column label="VIP门槛" width="80" align="center">

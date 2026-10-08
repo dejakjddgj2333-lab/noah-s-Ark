@@ -176,16 +176,16 @@ onMounted(() => {
         <span class="tip">只显示有余额的地址; 缺 gas 的地址归集时会标记, 手动补 gas 后可单独归集</span>
       </div>
       <el-table :data="balances" v-loading="balLoading" border stripe>
-        <el-table-column prop="address" label="充值地址" min-width="300" show-overflow-tooltip />
+        <el-table-column prop="address" label="充值地址" min-width="260" show-overflow-tooltip />
         <el-table-column prop="user_id" label="用户ID" width="80" align="center" />
-        <el-table-column label="USDT 余额" width="130" align="right">
+        <el-table-column label="USDT 余额" min-width="130" align="right">
           <template #default="{ row }">
             <span :style="{ fontWeight: 600, color: Number(row.usdt) > 0 ? '#22c1a3' : '#909399' }">
               {{ row.usdt }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="gas 余额" width="130" align="right">
+        <el-table-column label="gas 余额" min-width="130" align="right">
           <template #default="{ row }">{{ row.native }} {{ row.native_symbol }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right" align="center">
