@@ -129,9 +129,22 @@ class _AssetsPageState extends State<AssetsPage> {
           },
         ),
         // 联系客服卡片已隐藏 (需求).
-        _quickToolsCard(),
-        const SizedBox(height: 20),
-        _securityCard(),
+        // 快捷功能 + 账号安全: 仅在理财隐藏时补位显示, 避免理财放出后内容过多
+        ListenableBuilder(
+          listenable: FeatureFlag.instance,
+          builder: (context, _) {
+            if (FeatureFlag.instance.financeEnabled) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              children: [
+                _quickToolsCard(),
+                const SizedBox(height: 20),
+                _securityCard(),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
