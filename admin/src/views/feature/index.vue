@@ -47,7 +47,7 @@ onMounted(fetchAll)
           充值/提现涉及资金合规资质。开启前请确认已取得相应资质; 未开启时 App 内隐藏充值/提现入口。
         </template>
       </el-alert>
-      <el-table :data="list" border stripe>
+      <el-table :data="list" border stripe style="max-width: 860px">
         <el-table-column prop="label" label="功能" min-width="200" />
         <el-table-column prop="key" label="标识" min-width="160" />
         <el-table-column label="状态" width="120" align="center">

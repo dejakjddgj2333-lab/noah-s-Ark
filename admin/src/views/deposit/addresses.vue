@@ -109,7 +109,7 @@ onMounted(() => {
           <template #default="{ row }">{{ row.network.toUpperCase() }}</template>
         </el-table-column>
         <el-table-column prop="address" label="地址" min-width="220" show-overflow-tooltip />
-        <el-table-column label="分配用户" width="130">
+        <el-table-column label="分配用户" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.username || '空闲' }}</template>
         </el-table-column>
         <el-table-column label="分配时间" width="160">
