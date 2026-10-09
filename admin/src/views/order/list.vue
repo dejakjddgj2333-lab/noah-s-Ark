@@ -115,7 +115,7 @@ onMounted(fetchList)
         </el-table-column>
         <el-table-column prop="principal_returned" label="已返本金" min-width="90" align="right" />
         <el-table-column prop="commission_paid" label="佣金支出" min-width="90" align="right" />
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="状态" width="96" align="center">
           <template #default="{ row }">
             <el-tag :type="STATUS_MAP[row.status]?.type">{{ STATUS_MAP[row.status]?.label || row.status }}</el-tag>
           </template>
