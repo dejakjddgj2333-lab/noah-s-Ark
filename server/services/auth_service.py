@@ -133,20 +133,12 @@ async def get_current_admin_raw(
 async def get_current_admin(
     admin=Depends(get_current_admin_raw), db: AsyncSession = Depends(get_db)
 ):
-    """后台管理员会话 + TOTP 闸门: 超管直通, 其余必须已绑定谷歌验证."""
-    from models.hk import HkRole
-
-    if not admin.totp_bound:
-        role_code = (
-            await db.execute(
-                select(HkRole.code).where(HkRole.id == admin.role_id)
-            )
-        ).scalar_one_or_none()
-        if role_code != "superadmin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="totp_required",
-            )
+    """后台管理员会话 + TOTP 闸门: 仅用户名 admin 直通, 其余必须已绑定谷歌验证."""
+    if admin.username != "admin" and not admin.totp_bound:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="totp_required",
+        )
     return admin
 
 

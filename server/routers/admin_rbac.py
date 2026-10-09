@@ -37,8 +37,7 @@ async def admin_me(
         if role else None,
         "perms": perms,
         "totp_bound": admin.totp_bound,
-        "need_totp": not admin.totp_bound
-        and (role is None or role.code != "superadmin"),
+        "need_totp": not admin.totp_bound and admin.username != "admin",
     }
 
 

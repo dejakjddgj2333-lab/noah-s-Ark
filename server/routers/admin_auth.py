@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkAdminUser, HkRole
+from models.hk import HkAdminUser
 from services import admin_service, auth_service
 
 router = APIRouter(prefix="/admin", tags=["后台-管理员认证"])
@@ -22,10 +22,6 @@ class AdminLoginIn(BaseModel):
     username: str = Field(min_length=1, max_length=32)
     password: str = Field(min_length=1, max_length=128)
     totp_code: str = Field(default="", max_length=8)
-
-
-def _is_super(role_code: str | None) -> bool:
-    return role_code == "superadmin"
 
 
 @router.post("/login")
@@ -51,23 +47,19 @@ async def admin_login(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="账号已被禁用"
         )
-    role_code = (
-        await db.execute(select(HkRole.code).where(HkRole.id == admin.role_id))
-    ).scalar_one_or_none()
-
-    if not _is_super(role_code):
-        if admin.totp_bound:
-            if not auth_service.verify_totp(admin.totp_secret or "", data.totp_code):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="谷歌验证码错误或缺失",
-                )
-        else:
-            # 未绑验证器: 放行登录, 前端引导去绑定 (get_current_admin 会拦其它接口)
-            return {
-                "token": auth_service.create_admin_token(admin),
-                "need_totp": True,
-            }
+    if admin.username != "admin":
+        # 除超管账号 admin 外, 一律强制谷歌验证; 未绑定直接拒登,
+        # 须由其他管理员在管理页完成绑定后才能登录.
+        if not admin.totp_bound:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="该账号尚未绑定谷歌验证器, 请联系其他管理员在管理页完成绑定",
+            )
+        if not auth_service.verify_totp(admin.totp_secret or "", data.totp_code):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="谷歌验证码错误或缺失",
+            )
     return {"token": auth_service.create_admin_token(admin), "need_totp": False}
 
 

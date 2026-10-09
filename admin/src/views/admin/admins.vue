@@ -74,7 +74,7 @@ async function submit() {
       password: form.password,
       role_id: form.role_id,
     })
-    ElMessage.success('管理员已创建, 首次登录需绑定谷歌验证')
+    ElMessage.success('管理员已创建, 请立即为其绑定谷歌验证')
   } else if (dialogMode.value === 'edit') {
     if (!form.role_id) {
       ElMessage.warning('请选择角色')
@@ -175,14 +175,14 @@ onMounted(fetchAll)
       <div class="ph-icon"><el-icon><Avatar /></el-icon></div>
       <div>
         <div class="ph-title">管理员</div>
-        <div class="ph-sub">独立后台账号 · 与 App 注册用户隔离 · 谷歌验证强制</div>
+        <div class="ph-sub">独立后台账号 · 与 App 注册用户隔离 · 除 admin 外谷歌验证强制</div>
       </div>
     </div>
 
     <el-card shadow="never">
       <div class="toolbar">
         <el-button v-perm="'btn:admin:manage'" type="primary" @click="openCreate">新建管理员</el-button>
-        <span class="tip">独立账号体系, 不使用 App 注册信息; 非超管首次登录必须绑定谷歌验证器</span>
+        <span class="tip">独立账号体系, 不使用 App 注册信息; 除 admin 外所有管理员必须绑定谷歌验证才能登录</span>
       </div>
       <el-table :data="admins" border stripe>
         <el-table-column prop="id" label="ID" width="60" />
@@ -267,7 +267,7 @@ onMounted(fetchAll)
           v-if="dialogMode === 'create'"
           type="info"
           :closable="false"
-          title="创建后该管理员首次登录需绑定谷歌验证器, 之后每次登录都需动态码"
+          title="创建后请立即在此列表点「绑定验证」为其完成谷歌验证绑定, 未绑定无法登录"
         />
       </el-form>
       <template #footer>
