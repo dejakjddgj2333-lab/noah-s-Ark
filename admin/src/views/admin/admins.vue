@@ -210,8 +210,9 @@ onMounted(fetchAll)
         <el-table-column prop="created_at" label="创建时间" width="160">
           <template #default="{ row }">{{ String(row.created_at).replace('T', ' ').slice(0, 19) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="330" fixed="right" align="center">
+        <el-table-column label="操作" width="300" fixed="right" align="center">
           <template #default="{ row }">
+            <div class="op-btns">
             <!-- 谷歌验证: 除 admin 外一律可绑/可重置, 不受角色限制 -->
             <el-button v-if="!row.totp_bound && row.username !== 'admin'" v-perm="'btn:admin:manage'" size="small" type="success" plain @click="openBind(row)">绑定验证</el-button>
             <el-button v-else-if="row.totp_bound && row.username !== 'admin'" v-perm="'btn:admin:manage'" size="small" type="warning" plain @click="resetTotp(row)">重置验证</el-button>
@@ -235,6 +236,7 @@ onMounted(fetchAll)
                 @click="remove(row)"
               >删除</el-button>
             </template>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -306,4 +308,9 @@ onMounted(fetchAll)
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .tip { color: #909399; font-size: 12px; }
+
+/* 操作列: 按钮紧凑不换行 */
+.op-btns { white-space: nowrap; }
+.op-btns :deep(.el-button) { margin-left: 4px; padding: 5px 8px; }
+.op-btns :deep(.el-button:first-child) { margin-left: 0; }
 </style>
