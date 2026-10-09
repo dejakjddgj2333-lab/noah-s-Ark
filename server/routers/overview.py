@@ -130,10 +130,17 @@ async def get_liq_recent(limit: int = Query(50, le=100)):
 
 @router.get("/funding/exchange-rates")
 async def get_funding_exchange_rates(symbol: str = Query("BTC")):
-    """单币种各所实时费率. free=Binance/OKX/Bybit 聚合."""
+    """单币种各所实时费率. free=Binance/OKX/Bybit 聚合, 60s 进程内缓存."""
     if not _use_coinglass():
-        data = await market_free.funding_exchange_rates(symbol)
-        return {"symbol": symbol.upper(), "data": data or []}
+        sym = symbol.upper()
+        now = time.time()
+        hit = _cache.get(f"free-funding|{sym}")
+        if hit and hit[1] > now:
+            return {"symbol": sym, "data": hit[0]}
+        data = await market_free.funding_exchange_rates(sym)
+        if data:
+            _cache[f"free-funding|{sym}"] = (data, now + 60)
+        return {"symbol": sym, "data": data or []}
     data = await _cg_get(
         "/api/futures/funding-rate/exchange-list", {"symbol": symbol.upper()}, ttl=60
     )

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/coin_icon.dart';
 import '../core/color_pref.dart';
@@ -68,8 +70,46 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   @override
   void initState() {
     super.initState();
+    _restoreCache();
     _load();
     _subscribeTickers();
+  }
+
+  // 首屏缓存: 上次行情行落地到本地, 冷启动秒显, 网络回来再覆盖.
+  static const _cacheKey = 'overview_assets_v1';
+
+  Future<void> _restoreCache() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString(_cacheKey);
+      if (raw == null || !mounted || _assets.isNotEmpty) return;
+      final list = (jsonDecode(raw) as List)
+          .map((e) => _AssetRow(
+                e['symbol'] as String,
+                e['pair'] as String,
+                e['price'] as String,
+                e['delta'] as String,
+                e['up'] as bool,
+                const [],
+              ))
+          .toList();
+      if (list.isNotEmpty) setState(() => _assets = list);
+    } catch (_) {/* 缓存损坏则忽略 */}
+  }
+
+  void _persistCache() {
+    final rows = _assets
+        .map((r) => {
+              'symbol': r.symbol,
+              'pair': r.pair,
+              'price': r.price,
+              'delta': r.delta,
+              'up': r.up,
+            })
+        .toList();
+    SharedPreferences.getInstance().then(
+        (sp) => sp.setString(_cacheKey, jsonEncode(rows)),
+        onError: (_) {});
   }
 
   @override
@@ -106,20 +146,16 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
   }
 
   Future<void> _load() async {
-    // 快数据(行情/资金费率/情绪/多空)先出, 完成即脱离骨架屏;
-    // 慢数据(山寨季/全局市值/巨鲸)后台继续, 到了各自 setState 刷新, 不阻塞首屏.
+    // 首屏门槛只等最快的两个源 (情绪+行情), ~1s 脱离骨架屏;
+    // 其余 (爆仓/资金费率/多空/山寨季/市值/巨鲸) 后台各自 setState, 不拖首屏.
     try {
-      await Future.wait([
-        _loadSentiment(),
-        _loadLiquidation(),
-        _loadFunding(),
-        _loadAssets(),
-        _loadLongShort(),
-      ]);
+      await Future.wait([_loadSentiment(), _loadAssets()]);
     } finally {
       if (mounted && !_loaded) setState(() => _loaded = true);
     }
-    // 慢源: 不 await, 后台填充.
+    _loadLiquidation();
+    _loadFunding();
+    _loadLongShort();
     _loadAltSeason();
     _loadGlobalBanner();
     _loadWhales();
@@ -335,10 +371,13 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
         const [],
       ));
     }
-    if (rows.isNotEmpty && mounted) setState(() => _assets = rows);
+    if (rows.isNotEmpty && mounted) {
+      setState(() => _assets = rows);
+      _persistCache();
+    }
 
-    // K线 sparkline: 逐币种独立尝试, 失败保持无曲线.
-    for (final row in rows) {
+    // K线 sparkline: 后台并行补齐, 失败保持无曲线, 不阻塞首屏.
+    unawaited(Future.wait(rows.map((row) async {
       try {
         final spark = await McData.sparkline('${row.symbol}-USDT-SWAP');
         if (spark.length >= 2 && mounted) {
@@ -353,7 +392,7 @@ class _HomeOverviewPageState extends State<HomeOverviewPage> {
       } on ApiException {
         // 无曲线.
       } catch (_) {}
-    }
+    })));
   }
 
   // ---- 解析/格式化辅助 ----
