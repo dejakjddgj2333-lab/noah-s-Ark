@@ -10,7 +10,7 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkUser
+from models.hk import HkAdminUser, HkUser
 from models.order import HkOrder
 from models.settlement import HkCommissionRecord, HkSettlementRecord
 from services import admin_service, settlement_service
@@ -32,7 +32,7 @@ async def list_orders(
     status_filter: str | None = Query(default=None, alias="status"),
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0),
-    user: HkUser = Depends(admin_service.require_perm("page:orders")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:orders")),
     db: AsyncSession = Depends(get_db),
 ):
     """全部购买订单 (最新在前), 附每单已结算收益/已返本金/佣金支出聚合."""
@@ -118,7 +118,7 @@ async def list_orders(
 @router.get("/{order_id}/settlements")
 async def order_settlements(
     order_id: int,
-    user: HkUser = Depends(admin_service.require_perm("page:orders")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:orders")),
     db: AsyncSession = Depends(get_db),
 ):
     """某订单的逐期收益结算明细 + 该单触发的佣金流水."""

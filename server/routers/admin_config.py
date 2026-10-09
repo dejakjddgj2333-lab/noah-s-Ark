@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkConfig, HkUser
+from models.hk import HkAdminUser, HkConfig, HkUser
 from services import admin_service, config_service
 
 router = APIRouter(prefix="/admin/config", tags=["后台-功能开关"])
@@ -23,7 +23,7 @@ def _row(r: HkConfig) -> dict:
 
 @router.get("")
 async def list_configs(
-    user: HkUser = Depends(admin_service.require_perm("page:feature")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:feature")),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     rows = (await db.execute(select(HkConfig))).scalars().all()
@@ -34,14 +34,14 @@ async def list_configs(
 async def update_config(
     key: str,
     data: ConfigIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:feature:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:feature:edit")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     ok = await config_service.set_value(db, key, data.value)
     if not ok:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="配置不存在")
-    await admin_service.audit(
-        db, user, "config_update", "config", 0, detail=f"{key}={data.value}"
+    await admin_service.audit_admin(
+        db, admin, "config_update", "config", 0, detail=f"{key}={data.value}"
     )
     row = (
         await db.execute(select(HkConfig).where(HkConfig.key == key))

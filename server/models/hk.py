@@ -90,6 +90,25 @@ class HkRole(HkBase):
     created_at = Column(DateTime, default=utc_now)
 
 
+class HkAdminUser(HkBase):
+    """后台管理员 (独立于 App 注册用户): 用户名+密码+角色, 谷歌验证强制.
+
+    与 hk_users 完全隔离: 后台登录只查本表, App 注册信息不再能进后台.
+    """
+
+    __tablename__ = "hk_admin_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(32), unique=True, nullable=False, index=True)
+    password_hash = Column(String(128), nullable=False)
+    role_id = Column(Integer, ForeignKey("hk_roles.id"), nullable=False)
+    totp_secret = Column(String(64), nullable=True)  # 谷歌验证密钥
+    totp_bound = Column(Boolean, nullable=False, default=False)  # 已确认绑定
+    status = Column(String(16), nullable=False, default="active")  # active/disabled
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
 class HkEmailCode(HkBase):
     """邮箱验证码: 注册/换绑用. 6 位数字, 10 分钟有效."""
 

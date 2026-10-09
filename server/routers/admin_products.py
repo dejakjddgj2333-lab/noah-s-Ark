@@ -16,7 +16,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkUser
+from models.hk import HkAdminUser, HkUser
 from models.product import HkProduct, PRODUCT_STATUSES
 from services import admin_service, auth_service, product_service
 
@@ -56,7 +56,7 @@ class ProductOut(BaseModel):
 @router.get("", response_model=list[ProductOut])
 async def list_products(
     status_filter: str | None = None,
-    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """全部产品 (含草稿/下架), 可按状态过滤."""
@@ -70,15 +70,15 @@ async def list_products(
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 async def create_product(
     data: ProductIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """新建产品 (草稿)."""
     product = HkProduct(**data.model_dump(), status="draft")
     db.add(product)
     await db.flush()
-    await admin_service.audit(
-        db, user, "product_create", "product", product.id,
+    await admin_service.audit_admin(
+        db, admin, "product_create", "product", product.id,
         detail=f"name={product.name} rate={product.base_daily_rate} days={product.duration_days}",
     )
     await db.commit()
@@ -89,7 +89,7 @@ async def create_product(
 async def update_product(
     product_id: int,
     data: ProductIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """修改产品配置. 已上架产品禁止修改 (Phase 0.9 未拍板, 保守策略: 先下架再改)."""
@@ -100,8 +100,8 @@ async def update_product(
         )
     for k, v in data.model_dump().items():
         setattr(product, k, v)
-    await admin_service.audit(
-        db, user, "product_update", "product", product.id,
+    await admin_service.audit_admin(
+        db, admin, "product_update", "product", product.id,
         detail=f"name={product.name}",
     )
     await db.commit()
@@ -111,7 +111,7 @@ async def update_product(
 @router.post("/{product_id}/publish", response_model=ProductOut)
 async def publish_product(
     product_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """上架: 强制全套校验, 通过后对 APP 可见."""
@@ -126,8 +126,8 @@ async def publish_product(
         team_level_req=product.team_level_req,
     )
     product.status = "published"
-    await admin_service.audit(
-        db, user, "product_publish", "product", product.id, detail=f"name={product.name}"
+    await admin_service.audit_admin(
+        db, admin, "product_publish", "product", product.id, detail=f"name={product.name}"
     )
     await db.commit()
     return product
@@ -136,14 +136,14 @@ async def publish_product(
 @router.post("/{product_id}/offline", response_model=ProductOut)
 async def offline_product(
     product_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:product:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:edit")),
     db: AsyncSession = Depends(get_db),
 ):
     """下架: APP 不再可购买; 存量已生效订单按原快照继续结算至到期."""
     product = await _get(db, product_id)
     product.status = "offline"
-    await admin_service.audit(
-        db, user, "product_offline", "product", product.id, detail=f"name={product.name}"
+    await admin_service.audit_admin(
+        db, admin, "product_offline", "product", product.id, detail=f"name={product.name}"
     )
     await db.commit()
     return product

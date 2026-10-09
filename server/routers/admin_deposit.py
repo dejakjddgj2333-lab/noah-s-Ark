@@ -33,7 +33,7 @@ async def admin_records(
     username: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    _: HkUser = Depends(admin_service.require_perm("page:deposit-records")),
+    _: HkUser = Depends(admin_service.require_admin_perm("page:deposit-records")),
     db: AsyncSession = Depends(get_db),
 ):
     """充值流水 (全用户), 支持状态/网络/用户名过滤."""
@@ -100,7 +100,7 @@ async def admin_addresses(
     state: str | None = Query(default=None),  # free | assigned
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    _: HkUser = Depends(admin_service.require_perm("page:deposit-pool")),
+    _: HkUser = Depends(admin_service.require_admin_perm("page:deposit-pool")),
     db: AsyncSession = Depends(get_db),
 ):
     """地址池列表与统计."""
@@ -150,7 +150,7 @@ async def admin_addresses(
 
 @router.get("/stats")
 async def admin_stats(
-    _: HkUser = Depends(admin_service.require_perm("page:deposit-records")),
+    _: HkUser = Depends(admin_service.require_admin_perm("page:deposit-records")),
     db: AsyncSession = Depends(get_db),
 ):
     """充值概览: 地址池/今日入账/确认中/异常."""
@@ -204,7 +204,7 @@ async def admin_stats(
 @router.post("/addresses/generate")
 async def admin_generate(
     data: GenerateIn,
-    _: HkUser = Depends(admin_service.require_perm("btn:deposit:generate")),
+    _: HkUser = Depends(admin_service.require_admin_perm("btn:deposit:generate")),
 ):
     """生成充值地址并加入地址池 (调用脚本逻辑, 同步返回生成数量)."""
     from scripts.keygen import generate_addresses

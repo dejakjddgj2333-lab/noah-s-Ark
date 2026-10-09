@@ -17,6 +17,7 @@ from routers import (
     account,
     admin_config,
     admin_deposit,
+    admin_auth,
     admin_legal,
     admin_params,
     admin_orders,
@@ -250,6 +251,7 @@ async def lifespan(app: FastAPI):
         from services import admin_service as _admin_svc
 
         await _admin_svc.seed_roles(db)
+        await _admin_svc.seed_admin_users(db)
         # 运营参数: hk_params 表的覆盖值回填内存缓存 (后台「参数配置」改过的值)
         from services import param_service as _param_svc
 
@@ -332,6 +334,7 @@ app.include_router(admin_products.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
 app.include_router(deposit.router, prefix="/api")
 app.include_router(admin_deposit.router, prefix="/api")
+app.include_router(admin_auth.router, prefix="/api")
 app.include_router(admin_rbac.router, prefix="/api")
 app.include_router(admin_sweep.router, prefix="/api")
 app.include_router(overview.router, prefix="/api")

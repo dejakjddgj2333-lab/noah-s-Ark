@@ -78,6 +78,17 @@ async function remove(row) {
 
 const treeProps = { label: 'name', children: 'children' }
 
+// 权限码 → 中文名映射 (权限树接口返回的 name 拍平)
+const permName = (code) => {
+  for (const p of tree.value) {
+    if (p.code === code) return p.name
+    for (const c of p.children || []) {
+      if (c.code === code) return `${p.name} · ${c.name}`
+    }
+  }
+  return code
+}
+
 onMounted(fetchAll)
 </script>
 
@@ -113,7 +124,7 @@ onMounted(fetchAll)
                 size="small"
                 effect="plain"
                 style="margin: 2px 4px 2px 0"
-              >{{ perm.replace('page:', '') }}</el-tag>
+              >{{ permName(perm) }}</el-tag>
             </template>
           </template>
         </el-table-column>

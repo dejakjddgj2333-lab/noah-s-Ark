@@ -11,10 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.account import HkDepositRecord, HkWithdrawal
-from models.hk import HkRole, HkUser
+from models.hk import HkAdminUser, HkRole, HkUser
 from models.order import HkOrder
 from models.product import HkProduct
-from services import admin_service
+from services import admin_service, auth_service
 from services.permissions import ALL_CODES, PERMISSION_TREE
 
 router = APIRouter(prefix="/admin", tags=["后台-RBAC"])
@@ -22,29 +22,29 @@ router = APIRouter(prefix="/admin", tags=["后台-RBAC"])
 
 @router.get("/me")
 async def admin_me(
-    user: HkUser = Depends(admin_service.require_admin),
+    admin: HkAdminUser = Depends(auth_service.get_current_admin_raw),
     db: AsyncSession = Depends(get_db),
 ):
-    """当前管理员: 用户信息 + 角色 + 权限码 (前端菜单/按钮过滤用)."""
-    perms = await admin_service.get_perms(db, user)
-    role = None
-    if user.role_id is not None:
-        r = (
-            await db.execute(select(HkRole).where(HkRole.id == user.role_id))
-        ).scalar_one_or_none()
-        if r is not None:
-            role = {"id": r.id, "code": r.code, "name": r.name}
+    """当前管理员: 信息 + 角色 + 权限码 + TOTP 绑定状态 (前端过滤用).
+    用 raw 依赖: 未绑 TOTP 的管理员也要能拿到 need_totp 状态去绑定."""
+    perms = await admin_service.get_admin_perms(db, admin)
+    role = (
+        await db.execute(select(HkRole).where(HkRole.id == admin.role_id))
+    ).scalar_one_or_none()
     return {
-        "user": {"id": user.id, "username": user.username,
-                 "nickname": user.nickname, "avatar_url": user.avatar_url},
-        "role": role,
+        "user": {"id": admin.id, "username": admin.username},
+        "role": {"id": role.id, "code": role.code, "name": role.name}
+        if role else None,
         "perms": perms,
+        "totp_bound": admin.totp_bound,
+        "need_totp": not admin.totp_bound
+        and (role is None or role.code != "superadmin"),
     }
 
 
 @router.get("/permissions")
 async def permission_tree(
-    user: HkUser = Depends(admin_service.require_perm("page:roles")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:roles")),
 ):
     """权限树 (角色编辑勾选框)."""
     return {"tree": PERMISSION_TREE}
@@ -68,7 +68,7 @@ def _role_out(r: HkRole) -> dict:
 
 @router.get("/roles")
 async def list_roles(
-    user: HkUser = Depends(admin_service.require_perm("page:roles")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:roles")),
     db: AsyncSession = Depends(get_db),
 ):
     rows = (await db.execute(select(HkRole).order_by(HkRole.id))).scalars().all()
@@ -78,7 +78,7 @@ async def list_roles(
 @router.post("/roles")
 async def create_role(
     body: RoleIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:role:manage")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:role:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     bad = [p for p in body.perms if p != "*" and p not in ALL_CODES]
@@ -89,7 +89,7 @@ async def create_role(
                   perms=json.dumps(body.perms), builtin=False)
     db.add(role)
     await db.flush()
-    await admin_service.audit(db, user, "role_create", "role", role.id,
+    await admin_service.audit_admin(db, admin, "role_create", "role", role.id,
                               f"name={body.name} perms={body.perms}")
     await db.commit()
     return _role_out(role)
@@ -99,7 +99,7 @@ async def create_role(
 async def update_role(
     role_id: int,
     body: RoleIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:role:manage")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:role:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     role = (
@@ -115,7 +115,7 @@ async def update_role(
     role.name = body.name
     role.perms = json.dumps(body.perms)
     await db.flush()
-    await admin_service.audit(db, user, "role_update", "role", role.id,
+    await admin_service.audit_admin(db, admin, "role_update", "role", role.id,
                               f"name={body.name} perms={body.perms}")
     await db.commit()
     return _role_out(role)
@@ -124,7 +124,7 @@ async def update_role(
 @router.delete("/roles/{role_id}")
 async def delete_role(
     role_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:role:manage")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:role:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     role = (
@@ -136,119 +136,185 @@ async def delete_role(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "内置角色不可删除")
     in_use = (
         await db.execute(
-            select(func.count()).select_from(HkUser).where(HkUser.role_id == role_id)
+            select(func.count()).select_from(HkAdminUser).where(
+                HkAdminUser.role_id == role_id)
         )
     ).scalar_one()
     if in_use:
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             f"仍有 {in_use} 个管理员挂在该角色, 先移除")
     await db.delete(role)
-    await admin_service.audit(db, user, "role_delete", "role", role_id,
+    await admin_service.audit_admin(db, admin, "role_delete", "role", role_id,
                               f"name={role.name}")
     await db.commit()
     return {"ok": True}
 
 
-# ---------- 管理员管理 ----------
+# ---------- 管理员管理 (独立于 App 注册用户) ----------
 
 
-def _admin_out(u: HkUser, role: HkRole | None) -> dict:
+def _admin_user_out(a: HkAdminUser, role: HkRole | None) -> dict:
     return {
-        "id": u.id, "username": u.username, "nickname": u.nickname,
-        "email": u.email, "status": u.status,
+        "id": a.id, "username": a.username, "status": a.status,
+        "totp_bound": a.totp_bound,
         "role": {"id": role.id, "code": role.code, "name": role.name}
         if role else None,
-        "created_at": str(u.created_at),
+        "created_at": str(a.created_at),
     }
 
 
 @router.get("/admins")
 async def list_admins(
-    user: HkUser = Depends(admin_service.require_perm("page:admins")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:admins")),
     db: AsyncSession = Depends(get_db),
 ):
-    """管理员列表 = 绑了角色的用户."""
+    """管理员列表 (hk_admin_users, 与注册用户无关)."""
     rows = (
-        await db.execute(
-            select(HkUser).where(HkUser.role_id.isnot(None)).order_by(HkUser.id)
-        )
+        await db.execute(select(HkAdminUser).order_by(HkAdminUser.id))
     ).scalars().all()
     out = []
-    for u in rows:
+    for a in rows:
         role = (
-            await db.execute(select(HkRole).where(HkRole.id == u.role_id))
+            await db.execute(select(HkRole).where(HkRole.id == a.role_id))
         ).scalar_one_or_none()
-        out.append(_admin_out(u, role))
+        out.append(_admin_user_out(a, role))
     return out
 
 
-class AdminBindIn(BaseModel):
-    username: str = Field(min_length=1, max_length=32)
+class AdminCreateIn(BaseModel):
+    username: str = Field(min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(min_length=8, max_length=128)
     role_id: int
 
 
-async def _bind_role(db: AsyncSession, operator: HkUser, username: str,
-                     role_id: int | None) -> dict:
-    u = (
-        await db.execute(select(HkUser).where(HkUser.username == username))
+@router.post("/admins", status_code=201)
+async def create_admin(
+    body: AdminCreateIn,
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """新建管理员: 独立账号, 初始未绑谷歌验证, 首次登录须绑定."""
+    username = body.username.lower()
+    dup = (
+        await db.execute(
+            select(HkAdminUser).where(HkAdminUser.username == username)
+        )
     ).scalar_one_or_none()
-    if u is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "用户不存在")
-    if u.id == operator.id and role_id is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能移除自己的管理员角色")
-    role = None
-    if role_id is not None:
+    if dup is not None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "用户名已存在")
+    role = (
+        await db.execute(select(HkRole).where(HkRole.id == body.role_id))
+    ).scalar_one_or_none()
+    if role is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "角色不存在")
+    a = HkAdminUser(
+        username=username,
+        password_hash=auth_service.hash_password(body.password),
+        role_id=body.role_id,
+        status="active",
+    )
+    db.add(a)
+    await db.flush()
+    await admin_service.audit_admin(
+        db, admin, "admin_create", "admin_user", a.id,
+        f"username={username} role={role.code}")
+    await db.commit()
+    return _admin_user_out(a, role)
+
+
+class AdminUpdateIn(BaseModel):
+    role_id: int | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+    status: str | None = Field(default=None, pattern="^(active|disabled)$")
+
+
+async def _get_admin_or_404(db: AsyncSession, admin_id: int) -> HkAdminUser:
+    a = (
+        await db.execute(select(HkAdminUser).where(HkAdminUser.id == admin_id))
+    ).scalar_one_or_none()
+    if a is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "管理员不存在")
+    return a
+
+
+@router.put("/admins/{admin_id}")
+async def update_admin(
+    admin_id: int,
+    body: AdminUpdateIn,
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """改角色/重置密码/启停. 不能禁用自己, 不能动超管的超管角色."""
+    target = await _get_admin_or_404(db, admin_id)
+    target_role = (
+        await db.execute(select(HkRole).where(HkRole.id == target.role_id))
+    ).scalar_one_or_none()
+    if target_role is not None and target_role.code == "superadmin" and (
+        body.role_id is not None or body.status == "disabled"
+    ):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能改超级管理员的角色或状态")
+    if body.status == "disabled" and target.id == admin.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能禁用自己的账号")
+    if body.role_id is not None:
         role = (
-            await db.execute(select(HkRole).where(HkRole.id == role_id))
+            await db.execute(select(HkRole).where(HkRole.id == body.role_id))
         ).scalar_one_or_none()
         if role is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "角色不存在")
-    u.role_id = role_id
+        target.role_id = body.role_id
+    if body.password:
+        target.password_hash = auth_service.hash_password(body.password)
+    if body.status is not None:
+        target.status = body.status
     await db.flush()
-    await admin_service.audit(
-        db, operator, "admin_bind_role", "user", u.id,
-        f"username={username} role={role.code if role else 'None'}")
+    await admin_service.audit_admin(
+        db, admin, "admin_update", "admin_user", target.id,
+        f"role_id={body.role_id} status={body.status} pwd_reset={bool(body.password)}")
     await db.commit()
-    return _admin_out(u, role)
-
-
-@router.post("/admins")
-async def bind_admin(
-    body: AdminBindIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:admin:manage")),
-    db: AsyncSession = Depends(get_db),
-):
-    """绑定管理员: 按用户名挂角色 (用户须已注册)."""
-    return await _bind_role(db, user, body.username, body.role_id)
-
-
-@router.put("/admins/{user_id}")
-async def change_admin_role(
-    user_id: int,
-    body: AdminBindIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:admin:manage")),
-    db: AsyncSession = Depends(get_db),
-):
-    target = (
-        await db.execute(select(HkUser).where(HkUser.id == user_id))
+    role = (
+        await db.execute(select(HkRole).where(HkRole.id == target.role_id))
     ).scalar_one_or_none()
-    if target is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "用户不存在")
-    return await _bind_role(db, user, target.username, body.role_id)
+    return _admin_user_out(target, role)
 
 
-@router.delete("/admins/{user_id}")
-async def remove_admin(
-    user_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:admin:manage")),
+@router.post("/admins/{admin_id}/reset-totp")
+async def reset_admin_totp(
+    admin_id: int,
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    target = (
-        await db.execute(select(HkUser).where(HkUser.id == user_id))
+    """重置谷歌验证 (换手机/丢密钥): 清密钥, 下次登录重新绑定."""
+    target = await _get_admin_or_404(db, admin_id)
+    target.totp_secret = None
+    target.totp_bound = False
+    await db.flush()
+    await admin_service.audit_admin(
+        db, admin, "admin_totp_reset", "admin_user", target.id)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/admins/{admin_id}")
+async def delete_admin(
+    admin_id: int,
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除管理员. 不能删自己, 不能删超管."""
+    target = await _get_admin_or_404(db, admin_id)
+    if target.id == admin.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能删除自己的账号")
+    target_role = (
+        await db.execute(select(HkRole).where(HkRole.id == target.role_id))
     ).scalar_one_or_none()
-    if target is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "用户不存在")
-    return await _bind_role(db, user, target.username, None)
+    if target_role is not None and target_role.code == "superadmin":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能删除超级管理员")
+    await db.delete(target)
+    await admin_service.audit_admin(
+        db, admin, "admin_delete", "admin_user", admin_id,
+        f"username={target.username}")
+    await db.commit()
+    return {"ok": True}
 
 
 # ---------- 仪表盘统计 ----------
@@ -256,7 +322,7 @@ async def remove_admin(
 
 @router.get("/stats")
 async def admin_stats(
-    user: HkUser = Depends(admin_service.require_perm("page:dashboard")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:dashboard")),
     db: AsyncSession = Depends(get_db),
 ):
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)

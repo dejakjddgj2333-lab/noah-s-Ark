@@ -91,6 +91,65 @@ def create_access_token(user: HkUser, jti: str | None = None) -> str:
     return jwt.encode(payload, config.secret_key, algorithm=_ALGORITHM)
 
 
+def create_admin_token(admin) -> str:
+    """后台管理员 token: scope=admin 与 App 用户 token 隔离."""
+    expire = datetime.now(timezone.utc) + timedelta(hours=config.jwt_expire_hours)
+    payload = {
+        "sub": str(admin.id),
+        "username": admin.username,
+        "scope": "admin",
+        "exp": expire,
+    }
+    return jwt.encode(payload, config.secret_key, algorithm=_ALGORITHM)
+
+
+async def get_current_admin_raw(
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+):
+    """后台管理员会话 (不检查 TOTP 绑定): 供 TOTP 绑定端点使用."""
+    from models.hk import HkAdminUser
+
+    credentials_exc = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="未登录或登录已过期",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = decode_token(token)
+    if not payload or payload.get("scope") != "admin" or not payload.get("sub"):
+        raise credentials_exc
+    result = await db.execute(
+        select(HkAdminUser).where(HkAdminUser.id == int(payload["sub"]))
+    )
+    admin = result.scalar_one_or_none()
+    if admin is None:
+        raise credentials_exc
+    if admin.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="账号已被禁用"
+        )
+    return admin
+
+
+async def get_current_admin(
+    admin=Depends(get_current_admin_raw), db: AsyncSession = Depends(get_db)
+):
+    """后台管理员会话 + TOTP 闸门: 超管直通, 其余必须已绑定谷歌验证."""
+    from models.hk import HkRole
+
+    if not admin.totp_bound:
+        role_code = (
+            await db.execute(
+                select(HkRole.code).where(HkRole.id == admin.role_id)
+            )
+        ).scalar_one_or_none()
+        if role_code != "superadmin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="totp_required",
+            )
+    return admin
+
+
 def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(token, config.secret_key, algorithms=[_ALGORITHM])

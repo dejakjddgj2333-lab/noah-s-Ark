@@ -30,21 +30,25 @@ export function deleteRole(id) {
   return request.delete(`/admin/roles/${id}`)
 }
 
-// ── 管理员管理 ──
+// ── 管理员管理 (独立账号体系) ──
 export function getAdmins() {
   return request.get('/admin/admins')
 }
 
-export function bindAdmin(data) {
+export function createAdmin(data) {
   return request.post('/admin/admins', data)
 }
 
-export function changeAdminRole(userId, data) {
-  return request.put(`/admin/admins/${userId}`, data)
+export function updateAdmin(adminId, data) {
+  return request.put(`/admin/admins/${adminId}`, data)
 }
 
-export function removeAdmin(userId) {
-  return request.delete(`/admin/admins/${userId}`)
+export function resetAdminTotp(adminId) {
+  return request.post(`/admin/admins/${adminId}/reset-totp`)
+}
+
+export function removeAdmin(adminId) {
+  return request.delete(`/admin/admins/${adminId}`)
 }
 
 // ── 用户操作 ──

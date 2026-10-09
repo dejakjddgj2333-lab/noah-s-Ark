@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkChatMessage, HkComment, HkReport, HkUser, utc_now
+from models.hk import HkAdminUser, HkChatMessage, HkComment, HkReport, HkUser, utc_now
 from services import admin_service
 
 router = APIRouter(prefix="/admin/reports", tags=["后台-举报"])
@@ -37,7 +37,7 @@ async def list_reports(
     status_filter: str | None = Query(default=None, alias="status"),
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0),
-    user: HkUser = Depends(admin_service.require_perm("page:report")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:report")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     stmt = select(HkReport)
@@ -102,7 +102,7 @@ class HandleIn(BaseModel):
 async def handle_report(
     report_id: int,
     data: HandleIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:report:handle")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:report:handle")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     r = (
@@ -135,10 +135,10 @@ async def handle_report(
     else:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="非法处理动作")
 
-    r.handled_by = user.id
+    r.handled_by = admin.id
     r.handled_at = utc_now()
-    await admin_service.audit(
-        db, user, f"report_{data.action}", "report", r.id,
+    await admin_service.audit_admin(
+        db, admin, f"report_{data.action}", "report", r.id,
         detail=f"target_user={r.target_user_id}",
     )
     await db.commit()

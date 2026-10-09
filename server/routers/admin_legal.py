@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.hk import HkLegalDoc, HkUser
+from models.hk import HkAdminUser, HkLegalDoc, HkUser
 from services import admin_service
 
 router = APIRouter(prefix="/admin/legal", tags=["后台-协议"])
@@ -27,7 +27,7 @@ def _doc_to_dict(doc: HkLegalDoc) -> dict:
 
 @router.get("")
 async def get_legal_docs(
-    user: HkUser = Depends(admin_service.require_perm("page:legal")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:legal")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """返回两份协议 {privacy:{...}, terms:{...}} (管理员, 读)."""
@@ -40,7 +40,7 @@ async def get_legal_docs(
 async def update_legal_doc(
     doc_key: str,
     data: LegalDocIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:legal:edit")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:legal:edit")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """更新协议 (管理员, 写). doc_key 仅 privacy/terms."""
@@ -53,8 +53,8 @@ async def update_legal_doc(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="协议不存在")
     doc.title = data.title
     doc.content = data.content
-    await admin_service.audit(
-        db, user, "legal_update", "legal_doc", doc.id, detail=f"key={doc_key}"
+    await admin_service.audit_admin(
+        db, admin, "legal_update", "legal_doc", doc.id, detail=f"key={doc_key}"
     )
     await db.commit()
     return _doc_to_dict(doc)

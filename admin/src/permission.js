@@ -12,6 +12,8 @@ router.beforeEach(async (to) => {
 
   if (userStore.isLoggedIn) {
     if (to.path === '/login') return '/dashboard'
+    // 未绑谷歌验证的管理员只许停留在绑定页
+    if (userStore.needTotp && to.path !== '/bind-totp') return '/bind-totp'
     // 页面权限: 无权限码进不了 (菜单已过滤, 这里防手敲 URL)
     if (to.meta.perm && !userStore.hasPerm(to.meta.perm)) return '/404'
     return true

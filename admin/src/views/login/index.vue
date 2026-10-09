@@ -15,6 +15,7 @@ const loading = ref(false)
 const form = reactive({
   username: '',
   password: '',
+  totp_code: '',
 })
 
 const rules = {
@@ -28,8 +29,14 @@ async function handleSubmit() {
   try {
     const res = await login(form)
     userStore.setToken(res.token)
-    userStore.setInfo(res.user)
-    // 拉权限: 非管理员会 403, 提示并退回
+    if (res.need_totp) {
+      // 未绑谷歌验证: 先去绑定, 绑完才能进后台
+      userStore.setNeedTotp(true)
+      ElMessage.warning('首次登录请绑定谷歌验证器')
+      router.push('/bind-totp')
+      return
+    }
+    userStore.setNeedTotp(false)
     try {
       await userStore.fetchMe()
     } catch {
@@ -66,6 +73,14 @@ async function handleSubmit() {
             placeholder="密码"
             show-password
             :prefix-icon="'Lock'"
+          />
+        </el-form-item>
+        <el-form-item prop="totp_code">
+          <el-input
+            v-model="form.totp_code"
+            placeholder="谷歌验证码 (已绑定验证器的管理员必填)"
+            maxlength="8"
+            :prefix-icon="'Key'"
           />
         </el-form-item>
         <el-button type="primary" class="login-btn" :loading="loading" @click="handleSubmit">

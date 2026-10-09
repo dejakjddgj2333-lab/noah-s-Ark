@@ -11,6 +11,12 @@ const routes = [
     meta: { title: '登录' },
   },
   {
+    path: '/bind-totp',
+    name: 'BindTotp',
+    component: () => import('@/views/login/bind-totp.vue'),
+    meta: { title: '绑定谷歌验证' },
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',

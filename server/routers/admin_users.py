@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.account import HkAccount, HkBalanceLog, HkWithdrawal
-from models.hk import HkUser
+from models.hk import HkAdminUser, HkUser
 from models.invite import HkInvite
 from models.level_log import HkLevelLog
 from models.order import HkOrder
@@ -52,7 +52,7 @@ class UserListItem(BaseModel):
 async def list_users(
     q: str | None = Query(default=None, description="用户名/邮箱模糊搜索"),
     limit: int = Query(default=100, le=500),
-    user: HkUser = Depends(admin_service.require_perm("page:users")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:users")),
     db: AsyncSession = Depends(get_db),
 ):
     """用户列表: 账户余额 + 当前 VIP/团队等级."""
@@ -86,7 +86,7 @@ async def list_users(
 @router.get("/{user_id}")
 async def user_profile(
     user_id: int,
-    user: HkUser = Depends(admin_service.require_perm("page:users")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("page:users")),
     db: AsyncSession = Depends(get_db),
 ):
     """单用户全量档案 (只读聚合)."""
@@ -180,7 +180,7 @@ async def _get_user(db: AsyncSession, user_id: int) -> HkUser:
 @router.post("/{user_id}/freeze")
 async def freeze_user(
     user_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:user:freeze")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:user:freeze")),
     db: AsyncSession = Depends(get_db),
 ):
     """冻结: status=banned, 登录接口已拦截非 active."""
@@ -188,7 +188,7 @@ async def freeze_user(
     if u.status == "banned":
         return {"ok": True, "status": "banned"}
     u.status = "banned"
-    await admin_service.audit(db, user, "user_freeze", "user", u.id, u.username)
+    await admin_service.audit_admin(db, admin, "user_freeze", "user", u.id, u.username)
     await db.commit()
     return {"ok": True, "status": "banned"}
 
@@ -196,14 +196,14 @@ async def freeze_user(
 @router.post("/{user_id}/unfreeze")
 async def unfreeze_user(
     user_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:user:freeze")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:user:freeze")),
     db: AsyncSession = Depends(get_db),
 ):
     u = await _get_user(db, user_id)
     if u.status != "banned":
         return {"ok": True, "status": u.status}
     u.status = "active"
-    await admin_service.audit(db, user, "user_unfreeze", "user", u.id, u.username)
+    await admin_service.audit_admin(db, admin, "user_unfreeze", "user", u.id, u.username)
     await db.commit()
     return {"ok": True, "status": "active"}
 
@@ -218,7 +218,7 @@ class AdjustBalanceIn(BaseModel):
 async def adjust_balance(
     user_id: int,
     body: AdjustBalanceIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:user:adjust")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:user:adjust")),
     db: AsyncSession = Depends(get_db),
 ):
     """人工调整余额: 直接增减可用余额, 记 admin_adjust 流水 + 审计."""
@@ -241,10 +241,10 @@ async def adjust_balance(
     await db.flush()
     await balance_log_service.log(
         db, u.id, body.account, "admin_adjust", body.amount,
-        ref_type="admin", ref_id=user.id,
+        ref_type="admin", ref_id=admin.id,
     )
-    await admin_service.audit(
-        db, user, "user_adjust_balance", "user", u.id,
+    await admin_service.audit_admin(
+        db, admin, "user_adjust_balance", "user", u.id,
         f"{u.username} {body.account} {before}->{after} 备注: {body.remark}")
     await db.commit()
     return {"ok": True, "balance_after": str(after)}
@@ -258,14 +258,14 @@ class ResetPasswordIn(BaseModel):
 async def reset_password(
     user_id: int,
     body: ResetPasswordIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:user:reset")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:user:reset")),
     db: AsyncSession = Depends(get_db),
 ):
     u = await _get_user(db, user_id)
     if len(body.new_password) < 6:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "密码至少 6 位")
     u.password_hash = auth_service.hash_password(body.new_password)
-    await admin_service.audit(db, user, "user_reset_password", "user", u.id,
+    await admin_service.audit_admin(db, admin, "user_reset_password", "user", u.id,
                               u.username)
     await db.commit()
     return {"ok": True}
@@ -280,7 +280,7 @@ class UpdateUserIn(BaseModel):
 async def update_user(
     user_id: int,
     body: UpdateUserIn,
-    user: HkUser = Depends(admin_service.require_perm("btn:user:update")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:user:update")),
     db: AsyncSession = Depends(get_db),
 ):
     """改绑邮箱 / 改上级 (上级一经绑定用户侧不可改, 此处为管理员纠错通道)."""
@@ -340,7 +340,7 @@ async def update_user(
             invite.bound_at = utc_now()
     if not changes:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "没有需要修改的内容")
-    await admin_service.audit(db, user, "user_update", "user", u.id,
+    await admin_service.audit_admin(db, admin, "user_update", "user", u.id,
                               f"{u.username}: {'; '.join(changes)}")
     await db.commit()
     return {"ok": True}
