@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAdminUsers, getAdminUserProfile } from '@/api/product'
+import { getAdminUsers, getAdminUserProfile, deleteAdminUser } from '@/api/product'
 import {
   adjustBalance,
   freezeUser,
@@ -53,6 +53,23 @@ async function toggleFreeze(row) {
     await freezeUser(row.id)
     ElMessage.success('已冻结')
   }
+  fetchList()
+}
+
+// ── 删除空账户 (服务端逐项校验: 有资金/订单/记录会 409 拒绝) ──
+function isEmptyAccount(row) {
+  return !Number(row.principal_balance) && !Number(row.income_balance)
+    && !Number(row.principal_pending) && !Number(row.income_pending)
+}
+
+async function removeUser(row) {
+  await ElMessageBox.confirm(
+    `删除用户 ${row.username}? 连同其个人数据物理删除, 不可恢复 (仅空账户可删, 服务端会二次校验)。`,
+    '确认删除',
+    { type: 'error', confirmButtonText: '删除', cancelButtonText: '取消' },
+  )
+  await deleteAdminUser(row.id)
+  ElMessage.success('已删除')
   fetchList()
 }
 
@@ -229,6 +246,12 @@ onMounted(fetchList)
                 <el-dropdown-menu>
                   <el-dropdown-item v-perm="'btn:user:reset'" @click="openReset(row)">重置密码</el-dropdown-item>
                   <el-dropdown-item v-perm="'btn:user:update'" @click="openUpdate(row)">改绑邮箱/上级</el-dropdown-item>
+                  <el-dropdown-item
+                    v-if="isEmptyAccount(row)"
+                    v-perm="'btn:user:delete'"
+                    divided
+                    @click="removeUser(row)"
+                  ><span style="color: var(--el-color-danger)">删除空账户</span></el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>

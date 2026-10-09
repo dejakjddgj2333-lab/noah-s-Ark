@@ -344,3 +344,106 @@ async def update_user(
                               f"{u.username}: {'; '.join(changes)}")
     await db.commit()
     return {"ok": True}
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    user: HkUser = Depends(admin_service.require_perm("btn:user:delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除空账户 (2026-10-09): 连同个人数据物理删除.
+
+    仅允许删除「空账户」——满足全部条件:
+    余额/处理中全为 0, 无充值记录, 无订单, 无提现, 无转化,
+    无佣金 (收/发), 无下级, 非后台角色. 任一不满足 409 拒绝,
+    防止误删有资金/有追溯价值的账号.
+    """
+    from sqlalchemy import func
+
+    from models.account import HkConvertRecord, HkDepositAddress
+    from models.hk import HkEmailCode, HkLoginDevice, HkUserBlock
+
+    u = await _get_user(db, user_id)
+    if u.role_id is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "后台角色账号不可删除, 请先移除角色"
+        )
+
+    async def count(model, *conds) -> int:
+        return (
+            await db.execute(
+                select(func.count()).select_from(model).where(*conds)
+            )
+        ).scalar_one()
+
+    acc = (
+        await db.execute(select(HkAccount).where(HkAccount.user_id == user_id))
+    ).scalar_one_or_none()
+    if acc is not None and (
+        Decimal(acc.principal_balance) != 0
+        or Decimal(acc.income_balance) != 0
+        or Decimal(acc.principal_pending) != 0
+        or Decimal(acc.income_pending) != 0
+    ):
+        raise HTTPException(status.HTTP_409_CONFLICT, "账户余额不为零, 不可删除")
+
+    guards = [
+        (await count(HkDepositRecord, HkDepositRecord.user_id == user_id),
+         "有充值记录"),
+        (await count(HkOrder, HkOrder.user_id == user_id), "有购买订单"),
+        (await count(HkWithdrawal, HkWithdrawal.user_id == user_id), "有提现记录"),
+        (await count(HkConvertRecord, HkConvertRecord.user_id == user_id),
+         "有转化记录"),
+        (await count(HkSettlementRecord, HkSettlementRecord.user_id == user_id),
+         "有结算记录"),
+        (
+            await count(
+                HkCommissionRecord,
+                (HkCommissionRecord.receiver_id == user_id)
+                | (HkCommissionRecord.buyer_id == user_id),
+            ),
+            "有佣金记录",
+        ),
+        (await count(HkInvite, HkInvite.inviter_id == user_id), "名下有下级"),
+    ]
+    for n, label in guards:
+        if n > 0:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"{label} ({n} 条), 不可删除——该账号不是空账户",
+            )
+
+    # 级联清理个人数据 (均为该用户自己的记录, 无资金关联)
+    for model, col in [
+        (HkAccount, HkAccount.user_id),
+        (HkBalanceLog, HkBalanceLog.user_id),
+        (HkEmailCode, HkEmailCode.email),
+        (HkLoginDevice, HkLoginDevice.user_id),
+        (HkInvite, HkInvite.user_id),
+        (HkLevelLog, HkLevelLog.user_id),
+    ]:
+        if col is HkEmailCode.email:
+            await db.execute(
+                model.__table__.delete().where(col == u.email)
+            )
+        else:
+            await db.execute(model.__table__.delete().where(col == user_id))
+    await db.execute(
+        HkUserBlock.__table__.delete().where(
+            (HkUserBlock.user_id == user_id)
+            | (HkUserBlock.blocked_id == user_id)
+        )
+    )
+    # 占用的充值地址释放回池 (空账户无充值记录, 地址不可能有链上资金关联)
+    await db.execute(
+        HkDepositAddress.__table__.update()
+        .where(HkDepositAddress.user_id == user_id)
+        .values(user_id=None, assigned_at=None)
+    )
+    uname = u.username
+    await db.delete(u)
+    await admin_service.audit(
+        db, user, "user_delete", "user", user_id, f"空账户 {uname}"
+    )
+    await db.commit()

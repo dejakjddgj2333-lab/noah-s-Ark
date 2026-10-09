@@ -21,6 +21,10 @@ export function offlineProduct(id) {
   return request.post(`/admin/products/${id}/offline`)
 }
 
+export function deleteProduct(id) {
+  return request.delete(`/admin/products/${id}`)
+}
+
 // 用户档案查询 (管理员)
 export function getAdminUsers(params) {
   return request.get('/admin/users', { params })
@@ -28,6 +32,10 @@ export function getAdminUsers(params) {
 
 export function getAdminUserProfile(id) {
   return request.get(`/admin/users/${id}`)
+}
+
+export function deleteAdminUser(id) {
+  return request.delete(`/admin/users/${id}`)
 }
 
 // 提现审核 (管理员)

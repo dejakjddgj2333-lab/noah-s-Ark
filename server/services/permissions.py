@@ -15,6 +15,9 @@ PERMISSION_TREE: list[dict] = [
             {"code": "btn:user:adjust", "name": "余额调整"},
             {"code": "btn:user:reset", "name": "重置密码"},
             {"code": "btn:user:update", "name": "改绑邮箱/上级"},
+            # 删除单独一码 (2026-10-09): 仅空账户可删 (服务端逐项校验),
+            # 默认仅超管, 需他人删时角色管理单独授
+            {"code": "btn:user:delete", "name": "删除空账户"},
         ],
     },
     {"code": "page:deposit-records", "name": "充值记录", "children": []},
@@ -40,6 +43,9 @@ PERMISSION_TREE: list[dict] = [
         "name": "产品管理",
         "children": [
             {"code": "btn:product:edit", "name": "新建/编辑/上下架"},
+            # 删除单独一码 (2026-10-09): 物理删除不可恢复, 默认仅超管,
+            # 需他人删时在角色管理单独授; 有订单的产品服务端仍会拒删
+            {"code": "btn:product:delete", "name": "删除产品"},
         ],
     },
     {"code": "page:orders", "name": "购买订单", "children": []},

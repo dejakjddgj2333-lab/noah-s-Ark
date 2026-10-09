@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAdminProducts, createProduct, updateProduct, publishProduct, offlineProduct,
+  deleteProduct,
 } from '@/api/product'
 
 const loading = ref(false)
@@ -97,6 +98,19 @@ async function offline(row) {
   fetchList()
 }
 
+async function remove(row) {
+  try {
+    await ElMessageBox.confirm(
+      `删除「${row.name}」？物理删除不可恢复 (有订单的产品服务端会拒绝)。`,
+      '确认删除',
+      { type: 'error', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
+  } catch { return }
+  await deleteProduct(row.id)
+  ElMessage.success('已删除')
+  fetchList()
+}
+
 onMounted(fetchList)
 </script>
 
@@ -145,11 +159,12 @@ onMounted(fetchList)
             <el-tag :type="STATUS_MAP[row.status]?.type">{{ STATUS_MAP[row.status]?.label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" type="success" @click="publish(row)">上架</el-button>
             <el-button v-perm="'btn:product:edit'" v-if="row.status === 'published'" size="small" type="warning" @click="offline(row)">下架</el-button>
+            <el-button v-perm="'btn:product:delete'" v-if="row.status !== 'published'" size="small" type="danger" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

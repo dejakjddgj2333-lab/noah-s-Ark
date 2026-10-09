@@ -149,6 +149,43 @@ async def offline_product(
     return product
 
 
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: int,
+    user: HkUser = Depends(admin_service.require_perm("btn:product:delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除产品 (2026-10-09): 保护规则 ——
+    已上架禁止删 (先下架); 已有任何购买订单禁止删 (只能下架, 保追溯).
+    仅草稿/已下架且无订单的产品可物理删除.
+    """
+    product = await _get(db, product_id)
+    if product.status == "published":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "已上架产品不能删除，请先下架"
+        )
+    from sqlalchemy import func
+
+    from models.order import HkOrder
+
+    orders = (
+        await db.execute(
+            select(func.count(HkOrder.id)).where(HkOrder.product_id == product_id)
+        )
+    ).scalar_one()
+    if orders > 0:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"该产品已有 {orders} 笔购买订单，不可删除 (只能下架)",
+        )
+    name = product.name
+    await db.delete(product)
+    await admin_service.audit(
+        db, user, "product_delete", "product", product_id, detail=f"name={name}"
+    )
+    await db.commit()
+
+
 async def _get(db: AsyncSession, product_id: int) -> HkProduct:
     product = (
         await db.execute(select(HkProduct).where(HkProduct.id == product_id))
