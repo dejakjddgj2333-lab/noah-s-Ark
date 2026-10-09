@@ -131,8 +131,8 @@ async def delete_role(
     ).scalar_one_or_none()
     if role is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "角色不存在")
-    if role.builtin:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "内置角色不可删除")
+    if role.code == "superadmin":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "超级管理员角色不可删除")
     in_use = (
         await db.execute(
             select(func.count()).select_from(HkAdminUser).where(

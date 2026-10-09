@@ -210,7 +210,7 @@ onMounted(fetchAll)
         <el-table-column prop="created_at" label="创建时间" width="160">
           <template #default="{ row }">{{ String(row.created_at).replace('T', ' ').slice(0, 19) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="300" fixed="right" align="center">
+        <el-table-column label="操作" width="360" fixed="right" align="center">
           <template #default="{ row }">
             <div class="op-btns">
             <!-- 谷歌验证: 除 admin 外一律可绑/可重置, 不受角色限制 -->
@@ -311,6 +311,6 @@ onMounted(fetchAll)
 
 /* 操作列: 按钮紧凑不换行 */
 .op-btns { white-space: nowrap; }
-.op-btns :deep(.el-button) { margin-left: 4px; padding: 5px 8px; }
+.op-btns :deep(.el-button) { margin-left: 6px; padding: 5px 12px; }
 .op-btns :deep(.el-button:first-child) { margin-left: 0; }
 </style>

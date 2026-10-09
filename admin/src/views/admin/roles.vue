@@ -143,7 +143,7 @@ onMounted(fetchAll)
               size="small"
               type="danger"
               plain
-              :disabled="row.builtin"
+              :disabled="row.code === 'superadmin'"
               @click="remove(row)"
             >删除</el-button>
           </template>
