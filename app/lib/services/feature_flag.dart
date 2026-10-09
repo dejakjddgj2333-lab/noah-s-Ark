@@ -1,36 +1,31 @@
 import 'package:flutter/foundation.dart';
 
-import 'api.dart';
-
-/// 全局功能开关 (后端 /api/config 公开读取, 后台管理系统可改).
+/// 功能开关 — 编译期常量 (--dart-define), 不走任何远程配置.
 ///
-/// 钱包(充值/提现)等功能按开关显隐, 默认关闭(隐藏), 申请资质后后台打开即显示.
+/// 苹果审核 2.3.1 禁止"审核后远程解锁的隐藏功能", 故充值/理财的显隐
+/// 必须编译进包: 想开启只能发新版本重新提审, 包能力 = 审核所见.
+///
+/// 提审包 (默认): 全部隐藏
+///   flutter build ipa --release
+/// 资质下来后的完整包:
+///   flutter build ipa --release --dart-define=WALLET_ENABLED=true --dart-define=FINANCE_ENABLED=true
 class FeatureFlag extends ChangeNotifier {
   FeatureFlag._();
   static final FeatureFlag instance = FeatureFlag._();
 
-  /// 充值/提现是否开放 (默认 false=隐藏).
-  bool walletEnabled = false;
+  /// 充值/提现是否开放 (编译期决定, 默认隐藏).
+  static const bool _kWallet =
+      bool.fromEnvironment('WALLET_ENABLED', defaultValue: false);
 
-  /// 理财/返佣是否开放 (默认 false=隐藏; 资质下来后后台打开).
-  bool financeEnabled = false;
+  /// 理财/返佣是否开放 (编译期决定, 默认隐藏).
+  static const bool _kFinance =
+      bool.fromEnvironment('FINANCE_ENABLED', defaultValue: false);
 
-  bool _loaded = false;
+  bool get walletEnabled => _kWallet;
+  bool get financeEnabled => _kFinance;
 
-  /// 拉取开关 (app 启动 + 进资产页时调用). 失败保持现状.
+  /// 兼容旧调用点: 不再请求网络, 直接就绪.
   Future<void> refresh() async {
-    try {
-      final m = await McApi.get('/api/config');
-      walletEnabled = m['wallet_enabled'] == true;
-      financeEnabled = m['finance_enabled'] == true;
-      _loaded = true;
-      notifyListeners();
-    } catch (_) {
-      // 网络失败: 首次默认隐藏, 已加载则保持
-      if (!_loaded) {
-        walletEnabled = false;
-        financeEnabled = false;
-      }
-    }
+    notifyListeners();
   }
 }

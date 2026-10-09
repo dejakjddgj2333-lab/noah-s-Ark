@@ -4,6 +4,10 @@
 
 **最终方案（用户拍板）**：分佣多级改动已全部还原，改为**整体隐藏**——理财与返佣本次上架不出现，资质下来后后台一键打开。
 
+> **2026-10-09 方案修正**：接口开关（/api/config 远程控制）会触发苹果 2.3.1「隐藏功能」条款（审核后远程解锁）。
+> 已改为**编译期常量**：`FeatureFlag` 只读 `--dart-define=WALLET_ENABLED/FINANCE_ENABLED`（默认 false）。
+> 开启功能的唯一途径是重新打包提审，包能力 = 审核所见，合规。服务端 finance_enabled/wallet_enabled 键 App 不再读取。
+
 ## C4 — Guideline 5 (多级返佣 MLM) + 理财占位 (2.1(a)) 隐藏方案
 
 ### 新增功能开关 `finance_enabled`（默认 0=隐藏）
