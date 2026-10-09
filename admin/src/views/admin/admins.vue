@@ -212,11 +212,12 @@ onMounted(fetchAll)
         </el-table-column>
         <el-table-column label="操作" width="330" fixed="right" align="center">
           <template #default="{ row }">
+            <!-- 谷歌验证: 除 admin 外一律可绑/可重置, 不受角色限制 -->
+            <el-button v-if="!row.totp_bound && row.username !== 'admin'" v-perm="'btn:admin:manage'" size="small" type="success" plain @click="openBind(row)">绑定验证</el-button>
+            <el-button v-else-if="row.totp_bound && row.username !== 'admin'" v-perm="'btn:admin:manage'" size="small" type="warning" plain @click="resetTotp(row)">重置验证</el-button>
+            <el-button v-perm="'btn:admin:manage'" size="small" plain :disabled="row.username === 'admin'" @click="openPassword(row)">重置密码</el-button>
             <template v-if="row.role?.code !== 'superadmin'">
               <el-button v-perm="'btn:admin:manage'" size="small" type="primary" plain @click="openEdit(row)">改角色</el-button>
-              <el-button v-perm="'btn:admin:manage'" size="small" plain @click="openPassword(row)">重置密码</el-button>
-              <el-button v-if="!row.totp_bound" v-perm="'btn:admin:manage'" size="small" type="success" plain @click="openBind(row)">绑定验证</el-button>
-              <el-button v-else v-perm="'btn:admin:manage'" size="small" type="warning" plain @click="resetTotp(row)">重置验证</el-button>
               <el-button
                 v-perm="'btn:admin:manage'"
                 size="small"
@@ -234,7 +235,6 @@ onMounted(fetchAll)
                 @click="remove(row)"
               >删除</el-button>
             </template>
-            <span v-else style="color: #909399; font-size: 12px">超级管理员</span>
           </template>
         </el-table-column>
       </el-table>
