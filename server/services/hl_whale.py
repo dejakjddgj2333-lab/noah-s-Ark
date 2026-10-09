@@ -85,18 +85,15 @@ async def _hl_loop() -> None:
 
 
 async def _bn_loop() -> None:
-    """Binance 合约 aggTrade WS 备源: HL 连续失败 >=3 次才启用, HL 恢复后闲置."""
+    """Binance 合约 aggTrade WS: 常开双源 (HL 清淡期也能持续供数), 按 (源,symbol,ts) 去重."""
     global _last_err
     symbols = [c.lower() + "usdt" for c in _COINS]
     url = "wss://fstream.binance.com/stream?streams=" + "/".join(
         f"{s}@aggTrade" for s in symbols)
     while True:
-        if _hl_fails < 3:
-            await asyncio.sleep(15)
-            continue
         try:
             async with websockets.connect(url, ping_interval=20) as ws:
-                logger.info("bn_whale_ws_connected (hl 备用源启用)")
+                logger.info("bn_whale_ws_connected")
                 async for raw in ws:
                     try:
                         msg = json.loads(raw)
@@ -136,7 +133,7 @@ def status() -> dict:
         "buffered": len(_buf),
         "hl_connected": _hl_connected,
         "hl_fails": _hl_fails,
-        "backup_active": _hl_fails >= 3,
+        "dual_source": True,  # HL + Binance 常开双源
         "last_error": _last_err,
         "last_msg_age_s": round(time.time() - _last_msg_at, 1) if _last_msg_at else None,
     }
