@@ -1112,7 +1112,12 @@ class _HeatTile extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Container(color: accent.withValues(alpha: overlay)),
+            child: Container(
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: overlay),
+                borderRadius: BorderRadius.circular(11), // 贴内边框, 留 1px 边
+              ),
+            ),
           ),
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -185,6 +185,12 @@ async def get_whale_alerts():
     return {"alerts": hl_whale.whale_alerts()}
 
 
+@router.get("/whale-status")
+async def get_whale_status():
+    """巨鲸流连接诊断 (排障用)."""
+    return hl_whale.status()
+
+
 # ---------- 横幅全局数据 (CoinGecko) ----------
 
 # path -> (data, expire_at); 独立于 CoinGlass 的小缓存

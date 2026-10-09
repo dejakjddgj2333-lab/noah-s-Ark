@@ -239,7 +239,7 @@ async def lifespan(app: FastAPI):
     # 爆仓 WS 聚合仅免费数据源模式需要 (coinglass 模式爆仓走 API 透传).
     from services import hl_whale
 
-    market_tasks: list[asyncio.Task] = [hl_whale.start()]
+    market_tasks: list[asyncio.Task] = hl_whale.start()
     if config.market_data_source.lower() != "coinglass":
         from services import liq_aggregator
 

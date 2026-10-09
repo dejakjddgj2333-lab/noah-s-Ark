@@ -55,6 +55,11 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
 
   // K线.
   List<Map<String, double>> _candles = [];
+
+  // K 线手势: 可见窗口 (startIndex=最旧可见下标, viewCount=可见根数).
+  // viewCount<=0 表示"全部", 窗口锚定最新; 拖拽移动窗口, 捏合缩放根数.
+  int _viewCount = 0;
+  double _viewAnchor = 0; // 浮点锚点, 拖拽时按像素换算根数, 渲染时取整
   String _bar = '1H';
   bool _candleLoading = true;
 
@@ -184,17 +189,21 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
   Future<void> _loadCandles() async {
     setState(() => _candleLoading = true);
     try {
-      final data = await McData.candles(_instId, bar: _bar, limit: 60);
+      final data = await McData.candles(_instId, bar: _bar, limit: 200);
       if (!mounted) return;
       setState(() {
         _candles = data;
         _candleLoading = false;
+        // 换周期/换币重置视图: 显示最近 60 根, 锚定最新.
+        _viewCount = 60;
+        _viewAnchor = (data.length - 60).clamp(0, data.length).toDouble();
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _candles = [];
         _candleLoading = false;
+        _viewCount = 0;
       });
     }
   }
@@ -606,22 +615,76 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
                                 size: 12,
                                 color: McColors.onSurfaceVariant)),
                       )
-                    : CustomPaint(
-                        size: Size.infinite,
-                        painter: _CandlePainter(
-                          candles: _candles,
-                          lastPrice: _last,
-                          bar: _bar,
-                          bull: ColorPref.instance.bullColor,
-                          bear: ColorPref.instance.bearColor,
-                          gridColor: McColors.outlineVariant,
-                          labelColor: McColors.onSurfaceVariant,
-                        ),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final chartW = constraints.maxWidth - 52;
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onScaleStart: (_) {},
+                            onScaleUpdate: (d) =>
+                                _onChartScale(d, chartW),
+                            child: CustomPaint(
+                              size: Size.infinite,
+                              painter: _CandlePainter(
+                                candles: _candles,
+                                lastPrice: _last,
+                                bar: _bar,
+                                startIndex: _viewCount > 0
+                                    ? _viewAnchor.round().clamp(
+                                        0, _candles.length - 1)
+                                    : 0,
+                                viewCount: _viewCount > 0
+                                    ? _viewCount.clamp(
+                                        1, _candles.length)
+                                    : _candles.length,
+                                bull: ColorPref.instance.bullColor,
+                                bear: ColorPref.instance.bearColor,
+                                gridColor: McColors.outlineVariant,
+                                labelColor: McColors.onSurfaceVariant,
+                              ),
+                            ),
+                          );
+                        },
                       ),
           ),
         ],
       ),
     );
+  }
+
+  /// K 线手势: 单指水平拖 = 移动窗口, 双指捏合 = 缩放可见根数.
+  /// 缩放锚定最新端 (右缘不动), 拖到历史后缩放锚定窗口中心.
+  void _onChartScale(ScaleUpdateDetails d, double chartW) {
+    if (_candles.length < 2 || chartW <= 0) return;
+    if (_viewCount <= 0) {
+      _viewCount = _candles.length;
+      _viewAnchor = 0;
+    }
+    setState(() {
+      if (d.scale != 1.0) {
+        // 捏合: 可见根数反比缩放, 10..全部.
+        var cnt = (_viewCount / d.scale).round();
+        cnt = cnt.clamp(10, _candles.length);
+        if (cnt != _viewCount) {
+          final atRightEdge =
+              _viewAnchor >= _candles.length - _viewCount - 0.5;
+          if (atRightEdge) {
+            _viewAnchor = (_candles.length - cnt).toDouble();
+          } else {
+            final center = _viewAnchor + _viewCount / 2;
+            _viewAnchor = center - cnt / 2;
+          }
+          _viewCount = cnt;
+        }
+      }
+      if (d.focalPointDelta.dx != 0) {
+        // 拖动: 每根蜡烛 step 像素, 向左拖 = 看更早 (窗口左移).
+        final step = chartW / _viewCount;
+        _viewAnchor -= d.focalPointDelta.dx / step;
+      }
+      _viewAnchor = _viewAnchor
+          .clamp(0.0, (_candles.length - _viewCount).toDouble());
+    });
   }
 
   Widget _barChip(String bar) {
@@ -1008,6 +1071,8 @@ class _CandlePainter extends CustomPainter {
     required this.bear,
     required this.gridColor,
     required this.labelColor,
+    this.startIndex = 0,
+    this.viewCount = 0,
   });
 
   final List<Map<String, double>> candles;
@@ -1017,6 +1082,10 @@ class _CandlePainter extends CustomPainter {
   final Color bear;
   final Color gridColor;
   final Color labelColor;
+
+  /// 可见窗口: [startIndex, startIndex+viewCount); viewCount<=0 = 全部.
+  final int startIndex;
+  final int viewCount;
 
   static const _labelW = 52.0; // 右轴价标宽
   static const _timeH = 16.0; // 底部时间轴高
@@ -1029,13 +1098,20 @@ class _CandlePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (candles.isEmpty) return;
+    // 可见窗口裁剪.
+    final total = candles.length;
+    var s0 = startIndex.clamp(0, total - 1);
+    var cnt = viewCount <= 0 ? total : viewCount.clamp(1, total - s0);
+    final s1 = (s0 + cnt).clamp(0, total);
+    cnt = s1 - s0;
+    if (cnt <= 0) return;
 
     var lo = double.infinity;
     var hi = -double.infinity;
     var maxVol = 0.0;
     var hiIdx = 0;
     var loIdx = 0;
-    for (var i = 0; i < candles.length; i++) {
+    for (var i = s0; i < s1; i++) {
       final c = candles[i];
       if (c['l']! < lo) {
         lo = c['l']!;
@@ -1084,14 +1160,14 @@ class _CandlePainter extends CustomPainter {
     // 价格区与量区分隔线.
     canvas.drawLine(Offset(0, volTop), Offset(chartW, volTop), gridPaint);
 
-    final count = candles.length;
-    final step = chartW / count;
+    final step = chartW / cnt;
     final bodyW = (step * 0.62).clamp(1.0, step);
+    double xOf(int i) => (i - s0) * step + step / 2;
 
     // 时间轴 (4 档).
     for (var i = 0; i < 4; i++) {
-      final idx = (count - 1) * i ~/ 3;
-      final x = idx * step + step / 2;
+      final idx = s0 + (cnt - 1) * i ~/ 3;
+      final x = xOf(idx);
       final label = _axisTime(candles[idx]['ts']!);
       final w = label.length * 5.4;
       var tx = x - w / 2;
@@ -1101,7 +1177,7 @@ class _CandlePainter extends CustomPainter {
     }
 
     // 蜡烛 + 成交量.
-    for (var i = 0; i < count; i++) {
+    for (var i = s0; i < s1; i++) {
       final c = candles[i];
       final o = c['o']!;
       final h = c['h']!;
@@ -1109,7 +1185,7 @@ class _CandlePainter extends CustomPainter {
       final cl = c['c']!;
       final up = cl >= o;
       final color = up ? bull : bear;
-      final cx = i * step + step / 2;
+      final cx = xOf(i);
 
       canvas.drawLine(
           Offset(cx, yOf(h)),
@@ -1136,12 +1212,12 @@ class _CandlePainter extends CustomPainter {
     }
 
     // MA 线 + 左上角图例 (带半透明底, 避免与 K 线/价标重叠).
-    _maLine(canvas, 5, step, yOf, _ma5Color);
-    _maLine(canvas, 10, step, yOf, _ma10Color);
-    _maLine(canvas, 20, step, yOf, _ma20Color);
+    _maLine(canvas, 5, step, yOf, _ma5Color, s0, s1);
+    _maLine(canvas, 10, step, yOf, _ma10Color, s0, s1);
+    _maLine(canvas, 20, step, yOf, _ma20Color, s0, s1);
     final legend = <(String, Color)>[];
     for (final (n, color) in [(5, _ma5Color), (10, _ma10Color), (20, _ma20Color)]) {
-      final v = _maAt(count - 1, n);
+      final v = _maAt(s1 - 1, n);
       legend.add((v == null ? 'MA$n' : 'MA$n ${_axisPrice(v)}', color));
     }
     const legendPadX = 6.0;
@@ -1166,9 +1242,9 @@ class _CandlePainter extends CustomPainter {
 
     // 可见区最高/最低价指示 (OKX 风格: 极值点短横线 + 价格文本).
     final markColor = const Color(0xFFE8EAF0).withValues(alpha: 0.9);
-    _hiLoMark(canvas, hiIdx * step + step / 2, yOf(candles[hiIdx]['h']!),
+    _hiLoMark(canvas, xOf(hiIdx), yOf(candles[hiIdx]['h']!),
         candles[hiIdx]['h']!, markColor, chartW);
-    _hiLoMark(canvas, loIdx * step + step / 2, yOf(candles[loIdx]['l']!),
+    _hiLoMark(canvas, xOf(loIdx), yOf(candles[loIdx]['l']!),
         candles[loIdx]['l']!, markColor, chartW);
 
     // 最新价虚线 + 右轴标签.
@@ -1229,12 +1305,13 @@ class _CandlePainter extends CustomPainter {
   }
 
   void _maLine(Canvas canvas, int n, double step, double Function(double) yOf,
-      Color color) {
+      Color color, int s0, int s1) {
     final path = Path();
     var started = false;
-    for (var i = n - 1; i < candles.length; i++) {
+    final begin = s0 > n - 1 ? s0 : n - 1;
+    for (var i = begin; i < s1; i++) {
       final v = _maAt(i, n)!;
-      final x = i * step + step / 2;
+      final x = (i - s0) * step + step / 2;
       if (!started) {
         path.moveTo(x, yOf(v));
         started = true;
@@ -1293,7 +1370,11 @@ class _CandlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CandlePainter old) =>
-      old.candles != candles || old.lastPrice != lastPrice || old.bar != bar;
+      old.candles != candles ||
+      old.lastPrice != lastPrice ||
+      old.bar != bar ||
+      old.startIndex != startIndex ||
+      old.viewCount != viewCount;
 }
 
 /// 全屏选币面板 (OKX 风格): 搜索 + 永续合约列表, 按 24H 成交额降序.
