@@ -1150,7 +1150,7 @@ class _HeatTile extends StatelessWidget {
                   const SizedBox(width: 6),
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: hot
                           ? accent.withValues(alpha: 0.15)
