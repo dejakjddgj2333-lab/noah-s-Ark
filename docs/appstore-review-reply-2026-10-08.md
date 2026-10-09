@@ -24,7 +24,7 @@
 理财中心及其中的占位产品已在本次提交版本中**整体移除**，App 不再包含任何未完成或占位性质的内容。该功能模块将在取得相关资质并完成内容筹备后，于后续版本中再申请上架。
 
 **5. Guideline 5 — 多级返佣**
-我们理解并尊重苹果对相关合规的要求。本次提交版本已**完全移除返佣/团队/邀请奖励相关的全部功能与页面**（包括分佣记录、团队等级、邀请码入口等），App 当前版本不包含任何多级推广或返佣机制。
+我们理解并尊重苹果对相关合规的要求。本次提交版本中，返佣/团队/邀请奖励相关功能**已在编译期整体移除**：该部分代码未编入本安装包，应用内不存在任何可通过远程配置或后台开关重新启用的隐藏功能。当前版本不包含任何多级推广或返佣机制；该模块如未来取得相关资质，将以新版本形式重新提交审核后再提供。
 
 当前版本 App 保留的功能为：行情资讯浏览、K 线图表、链上数据看板、新闻资讯与社区聊天。全部是信息与内容类功能。
 
@@ -52,7 +52,7 @@ We have set "User-Generated Content" to "Yes" in the Age Rating section. Both in
 The "理财中心" (Finance Center) and all placeholder products within it have been **entirely removed** from this build. The app no longer contains any incomplete or placeholder content. This module will only be resubmitted in a future version after we obtain the relevant licenses and finalize the content.
 
 **5. Guideline 5 — Multi-Level Marketing**
-We fully understand and respect Apple's compliance requirements. In this submission, we have **completely removed all commission/referral/team-reward features and pages** (including commission records, team levels, and invite code entries). The current version contains no multi-level promotion or rebate mechanisms of any kind.
+We fully understand and respect Apple's compliance requirements. In this submission, all commission/referral/team-reward functionality has been **removed at compile time**: that code is not included in this build, and the app contains no hidden features that could be re-enabled through any remote configuration or backend switch. The current version contains no multi-level promotion or rebate mechanisms of any kind. Should we obtain the relevant licenses in the future, this module would only be offered in a new version submitted for review.
 
 The current version of the app provides only: market data browsing, candlestick charts, on-chain data dashboards, news, and community chat — all informational/content features.
 
