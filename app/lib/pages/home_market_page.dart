@@ -1098,75 +1098,67 @@ class _HeatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final bull = ColorPref.instance.bullColor;
     final accent = neg ? ColorPref.instance.bearColor : bull;
+    // 整卡以板块涨跌色为背景: 热度越深颜色越浓, 叠在底色上保持可读.
+    final bgAlpha = (overlay * 1.6).clamp(0.08, 0.30);
+    final bg = Color.alphaBlend(
+        accent.withValues(alpha: bgAlpha), McColors.surfaceContainerHigh);
     final borderColor = hot
-        ? accent.withValues(alpha: borderAlpha)
+        ? accent.withValues(alpha: (borderAlpha + 0.15).clamp(0.0, 0.5))
         : HomeMarketPage._outlineVar.withValues(alpha: 0.2);
     return Container(
       constraints: const BoxConstraints(minHeight: 78),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: McColors.surfaceContainerHigh,
+        color: bg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
-      child: Stack(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: overlay),
-                borderRadius: BorderRadius.circular(11), // 贴内边框, 留 1px 边
-              ),
-            ),
-          ),
-          Column(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(name,
-                        overflow: TextOverflow.ellipsis,
-                        style: McText.sans(size: 13, weight: FontWeight.w600)),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(pct,
-                      style: McText.sans(
-                          size: 12, weight: FontWeight.w700, color: accent)),
-                ],
+              Flexible(
+                child: Text(name,
+                    overflow: TextOverflow.ellipsis,
+                    style: McText.sans(size: 13, weight: FontWeight.w600)),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(leader,
-                        overflow: TextOverflow.ellipsis,
-                        style: McText.sans(
-                            size: 12, color: HomeMarketPage._outline)),
+              const SizedBox(width: 6),
+              Text(pct,
+                  style: McText.sans(
+                      size: 12, weight: FontWeight.w700, color: accent)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(leader,
+                    overflow: TextOverflow.ellipsis,
+                    style: McText.sans(
+                        size: 12, color: HomeMarketPage._outline)),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: hot
+                      ? accent.withValues(alpha: 0.22)
+                      : McColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  tag,
+                  style: McText.sans(
+                    size: 12,
+                    weight: hot ? FontWeight.w600 : FontWeight.w500,
+                    color: hot ? accent : HomeMarketPage._outline,
                   ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: hot
-                          ? accent.withValues(alpha: 0.15)
-                          : McColors.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      tag,
-                      style: McText.sans(
-                        size: 12,
-                        weight: hot ? FontWeight.w600 : FontWeight.w500,
-                        color: hot ? accent : HomeMarketPage._outline,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
