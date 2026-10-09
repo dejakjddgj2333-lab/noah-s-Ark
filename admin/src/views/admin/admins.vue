@@ -216,7 +216,7 @@ onMounted(fetchAll)
             <el-button v-if="!row.totp_bound && row.username !== 'admin'" v-perm="'btn:admin:manage'" size="small" type="success" plain @click="openBind(row)">绑定验证</el-button>
             <el-button v-else-if="row.totp_bound && row.username !== 'admin'" v-perm="'btn:admin:manage'" size="small" type="warning" plain @click="resetTotp(row)">重置验证</el-button>
             <el-button v-perm="'btn:admin:manage'" size="small" plain :disabled="row.username === 'admin'" @click="openPassword(row)">重置密码</el-button>
-            <template v-if="row.role?.code !== 'superadmin'">
+            <template v-if="row.username !== 'admin'">
               <el-button v-perm="'btn:admin:manage'" size="small" type="primary" plain @click="openEdit(row)">改角色</el-button>
               <el-button
                 v-perm="'btn:admin:manage'"

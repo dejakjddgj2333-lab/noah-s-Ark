@@ -243,15 +243,12 @@ async def update_admin(
     admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    """改角色/重置密码/启停. 不能禁用自己, 不能动超管的超管角色."""
+    """改角色/重置密码/启停. 仅保护种子超管 admin, 不能禁用自己."""
     target = await _get_admin_or_404(db, admin_id)
-    target_role = (
-        await db.execute(select(HkRole).where(HkRole.id == target.role_id))
-    ).scalar_one_or_none()
-    if target_role is not None and target_role.code == "superadmin" and (
+    if target.username == "admin" and (
         body.role_id is not None or body.status == "disabled"
     ):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能改超级管理员的角色或状态")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能改 admin 的角色或状态")
     if body.status == "disabled" and target.id == admin.id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能禁用自己的账号")
     if body.role_id is not None:
@@ -346,15 +343,12 @@ async def delete_admin(
     admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    """删除管理员. 不能删自己, 不能删超管."""
+    """删除管理员. 不能删自己, 不能删种子超管 admin."""
     target = await _get_admin_or_404(db, admin_id)
     if target.id == admin.id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能删除自己的账号")
-    target_role = (
-        await db.execute(select(HkRole).where(HkRole.id == target.role_id))
-    ).scalar_one_or_none()
-    if target_role is not None and target_role.code == "superadmin":
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能删除超级管理员")
+    if target.username == "admin":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不能删除 admin")
     await db.delete(target)
     await admin_service.audit_admin(
         db, admin, "admin_delete", "admin_user", admin_id,
