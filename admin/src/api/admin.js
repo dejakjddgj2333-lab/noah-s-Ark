@@ -47,6 +47,14 @@ export function resetAdminTotp(adminId) {
   return request.post(`/admin/admins/${adminId}/reset-totp`)
 }
 
+export function adminTotpSetup(adminId) {
+  return request.post(`/admin/admins/${adminId}/totp-setup`)
+}
+
+export function adminTotpConfirm(adminId, code) {
+  return request.post(`/admin/admins/${adminId}/totp-confirm`, { code })
+}
+
 export function removeAdmin(adminId) {
   return request.delete(`/admin/admins/${adminId}`)
 }

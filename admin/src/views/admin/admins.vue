@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
+  adminTotpConfirm,
+  adminTotpSetup,
   createAdmin,
   getAdmins,
   getRoles,
@@ -126,6 +128,44 @@ async function remove(row) {
   fetchAll()
 }
 
+// ── 管理页代绑谷歌验证 ──
+const totpDialog = ref(false)
+const totpTarget = ref(null)
+const totpInfo = reactive({ secret: '', uri: '' })
+const totpCode = ref('')
+const totpLoading = ref(false)
+
+function qrUrl(uri) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(uri)}`
+}
+
+async function openBind(row) {
+  totpTarget.value = row
+  totpCode.value = ''
+  totpInfo.secret = ''
+  totpInfo.uri = ''
+  totpDialog.value = true
+  const res = await adminTotpSetup(row.id)
+  totpInfo.secret = res.secret
+  totpInfo.uri = res.uri
+}
+
+async function confirmBind() {
+  if (!totpCode.value || totpCode.value.length < 6) {
+    ElMessage.warning('请输入 6 位动态码')
+    return
+  }
+  totpLoading.value = true
+  try {
+    await adminTotpConfirm(totpTarget.value.id, totpCode.value)
+    ElMessage.success('绑定成功')
+    totpDialog.value = false
+    fetchAll()
+  } finally {
+    totpLoading.value = false
+  }
+}
+
 onMounted(fetchAll)
 </script>
 
@@ -175,7 +215,8 @@ onMounted(fetchAll)
             <template v-if="row.role?.code !== 'superadmin'">
               <el-button v-perm="'btn:admin:manage'" size="small" type="primary" plain @click="openEdit(row)">改角色</el-button>
               <el-button v-perm="'btn:admin:manage'" size="small" plain @click="openPassword(row)">重置密码</el-button>
-              <el-button v-perm="'btn:admin:manage'" size="small" type="warning" plain :disabled="!row.totp_bound" @click="resetTotp(row)">重置验证</el-button>
+              <el-button v-if="!row.totp_bound" v-perm="'btn:admin:manage'" size="small" type="success" plain @click="openBind(row)">绑定验证</el-button>
+              <el-button v-else v-perm="'btn:admin:manage'" size="small" type="warning" plain @click="resetTotp(row)">重置验证</el-button>
               <el-button
                 v-perm="'btn:admin:manage'"
                 size="small"
@@ -232,6 +273,31 @@ onMounted(fetchAll)
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submit">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="totpDialog" :title="`绑定谷歌验证 — ${totpTarget?.username || ''}`" width="400px">
+      <div v-loading="!totpInfo.uri" style="min-height: 120px">
+        <template v-if="totpInfo.uri">
+          <div style="display: flex; justify-content: center; margin-bottom: 14px">
+            <img :src="qrUrl(totpInfo.uri)" alt="TOTP QR" style="width: 180px; height: 180px; border-radius: 8px; background: #fff; padding: 6px" />
+          </div>
+          <div style="margin-bottom: 14px; padding: 10px 12px; border-radius: 8px; background: var(--el-fill-color-light); font-size: 12px">
+            <span style="color: #909399">手动密钥: </span>
+            <code style="user-select: all; letter-spacing: 1px">{{ totpInfo.secret }}</code>
+          </div>
+          <el-input
+            v-model="totpCode"
+            placeholder="输入验证器显示的 6 位动态码"
+            maxlength="8"
+            size="large"
+            @keyup.enter="confirmBind"
+          />
+        </template>
+      </div>
+      <template #footer>
+        <el-button @click="totpDialog = false">取消</el-button>
+        <el-button type="primary" :loading="totpLoading" @click="confirmBind">确认绑定</el-button>
       </template>
     </el-dialog>
   </div>

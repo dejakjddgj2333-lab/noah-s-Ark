@@ -294,6 +294,53 @@ async def reset_admin_totp(
     return {"ok": True}
 
 
+@router.post("/admins/{admin_id}/totp-setup")
+async def admin_totp_setup(
+    admin_id: int,
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """管理页代绑定谷歌验证: 生成/重取目标管理员的绑定密钥 (返回 otpauth URI)."""
+    import urllib.parse
+
+    target = await _get_admin_or_404(db, admin_id)
+    if not target.totp_secret:
+        target.totp_secret = auth_service.generate_totp_secret()
+        await db.commit()
+    label = urllib.parse.quote(f"NoahAdmin:{target.username}")
+    uri = (
+        f"otpauth://totp/{label}?secret={target.totp_secret}"
+        f"&issuer=NoahAdmin&algorithm=SHA1&digits=6&period=30"
+    )
+    return {"secret": target.totp_secret, "uri": uri}
+
+
+class TotpConfirmIn(BaseModel):
+    code: str = Field(min_length=6, max_length=8)
+
+
+@router.post("/admins/{admin_id}/totp-confirm")
+async def admin_totp_confirm(
+    admin_id: int,
+    body: TotpConfirmIn,
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:admin:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """管理页代绑定: 校验动态码后确认绑定."""
+    target = await _get_admin_or_404(db, admin_id)
+    if not target.totp_secret:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "请先生成绑定密钥")
+    if not auth_service.verify_totp(target.totp_secret, body.code):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "验证码错误, 请重试")
+    target.totp_bound = True
+    await db.flush()
+    await admin_service.audit_admin(
+        db, admin, "admin_totp_bind", "admin_user", target.id,
+        f"operator={admin.username}")
+    await db.commit()
+    return {"ok": True}
+
+
 @router.delete("/admins/{admin_id}")
 async def delete_admin(
     admin_id: int,
