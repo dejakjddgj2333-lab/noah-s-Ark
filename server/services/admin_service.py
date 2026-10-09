@@ -16,7 +16,16 @@ from models.account import HkAdminActionLog
 from models.hk import HkAdminUser, HkRole, HkUser
 from services import auth_service
 from services.auth_service import get_current_user
-from services.permissions import BUILTIN_ROLES
+from services.permissions import BUILTIN_ROLES, PERM_NAMES
+
+
+def _forbidden(code: str) -> HTTPException:
+    """403 带权限中文名: 操作者能看明白缺的是哪项、该找谁开."""
+    name = PERM_NAMES.get(code, code)
+    return HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"没有权限：需要「{name}」，请联系超级管理员在角色管理中开通",
+    )
 
 
 async def get_admin_perms(db: AsyncSession, admin: HkAdminUser) -> list[str]:
@@ -44,9 +53,7 @@ def require_admin_perm(code: str | None = None):
         if code is not None:
             perms = await get_admin_perms(db, admin)
             if not has_perm(perms, code):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail="无此操作权限"
-                )
+                raise _forbidden(code)
         return admin
 
     return _check
@@ -175,9 +182,7 @@ def require_perm(code: str):
     ) -> HkUser:
         perms = await get_perms(db, user)
         if not has_perm(perms, code):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无此操作权限"
-            )
+            raise _forbidden(code)
         return user
 
     return _check

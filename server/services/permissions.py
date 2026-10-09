@@ -106,6 +106,13 @@ ALL_CODES: set[str] = {
     c["code"] for p in PERMISSION_TREE for c in [p, *p["children"]]
 }
 
+# 权限码 → 中文名 (403 提示用: 告诉操作者缺的是哪项权限, 而不是干巴巴一句"没有权限")
+PERM_NAMES: dict[str, str] = {
+    c["code"]: f'{p["name"]} · {c["name"]}' if c is not p else p["name"]
+    for p in PERMISSION_TREE
+    for c in [p, *p["children"]]
+}
+
 # 预置角色 (code, name, perms); 启动幂等 upsert
 BUILTIN_ROLES: list[tuple[str, str, list[str]]] = [
     ("superadmin", "超级管理员", ["*"]),

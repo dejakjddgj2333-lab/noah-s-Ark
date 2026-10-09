@@ -26,7 +26,11 @@ request.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const status = error.response?.status
-    const message = error.response?.data?.message || error.message || '请求失败'
+    // FastAPI 错误体是 {detail}, 不是 {message} —— 优先取 detail 才能让
+    // 操作者看到后端的具体原因 (缺哪项权限/为什么不能删), 而不是裸状态码
+    const data = error.response?.data
+    const detail = typeof data?.detail === 'string' ? data.detail : null
+    const message = detail || data?.message || error.message || '请求失败'
 
     if (status === 401) {
       const userStore = useUserStore()

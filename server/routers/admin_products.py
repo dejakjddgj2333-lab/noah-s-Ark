@@ -152,7 +152,7 @@ async def offline_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:product:delete")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:delete")),
     db: AsyncSession = Depends(get_db),
 ):
     """删除产品 (2026-10-09): 保护规则 ——
@@ -180,8 +180,8 @@ async def delete_product(
         )
     name = product.name
     await db.delete(product)
-    await admin_service.audit(
-        db, user, "product_delete", "product", product_id, detail=f"name={name}"
+    await admin_service.audit_admin(
+        db, admin, "product_delete", "product", product_id, detail=f"name={name}"
     )
     await db.commit()
 

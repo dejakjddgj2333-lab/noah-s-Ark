@@ -349,7 +349,7 @@ async def update_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
-    user: HkUser = Depends(admin_service.require_perm("btn:user:delete")),
+    admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:user:delete")),
     db: AsyncSession = Depends(get_db),
 ):
     """删除空账户 (2026-10-09): 连同个人数据物理删除.
@@ -443,7 +443,7 @@ async def delete_user(
     )
     uname = u.username
     await db.delete(u)
-    await admin_service.audit(
-        db, user, "user_delete", "user", user_id, f"空账户 {uname}"
+    await admin_service.audit_admin(
+        db, admin, "user_delete", "user", user_id, f"空账户 {uname}"
     )
     await db.commit()

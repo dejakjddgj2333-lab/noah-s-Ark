@@ -93,7 +93,7 @@ async def run(
     """执行归集: 返回 {swept, gas_needed, failed, skipped}."""
     if body.network not in NETWORKS:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "不支持的网络")
-    result = await sweep_service.run_sweep(db, body.network, user, body.address)
+    result = await sweep_service.run_sweep(db, body.network, admin, body.address)
     await admin_service.audit_admin(db, admin, "sweep_run", "network", 0,
                               f"{body.network}: {result}")
     await db.commit()
