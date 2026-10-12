@@ -182,7 +182,10 @@ onMounted(fetchAll)
     <el-card shadow="never">
       <div class="toolbar">
         <el-button v-perm="'btn:admin:manage'" type="primary" @click="openCreate">新建管理员</el-button>
-        <span class="tip">独立账号体系, 不使用 App 注册信息; 除 admin 外所有管理员必须绑定谷歌验证才能登录</span>
+      </div>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        独立账号体系, 不使用 App 注册信息; 除 admin 外所有管理员必须绑定谷歌验证才能登录
       </div>
       <el-table :data="admins" border stripe>
         <el-table-column prop="id" label="ID" width="60" />

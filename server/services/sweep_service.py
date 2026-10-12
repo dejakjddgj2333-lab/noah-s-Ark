@@ -55,16 +55,57 @@ async def set_setting(db: AsyncSession, key: str, value: str) -> None:
     await db.flush()
 
 
+NATIVE_SYMBOL = {"trc20": "TRX", "erc20": "ETH", "bep20": "BNB", "arbitrum": "ETH"}
+
+
+async def _chain_balances(
+    client: httpx.AsyncClient, network: str, address: str
+) -> tuple[Decimal, Decimal, bool]:
+    """查询任意地址 (USDT, 原生币, gas 是否够一次归集)."""
+    cfg = get_network(network)
+    if cfg["chain"] == "tron":
+        usdt, native = await _tron_balances(
+            client, address, cfg["usdt_contract"]
+        )
+        gas_ok = native * Decimal(10**6) >= TRON_MIN_SUN
+    else:
+        usdt = await evmscan.token_balance(
+            client, cfg["chain_id"], address,
+            cfg["usdt_contract"], cfg["decimals"],
+        )
+        native = await evmscan.native_balance(client, cfg["chain_id"], address)
+        price = await evmscan.gas_price(client, cfg["chain_id"])
+        gas_ok = native >= Decimal(price * EVM_GAS_LIMIT) / Decimal(10**18)
+    return usdt, native, gas_ok
+
+
 async def get_targets(db: AsyncSession) -> dict:
-    """各网络主钱包 + 阈值."""
+    """各网络主钱包 + 阈值 + 主钱包链上余额/gas 状态 (未配置不查链)."""
     out = {}
-    for network in NETWORKS:
-        out[network] = {
-            "target": await get_setting(db, f"sweep_target_{network}"),
-            "threshold": await get_setting(
-                db, f"sweep_threshold_{network}", str(DEFAULT_THRESHOLD)
-            ),
-        }
+    async with trongrid.make_client() as client:
+        for network in NETWORKS:
+            target = await get_setting(db, f"sweep_target_{network}")
+            item = {
+                "target": target,
+                "threshold": await get_setting(
+                    db, f"sweep_threshold_{network}", str(DEFAULT_THRESHOLD)
+                ),
+                "native_symbol": NATIVE_SYMBOL[network],
+                "target_usdt": None,
+                "target_native": None,
+                "gas_ok": None,
+            }
+            if target:
+                try:
+                    usdt, native, gas_ok = await _chain_balances(
+                        client, network, target
+                    )
+                    item["target_usdt"] = str(usdt)
+                    item["target_native"] = str(native)
+                    item["gas_ok"] = gas_ok
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("sweep target balance %s failed: %s", network, e)
+            out[network] = item
     return out
 
 
@@ -95,8 +136,7 @@ async def _tron_balances(
 async def address_balances(
     db: AsyncSession, network: str
 ) -> list[dict]:
-    """已分配地址的 USDT + 原生币余额 (归集决策依据)."""
-    cfg = get_network(network)
+    """已分配地址的 USDT + 原生币余额 (归集决策依据), 附用户与生成时间."""
     rows = (
         await db.execute(
             select(HkDepositAddress).where(
@@ -105,38 +145,39 @@ async def address_balances(
             )
         )
     ).scalars().all()
+
+    user_ids = {r.user_id for r in rows if r.user_id}
+    users = {}
+    if user_ids:
+        urows = (
+            await db.execute(select(HkUser).where(HkUser.id.in_(user_ids)))
+        ).scalars().all()
+        users = {u.id: u for u in urows}
+
     out = []
     async with trongrid.make_client() as client:
         for addr in rows:
             try:
-                if cfg["chain"] == "tron":
-                    usdt, native = await _tron_balances(
-                        client, addr.address, cfg["usdt_contract"]
-                    )
-                    native_symbol = "TRX"
-                else:
-                    usdt = await evmscan.token_balance(
-                        client, cfg["chain_id"], addr.address,
-                        cfg["usdt_contract"], cfg["decimals"],
-                    )
-                    native = await evmscan.native_balance(
-                        client, cfg["chain_id"], addr.address
-                    )
-                    native_symbol = {1: "ETH", 56: "BNB", 42161: "ETH"}[
-                        cfg["chain_id"]
-                    ]
+                usdt, native, gas_ok = await _chain_balances(
+                    client, network, addr.address
+                )
             except Exception as e:  # noqa: BLE001
                 logger.warning("sweep balance %s failed: %s", addr.address, e)
                 continue
             if usdt <= 0 and native <= 0:
                 continue  # 空地址不展示
+            u = users.get(addr.user_id)
             out.append(
                 {
                     "address": addr.address,
                     "user_id": addr.user_id,
+                    "user_name": (u.nickname or u.username) if u else None,
+                    "user_email": u.email if u else None,
                     "usdt": str(usdt),
                     "native": str(native),
-                    "native_symbol": native_symbol,
+                    "native_symbol": NATIVE_SYMBOL[network],
+                    "gas_ok": gas_ok,
+                    "created_at": str(addr.assigned_at or addr.created_at or ""),
                 }
             )
     return out
