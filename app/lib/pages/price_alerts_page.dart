@@ -17,6 +17,7 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
   final _symbolCtrl = TextEditingController();
   final _targetCtrl = TextEditingController();
   bool _up = true; // true=涨破 up, false=跌破 down
+  bool _percentMode = false; // false=目标价 price, true=涨跌幅 percent
 
   bool _loading = true;
   bool _busy = false;
@@ -68,12 +69,17 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
   Future<void> _add() async {
     if (_busy) return;
     final symbol = _symbolCtrl.text.trim().toUpperCase();
-    final price = double.tryParse(_targetCtrl.text.trim());
+    final value = double.tryParse(_targetCtrl.text.trim());
     if (symbol.isEmpty) {
       _toast(tr('pa_err_symbol'), error: true);
       return;
     }
-    if (price == null || price <= 0) {
+    if (_percentMode) {
+      if (value == null || value <= 0 || value > 100) {
+        _toast(tr('pa_err_percent'), error: true);
+        return;
+      }
+    } else if (value == null || value <= 0) {
       _toast(tr('pa_err_price'), error: true);
       return;
     }
@@ -81,8 +87,9 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
     try {
       await McApi.post('/api/price-alerts', {
         'symbol': symbol,
+        'alert_type': _percentMode ? 'percent' : 'price',
         'direction': _up ? 'up' : 'down',
-        'target_price': price,
+        if (_percentMode) 'percent': value else 'target_price': value,
       }, token: AuthStore.instance.token);
       if (!mounted) return;
       _symbolCtrl.clear();
@@ -206,6 +213,14 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
           const SizedBox(height: 12),
           Row(
             children: [
+              Expanded(child: _typeChip(false)),
+              const SizedBox(width: 10),
+              Expanded(child: _typeChip(true)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
               Expanded(child: _dirChip(true)),
               const SizedBox(width: 10),
               Expanded(child: _dirChip(false)),
@@ -283,7 +298,7 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       style: McText.mono(size: 13),
       decoration: InputDecoration(
-        hintText: tr('pa_target'),
+        hintText: _percentMode ? tr('pa_percent_hint') : tr('pa_target'),
         hintStyle: McText.sans(size: 13, color: McColors.onSurfaceVariant),
         prefixIcon: const Icon(Icons.price_change_outlined,
             size: 18, color: McColors.onSurfaceVariant),
@@ -305,6 +320,50 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
           borderRadius: BorderRadius.circular(10),
           borderSide:
               const BorderSide(color: McColors.primaryContainer, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _typeChip(bool percent) {
+    final sel = _percentMode == percent;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() {
+        _percentMode = percent;
+        _targetCtrl.clear();
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: sel
+              ? McColors.primaryContainer.withValues(alpha: 0.18)
+              : McColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: sel
+                ? McColors.primary.withValues(alpha: 0.7)
+                : McColors.outlineVariant.withValues(alpha: 0.6),
+            width: sel ? 1.5 : 1,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(percent ? Icons.percent : Icons.price_change_outlined,
+                size: 16,
+                color: sel ? McColors.primarySoft : McColors.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(
+              percent ? tr('pa_type_percent') : tr('pa_type_price'),
+              style: McText.sans(
+                size: 13,
+                weight: sel ? FontWeight.w700 : FontWeight.w500,
+                color: sel ? Colors.white : McColors.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -356,10 +415,18 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
     final symbol = (a['symbol'] ?? '').toString();
     final up = (a['direction'] ?? 'up').toString() == 'up';
     final triggered = a['triggered'] == true;
+    final isPercent = (a['alert_type'] ?? 'price').toString() == 'percent';
     final price = a['target_price'];
     final priceStr =
         price is num ? price.toString() : (price ?? '').toString();
+    final percent = a['percent'];
+    final baseline = a['baseline_price'];
+    final percentStr = percent is num ? percent.toString() : '';
+    final baselineStr = baseline is num ? baseline.toString() : '';
     final dirColor = up ? McColors.bull : McColors.bear;
+    final condText = isPercent
+        ? '${up ? '+' : '-'}$percentStr% · ${tr('pa_baseline')} $baselineStr'
+        : '${tr('pa_target')} $priceStr';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -419,7 +486,7 @@ class _PriceAlertsPageState extends State<PriceAlertsPage> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${tr('pa_target')} $priceStr',
+                  condText,
                   style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
                 ),
               ],

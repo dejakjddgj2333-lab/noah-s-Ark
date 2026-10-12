@@ -4,6 +4,7 @@ import '../core/l10n.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
+import '../services/auth.dart';
 import '../services/data.dart';
 
 /// 巨鲸雷达 (Home → Whale Radar tab) — content body only.
@@ -30,6 +31,11 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   // 预警阈值: 只显示 >= 该美元值的异动 (0 = 全部).
   double _minUsd = 0;
 
+  // 巨鲸推送订阅 (服务端 APNs): 需登录, 未加载完成前铃铛不带点.
+  bool _subEnabled = false;
+  double _subMinUsd = 500000;
+  bool _subBusy = false;
+
   List<_WhaleFeedItem> get _visibleFeed => _feedItems.where((f) {
         if (_filter.isNotEmpty && f.category != _filter) return false;
         return f.usdValue >= _minUsd;
@@ -39,6 +45,162 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
   void initState() {
     super.initState();
     _load();
+    _loadSubscription();
+  }
+
+  bool get _loggedIn => (AuthStore.instance.token ?? '').isNotEmpty;
+
+  Future<void> _loadSubscription() async {
+    if (!_loggedIn) return;
+    try {
+      final resp = await McApi.get('/api/whale-push/subscription',
+          token: AuthStore.instance.token);
+      if (!mounted) return;
+      setState(() {
+        _subEnabled = resp['enabled'] == true;
+        final v = resp['min_usd'];
+        if (v is num && v > 0) _subMinUsd = v.toDouble();
+      });
+    } catch (_) {
+      // 未订阅过/网络异常 — 保持默认.
+    }
+  }
+
+  Future<void> _saveSubscription(bool enabled, double minUsd) async {
+    if (_subBusy) return;
+    setState(() => _subBusy = true);
+    try {
+      await McApi.put('/api/whale-push/subscription', {
+        'enabled': enabled,
+        'min_usd': minUsd,
+        'symbols': <String>[],
+      }, token: AuthStore.instance.token);
+      if (!mounted) return;
+      setState(() {
+        _subEnabled = enabled;
+        _subMinUsd = minUsd;
+      });
+      _toast(tr('whale_saved'));
+    } on ApiException catch (e) {
+      _toast(e.message, error: true);
+    } catch (_) {
+      _toast(tr('update_failed'), error: true);
+    } finally {
+      if (mounted) setState(() => _subBusy = false);
+    }
+  }
+
+  void _toast(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text(msg, style: McText.sans(size: 13)),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: error
+            ? McColors.bear.withValues(alpha: 0.9)
+            : McColors.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  void _openSubscribeSheet() {
+    if (!_loggedIn) {
+      _toast(tr('login_gate_title').replaceAll('{name}', tr('whale_notify')),
+          error: true);
+      return;
+    }
+    // 档位: 50万 / 100万 / 500万 美元
+    const options = [500000.0, 1000000.0, 5000000.0];
+    bool enabled = _subEnabled;
+    double minUsd = _subMinUsd;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: McColors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(tr('whale_notify'),
+                      style:
+                          McText.display(size: 16, weight: FontWeight.w600)),
+                  Switch(
+                    value: enabled,
+                    activeColor: McColors.primarySoft,
+                    onChanged: (v) {
+                      setSheet(() => enabled = v);
+                      _saveSubscription(v, minUsd);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(tr('whale_notify_desc'),
+                  style: McText.sans(
+                      size: 12, color: McColors.onSurfaceVariant)),
+              const SizedBox(height: 16),
+              Text(tr('whale_min_usd'),
+                  style: McText.sans(
+                      size: 13,
+                      weight: FontWeight.w600,
+                      color: McColors.onSurfaceVariant)),
+              const SizedBox(height: 10),
+              Row(
+                children: options.map((v) {
+                  final sel = minUsd == v;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setSheet(() => minUsd = v);
+                        _saveSubscription(enabled, v);
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(
+                            right: v == options.last ? 0 : 10),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? McColors.primaryContainer
+                                  .withValues(alpha: 0.18)
+                              : McColors.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: sel
+                                ? McColors.primary.withValues(alpha: 0.7)
+                                : McColors.outlineVariant
+                                    .withValues(alpha: 0.6),
+                            width: sel ? 1.5 : 1,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '≥ ${_fmtUsd(v)}',
+                          style: McText.mono(
+                            size: 13,
+                            color: sel
+                                ? Colors.white
+                                : McColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -237,26 +399,56 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                   ),
                 ],
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: McColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const McGlowDot(color: McColors.tertiary, size: 6),
-                    const SizedBox(width: 6),
-                    Text(
-                      tr('whale_listening_24h'),
-                      style: McText.sans(
-                          size: 12,
-                          weight: FontWeight.w600,
-                          color: McColors.onSurfaceVariant),
+              Row(
+                children: [
+                  // 巨鲸推送订阅入口 (登录后可用)
+                  GestureDetector(
+                    onTap: _openSubscribeSheet,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: McColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Badge(
+                        isLabelVisible: _subEnabled,
+                        smallSize: 6,
+                        backgroundColor: McColors.tertiary,
+                        child: Icon(
+                          _subEnabled
+                              ? Icons.notifications_active
+                              : Icons.notifications_none,
+                          size: 16,
+                          color: _subEnabled
+                              ? McColors.tertiary
+                              : McColors.onSurfaceVariant,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: McColors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const McGlowDot(color: McColors.tertiary, size: 6),
+                        const SizedBox(width: 6),
+                        Text(
+                          tr('whale_listening_24h'),
+                          style: McText.sans(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: McColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
