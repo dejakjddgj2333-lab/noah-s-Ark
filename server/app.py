@@ -44,6 +44,8 @@ from routers import (
     settlements,
     team,
     vip,
+    whale_push,
+    widget,
     withdrawals,
 )
 from routers.chat import CHAT_UPLOAD_DIR
@@ -139,6 +141,20 @@ async def _price_alert_loop() -> None:
         await asyncio.sleep(config.price_alert_interval_sec)
 
 
+async def _live_activity_loop() -> None:
+    """Live Activities 常驻循环: 每 60s 给活跃 activity token 推价格更新."""
+    from services import live_activity
+
+    while True:
+        try:
+            await live_activity.push_updates()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("live_activity_error")
+        await asyncio.sleep(60)
+
+
 # hk 表新增列的轻量迁移 (create_all 不会给已存在表加列; 重复执行仅报列已存在, 忽略)
 _MIGRATIONS = [
     ("hk_orders", "product_name", "VARCHAR(64)"),
@@ -168,6 +184,10 @@ _MIGRATIONS = [
     ("hk_orders", "idempotency_key", "VARCHAR(64)"),
     # 资讯评论举报
     ("hk_reports", "comment_id", "INTEGER"),
+    # 行情预警: 百分比型 (alert_type/percent/baseline_price)
+    ("hk_price_alerts", "alert_type", "VARCHAR(8) DEFAULT 'price'"),
+    ("hk_price_alerts", "percent", "FLOAT"),
+    ("hk_price_alerts", "baseline_price", "FLOAT"),
 ]
 
 
@@ -295,11 +315,17 @@ async def lifespan(app: FastAPI):
 
         settle_task = asyncio.create_task(settlement_service.run_forever())
     price_alert_task = asyncio.create_task(_price_alert_loop())
+    live_activity_task = asyncio.create_task(_live_activity_loop())
     yield
     retention.cancel()
     price_alert_task.cancel()
+    live_activity_task.cancel()
     try:
         await price_alert_task
+    except asyncio.CancelledError:
+        pass
+    try:
+        await live_activity_task
     except asyncio.CancelledError:
         pass
     if collector is not None:
@@ -359,6 +385,8 @@ app.include_router(overview.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(push.router, prefix="/api")
 app.include_router(price_alert.router, prefix="/api")
+app.include_router(whale_push.router, prefix="/api")
+app.include_router(widget.router, prefix="/api")
 app.include_router(legal.router, prefix="/api")
 app.include_router(admin_legal.router, prefix="/api")
 app.include_router(app_config.router, prefix="/api")

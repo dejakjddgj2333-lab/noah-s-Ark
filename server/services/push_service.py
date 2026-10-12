@@ -154,3 +154,44 @@ async def push_if_offline(
     if user_id in online:
         return
     await push_to_user(db, user_id, title, body, data)
+
+
+async def send_live_activity(
+    token: str, content_state: dict, event: str = "update"
+) -> bool:
+    """Live Activity 更新推送 (iOS 16.1+). 返回 False 多为 token 失效, 调用方清理.
+
+    与普通推送差异: topic 带 .push-type.liveactivity 后缀, payload 无 alert,
+    content-state 键值须与 Swift 端 ActivityAttributes.ContentState 一致.
+    """
+    jwt_token = _provider_jwt()
+    if jwt_token is None:
+        return False
+    payload = {
+        "aps": {
+            "timestamp": int(time.time()),
+            "event": event,  # update / end
+            "content-state": content_state,
+        }
+    }
+    try:
+        async with httpx.AsyncClient(http2=True, timeout=10) as client:
+            resp = await client.post(
+                f"{_apns_host()}/3/device/{token}",
+                json=payload,
+                headers={
+                    "authorization": f"bearer {jwt_token}",
+                    "apns-topic": f"{config.apns_bundle_id}.push-type.liveactivity",
+                    "apns-push-type": "liveactivity",
+                    "apns-priority": "10",
+                },
+            )
+        if resp.status_code == 200:
+            return True
+        logger.warning(
+            "apns_live_activity_failed", status=resp.status_code, body=resp.text[:200]
+        )
+        return False
+    except Exception as e:
+        logger.warning("apns_live_activity_error", error=str(e))
+        return False

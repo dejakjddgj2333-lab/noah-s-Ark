@@ -5,6 +5,7 @@
 
 过滤 >= $300K 的大额单, 视为合约巨鲸异动. 内存环形缓冲 (最新 100 条),
 接口直接读内存. /whale-status 暴露连接状态便于排障.
+命中订阅 (hk_whale_subscriptions) 的大额单会异步 fan-out APNs 推送.
 """
 from __future__ import annotations
 
@@ -20,15 +21,64 @@ logger = logging.getLogger(__name__)
 
 _COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
 _MIN_USD = 300_000  # 大额阈值
+_PUSH_COOLDOWN_SEC = 300  # 同用户同币种推送冷却, 防刷屏
 
 _buf: deque[dict] = deque(maxlen=100)  # 最新在前
 _seen: deque[tuple[str, int]] = deque(maxlen=300)  # (来源+symbol, time) 去重
+_push_cooldown: dict[tuple[int, str], float] = {}  # (user_id, symbol) -> 上次推送时间
 
 # 连接状态 (whale-status 诊断用)
 _hl_fails = 0
 _hl_connected = False
 _last_err = ""
 _last_msg_at = 0.0
+
+
+async def _notify_subscribers(alert: dict) -> None:
+    """大额成交 fan-out: 命中订阅条件的用户推 APNs (在线用户跳过, App 内走 WS 刷新)."""
+    from sqlalchemy import select
+
+    from database import SessionLocal
+    from models.hk import HkWhaleSubscription
+    from services import push_service
+
+    symbol = alert["symbol"]
+    usd = alert["positionSize"]
+    try:
+        async with SessionLocal() as db:
+            result = await db.execute(
+                select(HkWhaleSubscription).where(
+                    HkWhaleSubscription.enabled.is_(True),
+                    HkWhaleSubscription.min_usd <= usd,
+                )
+            )
+            subs = result.scalars().all()
+            if not subs:
+                return
+            side_zh = "买入" if alert["side"] == "Buy" else "卖出"
+            title = f"{symbol} 巨鲸异动"
+            body = (
+                f"{alert['user']}{side_zh} {symbol} "
+                f"约 {usd / 10_000:,.1f} 万美元"
+            )
+            now = time.time()
+            for s in subs:
+                try:
+                    symbols = json.loads(s.symbols or "[]")
+                except ValueError:
+                    symbols = []
+                if symbols and symbol not in symbols:
+                    continue
+                key = (s.user_id, symbol)
+                if now - _push_cooldown.get(key, 0) < _PUSH_COOLDOWN_SEC:
+                    continue
+                _push_cooldown[key] = now
+                await push_service.push_if_offline(
+                    db, s.user_id, title, body,
+                    {"type": "whale", "symbol": symbol},
+                )
+    except Exception as exc:
+        logger.warning("whale_fanout_error: %s", str(exc)[:200])
 
 
 def _push(source: str, symbol: str, side: str, usd: float, ts: int) -> None:
@@ -38,13 +88,18 @@ def _push(source: str, symbol: str, side: str, usd: float, ts: int) -> None:
         return
     _seen.append(key)
     _last_msg_at = time.time()
-    _buf.appendleft({
+    alert = {
         "symbol": symbol,
         "side": side,
         "positionSize": round(usd, 2),
         "time": ts,
         "user": "HL 大户" if source == "hl" else "BN 大户",
-    })
+    }
+    _buf.appendleft(alert)
+    try:
+        asyncio.get_running_loop().create_task(_notify_subscribers(alert))
+    except RuntimeError:
+        pass  # 无事件循环 (测试直调), 跳过推送
 
 
 async def _hl_loop() -> None:

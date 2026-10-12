@@ -44,6 +44,48 @@ async def _fetch_price(symbol: str) -> float | None:
         return None
 
 
+async def fetch_price(symbol: str) -> float | None:
+    """拿单币最新价 (供创建百分比预警时取基准价); 失败返回 None."""
+    return await _fetch_price(symbol)
+
+
+def _check_hit(alert: HkPriceAlert, price: float) -> tuple[bool, str]:
+    """命中判定 + 推送正文. 返回 (是否命中, body)."""
+    if (alert.alert_type or "price") == "percent":
+        base = alert.baseline_price or 0
+        pct = alert.percent or 0
+        if base <= 0 or pct <= 0:
+            return False, ""
+        change = (price - base) / base * 100
+        hit = (alert.direction == "up" and change >= pct) or (
+            alert.direction == "down" and change <= -pct
+        )
+        if not hit:
+            return False, ""
+        verb = "涨" if change >= 0 else "跌"
+        body = (
+            f"{alert.symbol} 较基准价 {_fmt(base)} 已{verb} "
+            f"{abs(change):.2f}%, 现价 {_fmt(price)}"
+        )
+        return True, body
+    hit = (alert.direction == "up" and price >= alert.target_price) or (
+        alert.direction == "down" and price <= alert.target_price
+    )
+    if not hit:
+        return False, ""
+    if alert.direction == "up":
+        body = (
+            f"{alert.symbol} 已涨至 {_fmt(price)}, "
+            f"突破预警价 {_fmt(alert.target_price)}"
+        )
+    else:
+        body = (
+            f"{alert.symbol} 已跌至 {_fmt(price)}, "
+            f"跌破预警价 {_fmt(alert.target_price)}"
+        )
+    return True, body
+
+
 async def check_alerts() -> None:
     """扫所有未触发预警, 按 symbol 分组查一次价, 命中即推送并标记."""
     async with SessionLocal() as db:
@@ -64,24 +106,12 @@ async def check_alerts() -> None:
             if price is None:
                 continue  # 该 symbol 查价失败, 跳过不影响其它
             for alert in rows:
-                hit = (alert.direction == "up" and price >= alert.target_price) or (
-                    alert.direction == "down" and price <= alert.target_price
-                )
+                hit, body = _check_hit(alert, price)
                 if not hit:
                     continue
                 alert.triggered = True
                 changed = True
                 title = f"{symbol} 价格预警"
-                if alert.direction == "up":
-                    body = (
-                        f"{symbol} 已涨至 {_fmt(price)}, "
-                        f"突破预警价 {_fmt(alert.target_price)}"
-                    )
-                else:
-                    body = (
-                        f"{symbol} 已跌至 {_fmt(price)}, "
-                        f"跌破预警价 {_fmt(alert.target_price)}"
-                    )
                 await push_service.push_if_offline(
                     db,
                     alert.user_id,

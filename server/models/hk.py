@@ -340,7 +340,10 @@ class HkLegalDoc(HkBase):
 
 
 class HkPriceAlert(HkBase):
-    """行情预警: 价格 涨破/跌破 目标值时 APNs 推送, 触发一次后不再重复."""
+    """行情预警: 价格 涨破/跌破 目标值 或 涨跌幅超阈值时 APNs 推送, 触发一次后不再重复.
+
+    alert_type: price=目标价 (direction+target_price) / percent=涨跌幅 (percent+baseline_price).
+    """
 
     __tablename__ = "hk_price_alerts"
 
@@ -349,10 +352,44 @@ class HkPriceAlert(HkBase):
         Integer, ForeignKey("hk_users.id"), nullable=False, index=True
     )
     symbol = Column(String(32), nullable=False)  # 大写无斜杠, 如 BTC / BTCUSDT
+    alert_type = Column(String(8), nullable=False, default="price")  # price/percent
     direction = Column(String(8), nullable=False)  # up=涨破 / down=跌破
-    target_price = Column(Float, nullable=False)
+    target_price = Column(Float, nullable=False, default=0)
+    percent = Column(Float, nullable=True)  # percent 型: 涨跌幅阈值 (%)
+    baseline_price = Column(Float, nullable=True)  # percent 型: 创建时基准价
     triggered = Column(Boolean, nullable=False, default=False)  # 触发后置 True
     created_at = Column(DateTime, default=utc_now)
+
+
+class HkWhaleSubscription(HkBase):
+    """巨鲸异动推送订阅: 每人一条, 按最小金额+币种过滤, 命中走 APNs."""
+
+    __tablename__ = "hk_whale_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), unique=True, nullable=False, index=True
+    )
+    enabled = Column(Boolean, nullable=False, default=True)
+    min_usd = Column(Float, nullable=False, default=500_000)  # 最小成交金额 (USD)
+    symbols = Column(Text, nullable=False, default="[]")  # JSON 数组, 空=全部币种
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class HkLiveActivityToken(HkBase):
+    """Live Activities push token (iOS 16.1+): 服务端定时推价格更新到锁屏/灵动岛."""
+
+    __tablename__ = "hk_live_activity_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("hk_users.id"), nullable=False, index=True
+    )
+    symbol = Column(String(32), nullable=False)  # 盯盘币种, 如 BTC
+    push_token = Column(String(256), unique=True, nullable=False, index=True)  # activity push token
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class HkUserBlock(HkBase):
