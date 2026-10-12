@@ -16,6 +16,7 @@ const GROUPS = [
 ]
 
 const dirtyCount = computed(() => Object.keys(edits.value).length)
+const overriddenCount = computed(() => items.value.filter((i) => i.overridden).length)
 
 function grouped(g) {
   return items.value.filter(i => i.group === g)
@@ -71,14 +72,46 @@ onMounted(fetchAll)
 
 <template>
   <div v-loading="loading">
-    <el-alert type="info" :closable="false" show-icon style="margin-bottom: 14px">
-      <template #title>
-        保存后立即生效, 无需重启。标「改」的为后台覆盖值, 其余为环境变量默认值。
-      </template>
-    </el-alert>
+    <div class="page-head ph-blue">
+      <div class="ph-icon"><el-icon><Setting /></el-icon></div>
+      <div>
+        <div class="ph-title">
+          参数配置
+          <span class="ph-chips">
+            <span v-if="overriddenCount" class="ph-chip warn"><i class="dot warn" />{{ overriddenCount }} 项后台覆盖</span>
+            <span v-else class="ph-chip ok"><i class="dot ok" />全部默认值</span>
+          </span>
+        </div>
+        <div class="ph-sub">运行参数热更新 · 保存即时生效</div>
+      </div>
+      <div class="ph-right">
+        <el-button :loading="loading" @click="fetchAll">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>还原修改
+        </el-button>
+        <el-button
+          v-perm="'btn:config:edit'"
+          type="primary"
+          :loading="saving"
+          :disabled="!dirtyCount"
+          @click="save"
+        >
+          <el-icon style="margin-right: 4px"><Check /></el-icon>保存修改 ({{ dirtyCount }})
+        </el-button>
+      </div>
+    </div>
 
-    <el-card v-for="g in GROUPS" :key="g.key" shadow="never" style="margin-bottom: 14px">
-      <template #header>{{ g.label }}</template>
+    <div class="alert-bar">
+      <el-icon><InfoFilled /></el-icon>
+      保存后立即生效, 无需重启。标「改」的为后台覆盖值, 其余为环境变量默认值; 「还原修改」放弃未保存的编辑。
+    </div>
+
+    <el-card v-for="g in GROUPS" :key="g.key" shadow="never" style="margin-bottom: 16px">
+      <template #header>
+        <div class="cfg-head">
+          <span class="cfg-title">{{ g.label }}</span>
+          <span class="cell-sub">{{ grouped(g.key).length }} 项参数</span>
+        </div>
+      </template>
       <el-form label-width="170px">
         <el-form-item v-for="item in grouped(g.key)" :key="item.key">
           <template #label>
@@ -89,6 +122,7 @@ onMounted(fetchAll)
             <el-input
               :model-value="val(item)"
               style="max-width: 220px"
+              :class="{ 'cfg-dirty': edits[item.key] !== undefined }"
               @input="v => onInput(item, v)"
             />
             <span class="cfg-desc">
@@ -98,21 +132,30 @@ onMounted(fetchAll)
         </el-form-item>
       </el-form>
     </el-card>
-
-    <el-button
-      v-perm="'btn:config:edit'"
-      type="primary"
-      :loading="saving"
-      :disabled="!dirtyCount"
-      @click="save"
-    >保存修改 ({{ dirtyCount }})</el-button>
   </div>
 </template>
 
 <style scoped>
+.cfg-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cfg-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--app-text);
+}
+
 .cfg-desc {
-  color: var(--el-text-color-secondary);
+  color: var(--app-text-2);
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* 改过未保存的输入框高亮 */
+.cfg-dirty :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px var(--el-color-warning) inset;
 }
 </style>
