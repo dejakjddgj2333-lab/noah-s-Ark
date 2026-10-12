@@ -168,14 +168,29 @@ async function fetchStats() {
   loading.value = true
   try {
     s.value = await getAdminStats()
+
+    // 周环比: 近 7 天新增 vs 前 7 天
+    const series = (s.value.user_series || []).map((d) => d.value)
+    const cur7 = series.slice(-7).reduce((a, b) => a + b, 0)
+    const prev7 = series.slice(-14, -7).reduce((a, b) => a + b, 0)
+    const wow = prev7 > 0 ? ((cur7 - prev7) / prev7) * 100 : null
+    const wowText = wow === null ? '首周数据累计中' : `${wow >= 0 ? '↗ +' : '↘ '}${wow.toFixed(1)}% 较上周`
+
+    // 今日新增 vs 昨日
+    const today = series[series.length - 1] || 0
+    const yesterday = series[series.length - 2] || 0
+    const dd = today - yesterday
+    const dayText = dd === 0 ? '与昨日持平' : `较昨日 ${dd > 0 ? '+' : ''}${dd} 人`
+
+    const pending = s.value.pending_withdrawals || 0
     cards.value = [
-      { title: '总用户数', value: s.value.total_users, icon: 'User', from: '#4c6fff', to: '#6a5cff' },
-      { title: '今日新增用户', value: s.value.today_users, icon: 'TrendCharts', from: '#22c1a3', to: '#38d9b8' },
-      { title: '今日入账 (USDT)', value: fmt(s.value.deposit_today), icon: 'Money', from: '#f7b733', to: '#fc4a1a' },
-      { title: '累计入账 (USDT)', value: fmt(s.value.deposit_total), icon: 'Coin', from: '#8a5cff', to: '#c26bff' },
-      { title: '待审核提现', value: s.value.pending_withdrawals, icon: 'Wallet', from: '#ff5f6d', to: '#ff9966' },
-      { title: '订单总额 (USDT)', value: fmt(s.value.order_total), icon: 'ShoppingCart', from: '#36a3f7', to: '#36d1f7' },
-      { title: '在售产品', value: s.value.product_count, icon: 'Goods', from: '#5b86e5', to: '#36d1dc' },
+      { title: '总用户数', value: s.value.total_users, unit: '位', icon: 'User', color: '#4c6fff', caption: wowText, capClass: wow !== null && wow < 0 ? 'down' : 'up', span: 6 },
+      { title: '今日新增用户', value: s.value.today_users, unit: '人', icon: 'UserFilled', color: '#22c1a3', caption: dayText, capClass: dd < 0 ? 'down' : '', span: 6 },
+      { title: '今日入账 (USDT)', value: fmt(s.value.deposit_today), unit: 'USDT', icon: 'Money', color: '#f7b733', caption: '当日资金流水待确认', capClass: '', span: 6 },
+      { title: '累计入账 (USDT)', value: fmt(s.value.deposit_total), unit: 'USDT', icon: 'Coin', color: '#8a5cff', caption: '历史总链上充值汇总', capClass: '', span: 6 },
+      { title: '待审核提现', value: pending, unit: '笔待办', icon: 'Wallet', color: '#ff5f6d', caption: pending > 0 ? `有 ${pending} 笔提现等待审核` : '队列畅通 · 无堆积审核', capClass: pending > 0 ? 'down' : 'up', span: 6 },
+      { title: '订单总额 (USDT)', value: fmt(s.value.order_total), unit: 'USDT', icon: 'ShoppingCart', color: '#36a3f7', caption: '全部产品订单金额合计', capClass: '', tag: '核心营运指标', span: 12 },
+      { title: '在售产品', value: s.value.product_count, unit: '件', icon: 'Goods', color: '#14b8a6', caption: '正常上架销售中', capClass: 'up', span: 6 },
     ]
     setTimeout(renderCharts, 0)
   } finally {
@@ -200,25 +215,35 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-loading="loading">
+    <!-- 页头: 标题 + 结算通证 + 刷新 -->
+    <div class="dash-head">
+      <div>
+        <div class="dash-title">运营概况看板</div>
+        <div class="dash-sub">实时统计监控系统用户、资金流转与订单动态</div>
+      </div>
+      <div class="dash-actions">
+        <span class="settle-pill"><i class="settle-dot" />结算通证: USDT (TRC20/ERC20)</span>
+        <el-button type="primary" @click="fetchStats">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>刷新数据
+        </el-button>
+      </div>
+    </div>
+
     <el-row :gutter="16">
-      <el-col v-for="item in cards" :key="item.title" :xs="24" :sm="12" :md="8" :lg="6">
-        <div class="stat-card" :style="{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }">
-          <el-icon :size="30" class="stat-icon"><component :is="item.icon" /></el-icon>
-          <div class="stat-value">{{ item.value }}</div>
-          <div class="stat-title">{{ item.title }}</div>
+      <el-col v-for="item in cards" :key="item.title" :xs="24" :sm="12" :md="item.span >= 12 ? 12 : 8" :lg="item.span">
+        <div class="stat-card" :style="{ '--sc': item.color }">
+          <div class="sc-top">
+            <div class="sc-label">
+              {{ item.title }}
+              <span v-if="item.tag" class="sc-tag">{{ item.tag }}</span>
+            </div>
+            <div class="sc-icon"><el-icon :size="18"><component :is="item.icon" /></el-icon></div>
+          </div>
+          <div class="sc-num">{{ item.value }}<span class="sc-unit">{{ item.unit }}</span></div>
+          <div class="sc-cap" :class="item.capClass">{{ item.caption }}</div>
         </div>
       </el-col>
     </el-row>
-
-    <el-card v-if="s && s.pending_withdrawals > 0" class="todo-card">
-      <div class="todo-body">
-        <el-icon :size="20" color="#ff5f6d"><BellFilled /></el-icon>
-        <span>有 {{ s.pending_withdrawals }} 笔提现待审核</span>
-        <el-button type="primary" size="small" @click="$router.push('/withdrawal/list')">
-          去审核
-        </el-button>
-      </div>
-    </el-card>
 
     <el-row :gutter="16" v-if="s">
       <el-col :xs="24" :md="16">
@@ -250,38 +275,148 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.stat-card {
-  border-radius: 14px;
-  padding: 22px 20px;
-  margin-bottom: 16px;
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(16, 24, 64, 0.18);
+/* 页头 */
+.dash-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
-.stat-icon {
-  opacity: 0.85;
-}
-
-.stat-value {
-  font-size: 26px;
+.dash-title {
+  font-size: 22px;
   font-weight: 700;
-  margin-top: 10px;
+  color: var(--app-text);
 }
 
-.stat-title {
-  font-size: 13px;
-  opacity: 0.85;
-  margin-top: 4px;
+.dash-sub {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--app-text-2);
 }
 
-.todo-card {
-  margin-bottom: 16px;
-}
-
-.todo-body {
+.dash-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.settle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 18px;
+  font-size: 12px;
+  color: var(--app-text-2);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+}
+
+.settle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4c6fff;
+}
+
+/* 统计卡: 浅色渐变 + 右上彩色图标, 深浅主题自适应 */
+.stat-card {
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--app-line);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--sc) 9%, var(--app-surface)) 0%,
+    var(--app-surface) 72%
+  );
+  box-shadow: 0 1px 3px rgba(16, 24, 64, 0.05);
+  transition: box-shadow 0.25s ease;
+}
+
+html.dark .stat-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--sc) 17%, var(--app-surface)) 0%,
+    var(--app-surface) 78%
+  );
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.stat-card:hover {
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sc) 18%, transparent);
+}
+
+.sc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sc-label {
+  font-size: 13px;
+  color: var(--app-text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sc-tag {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  color: var(--sc);
+  background: color-mix(in srgb, var(--sc) 12%, transparent);
+}
+
+.sc-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sc);
+  background: color-mix(in srgb, var(--sc) 14%, transparent);
+}
+
+.sc-num {
+  margin-top: 12px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--app-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-unit {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sc);
+}
+
+.sc-cap {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--app-text-2);
+}
+
+.sc-cap.up {
+  color: #16a34a;
+}
+
+html.dark .sc-cap.up {
+  color: #34d399;
+}
+
+.sc-cap.down {
+  color: #ff5f6d;
 }
 
 .chart-card {

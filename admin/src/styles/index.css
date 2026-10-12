@@ -16,8 +16,8 @@
   --sb-text: rgba(48, 49, 51, 0.7);
   --sb-text-active: #4c6fff;
   --sb-group: rgba(48, 49, 51, 0.4);
-  --sb-hover: rgba(76, 111, 255, 0.08);
-  --sb-active-bg: linear-gradient(90deg, rgba(76, 111, 255, 0.14), rgba(138, 92, 255, 0.08));
+  --sb-hover: rgba(76, 111, 255, 0.06);
+  --sb-active-bg: rgba(76, 111, 255, 0.1);
   --sb-active-shadow: none;
   --sb-logo-name: #303133;
   --sb-logo-sub: rgba(48, 49, 51, 0.45);
@@ -73,8 +73,8 @@ html.dark {
   --sb-text-active: #ffffff;
   --sb-group: rgba(255, 255, 255, 0.35);
   --sb-hover: rgba(255, 255, 255, 0.06);
-  --sb-active-bg: linear-gradient(90deg, rgba(76, 111, 255, 0.85), rgba(138, 92, 255, 0.65));
-  --sb-active-shadow: 0 4px 12px rgba(76, 111, 255, 0.35);
+  --sb-active-bg: rgba(76, 111, 255, 0.28);
+  --sb-active-shadow: none;
   --sb-logo-name: #ffffff;
   --sb-logo-sub: rgba(255, 255, 255, 0.45);
 }

@@ -1,7 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import { getAdminStats } from '@/api/admin'
 
 const route = useRoute()
 const router = useRouter()
@@ -41,6 +43,30 @@ const menuGroups = computed(() => {
 function handleLogout() {
   userStore.logout()
   router.push('/login')
+}
+
+// 通知红点: 有待审核提现时点亮
+const hasTodo = ref(false)
+onMounted(async () => {
+  try {
+    const s = await getAdminStats()
+    hasTodo.value = (s.pending_withdrawals || 0) > 0
+  } catch { /* 忽略, 不影响布局 */ }
+})
+
+// 全局搜索: 匹配菜单功能名, 回车跳转第一个命中项
+const searchKw = ref('')
+function doSearch() {
+  const kw = searchKw.value.trim()
+  if (!kw) return
+  const all = menuGroups.value.flatMap((g) => g.items)
+  const hit = all.find((i) => i.meta.title.includes(kw))
+  if (hit) {
+    router.push('/' + hit.path)
+    searchKw.value = ''
+  } else {
+    ElMessage.info('未找到匹配的功能页面')
+  }
 }
 </script>
 
@@ -86,8 +112,25 @@ function handleLogout() {
         </el-breadcrumb>
 
         <div class="header-right">
+          <el-input
+            v-model="searchKw"
+            class="global-search"
+            placeholder="全局搜索功能页面..."
+            clearable
+            @keyup.enter="doSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-tooltip content="通知" placement="bottom">
+            <button class="icon-btn bell-btn" @click="$router.push('/withdrawal/list')">
+              <el-icon :size="17"><Bell /></el-icon>
+              <i v-if="hasTodo" class="bell-dot" />
+            </button>
+          </el-tooltip>
           <el-tooltip :content="isDark ? '切换浅色' : '切换深色'" placement="bottom">
-            <button class="theme-toggle" @click="toggleTheme">
+            <button class="icon-btn theme-toggle" @click="toggleTheme">
               <el-icon :size="17">
                 <Sunny v-if="isDark" />
                 <Moon v-else />
@@ -215,10 +258,35 @@ function handleLogout() {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
-.theme-toggle {
+.global-search {
+  width: 240px;
+}
+
+.global-search :deep(.el-input__wrapper) {
+  border-radius: 18px;
+  background: var(--app-surface-2);
+  box-shadow: 0 0 0 1px var(--app-line) inset;
+}
+
+.bell-btn {
+  position: relative;
+}
+
+.bell-dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff5f6d;
+  border: 1.5px solid var(--app-surface);
+}
+
+.icon-btn {
   width: 34px;
   height: 34px;
   border-radius: 9px;
@@ -232,7 +300,7 @@ function handleLogout() {
   transition: all 0.2s ease;
 }
 
-.theme-toggle:hover {
+.icon-btn:hover {
   color: #4c6fff;
   border-color: rgba(76, 111, 255, 0.4);
 }
