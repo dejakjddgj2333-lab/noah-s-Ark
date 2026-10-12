@@ -185,7 +185,9 @@ class HkAdminActionLog(HkBase):
     __tablename__ = "hk_admin_action_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("hk_users.id"), nullable=False, index=True)
+    # 不设外键 (2026-10-12): 旧体系存 hk_users.id, 新管理员体系存 hk_admin_users.id,
+    # 外键指向任一表都会误伤另一体系 (生产 PG 已报 500); 操作者身份看 admin_username
+    admin_id = Column(Integer, nullable=False, index=True)
     admin_username = Column(String(32), nullable=False)
     action = Column(String(32), nullable=False)  # withdraw_approve / withdraw_reject / product_create / product_update / product_publish / product_offline
     target_type = Column(String(32), nullable=False)  # withdrawal / product

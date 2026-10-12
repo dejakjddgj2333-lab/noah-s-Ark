@@ -205,6 +205,16 @@ async def _migrate() -> None:
             ))
     except Exception:
         pass  # 已是目标类型或不支持该语法, 跳过
+    # 审计表 admin_id 外键指向 hk_users, 新管理员体系存 hk_admin_users.id 会 500:
+    # 去掉外键 (操作者身份以 admin_username 的 'admin:' 前缀区分)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(
+                "ALTER TABLE hk_admin_action_logs "
+                "DROP CONSTRAINT IF EXISTS hk_admin_action_logs_admin_id_fkey"
+            ))
+    except Exception:
+        pass  # sqlite 无此语法/约束已删, 跳过
 
 
 @asynccontextmanager
