@@ -168,9 +168,11 @@ async def delete_product(
 
     from models.order import HkOrder
 
+    # hk_orders.product_id 是 String(32) (历史设计), PG 下 varchar = integer 直接报错,
+    # 须按字符串比较 (sqlite 动态类型两边都行, 测试库暴露不出来)
     orders = (
         await db.execute(
-            select(func.count(HkOrder.id)).where(HkOrder.product_id == product_id)
+            select(func.count(HkOrder.id)).where(HkOrder.product_id == str(product_id))
         )
     ).scalar_one()
     if orders > 0:
