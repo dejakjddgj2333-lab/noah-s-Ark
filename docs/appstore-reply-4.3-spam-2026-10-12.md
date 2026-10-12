@@ -32,21 +32,19 @@ Submission 188809b4 · Version 1.0.0 (10) · iPad Air 11 M3
 
 Dear App Review Team,
 
-Thank you for the feedback regarding Guideline 4.3(a). We would like to clarify that this app is independently developed by our team. We have not purchased or used any third-party app template, and the app shares no binary, source code, or assets with apps from other developers.
+Thank you for the feedback on Guideline 4.3(a). This app is independently developed by our team — no third-party template was purchased or used, and it shares no binary, source code, or assets with apps from other developers.
 
-**Evidence of independent development:**
+Evidence of independent development:
 
-1. The client is built from scratch with the Flutter framework; the backend is our own Python (FastAPI) system; the admin console is our own Vue 3 application. We can provide the complete Git commit history (long-term incremental development, not a one-time import), backend API documentation, and database design documents for verification.
-2. All in-app data is served by our own server infrastructure: market data and candlestick charts are streamed from public sources such as Binance and Hyperliquid through our own servers with custom processing and caching. The app does not scrape or repackage content from any other app.
+1. The Flutter client, Python (FastAPI) backend, and Vue 3 admin console were all built from scratch. We can provide the full Git commit history (long-term incremental development, not a one-time import), API documentation, and database design for verification.
+2. All data is served by our own servers: market data and charts are streamed from public sources (Binance, Hyperliquid) with our own processing and caching — not scraped or repackaged from any other app.
 
-**Differentiating features:**
+Differentiating features:
 
-1. **Whale Alert Feed / Whale Radar**: a self-built large-transaction monitoring system that aggregates real-time WebSocket streams from both Hyperliquid and Binance, with deduplication and threshold filtering — a unique implementation.
-2. **Sector Rotation Momentum Board**: our own sector strength computation and visualization.
-3. **Liquidation Dashboard**: aggregated market-wide liquidation statistics and details.
-4. **Community chat with a full moderation system** (user reporting, content removal, account bans in the admin console).
-5. Full localization in 8 languages: Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, Portuguese, and Hindi.
+1. Whale Alert / Whale Radar: self-built large-transaction monitoring aggregating real-time WebSocket streams from Hyperliquid and Binance, with deduplication and threshold filtering.
+2. Sector Rotation Momentum Board: our own sector strength computation and visualization.
+3. Liquidation Dashboard: market-wide liquidation statistics and details.
+4. Community chat with a full moderation system (reporting, removal, bans).
+5. Full localization in 8 languages (zh-CN, zh-TW, en, ja, ko, es, pt, hi).
 
-**Metadata:** The app name "明策量化", icon, and screenshots are all originally designed by us. If any screenshot or description appears similar to other apps, please point it out and we will adjust it immediately.
-
-We understand Apple's stance on spam apps and value our account standing. We are happy to provide source repository records, server deployment details, or schedule a call if needed. We sincerely ask you to re-review this app. Thank you.
+The app name "明策量化", icon, and screenshots are originally designed by us. If any metadata appears similar to other apps, please point it out and we will adjust immediately. We are happy to provide repository records, server deployment details, or schedule a call. We sincerely ask you to re-review this app. Thank you.
