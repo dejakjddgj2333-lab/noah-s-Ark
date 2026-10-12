@@ -178,6 +178,75 @@ html.dark .el-card {
   color: #16a34a;
 }
 
+.amt-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--app-text-2);
+}
+
+/* 表格底部: 左侧计数 + 右侧分页 */
+.table-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 迷你统计卡 (与仪表盘统计卡同风格, 供各列表页概览用) */
+.mini-stat {
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--app-line);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sc) 9%, var(--app-surface)) 0%, var(--app-surface) 72%);
+  box-shadow: 0 1px 3px rgba(16, 24, 64, 0.05);
+  transition: box-shadow 0.25s ease;
+}
+
+html.dark .mini-stat {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sc) 17%, var(--app-surface)) 0%, var(--app-surface) 78%);
+}
+
+.mini-stat:hover {
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sc) 18%, transparent);
+}
+
+.ms-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ms-label { font-size: 12px; color: var(--app-text-2); }
+
+.ms-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sc);
+  background: color-mix(in srgb, var(--sc) 14%, transparent);
+}
+
+.ms-num {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--app-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--app-text-2);
+}
+
 html.dark .amt-sub {
   color: #34d399;
 }

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getReports, handleReport } from '@/api/moderation'
 
@@ -12,6 +12,8 @@ const REASONS = {
   spam: '垃圾信息', abuse: '辱骂骚扰', fraud: '诈骗', porn: '色情内容', other: '其他',
 }
 const STATUS = { pending: '待处理', resolved: '已处理', dismissed: '已驳回' }
+
+const pendingCount = computed(() => list.value.filter((r) => r.status === 'pending').length)
 
 async function fetchList() {
   loading.value = true
@@ -47,27 +49,42 @@ onMounted(fetchList)
     <div class="page-head ph-pink">
       <div class="ph-icon"><el-icon><Warning /></el-icon></div>
       <div>
-        <div class="ph-title">举报处理</div>
+        <div class="ph-title">
+          举报处理
+          <span class="ph-chips">
+            <span v-if="pendingCount" class="ph-chip warn"><i class="dot warn" />待处理 {{ pendingCount }}</span>
+            <span v-else class="ph-chip ok"><i class="dot ok" />队列清空</span>
+          </span>
+        </div>
         <div class="ph-sub">用户举报审核 · 结案</div>
+      </div>
+      <div class="ph-right">
+        <el-button :loading="loading" @click="fetchList">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>刷新数据
+        </el-button>
       </div>
     </div>
 
     <el-card shadow="never">
       <div class="toolbar" style="margin-bottom: 14px; display: flex; gap: 10px">
-        <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px" @change="fetchList">
-          <el-option label="待处理" value="pending" />
-          <el-option label="已处理" value="resolved" />
-          <el-option label="已驳回" value="dismissed" />
-        </el-select>
-        <el-button type="primary" @click="fetchList">刷新</el-button>
+        <el-radio-group :model-value="query.status" @change="(v) => { query.status = v; fetchList() }">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="pending">待处理</el-radio-button>
+          <el-radio-button value="resolved">已处理</el-radio-button>
+          <el-radio-button value="dismissed">已驳回</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        删消息/删评论会立即移除违规内容; 封号后用户无法登录; 驳回表示举报不成立。
       </div>
 
-      <el-table :data="list" border stripe>
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="reporter" label="举报人" min-width="110" show-overflow-tooltip />
-        <el-table-column prop="target" label="被举报人" min-width="110" show-overflow-tooltip />
-        <el-table-column label="原因" width="110">
-          <template #default="{ row }">{{ REASONS[row.reason] || row.reason }}</template>
+      <el-table :data="list" stripe>
+        <el-table-column label="举报" min-width="180">
+          <template #default="{ row }">
+            <div class="cell-main" style="font-weight: 600">{{ row.reporter }} <span style="font-weight: 400; color: var(--app-text-2)">举报</span> {{ row.target }}</div>
+            <div class="cell-sub">#{{ row.id }} · {{ REASONS[row.reason] || row.reason }}</div>
+          </template>
         </el-table-column>
         <el-table-column label="类型" width="90" align="center">
           <template #default="{ row }">
@@ -76,15 +93,15 @@ onMounted(fetchList)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="message_content" label="相关内容" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.message_content || '—' }}</template>
+        <el-table-column prop="message_content" label="相关内容" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }"><span class="cell-main">{{ row.message_content || '—' }}</span></template>
         </el-table-column>
         <el-table-column prop="detail" label="补充说明" min-width="140" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.detail || '—' }}</template>
+          <template #default="{ row }"><span class="cell-sub">{{ row.detail || '—' }}</span></template>
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'pending' ? 'warning' : (row.status === 'resolved' ? 'success' : 'info')">
+            <el-tag :type="row.status === 'pending' ? 'warning' : (row.status === 'resolved' ? 'success' : 'info')" size="small" effect="light">
               {{ STATUS[row.status] || row.status }}
             </el-tag>
           </template>
@@ -99,11 +116,13 @@ onMounted(fetchList)
               <el-button v-perm="'btn:report:handle'" size="small" plain
                 @click="handle(row, 'dismiss')">驳回</el-button>
             </template>
-            <span v-else style="color: #909399">已结案</span>
+            <span v-else class="cell-sub">已结案</span>
           </template>
         </el-table-column>
       </el-table>
-      <div style="margin-top: 12px; color: #909399; font-size: 12px">共 {{ total }} 条</div>
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ total }} 条举报</span>
+      </div>
     </el-card>
   </div>
 </template>

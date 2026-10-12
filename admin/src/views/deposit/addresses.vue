@@ -58,34 +58,21 @@ onMounted(() => {
     <div class="page-head ph-teal">
       <div class="ph-icon"><el-icon><Wallet /></el-icon></div>
       <div>
-        <div class="ph-title">充值地址池</div>
+        <div class="ph-title">
+          充值地址池
+          <span class="ph-chips">
+            <span class="ph-chip ok"><i class="dot ok" />空闲 {{ stats.pool_free ?? 0 }}</span>
+            <span class="ph-chip info">已分配 {{ stats.pool_assigned ?? 0 }}</span>
+          </span>
+        </div>
         <div class="ph-sub">地址分配 · 池水位管理</div>
       </div>
+      <div class="ph-right">
+        <el-button :loading="loading" @click="fetchList">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>刷新数据
+        </el-button>
+      </div>
     </div>
-
-    <el-row :gutter="12" class="stat-row">
-      <el-col :span="6">
-        <el-card shadow="never"><div class="stat-num">{{ stats.pool_free ?? '-' }}</div><div class="stat-label">空闲地址</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never"><div class="stat-num">{{ stats.pool_assigned ?? '-' }}</div><div class="stat-label">已分配地址</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="gen-form">
-            <el-select v-model="genForm.network" size="small" style="width: 110px">
-              <el-option label="TRC20" value="trc20" />
-              <el-option label="ERC20" value="erc20" />
-              <el-option label="BEP20" value="bep20" />
-              <el-option label="Arbitrum" value="arbitrum" />
-            </el-select>
-            <el-input-number v-model="genForm.count" :min="1" :max="200" size="small" />
-            <el-button v-perm="'btn:deposit:generate'" type="primary" size="small" :loading="generating" @click="handleGenerate">生成地址</el-button>
-          </div>
-          <div class="stat-label">向地址池补充所选网络地址</div>
-        </el-card>
-      </el-col>
-    </el-row>
 
     <el-card shadow="never">
       <div class="toolbar">
@@ -95,49 +82,70 @@ onMounted(() => {
           <el-option label="BEP20" value="bep20" />
           <el-option label="Arbitrum" value="arbitrum" />
         </el-select>
-        <el-select v-model="query.state" placeholder="分配状态" clearable style="width: 140px">
-          <el-option label="空闲" value="free" />
-          <el-option label="已分配" value="assigned" />
-        </el-select>
+        <el-radio-group :model-value="query.state" @change="(v) => { query.state = v; search() }">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="free">空闲</el-radio-button>
+          <el-radio-button value="assigned">已分配</el-radio-button>
+        </el-radio-group>
         <el-button type="primary" :icon="'Search'" @click="search">查询</el-button>
-        <el-button :icon="'Refresh'" @click="fetchList">刷新</el-button>
+        <div style="margin-left: auto; display: flex; gap: 8px; align-items: center">
+          <el-select v-model="genForm.network" size="small" style="width: 110px">
+            <el-option label="TRC20" value="trc20" />
+            <el-option label="ERC20" value="erc20" />
+            <el-option label="BEP20" value="bep20" />
+            <el-option label="Arbitrum" value="arbitrum" />
+          </el-select>
+          <el-input-number v-model="genForm.count" :min="1" :max="200" size="small" />
+          <el-button v-perm="'btn:deposit:generate'" type="primary" size="small" :loading="generating" @click="handleGenerate">
+            <el-icon style="margin-right: 4px"><Plus /></el-icon>生成地址
+          </el-button>
+        </div>
+      </div>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        地址池水位不足时用户充值会分配失败, 请保持空闲地址充足; 生成地址仅补充所选网络。
       </div>
 
-      <el-table v-loading="loading" :data="list" border stripe>
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="network" label="网络" width="100">
-          <template #default="{ row }">{{ row.network.toUpperCase() }}</template>
+      <el-table v-loading="loading" :data="list" stripe>
+        <el-table-column label="地址" min-width="240">
+          <template #default="{ row }">
+            <div class="cell-main" style="font-family: monospace">{{ row.address }}</div>
+            <div class="cell-sub">创建于 {{ fmtTime(row.created_at) }}</div>
+          </template>
         </el-table-column>
-        <el-table-column prop="address" label="地址" min-width="220" show-overflow-tooltip />
-        <el-table-column label="分配用户" min-width="130" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.username || '空闲' }}</template>
+        <el-table-column label="网络" width="100" align="center">
+          <template #default="{ row }">
+            <span class="net-tag" :class="row.network">{{ row.network.toUpperCase() }}</span>
+          </template>
         </el-table-column>
-        <el-table-column label="分配时间" width="160">
-          <template #default="{ row }">{{ fmtTime(row.assigned_at) }}</template>
+        <el-table-column label="分配用户" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.username" class="cell-main" style="font-weight: 600">{{ row.username }}</span>
+            <el-tag v-else type="success" size="small" effect="plain">空闲</el-tag>
+          </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="160">
-          <template #default="{ row }">{{ fmtTime(row.created_at) }}</template>
+        <el-table-column label="分配时间" min-width="150" align="center">
+          <template #default="{ row }"><span class="cell-sub">{{ fmtTime(row.assigned_at) }}</span></template>
         </el-table-column>
       </el-table>
 
-      <el-pagination
-        v-model:current-page="query.page"
-        v-model:page-size="query.pageSize"
-        :total="total"
-        :page-sizes="[20, 50, 100]"
-        layout="total, sizes, prev, pager, next"
-        style="margin-top: 12px; justify-content: flex-end"
-        @current-change="fetchList"
-        @size-change="search"
-      />
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ total }} 个池地址</span>
+        <el-pagination
+          v-model:current-page="query.page"
+          v-model:page-size="query.pageSize"
+          :total="total"
+          :page-sizes="[20, 50, 100]"
+          layout="sizes, prev, pager, next"
+          background
+          @current-change="fetchList"
+          @size-change="search"
+        />
+      </div>
     </el-card>
   </div>
 </template>
 
 <style scoped>
-.stat-row { margin-bottom: 12px; }
-.stat-num { font-size: 22px; font-weight: 700; }
-.stat-label { font-size: 12px; color: #909399; margin-top: 4px; }
-.gen-form { display: flex; gap: 8px; align-items: center; }
-.toolbar { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 </style>

@@ -59,8 +59,18 @@ onMounted(fetchList)
     <div class="page-head ph-blue">
       <div class="ph-icon"><el-icon><ShoppingCart /></el-icon></div>
       <div>
-        <div class="ph-title">订单管理</div>
+        <div class="ph-title">
+          订单管理
+          <span class="ph-chips">
+            <span class="ph-chip info">共 {{ total }} 单</span>
+          </span>
+        </div>
         <div class="ph-sub">申购订单 · 结算 · 佣金</div>
+      </div>
+      <div class="ph-right">
+        <el-button :loading="loading" @click="fetchList">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>刷新数据
+        </el-button>
       </div>
     </div>
 
@@ -73,55 +83,68 @@ onMounted(fetchList)
           style="width: 160px"
           @keyup.enter="fetchList"
         />
-        <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px" @change="fetchList">
-          <el-option label="生效中" value="effective" />
-          <el-option label="已完成" value="finished" />
-        </el-select>
+        <el-radio-group :model-value="query.status" @change="(v) => { query.status = v; fetchList() }">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="effective">生效中</el-radio-button>
+          <el-radio-button value="finished">已完成</el-radio-button>
+        </el-radio-group>
         <el-button type="primary" @click="fetchList">查询</el-button>
-        <span class="tip">共 {{ total }} 单 · 收益为已结算入账口径</span>
+      </div>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        收益为已结算入账口径; 点「收益明细」可查看逐期结算与触发的佣金支出。
       </div>
 
-      <el-table :data="list" v-loading="loading" border stripe>
-        <el-table-column prop="id" label="ID" width="56" align="center" />
+      <el-table :data="list" v-loading="loading" stripe>
         <el-table-column label="用户" min-width="110">
           <template #default="{ row }">
-            <div>{{ row.username }}</div>
-            <div style="color: #909399; font-size: 12px">ID {{ row.user_id }}</div>
+            <div class="cell-main" style="font-weight: 600">{{ row.username }}</div>
+            <div class="cell-sub">UID: {{ row.user_id }} · 单号 #{{ row.id }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="product_name" label="产品" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="amount" label="金额" min-width="90" align="right" />
+        <el-table-column prop="product_name" label="产品" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }"><span class="cell-main">{{ row.product_name }}</span></template>
+        </el-table-column>
+        <el-table-column label="金额" min-width="100" align="right">
+          <template #default="{ row }">
+            <div class="amt">{{ row.amount }} <span class="amt-unit">USDT</span></div>
+          </template>
+        </el-table-column>
         <el-table-column label="日化率" min-width="90" align="right">
           <template #default="{ row }">
-            <div>{{ pct(row.actual_daily_rate) }}</div>
-            <div v-if="row.lock_bonus_rate && Number(row.lock_bonus_rate) > 0" style="color: #909399; font-size: 12px">
+            <div class="cell-main">{{ pct(row.actual_daily_rate) }}</div>
+            <div v-if="row.lock_bonus_rate && Number(row.lock_bonus_rate) > 0" class="cell-sub">
               基础{{ pct(row.base_daily_rate) }}+加成
             </div>
           </template>
         </el-table-column>
         <el-table-column label="周期/返还" min-width="110" align="center">
           <template #default="{ row }">
-            <div>{{ row.duration_days }} 天</div>
-            <div style="color: #909399; font-size: 12px">{{ row.return_method_label }}</div>
+            <div class="cell-main">{{ row.duration_days }} 天</div>
+            <div class="cell-sub">{{ row.return_method_label }}</div>
           </template>
         </el-table-column>
         <el-table-column label="结算进度" min-width="85" align="center">
-          <template #default="{ row }">{{ row.settled_periods }}/{{ row.total_periods }}</template>
+          <template #default="{ row }"><span class="cell-main">{{ row.settled_periods }}/{{ row.total_periods }}</span></template>
         </el-table-column>
-        <el-table-column label="已产生收益" min-width="95" align="right">
+        <el-table-column label="已产生收益" min-width="100" align="right">
           <template #default="{ row }">
-            <span style="color: #22c1a3; font-weight: 600">{{ row.settled_income }}</span>
+            <span class="amt" style="color: #16a34a">{{ row.settled_income }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="principal_returned" label="已返本金" min-width="90" align="right" />
-        <el-table-column prop="commission_paid" label="佣金支出" min-width="90" align="right" />
+        <el-table-column prop="principal_returned" label="已返本金" min-width="90" align="right">
+          <template #default="{ row }"><span class="cell-main">{{ row.principal_returned }}</span></template>
+        </el-table-column>
+        <el-table-column prop="commission_paid" label="佣金支出" min-width="90" align="right">
+          <template #default="{ row }"><span class="cell-main">{{ row.commission_paid }}</span></template>
+        </el-table-column>
         <el-table-column label="状态" width="96" align="center">
           <template #default="{ row }">
-            <el-tag :type="STATUS_MAP[row.status]?.type">{{ STATUS_MAP[row.status]?.label || row.status }}</el-tag>
+            <el-tag :type="STATUS_MAP[row.status]?.type" size="small" effect="light">{{ STATUS_MAP[row.status]?.label || row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="购买时间" min-width="150" align="center">
-          <template #default="{ row }">{{ fmt(row.created_at) }}</template>
+          <template #default="{ row }"><span class="cell-sub">{{ fmt(row.created_at) }}</span></template>
         </el-table-column>
         <el-table-column label="操作" width="96" fixed="right" align="center">
           <template #default="{ row }">
@@ -129,6 +152,9 @@ onMounted(fetchList)
           </template>
         </el-table-column>
       </el-table>
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ total }} 单 · 收益为已结算入账口径</span>
+      </div>
     </el-card>
 
     <!-- 收益明细 -->

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminUsers, getAdminUserProfile, deleteAdminUser } from '@/api/product'
 import {
@@ -13,6 +13,8 @@ import {
 const loading = ref(false)
 const list = ref([])
 const keyword = ref('')
+
+const bannedCount = computed(() => list.value.filter((u) => u.status === 'banned').length)
 
 const drawerVisible = ref(false)
 const profileLoading = ref(false)
@@ -182,8 +184,19 @@ onMounted(fetchList)
     <div class="page-head ph-blue">
       <div class="ph-icon"><el-icon><User /></el-icon></div>
       <div>
-        <div class="ph-title">用户管理</div>
+        <div class="ph-title">
+          用户管理
+          <span class="ph-chips">
+            <span class="ph-chip info">共 {{ list.length }} 用户</span>
+            <span v-if="bannedCount" class="ph-chip warn"><i class="dot warn" />冻结 {{ bannedCount }}</span>
+          </span>
+        </div>
         <div class="ph-sub">用户查询 · 冻结 · 调账 · 档案</div>
+      </div>
+      <div class="ph-right">
+        <el-button :loading="loading" @click="fetchList">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>刷新数据
+        </el-button>
       </div>
     </div>
 
@@ -193,41 +206,49 @@ onMounted(fetchList)
         <el-button type="primary" @click="fetchList">搜索</el-button>
         <el-button @click="keyword = ''; fetchList()">重置</el-button>
       </div>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        冻结后用户无法登录与交易; 调账必须填写原因并记入审计日志; 仅空账户可删除, 服务端二次校验。
+      </div>
 
-      <el-table :data="list" v-loading="loading" border stripe>
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="username" label="用户名" min-width="110" show-overflow-tooltip />
-        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
-        <el-table-column label="状态" width="80" align="center">
+      <el-table :data="list" v-loading="loading" stripe>
+        <el-table-column label="用户" min-width="200">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'banned' ? 'danger' : 'success'" effect="dark" size="small">
+            <div class="cell-main" style="font-weight: 600">{{ row.username }}</div>
+            <div class="cell-sub">UID: {{ row.id }} · {{ row.email }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'banned' ? 'danger' : 'success'" effect="light" size="small">
               {{ row.status === 'banned' ? '已冻结' : '正常' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="VIP" width="80" align="center">
+        <el-table-column label="VIP / 团队" width="120" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.vip_level > 0" type="primary" effect="dark" size="small">VIP{{ row.vip_level }}</el-tag>
-            <span v-else class="cell-muted">—</span>
+            <el-tag v-if="row.team_level > 0" type="success" effect="plain" size="small" style="margin-left: 4px">{{ row.team_level }} 级</el-tag>
+            <span v-if="!(row.vip_level > 0) && !(row.team_level > 0)" class="cell-muted">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="团队等级" width="90" align="center">
+        <el-table-column label="本金余额" min-width="120" align="right">
           <template #default="{ row }">
-            <el-tag v-if="row.team_level > 0" type="success" effect="plain" size="small">{{ row.team_level }} 级</el-tag>
-            <span v-else class="cell-muted">—</span>
+            <div class="amt">{{ row.principal_balance }} <span class="amt-unit">USDT</span></div>
           </template>
         </el-table-column>
-        <el-table-column label="本金余额" width="110" align="right">
-          <template #default="{ row }">{{ row.principal_balance }}</template>
+        <el-table-column label="收益余额" min-width="120" align="right">
+          <template #default="{ row }">
+            <div class="amt">{{ row.income_balance }} <span class="amt-unit">USDT</span></div>
+          </template>
         </el-table-column>
-        <el-table-column label="收益余额" width="110" align="right">
-          <template #default="{ row }">{{ row.income_balance }}</template>
+        <el-table-column label="处理中" min-width="100" align="right">
+          <template #default="{ row }">
+            <span class="cell-main">{{ Number(row.principal_pending) + Number(row.income_pending) }}</span>
+          </template>
         </el-table-column>
-        <el-table-column label="处理中" width="100" align="right">
-          <template #default="{ row }">{{ Number(row.principal_pending) + Number(row.income_pending) }}</template>
-        </el-table-column>
-        <el-table-column prop="created_at" label="注册时间" width="165">
-          <template #default="{ row }">{{ fmt(row.created_at) }}</template>
+        <el-table-column label="注册时间" min-width="150" align="center">
+          <template #default="{ row }"><span class="cell-sub">{{ fmt(row.created_at) }}</span></template>
         </el-table-column>
         <el-table-column label="操作" width="290" fixed="right" align="center">
           <template #default="{ row }">
@@ -258,6 +279,9 @@ onMounted(fetchList)
           </template>
         </el-table-column>
       </el-table>
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ list.length }} 个用户</span>
+      </div>
     </el-card>
 
     <!-- 余额调整 -->

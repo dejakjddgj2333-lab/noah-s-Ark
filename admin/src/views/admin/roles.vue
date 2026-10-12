@@ -97,23 +97,36 @@ onMounted(fetchAll)
     <div class="page-head ph-pink">
       <div class="ph-icon"><el-icon><Lock /></el-icon></div>
       <div>
-        <div class="ph-title">角色权限</div>
+        <div class="ph-title">
+          角色权限
+          <span class="ph-chips">
+            <span class="ph-chip info">共 {{ roles.length }} 个角色</span>
+          </span>
+        </div>
         <div class="ph-sub">角色定义 · 权限分配</div>
+      </div>
+      <div class="ph-right">
+        <el-button v-perm="'btn:role:manage'" type="primary" @click="openCreate">
+          <el-icon style="margin-right: 4px"><Plus /></el-icon>新建角色
+        </el-button>
       </div>
     </div>
 
     <el-card shadow="never">
-      <div class="toolbar">
-        <el-button v-perm="'btn:role:manage'" type="primary" @click="openCreate">新建角色</el-button>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        内置「超级管理员」角色不可编辑/删除; 其他内置角色可删除, 删除前请确认无管理员仍绑定该角色。
       </div>
-      <el-table :data="roles" border stripe>
-        <el-table-column prop="name" label="角色名" min-width="120">
+      <el-table :data="roles" stripe>
+        <el-table-column label="角色" min-width="160">
           <template #default="{ row }">
-            {{ row.name }}
-            <el-tag v-if="row.builtin" size="small" effect="plain" style="margin-left: 6px">内置</el-tag>
+            <div class="cell-main" style="font-weight: 600">
+              {{ row.name }}
+              <el-tag v-if="row.builtin" size="small" effect="plain" style="margin-left: 6px">内置</el-tag>
+            </div>
+            <div class="cell-sub">{{ row.code }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="code" label="编码" width="140" />
         <el-table-column label="权限" min-width="320">
           <template #default="{ row }">
             <el-tag v-if="row.perms.includes('*')" type="danger" effect="dark" size="small">全部权限</el-tag>
@@ -128,7 +141,7 @@ onMounted(fetchAll)
             </template>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button
               v-perm="'btn:role:manage'"
@@ -149,6 +162,9 @@ onMounted(fetchAll)
           </template>
         </el-table-column>
       </el-table>
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ roles.length }} 个角色</span>
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑角色' : '新建角色'" width="480px">

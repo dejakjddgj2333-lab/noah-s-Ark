@@ -299,7 +299,7 @@ onMounted(() => {
                 <div class="net-num-sm">{{ n.gas }} ({{ n.chain }})</div>
               </div>
             </div>
-            <el-button v-perm="'btn:sweep:target'" type="warning" plain style="width: 100%; margin-top: 14px" @click="openEdit(n.key)">
+            <el-button v-perm="'btn:sweep:target'" type="warning" plain style="width: 100%" @click="openEdit(n.key)">
               <el-icon style="margin-right: 4px"><Plus /></el-icon>立即配置主钱包
             </el-button>
           </template>
@@ -488,13 +488,25 @@ onMounted(() => {
 <style scoped>
 /* 网络主钱包卡 */
 .net-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
   border: 1px solid var(--app-line);
   border-radius: 14px;
   background: var(--app-surface);
   padding: 16px 18px;
   margin-bottom: 16px;
-  min-height: 190px;
   box-shadow: 0 1px 3px rgba(16, 24, 64, 0.05);
+}
+
+.net-card > .net-foot,
+.net-card > .el-button:last-child {
+  margin-top: auto;
+}
+
+.net-card > .empty-box + .net-grid {
+  margin-bottom: 14px;
 }
 
 html.dark .net-card {

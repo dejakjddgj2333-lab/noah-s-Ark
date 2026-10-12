@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   adminTotpConfirm,
@@ -17,6 +17,10 @@ const userStore = useUserStore()
 const loading = ref(false)
 const admins = ref([])
 const roles = ref([])
+
+const unboundCount = computed(
+  () => admins.value.filter((a) => !a.totp_bound && a.username !== 'admin').length,
+)
 
 const dialogVisible = ref(false)
 const dialogMode = ref('create') // create | edit | password
@@ -174,20 +178,28 @@ onMounted(fetchAll)
     <div class="page-head ph-violet">
       <div class="ph-icon"><el-icon><Avatar /></el-icon></div>
       <div>
-        <div class="ph-title">管理员</div>
+        <div class="ph-title">
+          管理员
+          <span class="ph-chips">
+            <span class="ph-chip info">共 {{ admins.length }} 人</span>
+            <span v-if="unboundCount" class="ph-chip warn"><i class="dot warn" />{{ unboundCount }} 人未绑谷歌验证</span>
+          </span>
+        </div>
         <div class="ph-sub">独立后台账号 · 与 App 注册用户隔离 · 除 admin 外谷歌验证强制</div>
+      </div>
+      <div class="ph-right">
+        <el-button v-perm="'btn:admin:manage'" type="primary" @click="openCreate">
+          <el-icon style="margin-right: 4px"><Plus /></el-icon>新建管理员
+        </el-button>
       </div>
     </div>
 
     <el-card shadow="never">
-      <div class="toolbar">
-        <el-button v-perm="'btn:admin:manage'" type="primary" @click="openCreate">新建管理员</el-button>
-      </div>
       <div class="alert-bar">
         <el-icon><InfoFilled /></el-icon>
         独立账号体系, 不使用 App 注册信息; 除 admin 外所有管理员必须绑定谷歌验证才能登录
       </div>
-      <el-table :data="admins" border stripe>
+      <el-table :data="admins" stripe>
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
         <el-table-column label="角色" min-width="110">
@@ -243,6 +255,9 @@ onMounted(fetchAll)
           </template>
         </el-table-column>
       </el-table>
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ admins.length }} 个管理员</span>
+      </div>
     </el-card>
 
     <el-dialog

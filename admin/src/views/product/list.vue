@@ -119,55 +119,86 @@ onMounted(fetchList)
     <div class="page-head ph-violet">
       <div class="ph-icon"><el-icon><Goods /></el-icon></div>
       <div>
-        <div class="ph-title">产品管理</div>
+        <div class="ph-title">
+          产品管理
+          <span class="ph-chips">
+            <span class="ph-chip ok"><i class="dot ok" />在售 {{ list.filter((p) => p.status === 'published').length }}</span>
+            <span class="ph-chip info">共 {{ list.length }} 个产品</span>
+          </span>
+        </div>
         <div class="ph-sub">理财产品配置 · 上下架</div>
+      </div>
+      <div class="ph-right">
+        <el-button :loading="loading" @click="fetchList">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>刷新数据
+        </el-button>
+        <el-button v-perm="'btn:product:edit'" type="primary" @click="openCreate">
+          <el-icon style="margin-right: 4px"><Plus /></el-icon>新建产品
+        </el-button>
       </div>
     </div>
 
     <el-card shadow="never">
       <div class="toolbar">
-        <el-select v-model="query.status" placeholder="状态" clearable style="width: 130px" @change="fetchList">
-          <el-option label="草稿" value="draft" />
-          <el-option label="已上架" value="published" />
-          <el-option label="已下架" value="offline" />
-        </el-select>
-        <el-button @click="fetchList">刷新</el-button>
-        <el-button v-perm="'btn:product:edit'" type="primary" @click="openCreate">新建产品</el-button>
+        <el-radio-group :model-value="query.status" @change="(v) => { query.status = v; fetchList() }">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="published">已上架</el-radio-button>
+          <el-radio-button value="draft">草稿</el-radio-button>
+          <el-radio-button value="offline">已下架</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="alert-bar">
+        <el-icon><InfoFilled /></el-icon>
+        上架前会执行完整参数校验; 下架后 APP 不可再购买, 存量订单继续结算; 有订单的产品不可删除。
       </div>
 
-      <el-table :data="list" v-loading="loading" border stripe>
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="name" label="产品名称" width="180" show-overflow-tooltip />
+      <el-table :data="list" v-loading="loading" stripe>
+        <el-table-column label="产品" min-width="180">
+          <template #default="{ row }">
+            <div class="cell-main" style="font-weight: 600">{{ row.name }}</div>
+            <div class="cell-sub">#{{ row.id }} · {{ row.min_amount }} ~ {{ row.max_amount }} USDT</div>
+          </template>
+        </el-table-column>
         <el-table-column label="基础日收益率" width="110" align="center">
-          <template #default="{ row }">{{ (Number(row.base_daily_rate) * 100).toFixed(2) }}%</template>
+          <template #default="{ row }">
+            <span class="amt" style="color: #16a34a">{{ (Number(row.base_daily_rate) * 100).toFixed(2) }}%</span>
+          </template>
         </el-table-column>
-        <el-table-column prop="duration_days" label="周期(天)" width="80" align="center" />
-        <el-table-column label="返还方式" width="100" align="center">
-          <template #default="{ row }">{{ METHOD_MAP[row.return_method] }}</template>
+        <el-table-column label="周期/返还" min-width="110" align="center">
+          <template #default="{ row }">
+            <div class="cell-main">{{ row.duration_days }} 天</div>
+            <div class="cell-sub">{{ METHOD_MAP[row.return_method] }}</div>
+          </template>
         </el-table-column>
-        <el-table-column label="金额范围" min-width="160" align="center">
-          <template #default="{ row }">{{ row.min_amount }} ~ {{ row.max_amount }}</template>
+        <el-table-column label="VIP门槛" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.vip_level_req" size="small" type="primary" effect="plain">VIP{{ row.vip_level_req }}</el-tag>
+            <span v-else class="cell-sub">不限</span>
+          </template>
         </el-table-column>
-        <el-table-column label="VIP门槛" width="80" align="center">
-          <template #default="{ row }">{{ row.vip_level_req ?? '不限' }}</template>
-        </el-table-column>
-        <el-table-column label="团队门槛" width="80" align="center">
-          <template #default="{ row }">{{ row.team_level_req ?? '不限' }}</template>
+        <el-table-column label="团队门槛" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.team_level_req" size="small" type="success" effect="plain">{{ row.team_level_req }} 级</el-tag>
+            <span v-else class="cell-sub">不限</span>
+          </template>
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="STATUS_MAP[row.status]?.type">{{ STATUS_MAP[row.status]?.label }}</el-tag>
+            <el-tag :type="STATUS_MAP[row.status]?.type" size="small" effect="light">{{ STATUS_MAP[row.status]?.label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" type="success" @click="publish(row)">上架</el-button>
-            <el-button v-perm="'btn:product:edit'" v-if="row.status === 'published'" size="small" type="warning" @click="offline(row)">下架</el-button>
-            <el-button v-perm="'btn:product:delete'" v-if="row.status !== 'published'" size="small" type="danger" @click="remove(row)">删除</el-button>
+            <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" plain @click="openEdit(row)">编辑</el-button>
+            <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" type="success" plain @click="publish(row)">上架</el-button>
+            <el-button v-perm="'btn:product:edit'" v-if="row.status === 'published'" size="small" type="warning" plain @click="offline(row)">下架</el-button>
+            <el-button v-perm="'btn:product:delete'" v-if="row.status !== 'published'" size="small" type="danger" plain @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
+      <div class="table-foot">
+        <span class="cell-sub">共 {{ list.length }} 个产品</span>
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editId ? '编辑产品' : '新建产品'" width="520px">
