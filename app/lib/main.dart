@@ -70,7 +70,7 @@ class MingceApp extends StatelessWidget {
       listenable: Listenable.merge([L10n.instance, ColorPref.instance]),
       builder: (context, _) {
         return MaterialApp(
-          title: 'Noah’s Ark',
+          title: 'Mingce',
           debugShowCheckedModeBanner: false,
           theme: buildMcTheme(),
           locale: _mcLocale(L10n.instance.code),
@@ -446,7 +446,7 @@ class McAppHeader extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Noah’s Ark',
+                          'Mingce',
                           style: McText.display(size: 14, weight: FontWeight.w700),
                         ),
                         const SizedBox(width: 6),

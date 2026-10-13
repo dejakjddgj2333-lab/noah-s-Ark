@@ -6,10 +6,18 @@ import WidgetKit
 struct MingcePriceWidget: Widget {
   let kind = "MingcePriceWidget"
 
+  var bgColor: Color { Color(red: 11 / 255, green: 14 / 255, blue: 20 / 255) }
+
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: PriceProvider()) { entry in
-      PriceWidgetView(entry: entry)
-        .containerBackground(Color(red: 11 / 255, green: 14 / 255, blue: 20 / 255), for: .widget)
+      if #available(iOS 17.0, *) {
+        PriceWidgetView(entry: entry)
+          .containerBackground(bgColor, for: .widget)
+      } else {
+        PriceWidgetView(entry: entry)
+          .padding()
+          .background(bgColor)
+      }
     }
     .configurationDisplayName(SharedStore.isZh ? "行情速览" : "Market Prices")
     .description(SharedStore.isZh ? "主流币种实时价格与 24 小时涨跌" : "Live prices and 24h change for major coins")

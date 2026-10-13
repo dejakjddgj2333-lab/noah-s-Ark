@@ -17,7 +17,9 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.hkmc.noahsark</key>
-		<string>a4521c0d-9894-4492-8c92-dddf2ad0a9c4</string>
+		<string>a6bb7213-8997-4763-a63c-eb2289ab752a</string>
+		<key>com.hkmc.noahsark.MingceWidget</key>
+		<string>9445999d-90f1-4ece-9e46-b34dab8bfeff</string>
 	</dict>
 </dict>
 </plist>

@@ -19,7 +19,10 @@ enum SharedStore {
   }
 
   static var isZh: Bool {
-    Locale.current.language.languageCode?.identifier.hasPrefix("zh") ?? false
+    if #available(iOS 16, *) {
+      return Locale.current.language.languageCode?.identifier.hasPrefix("zh") ?? false
+    }
+    return Locale.current.languageCode?.hasPrefix("zh") ?? false
   }
 
   static func prices() -> [CoinPrice] {

@@ -42,7 +42,9 @@ class WidgetBridge {
     } catch (_) {
       return; // 插件未就绪 (如 extension 未配好), 静默跳过
     }
-    // 行情: 监听现有 OKX ticker 流, 节流写共享存储
+    // 行情: 主动订阅五币 ticker (触发 WS 连接), 再监听流节流写共享存储.
+    // 注意: TickerWs 是懒连接, 只 listen 不 subscribe 则 WS 不连、五币首帧永不到.
+    TickerWs.instance.subscribe({for (final c in coins) '$c-USDT-SWAP'});
     _tickerSub = TickerWs.instance.stream.listen(_onTicker);
     // 巨鲸: 每 5 分钟刷一次 REST (WS 无巨鲸频道)
     await _refreshWhales();
@@ -55,6 +57,7 @@ class WidgetBridge {
     final symbol = t.instId.split('-').first;
     if (!coins.contains(symbol)) return;
     _prices[symbol] = {'price': t.last, 'changePct': t.changePct};
+    debugPrint('[WidgetBridge] ticker $symbol 已收=${_prices.length}/${coins.length}');
     final now = DateTime.now();
     if (now.difference(_lastWrite).inSeconds < 30) return;
     if (_prices.length < coins.length) return; // 等五币都拿到首帧

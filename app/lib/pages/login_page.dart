@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../core/l10n.dart';
@@ -7,6 +8,7 @@ import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/auth.dart';
 import '../services/invite_link.dart';
+import 'legal_page.dart';
 
 /// 登录 / 注册页 (push 路由 /login). 终端风格: 黑曜输入框 + 钴蓝执行键.
 class LoginPage extends StatefulWidget {
@@ -19,6 +21,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool _isLogin = true;
   bool _busy = false;
+  bool _agreed = false; // 已同意用户协议+隐私政策
   String? _error;
 
   final _userCtrl = TextEditingController();
@@ -102,6 +105,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submit() async {
+    if (!_agreed) {
+      setState(() => _error = tr('login_err_agree'));
+      return;
+    }
     final username = _userCtrl.text.trim();
     final password = _passCtrl.text;
     if (username.isEmpty || password.isEmpty) {
@@ -179,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 14),
                   Center(
-                    child: Text('Noah’s Ark',
+                    child: Text('Mingce',
                         style: McText.display(
                             size: 20, weight: FontWeight.w700)),
                   ),
@@ -308,19 +315,77 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      tr('login_agreement'),
-                      style: McText.sans(
-                          size: 12, color: McColors.onSurfaceVariant),
-                    ),
-                  ),
+                  _agreementRow(),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// 打开协议页: App 内渲染 (调 /api/legal/* 富文本), 不跳外部浏览器.
+  void _openLegal(String docKey) => LegalPage.open(context, docKey);
+
+  /// 同意勾选框 + 可点的《用户协议》《隐私政策》链接.
+  Widget _agreementRow() {
+    const linkColor = McColors.primary;
+    final linkStyle = McText.sans(size: 12, color: linkColor, height: 1.4);
+    final baseStyle =
+        McText.sans(size: 12, color: McColors.onSurfaceVariant, height: 1.4);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() {
+            _agreed = !_agreed;
+            if (_agreed) _error = null;
+          }),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: _agreed ? McColors.primaryContainer : Colors.transparent,
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(
+                color: _agreed
+                    ? McColors.primaryContainer
+                    : McColors.outlineVariant,
+                width: 1.2,
+              ),
+            ),
+            child: _agreed
+                ? const Icon(Icons.check, size: 13, color: Colors.white)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              style: baseStyle,
+              children: [
+                TextSpan(text: tr('login_agree_prefix')),
+                TextSpan(
+                  text: tr('login_terms'),
+                  style: linkStyle,
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openLegal('terms'),
+                ),
+                TextSpan(text: tr('login_agree_and')),
+                TextSpan(
+                  text: tr('login_privacy'),
+                  style: linkStyle,
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openLegal('privacy'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

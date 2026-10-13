@@ -1,0 +1,3 @@
+// Widget 专用 base config: 只含 Generated.xcconfig (解析 $(FLUTTER_BUILD_NAME/NUMBER)),
+// 不含 Pods-Runner — widget 不链 Flutter/pod, 避免 WebRTC/FlutterStandardTypedData 链接错.
+#include "Generated.xcconfig"
