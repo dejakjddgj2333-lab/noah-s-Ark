@@ -24,7 +24,7 @@ Submission 188809b4 · Version 1.0.0 (10) · iPad Air 11 M3
 4. 社区聊天 + 内容审核体系：内置完整的内容审核后台（用户举报、删除、封禁流程）。
 5. 完整支持简体中文、繁体中文、英语、日语、韩语、西班牙语、葡萄牙语、印地语 8 种语言的本地化。
 
-元数据方面：我们已检查应用名称「明策量化」、图标与截图均为自主设计；如审核团队认为某些截图或描述与其他 App 相似，请指出具体位置，我们将立即调整。
+元数据方面：我们已检查应用名称「明策」、图标与截图均为自主设计；如审核团队认为某些截图或描述与其他 App 相似，请指出具体位置，我们将立即调整。
 
 我们理解苹果对马甲包的管控，也重视账号信誉。如仍有疑问，我们愿意配合提供源代码仓库记录、服务器部署信息或进行电话沟通。恳请重新审核本 App，感谢。
 
@@ -49,4 +49,4 @@ Differentiating features:
 4. Community chat with a full moderation system (reporting, removal, bans).
 5. Full localization in 8 languages (zh-CN, zh-TW, en, ja, ko, es, pt, hi).
 
-The app name "明策量化", icon, and screenshots are originally designed by us. If any metadata appears similar to other apps, please point it out and we will adjust immediately. We are happy to provide repository records, server deployment details, or schedule a call. We sincerely ask you to re-review this app. Thank you.
+The app name "明策", icon, and screenshots are originally designed by us. If any metadata appears similar to other apps, please point it out and we will adjust immediately. We are happy to provide repository records, server deployment details, or schedule a call. We sincerely ask you to re-review this app. Thank you.
