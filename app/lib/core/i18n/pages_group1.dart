@@ -296,15 +296,15 @@ final Map<String, Map<String, String>> table = {
 
   // ---------------- login_page ----------------
   'login_welcome_back': {
-    'zh-CN': '欢迎回到交易终端', 'zh-TW': '歡迎回到交易終端',
-    'en': 'Welcome back to the terminal', 'ja': '取引ターミナルへようこそ',
-    'ko': '트레이딩 터미널에 오신 것을 환영합니다',
-    'es': 'Bienvenido de nuevo a la terminal',
-    'pt': 'Bem-vindo de volta ao terminal',
-    'hi': 'ट्रेडिंग टर्मिनल में वापसी पर स्वागत है',
+    'zh-CN': '欢迎回到明策', 'zh-TW': '歡迎回到明策',
+    'en': 'Welcome back to Mingce', 'ja': 'Mingceへようこそ',
+    'ko': 'Mingce에 오신 것을 환영합니다',
+    'es': 'Bienvenido de nuevo a Mingce',
+    'pt': 'Bem-vindo de volta ao Mingce',
+    'hi': 'Mingce में वापसी पर स्वागत है',
   },
   'login_create_account': {
-    'zh-CN': '创建终端账户 · 邮箱即凭证', 'zh-TW': '創建終端賬戶 · 郵箱即憑證',
+    'zh-CN': '创建账户 · 邮箱即凭证', 'zh-TW': '創建賬戶 · 郵箱即憑證',
     'en': 'Create account · Email is your credential',
     'ja': 'アカウント作成 · メールが資格情報',
     'ko': '계정 만들기 · 이메일이 자격 증명',

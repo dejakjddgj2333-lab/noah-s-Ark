@@ -201,7 +201,7 @@ class McStrings {
     'view': '查看',
     'peer_default': '对方',
     'login_gate_title': '登录后使用{name}',
-    'login_gate_sub': '终端功能需要验证身份',
+    'login_gate_sub': '登录后继续',
     'go_login': '去登录',
   };
 
@@ -357,7 +357,7 @@ class McStrings {
     'view': '查看',
     'peer_default': '對方',
     'login_gate_title': '登錄後使用{name}',
-    'login_gate_sub': '終端功能需要驗證身份',
+    'login_gate_sub': '登入後繼續',
     'go_login': '去登錄',
   };
 
@@ -513,7 +513,7 @@ class McStrings {
     'view': 'View',
     'peer_default': 'Peer',
     'login_gate_title': 'Log in to use {name}',
-    'login_gate_sub': 'Terminal features require authentication',
+    'login_gate_sub': 'Sign in to continue',
     'go_login': 'Log In',
   };
 
@@ -669,7 +669,7 @@ class McStrings {
     'view': '見る',
     'peer_default': '相手',
     'login_gate_title': '{name}を使うにはログイン',
-    'login_gate_sub': '端末機能には本人確認が必要です',
+    'login_gate_sub': '続行するにはログインしてください',
     'go_login': 'ログイン',
   };
 
@@ -825,7 +825,7 @@ class McStrings {
     'view': '보기',
     'peer_default': '상대방',
     'login_gate_title': '{name}을(를) 사용하려면 로그인',
-    'login_gate_sub': '터미널 기능은 본인 인증이 필요합니다',
+    'login_gate_sub': '계속하려면 로그인하세요',
     'go_login': '로그인',
   };
 
@@ -977,7 +977,7 @@ class McStrings {
     'view': 'Ver',
     'peer_default': 'Contacto',
     'login_gate_title': 'Inicia sesión para usar {name}',
-    'login_gate_sub': 'Las funciones del terminal requieren autenticación',
+    'login_gate_sub': 'Inicia sesión para continuar',
     'go_login': 'Entrar',
   };
 
@@ -1133,7 +1133,7 @@ class McStrings {
     'view': 'Ver',
     'peer_default': 'Contato',
     'login_gate_title': 'Entre para usar {name}',
-    'login_gate_sub': 'Os recursos do terminal exigem autenticação',
+    'login_gate_sub': 'Faça login para continuar',
     'go_login': 'Entrar',
   };
 
@@ -1289,7 +1289,7 @@ class McStrings {
     'view': 'देखें',
     'peer_default': 'सामने वाला',
     'login_gate_title': '{name} उपयोग करने के लिए लॉग इन करें',
-    'login_gate_sub': 'टर्मिनल सुविधाओं के लिए प्रमाणीकरण आवश्यक है',
+    'login_gate_sub': 'जारी रखने के लिए साइन इन करें',
     'go_login': 'लॉग इन',
   };
 }
