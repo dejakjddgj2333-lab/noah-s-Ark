@@ -100,9 +100,9 @@ class _InvitePageState extends State<InvitePage> {
     return '$origin/?invite=${_info?.inviteCode ?? ''}';
   }
 
-  /// APP 内可直接唤起的 scheme 链接 (Android intent-filter 已配 noahsark://invite)
+  /// APP 内可直接唤起的 scheme 链接 (Android intent-filter 已配 mingce://invite)
   String get _inviteAppLink =>
-      'noahsark://invite?invite=${_info?.inviteCode ?? ''}';
+      'mingce://invite?invite=${_info?.inviteCode ?? ''}';
 
   @override
   Widget build(BuildContext context) {

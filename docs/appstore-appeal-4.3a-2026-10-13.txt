@@ -1,0 +1,61 @@
+关于 Guideline 4.3(a) 的申诉 / Appeal for Guideline 4.3(a)
+
+App: 明策 (Mingce) · Bundle ID: com.hkmc.noahsark · Version: 1.0.0
+
+
+中文说明
+
+尊敬的审核团队，您好：
+
+针对 4.3(a) 判定，我们恳请人工复核。明策是一款功能完整、独立自研的产品，与任何其他应用不共享二进制、代码库或素材。我们理解打击套壳应用的必要，但本案属于误判，理由如下。
+
+一、二进制相似性的真实来源
+明策基于 Flutter 跨平台框架开发，并使用了若干主流开源库（如 WebRTC 等）。这些底层框架与公共库是所有同技术栈应用共有的组件，会在二进制层面产生相似的特征指纹。这并非应用间的代码共享、换皮或重新打包。明策的全部业务逻辑、界面、数据管道与功能实现，均由我们团队独立编写；未购买任何应用模板，未复制任何其他应用。
+
+二、明策具备的完整且自研的功能（均在本包中真实可用）
+明策不是一个简单的行情聚合页，而是一套自研的综合产品，包含：
+
+1. 即时聊天与语音通话：好友、群组聊天，支持文字/图片/语音/视频消息，以及基于 WebRTC 的 1:1 实时语音通话（含来电、接通、静音、免提、挂断全流程）。
+2. 链上大额异动监测：自行对接并清洗的 Hyperliquid 大额成交实时数据管道，提供巨鲸异动时间线。
+3. iOS 桌面小组件与灵动岛盯盘：WidgetKit 小组件（行情速览/巨鲸异动）+ Live Activities 灵动岛实时价格，由自建服务端通过 APNs 每 60 秒推送更新。
+4. 宏观日历：北京时间宏观财经事件列表与中文解读、历史走势。
+5. 价格预警：自定义百分比/价位预警，由我们服务端计算并推送。
+6. K 线分享卡：自绘 K 线图表并生成可分享图片。
+7. 钱包连接支付：基于 WalletConnect v2 的钱包连接能力。
+8. 8 语言国际化与内容审核体系：完整的自研多语言，聊天与评论带举报/审核/封禁机制。
+
+上述每一项都是「行情模板类」应用所不具备的真实功能，组合在一起构成一个明显区别于单一用途应用的独立产品。
+
+三、关于品类相似
+「行情/数据」是成熟的公共品类，品类相同不等于应用雷同。若审核系统因技术栈指纹或元数据关键词相近而关联判定，恳请对照实际功能与内容进行人工复核。
+
+我们可立即提供：功能操作录屏（语音通话 + 巨鲸异动 + 灵动岛盯盘）、代码结构说明、服务端架构文档，或安排实时演示。感谢您的时间与审核工作。
+
+
+English Appeal
+
+Dear App Review Team,
+
+We respectfully request a manual re-review of the 4.3(a) determination. Mingce is a fully-featured, independently developed product that shares no binary, codebase, or assets with any other app. We support Apple's effort to remove repackaged apps, but this case is a misidentification.
+
+1. The real source of binary similarity
+Mingce is built on the Flutter framework and uses several mainstream open-source libraries (e.g., WebRTC). These low-level frameworks and common libraries are shared by every app on the same technology stack and produce similar binary fingerprints. This is not code sharing, reskinning, or repackaging. All of Mingce's business logic, UI, data pipelines, and features were written independently by our team. We purchased no app template and copied no other app.
+
+2. Mingce's complete, self-built feature set (all live in this build)
+Mingce is not a simple market aggregator; it is a self-developed, full-featured product:
+
+- Instant messaging and voice calls: friend and group chat with text/image/audio/video messages, plus 1:1 real-time voice calls over WebRTC (incoming, connected, mute, speaker, hang-up).
+- On-chain large-trade monitoring: a Hyperliquid large-trade data pipeline we integrated and process ourselves, with a whale-activity timeline.
+- iOS Home Screen widgets and Dynamic Island watchlist: WidgetKit widgets (Market Prices / Whale Alerts) plus Live Activities real-time prices, pushed every 60 seconds by our own server via APNs.
+- Macro calendar: macro-economic events in Beijing time with Chinese commentary and historical trends.
+- Price alerts: custom percentage/price alerts computed and pushed by our server.
+- Shareable candlestick cards with a custom-drawn chart.
+- Wallet connection for payments via WalletConnect v2.
+- Eight-language internationalization and a moderation system: reporting, review, and banning for chat and comments.
+
+Each of these is a real feature that template "market data" apps do not have; together they form an independent product clearly distinct from any single-purpose app.
+
+3. On category similarity
+"Market data" is a mature public category — sharing a category does not make apps duplicates. If an automated signal linked Mingce to another app via technology fingerprint or metadata keywords, we ask for a manual comparison of the actual features and content.
+
+We can immediately provide feature walkthrough recordings (voice call + whale timeline + Dynamic Island watch), code-structure notes, backend architecture, or a live demo. Thank you for your time and review.

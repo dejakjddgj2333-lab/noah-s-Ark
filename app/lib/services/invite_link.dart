@@ -3,7 +3,7 @@ import 'dart:async';
 /// 邀请链接识别 (需求文档第一节: 通过邀请链接注册时识别邀请人).
 ///
 /// 支持两种形态:
-/// - App scheme: noahsark://invite?invite=CODE (Android intent-filter 已配, 点开直接唤起)
+/// - App scheme: mingce://invite?invite=CODE (Android intent-filter 已配, 点开直接唤起)
 /// - Web/通用链接: 任意 https://host/?invite=CODE (Universal Links 配好域名后同样生效)
 ///
 /// 识别到的邀请码先暂存, 注册页初始化时取出预填; 取一次即清除, 不会滞留.

@@ -211,9 +211,9 @@ async def send_email_code(
     ttl_minutes = config.email_code_ttl_sec // 60
     sent = await email_service.send_email(
         to=data.email,
-        subject="Noah's Ark 验证码",
+        subject="Mingce 验证码",
         text=(
-            f"您好, 您的 Noah's Ark 验证码为: {code}\n\n"
+            f"您好, 您的 Mingce 验证码为: {code}\n\n"
             f"验证码 {ttl_minutes} 分钟内有效, 请勿泄露给他人。"
         ),
     )

@@ -101,7 +101,9 @@ async function offline(row) {
 async function remove(row) {
   try {
     await ElMessageBox.confirm(
-      `删除「${row.name}」？物理删除不可恢复 (有订单的产品服务端会拒绝)。`,
+      row.status === 'published'
+        ? `删除「${row.name}」？已上架产品删除后立即从 APP 消失；存量订单按购买时快照继续结算，不受影响。物理删除不可恢复。`
+        : `删除「${row.name}」？物理删除不可恢复；存量订单(如有)按快照继续结算，不受影响。`,
       '确认删除',
       { type: 'error', confirmButtonText: '删除', cancelButtonText: '取消' },
     )
@@ -192,7 +194,7 @@ onMounted(fetchList)
             <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" plain @click="openEdit(row)">编辑</el-button>
             <el-button v-perm="'btn:product:edit'" v-if="row.status !== 'published'" size="small" type="success" plain @click="publish(row)">上架</el-button>
             <el-button v-perm="'btn:product:edit'" v-if="row.status === 'published'" size="small" type="warning" plain @click="offline(row)">下架</el-button>
-            <el-button v-perm="'btn:product:delete'" v-if="row.status !== 'published'" size="small" type="danger" plain @click="remove(row)">删除</el-button>
+            <el-button v-perm="'btn:product:delete'" size="small" type="danger" plain @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

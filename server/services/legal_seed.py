@@ -147,7 +147,7 @@ TERMS_HTML = """<!DOCTYPE html>
 <p><em>更新日期：2026年10月6日 &nbsp;|&nbsp; 生效日期：2026年10月6日</em></p>
 
 <h2>一、协议的确认与接受</h2>
-<p>本《用户服务协议》（以下简称"本协议"）由您与<strong>重庆潮玩潮品电子商务有限公司</strong>（以下简称"本公司"）共同缔结，适用于本公司运营的"明策 / Noah's Ark"移动应用程序（以下简称"本 App"）及相关服务。</p>
+<p>本《用户服务协议》（以下简称"本协议"）由您与<strong>重庆潮玩潮品电子商务有限公司</strong>（以下简称"本公司"）共同缔结，适用于本公司运营的"明策（MINGCE）"移动应用程序（以下简称"本 App"）及相关服务。</p>
 <p>请您在使用本 App 前审慎阅读并充分理解本协议全部条款，特别是以<strong>加粗</strong>形式提示的免责、风险提示及责任限制条款。您注册、登录或以任何方式使用本 App，即视为已阅读、理解并同意接受本协议全部内容；如您不同意，请立即停止注册与使用。</p>
 
 <h2>二、服务内容</h2>
@@ -208,7 +208,7 @@ TERMS_HTML = """<!DOCTYPE html>
 <hr>
 <h1>Terms of Service (English)</h1>
 <p><em>Last updated: October 6, 2026</em></p>
-<p>These Terms of Service ("Terms") are entered into between you and <strong>Chongqing Chaowan Chaopin E-Commerce Co., Ltd.</strong> ("the Company") for the "Mingce / Noah's Ark" mobile application (the "App"). By registering or using the App you agree to these Terms.</p>
+<p>These Terms of Service ("Terms") are entered into between you and <strong>Chongqing Chaowan Chaopin E-Commerce Co., Ltd.</strong> ("the Company") for the "Mingce" mobile application (the "App"). By registering or using the App you agree to these Terms.</p>
 <h3>1. The Service</h3>
 <p>The App is a crypto market data terminal and social tool offering market quotes, multi-dimensional indices, on-chain whale data, price alerts, news, chat and voice/video calls. <strong>The App is an information tool only; it does not provide fiat deposits, trading, custody, clearing, investment advisory or asset-management services.</strong> All market data comes from public third-party exchange APIs for reference only.</p>
 <h3>2. Risk Disclosure</h3>
