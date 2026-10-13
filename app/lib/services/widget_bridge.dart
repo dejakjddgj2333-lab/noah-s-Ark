@@ -2,6 +2,8 @@
 /// shared UserDefaults (经 home_widget 插件), WidgetKit 扩展读同一份数据.
 ///
 /// 仅在 iOS 生效; 其它平台 init 直接返回. 数据为公开行情, 与登录态无关.
+/// 行情走自建后端 /api/widget/prices (服务端行情代理缓存), 不依赖客户端
+/// 直连 OKX WS — 后者在部分网络/模拟器下连不上会导致小组件永远空.
 library;
 
 import 'dart:async';
@@ -11,8 +13,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 
+import 'api.dart';
 import 'data.dart';
-import 'ticker_ws.dart';
 
 class WidgetBridge {
   WidgetBridge._();
@@ -24,15 +26,9 @@ class WidgetBridge {
   /// 小组件关注的固定币种 (与 server /api/widget 一致).
   static const List<String> coins = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'];
 
-  StreamSubscription<TickerPush>? _tickerSub;
+  Timer? _priceTimer;
   Timer? _whaleTimer;
   bool _started = false;
-
-  // 最新价缓存: symbol → {price, changePct}
-  final Map<String, Map<String, double>> _prices = {};
-
-  /// 节流: ticker 流很高频, 30s 最多写一次.
-  DateTime _lastWrite = DateTime.fromMillisecondsSinceEpoch(0);
 
   Future<void> init() async {
     if (_started || kIsWeb || !Platform.isIOS) return;
@@ -42,46 +38,32 @@ class WidgetBridge {
     } catch (_) {
       return; // 插件未就绪 (如 extension 未配好), 静默跳过
     }
-    // 行情: 主动订阅五币 ticker (触发 WS 连接), 再监听流节流写共享存储.
-    // 注意: TickerWs 是懒连接, 只 listen 不 subscribe 则 WS 不连、五币首帧永不到.
-    TickerWs.instance.subscribe({for (final c in coins) '$c-USDT-SWAP'});
-    _tickerSub = TickerWs.instance.stream.listen(_onTicker);
-    // 巨鲸: 每 5 分钟刷一次 REST (WS 无巨鲸频道)
+    // 行情 + 巨鲸: 启动即拉一次, 之后定时刷 (小组件本身 15min timeline 兜底).
+    await _refreshPrices();
     await _refreshWhales();
-    _whaleTimer = Timer.periodic(
-        const Duration(minutes: 5), (_) => _refreshWhales());
+    _priceTimer =
+        Timer.periodic(const Duration(minutes: 5), (_) => _refreshPrices());
+    _whaleTimer =
+        Timer.periodic(const Duration(minutes: 5), (_) => _refreshWhales());
   }
 
-  void _onTicker(TickerPush t) {
-    // instId 形如 BTC-USDT-SWAP / BTC-USDT
-    final symbol = t.instId.split('-').first;
-    if (!coins.contains(symbol)) return;
-    _prices[symbol] = {'price': t.last, 'changePct': t.changePct};
-    debugPrint('[WidgetBridge] ticker $symbol 已收=${_prices.length}/${coins.length}');
-    final now = DateTime.now();
-    if (now.difference(_lastWrite).inSeconds < 30) return;
-    if (_prices.length < coins.length) return; // 等五币都拿到首帧
-    _lastWrite = now;
-    _writePrices();
-  }
-
-  Future<void> _writePrices() async {
+  Future<void> _refreshPrices() async {
     try {
-      final list = [
-        for (final c in coins)
-          if (_prices.containsKey(c))
-            {
-              'symbol': c,
-              'price': _prices[c]!['price'],
-              'change_pct': _prices[c]!['changePct'],
-            }
+      final resp = await McApi.get('/api/widget/prices');
+      final list = resp['prices'];
+      if (list is! List || list.isEmpty) return;
+      final out = [
+        for (final e in list)
+          {
+            'symbol': (e as Map)['symbol'] ?? '',
+            'price': (e['price'] as num?)?.toDouble() ?? 0,
+            'change_pct': (e['change_pct'] as num?)?.toDouble() ?? 0,
+          }
       ];
-      if (list.isEmpty) return;
-      await HomeWidget.saveWidgetData<String>(
-          'mc_prices', jsonEncode(list));
+      await HomeWidget.saveWidgetData<String>('mc_prices', jsonEncode(out));
       await HomeWidget.updateWidget(name: 'MingcePriceWidget');
     } catch (_) {
-      // 写共享存储失败不影响主流程
+      // 静默: 下次周期再试
     }
   }
 
@@ -109,7 +91,7 @@ class WidgetBridge {
   }
 
   Future<void> dispose() async {
-    await _tickerSub?.cancel();
+    _priceTimer?.cancel();
     _whaleTimer?.cancel();
   }
 }
