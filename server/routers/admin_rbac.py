@@ -303,10 +303,10 @@ async def admin_totp_setup(
     if not target.totp_secret:
         target.totp_secret = auth_service.generate_totp_secret()
         await db.commit()
-    label = urllib.parse.quote(f"NoahAdmin:{target.username}")
+    label = urllib.parse.quote(f"MingceAdmin:{target.username}")
     uri = (
         f"otpauth://totp/{label}?secret={target.totp_secret}"
-        f"&issuer=NoahAdmin&algorithm=SHA1&digits=6&period=30"
+        f"&issuer=MingceAdmin&algorithm=SHA1&digits=6&period=30"
     )
     return {"secret": target.totp_secret, "uri": uri}
 
