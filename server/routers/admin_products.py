@@ -155,35 +155,17 @@ async def delete_product(
     admin: HkAdminUser = Depends(admin_service.require_admin_perm("btn:product:delete")),
     db: AsyncSession = Depends(get_db),
 ):
-    """删除产品 (2026-10-09): 保护规则 ——
-    已上架禁止删 (先下架); 已有任何购买订单禁止删 (只能下架, 保追溯).
-    仅草稿/已下架且无订单的产品可物理删除.
+    """删除产品 (2026-10-13 放开): 随时可删, 包括已上架/有订单 ——
+    订单在购买时已存完整快照 (产品名/收益率/周期/返还方式), 结算引擎和
+    订单查看 (APP/后台) 都只读订单快照, 不查产品表, 删除不影响任何存量订单.
+    已上架产品删除即立即从 APP 消失, 效果等同下架+删除.
     """
     product = await _get(db, product_id)
-    if product.status == "published":
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "已上架产品不能删除，请先下架"
-        )
-    from sqlalchemy import func
-
-    from models.order import HkOrder
-
-    # hk_orders.product_id 是 String(32) (历史设计), PG 下 varchar = integer 直接报错,
-    # 须按字符串比较 (sqlite 动态类型两边都行, 测试库暴露不出来)
-    orders = (
-        await db.execute(
-            select(func.count(HkOrder.id)).where(HkOrder.product_id == str(product_id))
-        )
-    ).scalar_one()
-    if orders > 0:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            f"该产品已有 {orders} 笔购买订单，不可删除 (只能下架)",
-        )
     name = product.name
     await db.delete(product)
     await admin_service.audit_admin(
-        db, admin, "product_delete", "product", product_id, detail=f"name={name}"
+        db, admin, "product_delete", "product", product_id,
+        detail=f"name={name} status={product.status}",
     )
     await db.commit()
 
