@@ -13,6 +13,7 @@ import 'anti_phishing_page.dart';
 import 'blocked_users_page.dart';
 import 'devices_page.dart';
 import 'language_page.dart';
+import 'legal_page.dart';
 import 'price_alerts_page.dart';
 
 /// 用户中心: 顶部用户卡 + 三个 tab (个人资料 / 安全设置 / 偏好设置).
@@ -491,6 +492,22 @@ class _ProfilePageState extends State<ProfilePage>
               trailing: _chevron(),
               onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(builder: (_) => const PriceAlertsPage())),
+            ),
+            const SizedBox(height: 24),
+            _sectionTitle(tr('pref_about')),
+            const SizedBox(height: 10),
+            _row(
+              label: tr('login_terms'),
+              value: '',
+              trailing: _chevron(),
+              onTap: () => LegalPage.open(context, 'terms'),
+            ),
+            const SizedBox(height: 10),
+            _row(
+              label: tr('login_privacy'),
+              value: '',
+              trailing: _chevron(),
+              onTap: () => LegalPage.open(context, 'privacy'),
             ),
           ],
         );

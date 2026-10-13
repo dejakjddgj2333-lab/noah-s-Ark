@@ -363,6 +363,35 @@ final Map<String, Map<String, String>> table = {
     'pt': 'Ao registrar você concorda com os Termos de Serviço e a Divulgação de Riscos',
     'hi': 'साइन अप करने पर आप सेवा की शर्तों और जोखिम प्रकटीकरण से सहमत होते हैं',
   },
+  'login_agree_prefix': {
+    'zh-CN': '我已阅读并同意', 'zh-TW': '我已閱讀並同意', 'en': 'I have read and agree to the ',
+    'ja': '確認の上、同意します ', 'ko': '읽었으며 동의합니다 ', 'es': 'He leído y acepto los ',
+    'pt': 'Li e concordo com os ', 'hi': 'मैंने पढ़ लिया है और सहमत हूँ ',
+  },
+  'login_terms': {
+    'zh-CN': '《用户协议》', 'zh-TW': '《使用者協議》', 'en': 'Terms of Service',
+    'ja': '利用規約', 'ko': '이용약관', 'es': 'Términos de servicio',
+    'pt': 'Termos de Serviço', 'hi': 'सेवा की शर्तें',
+  },
+  'login_agree_and': {
+    'zh-CN': '和', 'zh-TW': '和', 'en': ' and ',
+    'ja': 'と', 'ko': ' 및 ', 'es': ' y la ',
+    'pt': ' e a ', 'hi': ' और ',
+  },
+  'login_privacy': {
+    'zh-CN': '《隐私政策》', 'zh-TW': '《隱私政策》', 'en': 'Privacy Policy',
+    'ja': 'プライバシーポリシー', 'ko': '개인정보 처리방침', 'es': 'Política de privacidad',
+    'pt': 'Política de Privacidade', 'hi': 'गोपनीयता नीति',
+  },
+  'login_err_agree': {
+    'zh-CN': '请先阅读并同意用户协议和隐私政策', 'zh-TW': '請先閱讀並同意使用者協議和隱私政策',
+    'en': 'Please read and agree to the Terms of Service and Privacy Policy first',
+    'ja': '利用規約とプライバシーポリシーを確認の上、同意してください',
+    'ko': '이용약관 및 개인정보 처리방침을 읽고 동의해 주세요',
+    'es': 'Lee y acepta primero los Términos de servicio y la Política de privacidad',
+    'pt': 'Leia e concorde primeiro com os Termos de Serviço e a Política de Privacidade',
+    'hi': 'कृपया पहले सेवा की शर्तें और गोपनीयता नीति पढ़ें और सहमत हों',
+  },
   'login_send_code': {
     'zh-CN': '发送验证码', 'zh-TW': '發送驗證碼', 'en': 'Send Code',
     'ja': 'コードを送信', 'ko': '인증 코드 전송', 'es': 'Enviar código',
