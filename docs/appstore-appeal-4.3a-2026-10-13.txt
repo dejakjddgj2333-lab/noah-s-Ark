@@ -21,8 +21,7 @@ App: 明策 (Mingce) · Bundle ID: com.hkmc.noahsark · Version: 1.0.0
 4. 宏观日历：北京时间宏观财经事件列表与中文解读、历史走势。
 5. 价格预警：自定义百分比/价位预警，由我们服务端计算并推送。
 6. K 线分享卡：自绘 K 线图表并生成可分享图片。
-7. 钱包连接支付：基于 WalletConnect v2 的钱包连接能力。
-8. 8 语言国际化与内容审核体系：完整的自研多语言，聊天与评论带举报/审核/封禁机制。
+7. 8 语言国际化与内容审核体系：完整的自研多语言，聊天与评论带举报/审核/封禁机制。
 
 上述每一项都是「行情模板类」应用所不具备的真实功能，组合在一起构成一个明显区别于单一用途应用的独立产品。
 
@@ -50,7 +49,6 @@ Mingce is not a simple market aggregator; it is a self-developed, full-featured 
 - Macro calendar: macro-economic events in Beijing time with Chinese commentary and historical trends.
 - Price alerts: custom percentage/price alerts computed and pushed by our server.
 - Shareable candlestick cards with a custom-drawn chart.
-- Wallet connection for payments via WalletConnect v2.
 - Eight-language internationalization and a moderation system: reporting, review, and banning for chat and comments.
 
 Each of these is a real feature that template "market data" apps do not have; together they form an independent product clearly distinct from any single-purpose app.
