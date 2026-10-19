@@ -53,8 +53,7 @@ body{
 header{position:relative; z-index:2; border-bottom:1px solid var(--line); background:rgba(7,13,28,.82); backdrop-filter:blur(8px)}
 header .wrap{height:60px; display:flex; align-items:center; justify-content:space-between}
 .brand{display:flex; align-items:center; gap:11px}
-.brand .logo{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--surface); border:1px solid var(--line); color:var(--accent-soft); flex:none}
-.brand .logo svg{width:22px; height:22px; display:block}
+.brand .logo{width:36px; height:36px; border-radius:10px; display:block; object-fit:cover; flex:none}
 .brand .t1{font-weight:700; font-size:16px; letter-spacing:-.2px}
 .brand .t2{color:var(--muted); font-size:11px; letter-spacing:1.2px}
 .badge{display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; background:var(--card-high); border:1px solid var(--line); font-size:11px; letter-spacing:1px; color:var(--bull); font-weight:600}
@@ -173,13 +172,7 @@ footer a:hover{color:var(--ink)}
 <header>
   <div class="wrap">
     <div class="brand rise d1">
-      <span class="logo" aria-label="明策">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">
-          <path d="M12 2.6 20 7v10l-8 4.4L4 17V7l8-4.4z"/>
-          <path d="M8.2 16.6V9.8l3.8 4.4 3.8-4.4v6.8"/>
-          <circle cx="12" cy="7.2" r="1" fill="currentColor" stroke="none"/>
-        </svg>
-      </span>
+      <img class="logo" src="/static/logo.png" alt="明策"/>
       <div>
         <div class="t1 display">明策 MINGCE</div>
         <div class="t2 mono">MARKET INTELLIGENCE</div>
