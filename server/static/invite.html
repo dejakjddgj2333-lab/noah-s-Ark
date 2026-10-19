@@ -53,7 +53,8 @@ body{
 header{position:relative; z-index:2; border-bottom:1px solid var(--line); background:rgba(7,13,28,.82); backdrop-filter:blur(8px)}
 header .wrap{height:60px; display:flex; align-items:center; justify-content:space-between}
 .brand{display:flex; align-items:center; gap:11px}
-.brand img{width:34px; height:34px; border-radius:9px; display:block; background:var(--surface); border:1px solid var(--line); padding:3px; object-fit:contain}
+.brand .logo{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--surface); border:1px solid var(--line); color:var(--accent-soft); flex:none}
+.brand .logo svg{width:22px; height:22px; display:block}
 .brand .t1{font-weight:700; font-size:16px; letter-spacing:-.2px}
 .brand .t2{color:var(--muted); font-size:11px; letter-spacing:1.2px}
 .badge{display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; background:var(--card-high); border:1px solid var(--line); font-size:11px; letter-spacing:1px; color:var(--bull); font-weight:600}
@@ -172,7 +173,13 @@ footer a:hover{color:var(--ink)}
 <header>
   <div class="wrap">
     <div class="brand rise d1">
-      <img src="/static/logo.png" alt="明策"/>
+      <span class="logo" aria-label="明策">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M12 2.6 20 7v10l-8 4.4L4 17V7l8-4.4z"/>
+          <path d="M8.2 16.6V9.8l3.8 4.4 3.8-4.4v6.8"/>
+          <circle cx="12" cy="7.2" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
       <div>
         <div class="t1 display">明策 MINGCE</div>
         <div class="t2 mono">MARKET INTELLIGENCE</div>
@@ -296,7 +303,7 @@ footer a:hover{color:var(--ink)}
         <span><span class="s1">Download on the</span><span class="s2">App Store</span></span>
       </button>
       <button class="store" onclick="openApp('android')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 2.5v19c0 .4.4.7.8.4l10.6-9.5c.2-.2.2-.6 0-.8L3.8 2.1c-.4-.3-.8-.1-.8.4zM16.5 9l2.9 2.6c.6.5.6 1.4 0 1.9L16.5 16 13 12.5 16.5 9z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.2 16.8h9.6v-6.4H7.2v6.4zM16.1 7.9l1.1-1.7a.3.3 0 0 0-.5-.3l-1.15 1.74a7.7 7.7 0 0 0-7.02 0L7.4 5.9a.3.3 0 0 0-.5.3L8 7.9a6.5 6.5 0 0 0-3 5.5h14a6.5 6.5 0 0 0-2.9-5.5zM9.7 11.4a.7.7 0 1 1 .7-.7.7.7 0 0 1-.7.7zm4.6 0a.7.7 0 1 1 .7-.7.7.7 0 0 1-.7.7zM5 10.2a1 1 0 0 0-1 1v4.6a1 1 0 0 0 2 0v-4.6a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v4.6a1 1 0 0 0 2 0v-4.6a1 1 0 0 0-1-1z"/></svg>
         <span><span class="s1">Get it on</span><span class="s2">Android</span></span>
       </button>
     </div>
