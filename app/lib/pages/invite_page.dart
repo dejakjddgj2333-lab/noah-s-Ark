@@ -98,7 +98,8 @@ class _InvitePageState extends State<InvitePage> {
     // origin 仅对 http/https 有效; 本地调试 Uri.base 是 file:// 会抛 StateError.
     final isWeb = base.scheme == 'http' || base.scheme == 'https';
     final origin = isWeb ? base.origin : McApi.baseUrl;
-    return '$origin/?invite=${_info?.inviteCode ?? ''}';
+    // 落到 FastAPI 的 /invite 落地页 (nginx 已将该路径反代到后端; 根路径 / 是 Flutter Web).
+    return '$origin/invite?invite=${_info?.inviteCode ?? ''}';
   }
 
   /// APP 内可直接唤起的 scheme 链接 (Android intent-filter 已配 mingce://invite)
