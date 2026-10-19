@@ -99,6 +99,7 @@ flutter:
 
   assets:
     - assets/logo.png
+    - assets/invite_poster_bg.jpg
     - assets/coins/
 
   # 本地化字体: 打开即用, 不走 google_fonts 运行时下载

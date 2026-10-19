@@ -5,9 +5,12 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, select, text
 
 from config import config
@@ -397,3 +400,26 @@ app.include_router(admin_reports.router, prefix="/api")
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# ── 邀请落地页 (与 App 分享海报配套) ──
+# 邀请链接 https://<api域名>/?invite=CODE 落到根路径, 这里直出静态落地页,
+# 页面 JS 读取 ?invite 自动带出邀请码, 并尝试 mingce://invite 深链唤端.
+_STATIC_DIR = Path(__file__).parent / "static"
+
+
+@app.get("/", include_in_schema=False)
+async def invite_landing():
+    """邀请落地页: 扫码/点链接的受邀者入口 (无需登录)."""
+    return FileResponse(_STATIC_DIR / "invite.html")
+
+
+@app.get("/invite", include_in_schema=False)
+async def invite_landing_alias():
+    """/invite 别名, 语义更明确的邀请入口."""
+    return FileResponse(_STATIC_DIR / "invite.html")
+
+
+# 静态资源 (logo / 海报背景等)
+if _STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")

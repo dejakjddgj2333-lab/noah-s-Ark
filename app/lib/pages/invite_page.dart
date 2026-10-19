@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/l10n.dart';
+import '../core/invite_poster.dart';
 import '../core/theme.dart';
 import '../services/api.dart';
 import '../services/invite_api.dart';
@@ -115,7 +116,10 @@ class _InvitePageState extends State<InvitePage> {
           icon: const Icon(Icons.arrow_back, color: McColors.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(tr('inv_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
+        title: Text(
+          tr('inv_title'),
+          style: McText.display(size: 16, weight: FontWeight.w700),
+        ),
       ),
       body: _busy && _info == null
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -127,6 +131,8 @@ class _InvitePageState extends State<InvitePage> {
                   const SizedBox(height: 12),
                 ],
                 if (_info != null) ...[
+                  _shareCard(),
+                  const SizedBox(height: 16),
                   _codeCard(),
                   const SizedBox(height: 16),
                   _inviterCard(),
@@ -150,7 +156,98 @@ class _InvitePageState extends State<InvitePage> {
         children: [
           const Icon(Icons.error_outline, size: 16, color: McColors.bear),
           const SizedBox(width: 8),
-          Expanded(child: Text(msg, style: McText.sans(size: 12, color: McColors.bear))),
+          Expanded(
+            child: Text(
+              msg,
+              style: McText.sans(size: 12, color: McColors.bear),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Stitch 设计分享区: 海报实时预览 + 主分享/复制链接操作.
+  Widget _shareCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: InviteDesign.surface.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: InviteDesign.line.withValues(alpha: 0.55)),
+      ),
+      child: Column(
+        children: [
+          AspectRatio(
+            aspectRatio: 0.53,
+            child: InvitePoster.preview(
+              inviteCode: _info!.inviteCode,
+              inviteLink: _inviteLink,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: () => InvitePoster.previewAndShare(
+                context: context,
+                inviteCode: _info!.inviteCode,
+                inviteLink: _inviteLink,
+              ),
+              icon: const Icon(
+                Icons.ios_share,
+                size: 18,
+                color: InviteDesign.onPrimary,
+              ),
+              label: Text(
+                tr('inv_share_poster'),
+                style: McText.sans(
+                  size: 14,
+                  weight: FontWeight.w700,
+                  color: InviteDesign.onPrimary,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: InviteDesign.primaryContainer,
+                foregroundColor: InviteDesign.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: () => _copy(_inviteLink, tr('inv_link_copied')),
+              icon: const Icon(
+                Icons.link,
+                size: 18,
+                color: InviteDesign.primary,
+              ),
+              label: Text(
+                tr('inv_copy_link'),
+                style: McText.sans(
+                  size: 14,
+                  weight: FontWeight.w600,
+                  color: InviteDesign.text,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: InviteDesign.surface.withValues(alpha: 0.8),
+                side: BorderSide(
+                  color: InviteDesign.line.withValues(alpha: 0.8),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -168,30 +265,57 @@ class _InvitePageState extends State<InvitePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr('inv_my_code'), style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          Text(
+            tr('inv_my_code'),
+            style: McText.mono(
+              size: 12,
+              color: McColors.onSurfaceVariant,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: McColors.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: McColors.primaryContainer.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: McColors.primaryContainer.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     _info!.inviteCode,
-                    style: McText.mono(size: 20, weight: FontWeight.w700, color: McColors.primarySoft, letterSpacing: 2),
+                    style: McText.mono(
+                      size: 20,
+                      weight: FontWeight.w700,
+                      color: McColors.primarySoft,
+                      letterSpacing: 2,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
-              _copyButton(tr('assets_copy'), () => _copy(_info!.inviteCode, tr('inv_code_copied'))),
+              _copyButton(
+                tr('assets_copy'),
+                () => _copy(_info!.inviteCode, tr('inv_code_copied')),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(tr('inv_link'), style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          Text(
+            tr('inv_link'),
+            style: McText.mono(
+              size: 12,
+              color: McColors.onSurfaceVariant,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -200,15 +324,28 @@ class _InvitePageState extends State<InvitePage> {
                   _inviteLink,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
+                  style: McText.mono(
+                    size: 12,
+                    color: McColors.onSurfaceVariant,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
-              _copyButton(tr('inv_copy_link'), () => _copy(_inviteLink, tr('inv_link_copied'))),
+              _copyButton(
+                tr('inv_copy_link'),
+                () => _copy(_inviteLink, tr('inv_link_copied')),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(tr('inv_app_link'), style: McText.mono(size: 12, color: McColors.onSurfaceVariant, letterSpacing: 1)),
+          Text(
+            tr('inv_app_link'),
+            style: McText.mono(
+              size: 12,
+              color: McColors.onSurfaceVariant,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -217,13 +354,20 @@ class _InvitePageState extends State<InvitePage> {
                   _inviteAppLink,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: McText.mono(size: 12, color: McColors.onSurfaceVariant),
+                  style: McText.mono(
+                    size: 12,
+                    color: McColors.onSurfaceVariant,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
-              _copyButton(tr('assets_copy'), () => _copy(_inviteAppLink, tr('inv_app_link_copied'))),
+              _copyButton(
+                tr('assets_copy'),
+                () => _copy(_inviteAppLink, tr('inv_app_link_copied')),
+              ),
             ],
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -240,7 +384,11 @@ class _InvitePageState extends State<InvitePage> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Text(
             text,
-            style: McText.sans(size: 12, weight: FontWeight.w700, color: Colors.white),
+            style: McText.sans(
+              size: 12,
+              weight: FontWeight.w700,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -260,7 +408,10 @@ class _InvitePageState extends State<InvitePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr('inv_my_inviter'), style: McText.display(size: 15, weight: FontWeight.w700)),
+          Text(
+            tr('inv_my_inviter'),
+            style: McText.display(size: 15, weight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           if (info.bound) ...[
             Container(
@@ -273,15 +424,23 @@ class _InvitePageState extends State<InvitePage> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.person_pin, size: 18, color: McColors.primarySoft),
+                  const Icon(
+                    Icons.person_pin,
+                    size: 18,
+                    color: McColors.primarySoft,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      info.inviterUsername ?? '${tr('assets_user_prefix')}${info.inviterId}',
+                      info.inviterUsername ??
+                          '${tr('assets_user_prefix')}${info.inviterId}',
                       style: McText.sans(size: 14, weight: FontWeight.w600),
                     ),
                   ),
-                  Text(tr('inv_bound_fixed'), style: McText.mono(size: 11, color: McColors.tertiary)),
+                  Text(
+                    tr('inv_bound_fixed'),
+                    style: McText.mono(size: 11, color: McColors.tertiary),
+                  ),
                 ],
               ),
             ),
@@ -300,21 +459,34 @@ class _InvitePageState extends State<InvitePage> {
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
                       hintText: tr('inv_code_hint'),
-                      hintStyle: McText.sans(size: 13, color: McColors.onSurfaceVariant),
+                      hintStyle: McText.sans(
+                        size: 13,
+                        color: McColors.onSurfaceVariant,
+                      ),
                       filled: true,
                       fillColor: McColors.surfaceContainerLowest,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: McColors.outlineVariant.withValues(alpha: 0.6)),
+                        borderSide: BorderSide(
+                          color: McColors.outlineVariant.withValues(alpha: 0.6),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: McColors.outlineVariant.withValues(alpha: 0.6)),
+                        borderSide: BorderSide(
+                          color: McColors.outlineVariant.withValues(alpha: 0.6),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: McColors.primaryContainer, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: McColors.primaryContainer,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -330,22 +502,38 @@ class _InvitePageState extends State<InvitePage> {
               decoration: BoxDecoration(
                 color: McColors.bear.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: McColors.bear.withValues(alpha: 0.25)),
+                border: Border.all(
+                  color: McColors.bear.withValues(alpha: 0.25),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.lock_outline, size: 16, color: McColors.bear),
+                  const Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: McColors.bear,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(tr('inv_cannot_bind'), style: McText.sans(size: 13, weight: FontWeight.w700, color: McColors.bear)),
+                        Text(
+                          tr('inv_cannot_bind'),
+                          style: McText.sans(
+                            size: 13,
+                            weight: FontWeight.w700,
+                            color: McColors.bear,
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           info.bindBlockReason ?? tr('inv_cannot_bind_default'),
-                          style: McText.sans(size: 12, color: McColors.onSurfaceVariant),
+                          style: McText.sans(
+                            size: 12,
+                            color: McColors.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -366,22 +554,35 @@ class _InvitePageState extends State<InvitePage> {
       decoration: BoxDecoration(
         color: McColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: McColors.surfaceContainerHigh.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: McColors.surfaceContainerHigh.withValues(alpha: 0.6),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.info_outline, size: 16, color: McColors.primarySoft),
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: McColors.primarySoft,
+              ),
               const SizedBox(width: 6),
-              Text(tr('inv_rules_title'), style: McText.sans(size: 13, weight: FontWeight.w700)),
+              Text(
+                tr('inv_rules_title'),
+                style: McText.sans(size: 13, weight: FontWeight.w700),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             tr('inv_rules_body'),
-            style: McText.sans(size: 12, color: McColors.onSurfaceVariant, height: 1.7),
+            style: McText.sans(
+              size: 12,
+              color: McColors.onSurfaceVariant,
+              height: 1.7,
+            ),
           ),
         ],
       ),

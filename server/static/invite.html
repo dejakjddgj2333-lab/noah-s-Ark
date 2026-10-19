@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#070D1C"/>
+<title>明策 MINGCE · 专属邀请</title>
+<meta name="description" content="好友邀你加入明策 MINGCE 市场情报终端,专属邀请通道已激活。"/>
+<link rel="icon" type="image/png" href="/static/logo.png"/>
+<link rel="apple-touch-icon" href="/static/logo.png"/>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --canvas:#070D1C; --surface:#0D1528; --card:#121D34; --card-high:#1A2742;
+  --line:#34415E; --accent:#2E5CFF; --accent-soft:#82A4FF;
+  --ink:#F0F0FF; --muted:#9EA0B2; --bull:#00E388;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--canvas); color:var(--ink);
+  font-family:"Inter","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.7; min-height:100dvh;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  position:relative;
+}
+.mono{font-family:"JetBrains Mono",monospace}
+.display{font-family:"Space Grotesk","Inter","PingFang SC",sans-serif}
+
+/* ── 背景环境: 细网格 + 顶部钴蓝辉光 ── */
+.bg-grid,.bg-glow{position:fixed; inset:0; pointer-events:none; z-index:0}
+.bg-grid{
+  background-size:24px 24px;
+  background-image:
+    linear-gradient(to right, rgba(52,65,94,.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(52,65,94,.12) 1px, transparent 1px);
+}
+.bg-glow{background:radial-gradient(circle 620px at 50% -4%, rgba(46,92,255,.12), transparent 70%); animation:breathe 6s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.75}50%{opacity:1}}
+
+/* ── 级联进场 ── */
+.rise{opacity:0; transform:translateY(14px); animation:rise .6s cubic-bezier(.22,.9,.3,1) forwards}
+@keyframes rise{to{opacity:1; transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.13s}.d3{animation-delay:.21s}
+.d4{animation-delay:.29s}.d5{animation-delay:.37s}.d6{animation-delay:.45s}
+
+.wrap{position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:0 20px}
+
+/* ── 顶栏 ── */
+header{position:relative; z-index:2; border-bottom:1px solid var(--line); background:rgba(7,13,28,.82); backdrop-filter:blur(8px)}
+header .wrap{height:60px; display:flex; align-items:center; justify-content:space-between}
+.brand{display:flex; align-items:center; gap:11px}
+.brand img{width:34px; height:34px; border-radius:8px; display:block}
+.brand .t1{font-weight:700; font-size:16px; letter-spacing:-.2px}
+.brand .t2{color:var(--muted); font-size:11px; letter-spacing:1.2px}
+.badge{display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; background:var(--card-high); border:1px solid var(--line); font-size:11px; letter-spacing:1px; color:var(--bull); font-weight:600}
+.dot{position:relative; width:7px; height:7px}
+.dot::before,.dot::after{content:""; position:absolute; inset:0; border-radius:50%; background:var(--bull)}
+.dot::before{animation:ping 1.8s cubic-bezier(0,0,.2,1) infinite; opacity:.7}
+@keyframes ping{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(2.4);opacity:0}}
+
+/* ── Hero ── */
+.hero{display:grid; grid-template-columns:1fr; gap:40px; padding:44px 0 8px; align-items:start}
+@media(min-width:900px){.hero{grid-template-columns:7fr 5fr; gap:36px; padding:64px 0 16px}}
+
+.pill{display:inline-flex; align-items:center; gap:8px; padding:5px 11px; border-radius:6px; background:var(--surface); border:1px solid var(--line); font-size:11px; letter-spacing:1.6px}
+.pill .a{color:var(--accent-soft); font-weight:600}
+.pill .sep{width:3px; height:3px; border-radius:50%; background:var(--line)}
+.pill .b{color:var(--muted)}
+
+h1{font-size:clamp(30px,5.4vw,46px); line-height:1.12; letter-spacing:-1px; font-weight:700; margin:20px 0 14px}
+h1 .grad{background:linear-gradient(92deg,var(--ink) 0%,var(--accent-soft) 90%); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lede{color:var(--muted); max-width:34em; margin-bottom:26px; font-size:15px}
+
+/* 邀请码卡 */
+.code-card{background:var(--card); border:1px solid rgba(46,92,255,.32); border-radius:14px; padding:20px; position:relative; overflow:hidden; margin-bottom:24px}
+.code-card::after{content:""; position:absolute; top:-60%; right:-10%; width:240px; height:240px; background:radial-gradient(circle,rgba(46,92,255,.16),transparent 70%); pointer-events:none}
+.code-head{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; letter-spacing:1.4px; margin-bottom:10px; font-weight:600}
+.tag-valid{color:var(--bull); font-size:10px; padding:2px 7px; border-radius:5px; background:rgba(0,227,136,.12); border:1px solid rgba(0,227,136,.3); letter-spacing:.5px}
+.code-row{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.code{font-size:clamp(24px,6vw,32px); font-weight:700; letter-spacing:6px; color:var(--accent-soft); animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.btn-ghost{display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; background:var(--surface); border:1px solid var(--line); color:var(--accent-soft); font-size:13px; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s,transform .1s; white-space:nowrap}
+.btn-ghost:hover{border-color:rgba(130,164,255,.6); color:var(--ink)}
+.btn-ghost:active{transform:scale(.97)}
+.btn-ghost svg{width:16px; height:16px}
+
+/* CTA */
+.cta-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:26px}
+.btn-primary{display:inline-flex; align-items:center; gap:10px; padding:14px 30px; border-radius:11px; background:var(--accent); color:#fff; font-weight:600; font-size:15px; text-decoration:none; border:none; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,.22); transition:filter .15s,transform .1s; min-height:48px}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-primary:active{transform:translateY(1px)}
+.btn-primary svg{width:19px; height:19px}
+.cta-note{display:flex; align-items:center; gap:7px; color:var(--muted); font-size:13px}
+.cta-note .sd{width:7px; height:7px; border-radius:50%; background:var(--bull)}
+
+/* 遥测条 */
+.spec{border-top:1px solid rgba(52,65,94,.6); padding-top:20px; display:flex; flex-wrap:wrap; gap:8px 22px; color:var(--muted); font-size:12px}
+.spec .it{display:flex; align-items:center; gap:7px}
+.spec b{color:var(--ink); font-weight:600}
+.spec .c1{color:var(--bull)} .spec .c2{color:var(--accent-soft)} .spec .c3{color:var(--muted)}
+.spec .dv{color:var(--line)}
+
+/* ── 终端预览 ── */
+.term{background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
+.term-bar{height:42px; padding:0 15px; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between}
+.term-bar .dots{display:flex; gap:6px; align-items:center}
+.term-bar .dots i{width:10px; height:10px; border-radius:50%; background:var(--line); display:block}
+.term-bar .fname{color:var(--muted); font-size:11px; letter-spacing:1px; margin-left:8px}
+.term-bar .sync{color:var(--bull); font-size:11px; display:flex; align-items:center; gap:5px; font-weight:600}
+.term-body{padding:14px; display:flex; flex-direction:column; gap:11px; font-size:12px}
+.feed{background:rgba(18,29,52,.7); border:1px solid rgba(52,65,94,.8); border-radius:9px; padding:12px}
+.feed .fh{display:flex; justify-content:space-between; align-items:center; margin-bottom:5px}
+.feed .fl{font-size:10px; letter-spacing:1px; font-weight:600}
+.feed .fl.w{color:var(--accent-soft)} .feed .fl.m{color:#b8c3ff} .feed .fl.a{color:var(--bull)}
+.feed .ft{color:var(--muted); font-size:11px}
+.feed .msg{color:var(--ink); font-weight:500; font-size:13px; line-height:1.45}
+.feed .meta{display:flex; justify-content:space-between; color:var(--muted); font-size:11px; padding-top:6px}
+.feed .up{color:var(--bull); font-weight:600}
+.feed .dn{color:var(--accent-soft); font-weight:600}
+.term-foot{padding:9px 15px; background:var(--card); border-top:1px solid var(--line); display:flex; justify-content:space-between; color:var(--muted); font-size:11px}
+.term-foot .p{color:var(--accent-soft)}
+
+/* ── 功能区 ── */
+.caps{margin:64px 0 0}
+.caps .lab{color:var(--muted); font-size:11px; letter-spacing:2px; font-weight:600; margin-bottom:16px}
+.caps-grid{background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:grid; grid-template-columns:1fr; }
+@media(min-width:760px){.caps-grid{grid-template-columns:repeat(3,1fr)} .caps-grid .cap + .cap{border-left:1px solid var(--line)} .caps-grid .cap{border-top:none !important}}
+.caps-grid .cap{padding:26px 26px 22px; border-top:1px solid var(--line); transition:background .15s}
+.caps-grid .cap:first-child{border-top:none}
+.caps-grid .cap:hover{background:rgba(18,29,52,.45)}
+.cap .ic{width:40px; height:40px; border-radius:10px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--accent-soft); margin-bottom:18px}
+.cap .ic svg{width:20px; height:20px}
+.cap .tag{color:var(--accent-soft); font-size:10px; letter-spacing:1.4px; font-weight:600; margin-bottom:7px}
+.cap h3{font-size:17px; font-weight:600; margin-bottom:7px; letter-spacing:-.2px}
+.cap p{color:var(--muted); font-size:13px; line-height:1.65}
+.cap .ok{margin-top:16px; padding-top:13px; border-top:1px solid rgba(52,65,94,.4); color:var(--muted); font-size:11px; display:flex; align-items:center; gap:6px; letter-spacing:.5px}
+.cap .ok svg{width:14px; height:14px; color:var(--bull)}
+
+/* ── 下载引导带 ── */
+.get{margin:56px 0 0; background:linear-gradient(120deg,var(--card),var(--card-high)); border:1px solid var(--line); border-radius:16px; padding:30px 28px; display:flex; align-items:center; justify-content:space-between; gap:22px; flex-wrap:wrap}
+.get .l{max-width:30em}
+.get h4{font-size:20px; font-weight:700; letter-spacing:-.3px; margin-bottom:6px}
+.get p{color:var(--muted); font-size:13px}
+.get .stores{display:flex; gap:12px; flex-wrap:wrap}
+.store{display:inline-flex; align-items:center; gap:10px; padding:11px 18px; border-radius:11px; background:var(--canvas); border:1px solid var(--line); cursor:pointer; transition:border-color .15s; text-align:left}
+.store:hover{border-color:rgba(130,164,255,.55)}
+.store svg{width:22px; height:22px; color:var(--ink)}
+.store .s1{font-size:10px; color:var(--muted); display:block; line-height:1.2}
+.store .s2{font-size:14px; font-weight:600; display:block; line-height:1.2}
+
+/* ── 页脚 ── */
+footer{position:relative; z-index:1; border-top:1px solid var(--line); margin-top:64px}
+footer .wrap{padding:26px 20px 34px; display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap}
+footer .c{color:var(--muted); font-size:12px}
+footer .links{display:flex; gap:20px}
+footer a{color:var(--muted); font-size:13px; text-decoration:none; transition:color .15s}
+footer a:hover{color:var(--ink)}
+
+/* Toast */
+.toast{position:fixed; left:50%; bottom:34px; transform:translateX(-50%) translateY(20px); background:var(--card-high); color:var(--ink); border:1px solid var(--line); padding:11px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:50; box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="wrap">
+    <div class="brand rise d1">
+      <img src="/static/logo.png" alt="明策"/>
+      <div>
+        <div class="t1 display">明策 MINGCE</div>
+        <div class="t2 mono">MARKET INTELLIGENCE</div>
+      </div>
+    </div>
+    <div class="badge mono rise d1"><span class="dot"></span>INVITE ACTIVE</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <!-- 左: 文案 + 邀请码 + CTA -->
+    <div>
+      <div class="pill mono rise d1">
+        <span class="a">EXCLUSIVE ACCESS</span>
+        <span class="sep"></span>
+        <span class="b">受邀专属通道</span>
+      </div>
+      <h1 class="display rise d2">好友邀你<br/><span class="grad">洞察市场先机</span></h1>
+      <p class="lede rise d3">明策 MINGCE 市场情报系统的受邀席位已为你激活。接入多维行情洞察、机构巨鲸链上动向与实时语音纪要,安装后使用下方邀请码完成绑定。</p>
+
+      <div class="code-card rise d3">
+        <div class="code-head mono">
+          <span>TERMINAL ACCESS CODE</span>
+          <span class="tag-valid mono">VALIDATED</span>
+        </div>
+        <div class="code-row">
+          <div class="code mono" id="inviteCode">····</div>
+          <button class="btn-ghost mono" id="copyBtn" onclick="copyCode()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            <span id="copyTxt">复制邀请码</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="cta-row rise d4">
+        <a class="btn-primary" id="openAppBtn" href="#get">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <span>下载 / 打开 App</span>
+        </a>
+        <span class="cta-note"><span class="sd"></span>支持 iOS / Android 实时同步唤醒</span>
+      </div>
+
+      <div class="spec mono rise d5">
+        <div class="it"><span class="c1">●</span>节点延迟 <b>14ms</b>&nbsp;亚太高频专线</div>
+        <div class="dv">/</div>
+        <div class="it"><span class="c2">●</span>巨鲸监控池 <b>38,420</b>&nbsp;机构实体</div>
+        <div class="dv">/</div>
+        <div class="it"><span class="c3">●</span>加密合规 <b>AES-256 GCM</b></div>
+      </div>
+    </div>
+
+    <!-- 右: 终端预览 -->
+    <div class="rise d4">
+      <div class="term">
+        <div class="term-bar">
+          <div class="dots"><i></i><i></i><i></i><span class="fname mono">MINGCE_LIVE_STREAM</span></div>
+          <div class="sync mono">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 8.5a5 5 0 0 1 7 0M5 5a9.5 9.5 0 0 1 14 0"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>
+            FEED_SYNCED
+          </div>
+        </div>
+        <div class="term-body mono">
+          <div class="feed">
+            <div class="fh"><span class="fl w">WHALE_ALERT · 链上异动</span><span class="ft">10:42:19.402</span></div>
+            <p class="msg">0x71A…c4F2 向主池转入 4,200 BTC</p>
+            <div class="meta"><span>名义价值 $394.8M</span><span class="up">流入偏向 +84%</span></div>
+          </div>
+          <div class="feed">
+            <div class="fh"><span class="fl m">MARKET_RESONANCE · 深度共振</span><span class="ft">10:41:03.118</span></div>
+            <p class="msg">亚太指数与波动率触发共振窗口</p>
+            <div class="meta"><span>Z-Score +2.84 σ</span><span class="dn">模型已激活</span></div>
+          </div>
+          <div class="feed">
+            <div class="fh"><span class="fl a">AUDIO_SYNTHESIS · 盘前纪要</span><span class="ft">18s POD</span></div>
+            <p class="msg">机构资金调仓动向简报 · 00:18 / 01:24</p>
+          </div>
+        </div>
+        <div class="term-foot mono"><span>MEM 124MB · THREADS 16</span><span class="p">PROTOCOL MINGCE-WSS-v4</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 功能区 -->
+  <section class="caps">
+    <div class="lab mono rise">CORE CAPABILITIES · 核心能力集群</div>
+    <div class="caps-grid rise d2">
+      <div class="cap">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 4 6-8"/><path d="M14 7h5v5"/></svg></div>
+        <div class="tag mono">REAL-TIME / 100+ METRICS</div>
+        <h3 class="display">行情洞察</h3>
+        <p>多源市场数据整合与异动捕捉,先人一步识别关键变化与资金流向。</p>
+        <div class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>高频共振模型就绪</div>
+      </div>
+      <div class="cap">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7.5l7.5-.3M7.2 8.2l3.6 7.4M16.9 9.3l-3.7 6.5"/></svg></div>
+        <div class="tag mono">ON-CHAIN HEURISTICS / ENTITY MAP</div>
+        <h3 class="display">巨鲸追踪</h3>
+        <p>透视链上大额流转与冷钱包动向,多层聚类还原大户筹码归属与周期。</p>
+        <div class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>38,420+ 机构实体拓扑</div>
+      </div>
+      <div class="cap">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></div>
+        <div class="tag mono">AI SYNTHESIS / REAL-TIME POD</div>
+        <h3 class="display">语音播报</h3>
+        <p>专有语言模型萃取全球突发与盘前要点,移动端随时随地一键聆听。</p>
+        <div class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>低延迟声学生成协议</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 下载引导带 -->
+  <section class="get rise" id="get">
+    <div class="l">
+      <h4 class="display">准备好接入了吗</h4>
+      <p>下载明策 App,注册时在邀请码栏填入上方专属码即可完成绑定。已安装则直接打开自动带出。</p>
+    </div>
+    <div class="stores">
+      <button class="store" onclick="openApp('ios')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8.98-.2 1.92-.86 3.24-.77 1.58.13 2.77.75 3.55 1.9-3.27 1.96-2.5 6.27.53 7.5-.6 1.58-1.38 3.15-2.4 3.54zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        <span><span class="s1">Download on the</span><span class="s2">App Store</span></span>
+      </button>
+      <button class="store" onclick="openApp('android')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 2.5v19c0 .4.4.7.8.4l10.6-9.5c.2-.2.2-.6 0-.8L3.8 2.1c-.4-.3-.8-.1-.8.4zM16.5 9l2.9 2.6c.6.5.6 1.4 0 1.9L16.5 16 13 12.5 16.5 9z"/></svg>
+        <span><span class="s1">Get it on</span><span class="s2">Android</span></span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="c mono">© <span id="yr">2026</span> 明策 MINGCE · 市场情报终端 · 仅供受邀用户核验使用</div>
+    <div class="links">
+      <a href="/api/legal/terms">用户协议</a>
+      <a href="/api/legal/privacy">隐私政策</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast">邀请码已复制</div>
+
+<script>
+(function(){
+  // 读取 URL 邀请码
+  var params = new URLSearchParams(location.search);
+  var code = (params.get('invite') || params.get('code') || '').trim().toUpperCase();
+  var codeEl = document.getElementById('inviteCode');
+  if (code) { codeEl.textContent = code; }
+  else { codeEl.textContent = '— — — —'; codeEl.style.color = 'var(--muted)'; codeEl.style.letterSpacing='2px'; codeEl.style.fontSize='18px'; }
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  window.INVITE_CODE = code;
+
+  // 复制邀请码
+  window.copyCode = function(){
+    if(!code){ toast('未检测到邀请码'); return; }
+    var done = function(){
+      var btn=document.getElementById('copyBtn'), txt=document.getElementById('copyTxt');
+      txt.textContent='已复制'; btn.style.borderColor='rgba(0,227,136,.55)'; btn.style.color='var(--bull)';
+      toast('邀请码已复制');
+      setTimeout(function(){ txt.textContent='复制邀请码'; btn.style.borderColor=''; btn.style.color=''; },2200);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(code).then(done, fallbackCopy); }
+    else { fallbackCopy(); }
+    function fallbackCopy(){
+      var ta=document.createElement('textarea'); ta.value=code; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ toast('复制失败,请长按复制'); }
+      document.body.removeChild(ta);
+    }
+  };
+
+  // 打开 / 下载 App
+  window.openApp = function(platform){
+    var scheme = 'mingce://invite' + (code ? ('?invite='+encodeURIComponent(code)) : '');
+    // 已安装 → 唤端并自动带出邀请码
+    var start = Date.now();
+    // iOS 用隐藏 iframe / 直接跳转均可;Android Chrome 直接跳 scheme
+    window.location.href = scheme;
+    // 若 ~1.6s 后页面仍在前台,视为未安装 → 引导下载
+    setTimeout(function(){
+      if(document.hidden || Date.now()-start > 2200) return;
+      scrollToGet(platform);
+    }, 1600);
+  };
+
+  function scrollToGet(platform){
+    var el=document.getElementById('get');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+    toast(platform==='ios' ? '未检测到 App,请先在 App Store 下载' : '未检测到 App,请先下载安装');
+  }
+
+  // 主 CTA:已装唤端,未装滚到下载带
+  document.getElementById('openAppBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    var ua = navigator.userAgent||'';
+    var isIOS = /iPad|iPhone|iPod/.test(ua);
+    var isAndroid = /Android/.test(ua);
+    if(isIOS||isAndroid){ openApp(isIOS?'ios':'android'); }
+    else { scrollToGet(); }
+  });
+
+  function toast(msg){
+    var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(t._tm); t._tm=setTimeout(function(){ t.classList.remove('show'); },2400);
+  }
+})();
+</script>
+</body>
+</html>

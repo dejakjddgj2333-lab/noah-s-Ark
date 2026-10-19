@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>明策 MINGCE · 市场情报终端邀请激活</title>
+<!-- Google Fonts: Space Grotesk, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container": "#191f2f",
+            "surface-dim": "#0d1322",
+            "outline": "#8e90a2",
+            "surface": "#0d1322",
+            "primary": "#b8c3ff",
+            "surface-bright": "#33394a",
+            "tertiary-container": "#007e49",
+            "primary-fixed": "#dde1ff",
+            "on-tertiary-fixed": "#00210f",
+            "secondary-fixed": "#dae2ff",
+            "on-background": "#dde2f8",
+            "on-primary-container": "#f0f0ff",
+            "background": "#0d1322",
+            "on-tertiary-fixed-variant": "#00522e",
+            "surface-container-highest": "#2e3445",
+            "on-primary": "#002487",
+            "card-navy": "#121D34",
+            "inverse-on-surface": "#2a3041",
+            "error-container": "#93000a",
+            "cobalt-accent": "#2E5CFF",
+            "tertiary": "#00e388",
+            "surface-container-lowest": "#080e1d",
+            "tertiary-fixed-dim": "#00e388",
+            "surface-slate": "#0D1528",
+            "on-secondary-container": "#98b3ff",
+            "secondary-container": "#164197",
+            "error": "#ffb4ab",
+            "secondary": "#b2c5ff",
+            "canvas-obsidian": "#070D1C",
+            "on-tertiary": "#00391e",
+            "on-primary-fixed": "#001355",
+            "surface-container-high": "#242a3a",
+            "on-error-container": "#ffdad6",
+            "secondary-fixed-dim": "#b2c5ff",
+            "on-surface-variant": "#c4c5d9",
+            "outline-variant": "#434656",
+            "ink-white": "#F0F0FF",
+            "on-primary-fixed-variant": "#0035bd",
+            "inverse-surface": "#dde2f8",
+            "tertiary-fixed": "#58ffa5",
+            "on-error": "#690005",
+            "on-secondary-fixed-variant": "#164197",
+            "inverse-primary": "#104aef",
+            "hairline": "#34415E",
+            "surface-variant": "#2e3445",
+            "primary-container": "#2e5cff",
+            "steel-muted": "#9EA0B2",
+            "on-surface": "#dde2f8",
+            "on-secondary": "#002b73",
+            "on-tertiary-container": "#c2ffd3",
+            "bull-green": "#00E388",
+            "primary-fixed-dim": "#b8c3ff",
+            "cobalt-soft": "#82A4FF",
+            "surface-tint": "#b8c3ff",
+            "surface-container-low": "#151b2b",
+            "on-secondary-fixed": "#001848",
+            "card-navy-high": "#1A2742"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin-mobile": "1.25rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter-mobile": "1rem",
+            "margin": "2.5rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "mono-label": ["JetBrains Mono"],
+            "mono-data": ["JetBrains Mono"],
+            "mono-token": ["JetBrains Mono"],
+            "body-sm": ["Inter"],
+            "headline-lg": ["Space Grotesk"],
+            "display-hero": ["Space Grotesk"],
+            "body-md": ["Inter"],
+            "headline-md": ["Space Grotesk"],
+            "headline-sm": ["Space Grotesk"],
+            "display-hero-mobile": ["Space Grotesk"],
+            "mono-token-mobile": ["JetBrains Mono"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "mono-label": ["11px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }],
+            "mono-data": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "mono-token": ["28px", { "lineHeight": "36px", "letterSpacing": "0.12em", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "display-hero": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+            "body-md": ["14px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-hero-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "mono-token-mobile": ["22px", { "lineHeight": "30px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "28px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* 24px Micro Grid Layer */
+    .bg-grid-precision {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(52, 65, 94, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(52, 65, 94, 0.12) 1px, transparent 1px);
+    }
+    /* Radial Top Luminescence */
+    .radial-top-glow {
+      background: radial-gradient(circle 600px at 50% 0%, rgba(46, 92, 255, 0.08), transparent 100%);
+    }
+    /* Tactile button micro inner border */
+    .tactile-cta {
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    .tactile-cta:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-ink-white min-h-screen selection:bg-cobalt-accent selection:text-ink-white relative font-body-md antialiased overflow-x-hidden">
+<!-- Background Environment: 24px drafting grid and directional focal glow -->
+<div class="fixed inset-0 pointer-events-none bg-grid-precision z-0"></div>
+<div class="fixed inset-0 pointer-events-none radial-top-glow z-0"></div>
+<!-- Shared Component: TopNavBar -->
+<header class="relative z-20 w-full bg-canvas-obsidian border-b border-hairline">
+<div class="w-full max-w-[1100px] mx-auto px-margin-mobile md:px-margin h-16 flex items-center justify-between">
+<!-- Brand Anchor -->
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-cobalt-soft">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M3 4h4v16H3V4zm7 6h4v10h-4V10zm7-8h4v18h-4V2z"></path>
+</svg>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-headline-sm font-headline-sm font-bold tracking-tight text-ink-white">明策 MINGCE</span>
+<span class="text-steel-muted text-mono-label font-mono-label hidden sm:inline-block tracking-wider">/ MARKET INTELLIGENCE</span>
+</div>
+</div>
+<!-- Live Status Badge (Shared Anchor trailing secondary action) -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card-navy-high border border-hairline">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bull-green opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-bull-green"></span>
+</span>
+<span class="text-mono-label font-mono-label text-bull-green uppercase tracking-wider">INVITE ACTIVE</span>
+</div>
+</div>
+</header>
+<!-- Main Canvas: Asymmetric Terminal Layout (Max-w 1100px) -->
+<main class="relative z-10 w-full max-w-[1100px] mx-auto px-margin-mobile md:px-margin pt-10 md:pt-16 pb-20">
+<!-- Hero Row: Asymmetric 7:5 Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-gutter items-start">
+<!-- Primary Field (7 Cols): Left-Aligned Direct Copy & CTA Engine -->
+<div class="lg:col-span-7 flex flex-col items-start text-left">
+<!-- Access Metadata Pill -->
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-surface-slate border border-hairline mb-5">
+<span class="text-cobalt-soft font-mono-label text-mono-label uppercase tracking-widest">EXCLUSIVE ACCESS</span>
+<span class="w-1 h-1 rounded-full bg-hairline"></span>
+<span class="text-steel-muted font-mono-label text-mono-label">受邀专属通道</span>
+</div>
+<!-- Heavy Anchor Headline -->
+<h1 class="text-display-hero-mobile md:text-display-hero font-display-hero text-ink-white tracking-tight mb-4 leading-tight">
+          好友邀你<br/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-ink-white via-primary to-cobalt-soft">洞察市场先机</span>
+</h1>
+<!-- Technical Description -->
+<p class="text-body-md font-body-md text-steel-muted max-w-xl mb-8 leading-relaxed">
+          明策 MINGCE 量化情报系统定向受邀席位已激活。接入多维指令流分析、机构巨鲸链上筹码异动与毫秒级宏观共振模型。
+        </p>
+<!-- Access Code Block (Card Navy substrate + hairline cobalt) -->
+<div class="w-full bg-card-navy border border-cobalt-accent/30 rounded-xl p-5 mb-8 relative overflow-hidden">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2 text-mono-label font-mono-label text-steel-muted uppercase tracking-wider mb-1">
+<span>TERMINAL ACCESS CODE</span>
+<span class="text-bull-green text-[10px] font-mono-data px-1.5 py-0.2 rounded bg-tertiary-container/30 border border-bull-green/30">VALIDATED</span>
+</div>
+<div class="text-mono-token-mobile md:text-mono-token font-mono-token text-cobalt-soft tracking-[0.25em]">
+                MC8K2X
+              </div>
+</div>
+<!-- Inline Copy Secondary Ghost Button -->
+<button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-slate border border-hairline hover:border-cobalt-soft/60 active:scale-[0.98] transition-all duration-150 text-cobalt-soft hover:text-ink-white group self-start sm:self-center" id="copyBtn" onclick="copyInviteCode()">
+<span class="material-symbols-outlined text-[18px]" id="copyIcon">content_copy</span>
+<span class="text-body-sm font-mono-label uppercase" id="copyText">复制邀请码</span>
+</button>
+</div>
+</div>
+<!-- Execution Action Cluster -->
+<div class="w-full flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
+<!-- The One Primary CTA -->
+<a class="tactile-cta inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-[10px] bg-cobalt-accent text-ink-white font-body-md font-semibold hover:bg-opacity-95 transition-all duration-150 active:translate-y-[1px]" href="#download">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span>下载 / 打开 App</span>
+</a>
+<span class="text-body-sm font-body-sm text-steel-muted flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+            支持 iOS / Android 端实时同步唤醒
+          </span>
+</div>
+<!-- Telemetry Spec Line (Staggered Divider Format) -->
+<div class="w-full pt-6 border-t border-hairline/60 flex flex-wrap items-center gap-y-2 gap-x-6 text-mono-data font-mono-data text-steel-muted text-[12px]">
+<div class="flex items-center gap-2">
+<span class="text-bull-green">●</span>
+<span>节点延迟 <span class="text-ink-white">14ms</span> 亚太高频专线</span>
+</div>
+<div class="hidden sm:block text-hairline">/</div>
+<div class="flex items-center gap-2">
+<span class="text-cobalt-soft">●</span>
+<span>巨鲸监控池 <span class="text-ink-white">38,420</span> 机构实体</span>
+</div>
+<div class="hidden sm:block text-hairline">/</div>
+<div class="flex items-center gap-2">
+<span class="text-outline">●</span>
+<span>加密合规 <span class="text-ink-white">AES-256 GCM</span></span>
+</div>
+</div>
+</div>
+<!-- Secondary Visual Field (5 Cols): Live Terminal Stream Canvas -->
+<div class="lg:col-span-5 w-full">
+<div class="w-full bg-surface-slate border border-hairline rounded-xl overflow-hidden shadow-2xl relative">
+<!-- Terminal Sub-header Bar -->
+<div class="h-10 px-4 bg-card-navy border-b border-hairline flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-hairline"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-hairline"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-hairline"></span>
+<span class="ml-2 text-mono-label font-mono-label text-steel-muted text-[11px] tracking-wider">MINGCE_LIVE_STREAM</span>
+</div>
+<div class="flex items-center gap-1.5 text-bull-green text-[11px] font-mono-data">
+<span class="material-symbols-outlined text-[14px]">sensors</span>
+<span>FEED_SYNCED</span>
+</div>
+</div>
+<!-- Feed Content Rows -->
+<div class="p-4 space-y-3 font-mono-data text-[12px]">
+<!-- Feed Item 1: Whale Movement -->
+<div class="p-3 rounded bg-card-navy/70 border border-hairline/80 space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-cobalt-soft text-mono-label font-mono-label">WHALE_ALERT · 链上异动</span>
+<span class="text-steel-muted text-[11px]">10:42:19.402</span>
+</div>
+<p class="text-ink-white font-medium text-[13px] leading-snug">
+                0x71A...c4F2 向衍生品主池转入 4,200 BTC
+              </p>
+<div class="text-steel-muted text-[11px] flex items-center justify-between pt-1">
+<span>估计名义价值: $394.8M</span>
+<span class="text-bull-green font-mono-label">流入偏向 +84%</span>
+</div>
+</div>
+<!-- Feed Item 2: Multi-source resonance -->
+<div class="p-3 rounded bg-card-navy/70 border border-hairline/80 space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-primary text-mono-label font-mono-label">MARKET_RESONANCE · 深度共振</span>
+<span class="text-steel-muted text-[11px]">10:41:03.118</span>
+</div>
+<p class="text-ink-white font-medium text-[13px] leading-snug">
+                亚太指数与外汇波动率触发统计套利对冲窗口
+              </p>
+<div class="text-steel-muted text-[11px] flex items-center justify-between pt-1">
+<span>Z-Score: +2.84 σ</span>
+<span class="text-cobalt-soft font-mono-label">波动压缩模型已激活</span>
+</div>
+</div>
+<!-- Feed Item 3: Audio Synthesis Briefing -->
+<div class="p-3 rounded bg-card-navy/70 border border-hairline/80 space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-bull-green text-mono-label font-mono-label">AUDIO_SYNTHESIS · 早间盘前纪要</span>
+<span class="text-steel-muted text-[11px]">18s POD</span>
+</div>
+<div class="flex items-center gap-3 bg-surface-slate/80 p-2 rounded border border-hairline/60">
+<div class="w-7 h-7 rounded bg-cobalt-accent/20 border border-cobalt-accent/40 flex items-center justify-center text-cobalt-soft">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-center justify-between text-[11px] text-steel-muted">
+<span>机构资金调仓动向简报</span>
+<span>00:18 / 01:24</span>
+</div>
+<!-- Audio Wave Mockup using CSS bars -->
+<div class="flex items-center gap-1 h-3">
+<span class="w-1 bg-cobalt-soft h-2 rounded-full"></span>
+<span class="w-1 bg-cobalt-soft h-3 rounded-full"></span>
+<span class="w-1 bg-cobalt-soft h-1 rounded-full"></span>
+<span class="w-1 bg-cobalt-soft h-2.5 rounded-full"></span>
+<span class="w-1 bg-bull-green h-3 rounded-full"></span>
+<span class="w-1 bg-cobalt-soft h-1.5 rounded-full"></span>
+<span class="w-1 bg-cobalt-soft h-2 rounded-full"></span>
+<span class="w-1 bg-steel-muted/40 h-1 rounded-full"></span>
+<span class="w-1 bg-steel-muted/40 h-2 rounded-full"></span>
+<span class="w-1 bg-steel-muted/40 h-1.5 rounded-full"></span>
+<span class="w-1 bg-steel-muted/40 h-2 rounded-full"></span>
+<span class="w-1 bg-steel-muted/40 h-1 rounded-full"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Terminal Live Ticker Footer -->
+<div class="px-4 py-2 bg-card-navy border-t border-hairline flex items-center justify-between text-[11px] text-steel-muted font-mono-label">
+<span>MEM: 124MB · THREADS: 16</span>
+<span class="text-cobalt-soft">PROTOCOL: MINGCE-WSS-v4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Core Capabilities Strip (Architectural Continuous Strip, hairline segmented, NOT 3 isolated cards) -->
+<section class="mt-20 md:mt-24 pt-8">
+<div class="mb-4">
+<span class="text-mono-label font-mono-label text-steel-muted uppercase tracking-wider">CORE CAPABILITIES · 核心能力集群</span>
+</div>
+<div class="w-full bg-surface-slate border border-hairline rounded-xl grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-hairline overflow-hidden">
+<!-- Node 1: 行情洞察 -->
+<div class="p-6 md:p-8 flex flex-col justify-between hover:bg-card-navy/40 transition-colors duration-150">
+<div>
+<div class="w-10 h-10 rounded-lg bg-card-navy border border-hairline flex items-center justify-center text-cobalt-soft mb-6">
+<span class="material-symbols-outlined text-[22px]">ssid_chart</span>
+</div>
+<div class="text-mono-label font-mono-label text-cobalt-soft tracking-wider mb-2">LATENCY &lt; 50MS / 100+ METRICS</div>
+<h3 class="text-headline-sm font-headline-sm text-ink-white mb-2">行情洞察</h3>
+<p class="text-body-sm font-body-sm text-steel-muted leading-relaxed">
+              多源高频市场深度整合与毫秒级订单流异动捕捉，先人一步识破流动性空洞与机构扫单足迹。
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline/40 text-mono-label font-mono-label text-steel-muted flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-bull-green">check_circle</span>
+<span>高频共振模型就绪</span>
+</div>
+</div>
+<!-- Node 2: 巨鲸追踪 -->
+<div class="p-6 md:p-8 flex flex-col justify-between hover:bg-card-navy/40 transition-colors duration-150">
+<div>
+<div class="w-10 h-10 rounded-lg bg-card-navy border border-hairline flex items-center justify-center text-cobalt-soft mb-6">
+<span class="material-symbols-outlined text-[22px]">hub</span>
+</div>
+<div class="text-mono-label font-mono-label text-cobalt-soft tracking-wider mb-2">ON-CHAIN HEURISTICS / ENTITY MAP</div>
+<h3 class="text-headline-sm font-headline-sm text-ink-white mb-2">巨鲸追踪</h3>
+<p class="text-body-sm font-body-sm text-steel-muted leading-relaxed">
+              穿透链上机构大额流转与冷钱包重组路径，多层启发式聚类透视大户筹码归属与建仓周期。
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline/40 text-mono-label font-mono-label text-steel-muted flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-bull-green">check_circle</span>
+<span>38,420+ 机构实体拓扑</span>
+</div>
+</div>
+<!-- Node 3: 语音播报 -->
+<div class="p-6 md:p-8 flex flex-col justify-between hover:bg-card-navy/40 transition-colors duration-150">
+<div>
+<div class="w-10 h-10 rounded-lg bg-card-navy border border-hairline flex items-center justify-center text-cobalt-soft mb-6">
+<span class="material-symbols-outlined text-[22px]">graphic_eq</span>
+</div>
+<div class="text-mono-label font-mono-label text-cobalt-soft tracking-wider mb-2">AI SYNTHESIS / REAL-TIME POD</div>
+<h3 class="text-headline-sm font-headline-sm text-ink-white mb-2">语音播报</h3>
+<p class="text-body-sm font-body-sm text-steel-muted leading-relaxed">
+              专有语言模型实时降噪，萃取全球突发异动与盘前核心要点，在移动终端随时一键聆听。
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline/40 text-mono-label font-mono-label text-steel-muted flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-bull-green">check_circle</span>
+<span>低延迟声学生成协议</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Shared Component: Footer -->
+<footer class="w-full bg-canvas-obsidian border-t border-hairline relative z-10">
+<div class="w-full max-w-[1100px] mx-auto px-margin-mobile md:px-margin py-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<!-- Legal / Copyright exact verbatim string from JSON -->
+<div class="text-body-sm font-mono-data text-steel-muted text-center md:text-left leading-relaxed">
+        © 2025 明策 MINGCE 市场情报终端 · 金融级数据严密加密保护 · 仅供定向受邀用户核验使用
+      </div>
+<!-- Compliance Links from JSON -->
+<div class="flex items-center gap-6">
+<a class="text-steel-muted hover:text-ink-white font-body-sm text-body-sm transition-colors duration-150" href="#terms">服务条款</a>
+<a class="text-steel-muted hover:text-ink-white font-body-sm text-body-sm transition-colors duration-150" href="#privacy">隐私协议</a>
+<a class="text-steel-muted hover:text-ink-white font-body-sm text-body-sm transition-colors duration-150" href="#compliance">合规声明</a>
+<a class="text-steel-muted hover:text-ink-white font-body-sm text-body-sm transition-colors duration-150" href="#security">网络安全认证</a>
+</div>
+</div>
+</footer>
+<!-- Micro-interaction Script for Invite Code Copying -->
+<script>
+    function copyInviteCode() {
+      const code = 'MC8K2X';
+      navigator.clipboard.writeText(code).then(() => {
+        const copyIcon = document.getElementById('copyIcon');
+        const copyText = document.getElementById('copyText');
+        const copyBtn = document.getElementById('copyBtn');
+
+        copyIcon.textContent = 'check';
+        copyIcon.classList.remove('text-cobalt-soft');
+        copyIcon.classList.add('text-bull-green');
+        copyText.textContent = '已复制';
+        copyText.classList.add('text-bull-green');
+        copyBtn.classList.add('border-bull-green/50');
+
+        setTimeout(() => {
+          copyIcon.textContent = 'content_copy';
+          copyIcon.classList.remove('text-bull-green');
+          copyIcon.classList.add('text-cobalt-soft');
+          copyText.textContent = '复制邀请码';
+          copyText.classList.remove('text-bull-green');
+          copyBtn.classList.remove('border-bull-green/50');
+        }, 2200);
+      });
+    }
+  </script>
+</body></html>
