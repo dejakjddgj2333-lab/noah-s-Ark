@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 真实后端; 开发环境走 vite 代理 /api -> shipapi.bdxapi.com; 生产直连后端 (同 admin)
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? '/api' : 'http://shipapi.bdxapi.com/api'),
+  baseURL: import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? '/api' : 'https://shipapi.bdxapi.com/api'),
   timeout: 15000,
 })
 
