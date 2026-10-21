@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../store/user'
+import DotGlobe from '../components/DotGlobe.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -69,95 +70,76 @@ async function submit() {
 
     <!-- Main Split Layout -->
     <main class="w-full h-screen pt-12 pb-10 flex flex-col md:flex-row">
-      <!-- LEFT PANEL: Brand & Technical Context (55%) -->
-      <section class="relative w-full md:w-[55%] h-full bg-canvas-obsidian bg-terminal-grid p-8 lg:p-12 xl:p-16 flex flex-col overflow-hidden">
+      <!-- LEFT PANEL: Brand & 3D 点阵地球背景 (55%) -->
+      <section class="relative w-full md:w-[55%] h-full bg-canvas-obsidian p-6 lg:p-8 xl:p-12 flex flex-col overflow-hidden">
         <div class="absolute inset-0 radial-cobalt-glow pointer-events-none"></div>
-        <!-- Top Branding Block: 垂直居中, 底部指标条仍贴底 -->
-        <div class="relative z-10 flex-1 flex flex-col justify-center space-y-6">
-          <div class="flex items-center space-x-3.5">
-            <div class="w-11 h-11 rounded-xl bg-card-navy border border-hairline flex items-center justify-center relative overflow-hidden shadow-sm">
-              <svg class="w-6 h-6 text-primary-container" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.3"></circle>
-                <path d="M12 3a9 9 0 0 1 9 9h-9V3z" fill="currentColor" fill-opacity="0.25"></path>
-                <circle cx="12" cy="12" fill="currentColor" r="3"></circle>
-              </svg>
-              <div class="absolute inset-0 border border-primary-container/20 rounded-xl pointer-events-none"></div>
+        <DotGlobe />
+        <div class="relative z-10 flex-1 flex flex-col justify-center min-h-0 space-y-4 xl:space-y-5">
+          <!-- Brand Block -->
+          <div class="space-y-2.5">
+            <div class="flex items-center space-x-3">
+              <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded bg-primary-container/15 border border-primary-container/40 text-label-sm font-label-sm text-primary-fixed-dim font-mono-data">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+                <span>INSTITUTIONAL CORE</span>
+              </span>
             </div>
-            <div>
-              <div class="flex items-baseline space-x-2.5">
-                <h1 class="text-headline-lg font-headline-lg text-ink-white tracking-tight">明策 MINGCE</h1>
-                <span class="text-label-sm font-label-sm text-steel-muted px-1.5 py-0.5 rounded bg-card-navy border border-hairline font-mono-data">PRO</span>
-              </div>
-              <p class="text-label-sm font-label-sm text-steel-muted tracking-widest uppercase mt-0.5 font-mono-data">MARKET INTELLIGENCE TERMINAL</p>
+            <div class="flex items-baseline space-x-2.5">
+              <h1 class="text-headline-lg font-headline-lg text-ink-white tracking-tight">明策 MINGCE</h1>
+              <span class="text-label-sm font-label-sm text-steel-muted px-1.5 py-0.5 rounded bg-card-navy border border-hairline font-mono-data">PRO</span>
             </div>
-          </div>
-          <!-- Tagline / Value Proposition -->
-          <div class="pt-4 max-w-xl">
-            <p class="text-headline-md font-headline-md text-ink-white tracking-tight flex items-center flex-wrap gap-2">
-              <span>多维行情洞察</span>
-              <span class="text-hairline font-normal">/</span>
-              <span>机构巨鲸动向</span>
-            </p>
-            <p class="text-body-md font-body-md text-steel-muted mt-2 leading-relaxed">
-              专为高净值买方、宏观对冲基金和量化策略师打造的高密行情情报中枢，毫秒级解析全球流动性异动与结构性信号。
+            <p class="text-body-md font-body-md text-steel-muted font-mono-data text-[12px] tracking-wide">
+              全球高密行情洞察与机构级巨鲸流动性中枢
             </p>
           </div>
-          <!-- Live Intelligence Stream Micro-Deck -->
-          <div class="mt-8 pt-4 border-t border-hairline/70 grid grid-cols-2 gap-3 max-w-xl">
-            <div class="p-3.5 bg-surface-slate/80 border border-hairline rounded-xl backdrop-blur-sm">
-              <div class="flex justify-between items-center text-label-sm font-label-sm text-steel-muted">
-                <span>深度流解析源</span>
-                <span class="text-bull-green flex items-center space-x-1 font-mono-data">
-                  <span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
-                  <span>SYNCED</span>
-                </span>
-              </div>
-              <div class="mt-2 text-mono-data font-mono-data text-ink-white flex items-baseline justify-between">
-                <span>L3 ORDERBOOK</span>
-                <span class="text-label-sm text-steel-muted">48 EXCHANGES</span>
-              </div>
+
+          <!-- 能力小卡 -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-card-navy/90 border border-hairline rounded-lg p-3">
+              <div class="text-[9px] font-label-sm text-steel-muted tracking-wider">L3 ORDERBOOK</div>
+              <div class="font-mono-data text-[13px] text-ink-white mt-0.5">48 EXCHANGES</div>
+              <div class="font-mono-data text-[10px] text-bull-green mt-0.5">629K TICK/S</div>
             </div>
-            <div class="p-3.5 bg-surface-slate/80 border border-hairline rounded-xl backdrop-blur-sm">
-              <div class="flex justify-between items-center text-label-sm font-label-sm text-steel-muted">
-                <span>安全硬件网关</span>
-                <span class="text-primary flex items-center space-x-1 font-mono-data">
-                  <span class="material-symbols-outlined text-[13px]">verified_user</span>
-                  <span>TPM 2.0</span>
-                </span>
-              </div>
-              <div class="mt-2 text-mono-data font-mono-data text-ink-white flex items-baseline justify-between">
-                <span>HSM VAULT</span>
-                <span class="text-label-sm text-bull-green">CERTIFIED</span>
-              </div>
+            <div class="bg-card-navy/90 border border-hairline rounded-lg p-3">
+              <div class="text-[9px] font-label-sm text-steel-muted tracking-wider">HSM VAULT</div>
+              <div class="font-mono-data text-[13px] text-ink-white mt-0.5">TPM 2.0</div>
+              <div class="font-mono-data text-[10px] text-bull-green mt-0.5">ISMS CERTIFIED</div>
+            </div>
+            <div class="bg-card-navy/90 border border-hairline rounded-lg p-3">
+              <div class="text-[9px] font-label-sm text-steel-muted tracking-wider">LATENCY</div>
+              <div class="font-mono-data text-[13px] text-ink-white mt-0.5">14ms HK-CENTRAL</div>
+              <div class="font-mono-data text-[10px] text-bull-green mt-0.5">0 PACKET DROP</div>
+            </div>
+            <div class="bg-card-navy/90 border border-hairline rounded-lg p-3">
+              <div class="text-[9px] font-label-sm text-steel-muted tracking-wider">WHALE DETECTION</div>
+              <div class="font-mono-data text-[13px] text-ink-white mt-0.5">38,420 WALLETS</div>
+              <div class="font-mono-data text-[10px] text-amber-warn mt-0.5">REALTIME FLOW</div>
             </div>
           </div>
         </div>
-        <!-- Left Bottom Metrics Row -->
-        <div class="relative z-10 pt-6 border-t border-hairline">
-          <div class="flex flex-wrap items-center gap-6 text-label-sm font-label-sm text-steel-muted">
-            <div class="flex items-center space-x-2">
-              <span class="w-2 h-2 rounded-full bg-bull-green animate-indicator"></span>
-              <span>节点延迟</span>
-              <span class="text-mono-data font-mono-data text-ink-white font-semibold">14ms</span>
-            </div>
-            <span class="text-hairline hidden sm:inline">|</span>
-            <div class="flex items-center space-x-2">
-              <span class="material-symbols-outlined text-[14px] text-steel-muted">query_stats</span>
-              <span>监控实体</span>
-              <span class="text-mono-data font-mono-data text-ink-white font-semibold">38,420</span>
-            </div>
-            <span class="text-hairline hidden sm:inline">|</span>
-            <div class="flex items-center space-x-2">
-              <span class="material-symbols-outlined text-[14px] text-primary">lock</span>
-              <span>传输协议</span>
-              <span class="text-mono-data font-mono-data text-ink-white font-semibold">AES-256 GCM</span>
-            </div>
+
+        <!-- Left Bottom Stat Pills -->
+        <div class="relative z-10 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div class="flex items-center space-x-2 px-3 py-2 bg-card-navy/80 border border-hairline rounded-lg text-label-sm font-label-sm text-steel-muted">
+            <span class="material-symbols-outlined text-[14px] text-bull-green">speed</span>
+            <span>延迟: <span class="text-ink-white font-mono-data">14ms (HK)</span></span>
+          </div>
+          <div class="flex items-center space-x-2 px-3 py-2 bg-card-navy/80 border border-hairline rounded-lg text-label-sm font-label-sm text-steel-muted">
+            <span class="material-symbols-outlined text-[14px] text-steel-muted">query_stats</span>
+            <span>监控实体: <span class="text-ink-white font-mono-data">38,420</span></span>
+          </div>
+          <div class="flex items-center space-x-2 px-3 py-2 bg-card-navy/80 border border-hairline rounded-lg text-label-sm font-label-sm text-steel-muted">
+            <span class="material-symbols-outlined text-[14px] text-primary-fixed-dim">lock</span>
+            <span class="font-mono-data text-ink-white">AES-256 GCM</span>
+          </div>
+          <div class="flex items-center space-x-2 px-3 py-2 bg-card-navy/80 border border-hairline rounded-lg text-label-sm font-label-sm text-steel-muted">
+            <span class="material-symbols-outlined text-[14px] text-primary-fixed-dim">verified_user</span>
+            <span class="font-mono-data text-ink-white">HSM TPM 2.0</span>
           </div>
         </div>
       </section>
 
       <!-- RIGHT PANEL: Authentication Terminal (45%) -->
-      <section class="relative w-full md:w-[45%] h-full bg-surface-slate border-t md:border-t-0 md:border-l border-hairline flex flex-col justify-center items-center px-6 py-8 sm:px-12 xl:px-16 overflow-y-auto">
+      <section class="relative w-full md:w-[45%] h-full bg-surface-slate bg-terminal-grid border-t md:border-t-0 md:border-l border-hairline flex flex-col justify-center items-center px-6 py-8 sm:px-12 xl:px-16 overflow-y-auto">
         <div class="w-full max-w-[420px] bg-card-navy border border-hairline rounded-xl p-7 sm:p-8 relative shadow-2xl">
           <div class="absolute top-4 right-4 flex items-center space-x-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-label-sm font-label-sm text-steel-muted">
             <span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>

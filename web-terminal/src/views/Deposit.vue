@@ -106,7 +106,7 @@ onUnmounted(() => clearInterval(timer))
 
 <template>
   <div v-if="loading" class="text-steel-muted font-mono-data text-mono-data py-10 text-center">数据加载中…</div>
-  <div v-else class="flex flex-col gap-space-lg">
+  <div v-else class="flex flex-col gap-space-lg w-full max-w-4xl mx-auto">
     <!-- ROW 1: 充值地址卡片 -->
     <section class="bg-card-navy rounded-xl border border-hairline p-space-md flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-3">

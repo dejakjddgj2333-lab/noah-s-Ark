@@ -143,7 +143,7 @@ onMounted(load)
 
 <template>
   <div v-if="loading" class="text-steel-muted font-mono-data text-mono-data py-10 text-center">数据加载中…</div>
-  <div v-else class="flex flex-col gap-space-lg">
+  <div v-else class="flex flex-col gap-space-lg w-full max-w-4xl mx-auto">
     <!-- ROW 1: 账户选择 -->
     <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <button

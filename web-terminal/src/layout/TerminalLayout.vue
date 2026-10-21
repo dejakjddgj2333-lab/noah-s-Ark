@@ -130,10 +130,6 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
       </div>
       <!-- 底部操作员卡 -->
       <div class="flex flex-col gap-space-sm pt-space-sm border-t border-hairline">
-        <button class="w-full h-9 bg-primary-container hover:bg-primary-container/90 text-ink-white font-headline-sm text-headline-sm rounded flex items-center justify-center gap-1.5 transition-colors duration-150 shadow-[0_2px_8px_rgba(46,92,255,0.3)]" @click="router.push('/market')">
-          <span class="material-symbols-outlined text-[18px]">bolt</span>
-          <span>快速下单</span>
-        </button>
         <div class="p-2.5 bg-card-navy rounded border border-hairline flex flex-col gap-1.5 font-label-sm text-label-sm">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1 text-ink-white">
