@@ -383,7 +383,7 @@ onMounted(load)
       </article>
 
       <!-- 右栏: 情报侧栏 -->
-      <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+      <div class="col-span-12 lg:col-span-4 flex flex-col gap-6 self-start sticky top-[88px]">
         <!-- 卡 1: 情绪指标 -->
         <div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col gap-4">
           <div class="flex items-center justify-between border-b border-hairline pb-3">

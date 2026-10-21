@@ -278,7 +278,7 @@ onBeforeUnmount(() => clearInterval(timer))
       </section>
 
       <!-- 右栏 -->
-      <section class="col-span-4 flex flex-col gap-5">
+      <section class="col-span-4 flex flex-col gap-5 self-start sticky top-[88px]">
         <!-- 卡 1: 24H 涨幅热榜 -->
         <div class="bg-card-navy border border-hairline rounded-xl overflow-hidden shadow-xl flex flex-col">
           <div class="px-4 py-3 bg-surface-slate/90 border-b border-hairline flex items-center justify-between">

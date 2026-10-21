@@ -258,7 +258,7 @@ onBeforeUnmount(() => clearInterval(timer))
       </section>
 
       <!-- RIGHT: ANALYTICS CARDS -->
-      <div class="lg:col-span-4 flex flex-col gap-6">
+      <div class="lg:col-span-4 flex flex-col gap-6 self-start sticky top-[88px]">
         <!-- Card 1: 大额成交币种分布 -->
         <div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col gap-4">
           <div class="flex items-center justify-between pb-3 border-b border-hairline">

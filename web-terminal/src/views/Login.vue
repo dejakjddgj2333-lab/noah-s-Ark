@@ -176,7 +176,7 @@ async function submit() {
             <!-- Field 1: Account -->
             <div class="space-y-1.5">
               <label class="block text-label-sm font-label-sm text-steel-muted uppercase tracking-wider" for="username">
-                操作员账号 / 邮箱
+                账号
               </label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel-muted">
