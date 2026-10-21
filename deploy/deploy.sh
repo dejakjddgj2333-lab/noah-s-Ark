@@ -9,6 +9,7 @@ REPO=/www/wwwroot/hk/repo                      # 仓库 clone 位置
 APP_DIR=/www/wwwroot/shipapi.bdxapi.com        # 后端运行目录
 ADMIN_WEB=/www/wwwroot/hk/admin                # 后台静态站点发布目录（宝塔站点根）
 PC_WEB=/www/wwwroot/pc.bdxapi.com              # PC 终端静态站点发布目录（宝塔站点根）
+LANDING_WEB=/www/wwwroot/app.mingcevip.com     # App 邀请落地页静态站点发布目录（宝塔站点根）
 
 echo "==> git pull"
 cd "$REPO"
@@ -60,9 +61,21 @@ deploy_pc() {
   find "$PC_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
 }
 
+deploy_landing() {
+  echo "==> App 落地页:发布"
+  rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' "$REPO/server/static/" "$LANDING_WEB/"
+  # 落地页入口: invite.html -> index.html
+  cp "$LANDING_WEB/invite.html" "$LANDING_WEB/index.html"
+  # 后端根路径也直出这份落地页 (app.py invite_landing), 同步一份保持新鲜, 不重启容器
+  rsync -a --delete "$REPO/server/static/" "$APP_DIR/server/static/"
+  find "$LANDING_WEB" ! -name '.user.ini' -exec chown www:www {} +
+  find "$LANDING_WEB" -type d -exec chmod 755 {} \;
+  find "$LANDING_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
+}
+
 TARGETS="$*"
 if [ -z "$TARGETS" ] || [ "$TARGETS" = "all" ]; then
-  TARGETS="backend admin pc"
+  TARGETS="backend admin pc landing"
 fi
 
 for t in $TARGETS; do
@@ -70,6 +83,7 @@ for t in $TARGETS; do
     backend)  deploy_backend ;;
     admin)    deploy_admin ;;
     pc)       deploy_pc ;;
+    landing)  deploy_landing ;;
     *) echo "未知目标: $t" >&2; exit 1 ;;
   esac
 done
