@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MINGCE Terminal - 个人中心 PROFILE</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-container": "#164197",
+            "on-tertiary-fixed-variant": "#822800",
+            "outline-variant": "#434656",
+            "on-tertiary-fixed": "#380d00",
+            "tertiary-fixed": "#ffdbcf",
+            "tertiary-fixed-dim": "#ffb59b",
+            "card-navy-high": "#1A2742",
+            "surface-container-lowest": "#0c0e17",
+            "surface-variant": "#33343e",
+            "surface": "#11131c",
+            "on-secondary-container": "#98b3ff",
+            "steel-muted": "#9EA0B2",
+            "tertiary": "#ffb59b",
+            "surface-tint": "#b8c3ff",
+            "surface-bright": "#373943",
+            "outline": "#8e90a2",
+            "on-tertiary-container": "#ffeee9",
+            "tertiary-container": "#c44100",
+            "bear-red": "#FF5F6D",
+            "secondary-fixed-dim": "#b2c5ff",
+            "on-surface-variant": "#c4c5d9",
+            "inverse-surface": "#e2e1ef",
+            "on-secondary-fixed": "#001848",
+            "on-primary": "#002487",
+            "card-navy": "#121D34",
+            "on-tertiary": "#5c1a00",
+            "bull-green": "#00E388",
+            "inverse-primary": "#104aef",
+            "secondary": "#b2c5ff",
+            "ink-white": "#F0F0FF",
+            "background": "#11131c",
+            "surface-dim": "#11131c",
+            "surface-container": "#1d1f29",
+            "secondary-fixed": "#dae2ff",
+            "on-secondary-fixed-variant": "#164197",
+            "hairline": "#34415E",
+            "error-container": "#93000a",
+            "on-surface": "#e2e1ef",
+            "amber-warn": "#F7B733",
+            "surface-container-high": "#282933",
+            "on-background": "#e2e1ef",
+            "primary": "#b8c3ff",
+            "on-error-container": "#ffdad6",
+            "surface-container-low": "#191b24",
+            "surface-slate": "#0D1528",
+            "surface-container-highest": "#33343e",
+            "inverse-on-surface": "#2e303a",
+            "primary-container": "#2e5cff",
+            "error": "#ffb4ab",
+            "canvas-obsidian": "#070D1C",
+            "on-primary-fixed": "#001355",
+            "on-primary-fixed-variant": "#0035bd",
+            "on-error": "#690005",
+            "on-secondary": "#002b73",
+            "primary-fixed-dim": "#b8c3ff",
+            "on-primary-container": "#f0f0ff",
+            "primary-fixed": "#dde1ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-sm": "8px",
+            "space-md": "16px",
+            "margin": "24px",
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-lg": "24px",
+            "gutter": "16px"
+          },
+          "fontFamily": {
+            "body-lg": ["Inter"],
+            "headline-md": ["Space Grotesk"],
+            "headline-lg": ["Space Grotesk"],
+            "label-sm": ["JetBrains Mono"],
+            "mono-data": ["JetBrains Mono"],
+            "headline-sm": ["Space Grotesk"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "body-lg": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "mono-data": ["13px", { "lineHeight": "1.4", "fontWeight": "500" }],
+            "headline-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-md": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      background-color: #070D1C;
+      color: #F0F0FF;
+    }
+    /* Custom Scrollbar for terminal density */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070D1C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #34415E;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #434656;
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-ink-white font-body-md text-body-md min-h-screen antialiased select-none overflow-x-hidden">
+<!-- ================= SIDEBAR NAVIGATION (Desktop Fixed Frame) ================= -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-40 bg-surface-slate border-r border-hairline flex flex-col justify-between p-3 select-none">
+<!-- Brand / Header -->
+<div>
+<div class="flex items-center gap-3 px-3 py-3 mb-3 border-b border-hairline/60">
+<div class="w-8 h-8 rounded-lg bg-card-navy border border-hairline flex items-center justify-center text-primary-container font-headline-md font-bold tracking-wider">
+          M
+        </div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold tracking-wider text-ink-white">MINGCE</span>
+<span class="font-label-sm text-label-sm text-steel-muted tracking-tight">Terminal v2.4</span>
+</div>
+</div>
+<!-- Navigation Tabs (Current page is '我的', exactly active at index 9) -->
+<nav class="space-y-0.5">
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">dashboard</span>
+<span class="font-body-md text-body-md">概览</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">trending_up</span>
+<span class="font-body-md text-body-md">行情</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">query_stats</span>
+<span class="font-body-md text-body-md">多维数据</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">warning</span>
+<span class="font-body-md text-body-md">爆仓监控</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">water_drop</span>
+<span class="font-body-md text-body-md">巨鲸动向</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">currency_exchange</span>
+<span class="font-body-md text-body-md">资金费率</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">newspaper</span>
+<span class="font-body-md text-body-md">资讯</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">forum</span>
+<span class="font-body-md text-body-md">聊天</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-steel-muted">account_balance_wallet</span>
+<span class="font-body-md text-body-md">资产理财</span>
+</a>
+<!-- ACTIVE TAB: 我的 (Exact Match) -->
+<a class="flex items-center gap-3 px-3 py-2 bg-card-navy text-ink-white border-l-2 border-primary-container font-medium" href="#">
+<span class="material-symbols-outlined text-primary-container">person</span>
+<span class="font-body-md text-body-md text-ink-white">我的</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer Actions -->
+<div class="border-t border-hairline/60 pt-2 space-y-0.5">
+<div class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-steel-muted">terminal</span>
+<span class="font-label-sm text-label-sm">系统状态</span>
+<span class="ml-auto w-2 h-2 rounded-full bg-bull-green animate-pulse"></span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-steel-muted">tune</span>
+<span class="font-label-sm text-label-sm">设置</span>
+</div>
+</div>
+</aside>
+<!-- ================= TOP NAVIGATION BAR ================= -->
+<header class="fixed top-0 right-0 left-60 h-14 z-30 bg-canvas-obsidian border-b border-hairline flex justify-between items-center px-6">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-bold tracking-wide text-ink-white">个人中心 PROFILE</span>
+<span class="text-steel-muted/40 font-mono-data text-mono-data">/</span>
+<span class="font-label-sm text-label-sm text-steel-muted">ID: HK-TER-04</span>
+</div>
+<div class="h-3 w-px bg-hairline"></div>
+<div class="flex items-center gap-2 px-2 py-0.5 rounded bg-surface-slate border border-hairline/80">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span class="font-label-sm text-label-sm text-steel-muted uppercase">GATEWAY ONLINE</span>
+<span class="font-mono-data text-label-sm text-bull-green">14ms</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search Input Container -->
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-steel-muted text-[16px]">search</span>
+<input class="w-full bg-surface-slate border border-hairline rounded-lg pl-8 pr-3 py-1.5 font-body-md text-body-md text-ink-white placeholder:text-steel-muted/60 focus:outline-none focus:border-primary-container transition-colors" placeholder="搜索参数、资产、安全项..." type="text"/>
+</div>
+<!-- Icon Actions -->
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-steel-muted hover:text-ink-white hover:border-outline-variant transition-colors" title="通知">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-steel-muted hover:text-ink-white hover:border-outline-variant transition-colors" title="网络状态">
+<span class="material-symbols-outlined">wifi</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-steel-muted hover:text-ink-white hover:border-outline-variant transition-colors" title="帮助中心">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+<div class="h-4 w-px bg-hairline"></div>
+<!-- User Profile Pill -->
+<div class="flex items-center gap-2.5 pl-1 cursor-pointer">
+<div class="w-7 h-7 rounded bg-card-navy-high border border-primary-container/40 flex items-center justify-center text-primary-container font-headline-sm font-bold text-xs">
+          夜
+        </div>
+<div class="flex flex-col text-left">
+<span class="font-headline-sm text-[12px] leading-tight text-ink-white font-medium">个人中心</span>
+<span class="font-label-sm text-[10px] leading-tight text-steel-muted">夜航西飞</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= MAIN CONTENT CANVAS ================= -->
+<main class="ml-60 pt-14 min-h-screen bg-canvas-obsidian">
+<div class="p-7 max-w-[1440px] mx-auto">
+<!-- Layout: Asymmetric Left Narrow (320px) + Right Broad (Remaining) -->
+<div class="grid grid-cols-12 gap-5">
+<!-- LEFT COLUMN: Profile & Terminal Credentials Card -->
+<div class="col-span-12 lg:col-span-4 xl:col-span-3">
+<div class="bg-card-navy border border-hairline rounded-xl p-6 sticky top-20">
+<!-- Header Avatar & Badges -->
+<div class="flex flex-col items-center text-center pb-5 border-b border-hairline">
+<div class="relative mb-3">
+<div class="w-16 h-16 rounded-full bg-card-navy-high border-2 border-primary-container/80 flex items-center justify-center text-primary font-headline-lg font-bold shadow-inner">
+                  夜
+                </div>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-surface-slate border border-hairline flex items-center justify-center" title="在线状态">
+<span class="w-2.5 h-2.5 rounded-full bg-bull-green"></span>
+</div>
+</div>
+<div class="flex items-center gap-2 mb-1">
+<h2 class="font-headline-md text-headline-md font-bold text-ink-white tracking-tight">夜航西飞</h2>
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container/15 border border-primary-container/40 text-primary font-label-sm text-[10px] font-semibold">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+                  PRO 会员
+                </div>
+</div>
+<span class="font-mono-data text-label-sm text-steel-muted mb-3">Institutional Quant Desk</span>
+<!-- UID Row with copy -->
+<div class="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-slate border border-hairline">
+<span class="font-label-sm text-label-sm text-steel-muted">UID:</span>
+<div class="flex items-center gap-1.5">
+<span class="font-mono-data text-mono-data text-ink-white font-semibold">88219402</span>
+<button class="text-steel-muted hover:text-ink-white transition-colors" id="copyUidBtn" onclick="navigator.clipboard.writeText('88219402'); alert('UID 已复制');" title="复制 UID">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Detailed Specifications / Security Rows -->
+<div class="py-4 space-y-3 border-b border-hairline">
+<!-- Email verification -->
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-steel-muted">邮箱认证</span>
+<div class="flex items-center gap-1.5">
+<span class="font-mono-data text-label-sm text-ink-white">y***@institution.io</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-bull-green/10 text-bull-green font-label-sm text-[10px] border border-bull-green/20">
+<span class="material-symbols-outlined text-[11px]">check_circle</span>
+                    已验证
+                  </span>
+</div>
+</div>
+<!-- Seat Assignment -->
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-steel-muted">席位编号</span>
+<span class="font-mono-data text-mono-data text-ink-white font-medium">HK-04 (VIP 专线)</span>
+</div>
+<!-- Encryption Session -->
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-steel-muted">终端会话</span>
+<div class="flex items-center gap-1 font-mono-data text-label-sm text-steel-muted">
+<span class="material-symbols-outlined text-[13px] text-bull-green">lock</span>
+                  AES-256 GCM
+                </div>
+</div>
+<!-- Registered Timestamp -->
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-steel-muted">注册时间</span>
+<span class="font-mono-data text-label-sm text-steel-muted">2024-03-12 09:21</span>
+</div>
+</div>
+<!-- Terminal Risk Meter / Security Score Indicator -->
+<div class="pt-4 pb-2">
+<div class="flex justify-between items-center mb-1.5">
+<span class="font-label-sm text-label-sm text-steel-muted uppercase tracking-wider">安全防护评级</span>
+<span class="font-mono-data text-label-sm text-bull-green font-bold">高风险防御 (94/100)</span>
+</div>
+<div class="w-full h-1.5 bg-surface-slate rounded-full overflow-hidden border border-hairline">
+<div class="h-full bg-bull-green rounded-full" style="width: 94%;"></div>
+</div>
+</div>
+<!-- Actions: Logout / Lock Session -->
+<div class="mt-6 pt-4 border-t border-hairline space-y-2">
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface-slate border border-hairline text-steel-muted hover:text-bear-red hover:border-bear-red/50 hover:bg-bear-red/5 transition-all text-body-md font-medium">
+<span class="material-symbols-outlined text-[16px]">lock_reset</span>
+                锁定当前终端席位
+              </button>
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-transparent text-steel-muted hover:text-bear-red transition-colors font-body-md text-body-md">
+<span class="material-symbols-outlined text-[16px]">power_settings_new</span>
+                退出当前登录会话
+              </button>
+</div>
+</div>
+</div>
+<!-- RIGHT BROAD COLUMN: Three Structured Cards -->
+<div class="col-span-12 lg:col-span-8 xl:col-span-9 space-y-5">
+<!-- CARD 1: 账户安全 ACCOUNT SECURITY -->
+<div class="bg-card-navy border border-hairline rounded-xl p-6">
+<div class="flex items-center justify-between mb-5 pb-3 border-b border-hairline">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-ink-white tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">shield</span>
+                  账户安全 ACCOUNT SECURITY
+                </h3>
+<p class="font-body-md text-body-md text-steel-muted mt-0.5">管理密码凭证、双因素身份校验与关键风险拦截</p>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-slate border border-hairline font-label-sm text-label-sm text-steel-muted">
+                2FA 强制鉴权模式
+              </span>
+</div>
+<!-- Security rows list -->
+<div class="divide-y divide-hairline">
+<!-- Row 1: Login Password -->
+<div class="py-3.5 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-steel-muted">
+<span class="material-symbols-outlined">key</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">登录密码</div>
+<div class="font-body-md text-[12px] text-steel-muted">上次修改于 45 天前 · 定期更新保障资本安全</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-sm text-label-sm text-steel-muted">已设置</span>
+<button class="px-3 py-1.5 rounded-lg bg-surface-slate border border-hairline text-primary hover:text-ink-white hover:border-primary-container/80 transition-all font-body-md text-body-md">
+                    修改
+                  </button>
+</div>
+</div>
+<!-- Row 2: Google TOTP -->
+<div class="py-3.5 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">security_update_good</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">谷歌验证 (TOTP)</div>
+<div class="font-body-md text-[12px] text-steel-muted">用于出金划转、敏感配置调控与新设备准入鉴权</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-bull-green/10 border border-bull-green/30 text-bull-green font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                    已绑定 100%
+                  </span>
+<button class="px-3 py-1.5 rounded-lg bg-surface-slate border border-hairline text-primary hover:text-ink-white hover:border-primary-container/80 transition-all font-body-md text-body-md">
+                    修改
+                  </button>
+</div>
+</div>
+<!-- Row 3: Anti-Phishing Code -->
+<div class="py-3.5 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-amber-warn">
+<span class="material-symbols-outlined">phishing</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">防钓鱼码 ANTI-PHISHING</div>
+<div class="font-body-md text-[12px] text-steel-muted">确认所有官方系统邮件与推送签名的专属明策防伪标识</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-warn/10 border border-amber-warn/30 text-amber-warn font-label-sm text-label-sm font-medium">
+<span class="material-symbols-outlined text-[12px]">warning</span>
+                    未设置 (推荐开启)
+                  </span>
+<button class="px-3 py-1.5 rounded-lg bg-primary-container/20 border border-primary-container text-ink-white hover:bg-primary-container transition-all font-body-md text-body-md">
+                    立即设置
+                  </button>
+</div>
+</div>
+<!-- Row 4: Audit Logs Micro Terminal Strip -->
+<div class="pt-3.5 pb-1 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-card-navy-high/40 p-3 rounded-lg border border-hairline/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-steel-muted text-[16px]">receipt_long</span>
+<span class="font-label-sm text-label-sm text-steel-muted uppercase">最近鉴权审计:</span>
+<span class="font-mono-data text-mono-data text-ink-white">IP 103.24.89.** (香港)</span>
+<span class="font-mono-data text-label-sm text-bull-green">12ms</span>
+<span class="font-mono-data text-label-sm text-bull-green">[成功 SUCCESS]</span>
+</div>
+<a class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1" href="#">
+                  查看完整安全日志
+                  <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- CARD 2: 偏好设置 PREFERENCES -->
+<div class="bg-card-navy border border-hairline rounded-xl p-6">
+<div class="flex items-center justify-between mb-5 pb-3 border-b border-hairline">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-ink-white tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">tune</span>
+                  偏好设置 PREFERENCES
+                </h3>
+<p class="font-body-md text-body-md text-steel-muted mt-0.5">定制专属量化操作盘面色彩与实时市场警报规则</p>
+</div>
+<span class="font-label-sm text-label-sm text-steel-muted">已同步至本地配置</span>
+</div>
+<div class="space-y-4">
+<!-- Item 1: Interface Language -->
+<div class="flex items-center justify-between py-2 border-b border-hairline/50">
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">界面语言</div>
+<div class="font-body-md text-[12px] text-steel-muted">终端显示语言与数字格式化国际标准</div>
+</div>
+<!-- Language Toggle Capsule -->
+<div class="inline-flex p-1 rounded-lg bg-surface-slate border border-hairline">
+<button class="px-3.5 py-1 rounded bg-primary-container text-ink-white font-label-sm text-label-sm font-semibold transition-all">
+                    中文
+                  </button>
+<button class="px-3.5 py-1 rounded text-steel-muted hover:text-ink-white font-label-sm text-label-sm transition-all">
+                    EN
+                  </button>
+</div>
+</div>
+<!-- Item 2: Color Palette -->
+<div class="flex flex-col md:flex-row md:items-center justify-between py-2 border-b border-hairline/50 gap-3">
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">涨跌色彩方案</div>
+<div class="font-body-md text-[12px] text-steel-muted">K线、深度图、持仓收益与多空比率映射色彩</div>
+</div>
+<!-- Selection Capsules -->
+<div class="flex items-center gap-2">
+<!-- Selected: Green Bull / Red Bear -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-slate border-2 border-primary-container cursor-pointer select-none">
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-bull-green"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-bear-red"></span>
+</div>
+<span class="font-body-md text-body-md text-ink-white font-medium">绿涨红跌 (国际)</span>
+<span class="material-symbols-outlined text-primary text-[15px]">check</span>
+</div>
+<!-- Option: Red Bull / Green Bear -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-slate border border-hairline hover:border-steel-muted/60 cursor-pointer text-steel-muted select-none">
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-bear-red"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-bull-green"></span>
+</div>
+<span class="font-body-md text-body-md">红涨绿跌 (国内习惯)</span>
+</div>
+</div>
+</div>
+<!-- Notifications Toggle Group -->
+<div class="space-y-3 pt-2">
+<div class="font-label-sm text-label-sm text-steel-muted uppercase tracking-wider">实时推送通道 NOTIFICATIONS</div>
+<!-- Toggle 1: Market Alert -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-slate/60 border border-hairline">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">show_chart</span>
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">行情异动提醒</div>
+<div class="font-body-md text-[12px] text-steel-muted">关注币种 15m 振幅超 3% 或急速拉升/下挫推流</div>
+</div>
+</div>
+<!-- Switch ON -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ink-white after:border-hairline after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 2: Whale Watcher -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-slate/60 border border-hairline">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-bull-green">water_drop</span>
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">巨鲸推送 WHALE ALERTS</div>
+<div class="font-body-md text-[12px] text-steel-muted">&gt;500 BTC 或 $10M 以上链上冷热钱包大额异动流</div>
+</div>
+</div>
+<!-- Switch ON -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ink-white after:border-hairline after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 3: System Announcements -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-slate/60 border border-hairline">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-steel-muted">campaign</span>
+<div>
+<div class="font-headline-sm text-headline-sm text-ink-white">系统公告与风控披露</div>
+<div class="font-body-md text-[12px] text-steel-muted">重大版本升级、API 速率限制调整与风控规则披露</div>
+</div>
+</div>
+<!-- Switch OFF -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-steel-muted after:border-hairline after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 3: 邀请有礼 REFERRAL REWARDS -->
+<div class="bg-card-navy border border-hairline rounded-xl p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-5 pb-3 border-b border-hairline gap-2">
+<div>
+<div class="flex items-center gap-3">
+<h3 class="font-headline-md text-headline-md font-bold text-ink-white tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">card_giftcard</span>
+                    邀请有礼 REFERRAL REWARDS
+                  </h3>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary-container/20 border border-primary-container/40 text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[13px]">military_tech</span>
+                    L3 返佣席位 30%
+                  </span>
+</div>
+<p class="font-body-md text-body-md text-steel-muted mt-0.5">直推返佣 20% + 间推 10%，秒级自动返还至理财子账户</p>
+</div>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-slate border border-hairline text-steel-muted hover:text-ink-white hover:border-outline-variant transition-colors font-body-md text-body-md">
+<span class="material-symbols-outlined text-[16px]">share</span>
+                查看邀请海报
+              </button>
+</div>
+<!-- Referral Code & Share Link Block -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5">
+<!-- Code container (7 cols) -->
+<div class="md:col-span-7 p-4 rounded-xl bg-surface-slate border border-hairline flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-steel-muted uppercase">我的专属邀请码 REFERRAL CODE</span>
+<span class="font-label-sm text-[10px] text-bull-green">永久有效</span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<span class="font-mono-data text-[22px] font-bold text-ink-white tracking-widest bg-card-navy px-3 py-1 rounded border border-hairline">
+                    MCK2E9
+                  </span>
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-container text-ink-white hover:bg-secondary-container transition-all font-body-md text-body-md font-medium" onclick="navigator.clipboard.writeText('MCK2E9'); alert('邀请码 MCK2E9 已复制');">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+                      复制邀请码
+                    </button>
+</div>
+</div>
+<div class="mt-3 pt-2 border-t border-hairline/60 flex items-center justify-between">
+<span class="font-mono-data text-label-sm text-steel-muted truncate max-w-[280px]">https://mingce.terminal.io/register?ref=MCK2E9</span>
+<button class="font-label-sm text-label-sm text-primary hover:underline" onclick="navigator.clipboard.writeText('https://mingce.terminal.io/register?ref=MCK2E9'); alert('专属注册链接已复制');">
+                    复制专属链接
+                  </button>
+</div>
+</div>
+<!-- Metrics Stats Horizontal Bento Cards (5 cols) -->
+<div class="md:col-span-5 grid grid-cols-2 gap-3">
+<!-- Stat 1: Invites -->
+<div class="p-4 rounded-xl bg-card-navy-high border border-hairline flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-steel-muted">已邀请人数</span>
+<span class="material-symbols-outlined text-steel-muted text-[16px]">group</span>
+</div>
+<div class="my-1">
+<span class="font-mono-data text-[26px] font-bold text-ink-white">12</span>
+<span class="font-body-md text-body-md text-steel-muted ml-1">人</span>
+</div>
+<span class="font-mono-data text-label-sm text-steel-muted">有效激活 10 人</span>
+</div>
+<!-- Stat 2: Rebate Amount -->
+<div class="p-4 rounded-xl bg-card-navy-high border border-hairline flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-steel-muted">累计返佣金额</span>
+<span class="material-symbols-outlined text-bull-green text-[16px]">payments</span>
+</div>
+<div class="my-1">
+<span class="font-mono-data text-[22px] font-bold text-bull-green">$86.40</span>
+<span class="font-label-sm text-label-sm text-steel-muted ml-0.5">USDT</span>
+</div>
+<div class="flex items-center justify-between font-mono-data text-label-sm text-steel-muted">
+<span>待结算:</span>
+<span class="text-ink-white font-medium">$14.20</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed rule footer strip -->
+<div class="flex items-center gap-2 p-3 rounded-lg bg-surface-slate/40 border border-hairline text-steel-muted text-[12px]">
+<span class="material-symbols-outlined text-[16px] text-primary">info</span>
+<span>返佣结算机制：每日 00:00 UTC 自动归集合约与现货手续费分成至理财子账户；邀请用户满足 VIP 门槛时可申请提高返佣基准至 40%。</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+    // Micro-interaction: visual state feedback for copy actions
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        if (this.innerText.includes('复制')) {
+          const originalText = this.innerHTML;
+          this.style.opacity = '0.7';
+          setTimeout(() => {
+            this.style.opacity = '1';
+          }, 200);
+        }
+      });
+    });
+  </script>
+</body></html>

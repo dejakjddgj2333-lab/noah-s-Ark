@@ -1,0 +1,37 @@
+/* Obsidian Precision 设计系统 — 全局令牌与基础样式 */
+:root {
+  --canvas: #070d1c;
+  --surface: #0d1528;
+  --card: #121d34;
+  --card-high: #1a2742;
+  --hairline: #34415e;
+  --accent: #2e5cff;
+  --accent-soft: #82a4ff;
+  --ink: #f0f0ff;
+  --muted: #9ea0b2;
+  --up: #00e388;
+  --down: #ff5f6d;
+  --warn: #f7b733;
+  --font-display: 'Space Grotesk', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'PingFang SC', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app { height: 100%; }
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent-soft); text-decoration: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }

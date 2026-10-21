@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MINGCE 终端概览 | TERMINAL v4.2</title>
+<!-- Google Fonts: Space Grotesk, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with configuration -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-slate": "#0D1528",
+            "steel-muted": "#9EA0B2",
+            "inverse-primary": "#104aef",
+            "error-container": "#93000a",
+            "on-primary-fixed": "#001355",
+            "on-background": "#e2e1ef",
+            "outline": "#8e90a2",
+            "surface-container": "#1d1f29",
+            "secondary-fixed": "#dae2ff",
+            "inverse-on-surface": "#2e303a",
+            "card-navy": "#121D34",
+            "background": "#11131c",
+            "on-secondary-container": "#98b3ff",
+            "on-tertiary-fixed-variant": "#822800",
+            "surface-tint": "#b8c3ff",
+            "on-surface": "#e2e1ef",
+            "hairline": "#34415E",
+            "amber-warn": "#F7B733",
+            "on-tertiary": "#5c1a00",
+            "primary-fixed": "#dde1ff",
+            "canvas-obsidian": "#070D1C",
+            "surface-container-lowest": "#0c0e17",
+            "primary-container": "#2e5cff",
+            "on-tertiary-container": "#ffeee9",
+            "primary-fixed-dim": "#b8c3ff",
+            "on-error-container": "#ffdad6",
+            "on-error": "#690005",
+            "on-secondary-fixed-variant": "#164197",
+            "surface": "#11131c",
+            "surface-bright": "#373943",
+            "on-secondary": "#002b73",
+            "error": "#ffb4ab",
+            "tertiary-container": "#c44100",
+            "surface-container-highest": "#33343e",
+            "outline-variant": "#434656",
+            "tertiary": "#ffb59b",
+            "on-tertiary-fixed": "#380d00",
+            "surface-variant": "#33343e",
+            "surface-container-low": "#191b24",
+            "surface-dim": "#11131c",
+            "surface-container-high": "#282933",
+            "on-secondary-fixed": "#001848",
+            "on-primary-fixed-variant": "#0035bd",
+            "on-surface-variant": "#c4c5d9",
+            "on-primary": "#002487",
+            "secondary-fixed-dim": "#b2c5ff",
+            "secondary": "#b2c5ff",
+            "bull-green": "#00E388",
+            "on-primary-container": "#f0f0ff",
+            "ink-white": "#F0F0FF",
+            "tertiary-fixed": "#ffdbcf",
+            "card-navy-high": "#1A2742",
+            "inverse-surface": "#e2e1ef",
+            "primary": "#b8c3ff",
+            "tertiary-fixed-dim": "#ffb59b",
+            "bear-red": "#FF5F6D"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "margin": "24px",
+            "space-xl": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px",
+            "gutter": "16px",
+            "space-md": "16px"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-sm": ["Space Grotesk"],
+            "body-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "mono-data": ["JetBrains Mono"],
+            "headline-md": ["Space Grotesk"],
+            "headline-lg": ["Space Grotesk"]
+          },
+          "fontSize": {
+            "label-sm": [
+              "11px",
+              {
+                "lineHeight": "16px",
+                "letterSpacing": "0.05em",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-sm": [
+              "14px",
+              {
+                "lineHeight": "20px",
+                "fontWeight": "600"
+              }
+            ],
+            "body-md": [
+              "13px",
+              {
+                "lineHeight": "1.5",
+                "fontWeight": "400"
+              }
+            ],
+            "body-lg": [
+              "14px",
+              {
+                "lineHeight": "1.5",
+                "fontWeight": "400"
+              }
+            ],
+            "mono-data": [
+              "13px",
+              {
+                "lineHeight": "1.4",
+                "fontWeight": "500"
+              }
+            ],
+            "headline-md": [
+              "18px",
+              {
+                "lineHeight": "24px",
+                "letterSpacing": "-0.01em",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-lg": [
+              "24px",
+              {
+                "lineHeight": "32px",
+                "letterSpacing": "-0.02em",
+                "fontWeight": "700"
+              }
+            ]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Custom terminal grid subtle lines */
+    .terminal-grid-bg {
+      background-image: linear-gradient(to right, rgba(52, 65, 94, 0.08) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(52, 65, 94, 0.08) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    /* Scrollbar customization for professional desktop density */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070D1C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #34415E;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2E5CFF;
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-ink-white font-body-md text-body-md antialiased min-h-screen selection:bg-primary-container selection:text-ink-white">
+<!-- ========================================================================= -->
+<!-- SHARED COMPONENT: SideNavBar (Fixed 240px, w-60)                         -->
+<!-- ========================================================================= -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-40 bg-surface-slate flex flex-col justify-between px-space-sm py-space-md border-r border-hairline">
+<!-- Top Branding & Navigation Items -->
+<div class="flex flex-col gap-space-md">
+<!-- Logo Header -->
+<div class="px-space-sm py-space-xs flex items-center justify-between border-b border-hairline pb-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded bg-primary-container/20 border border-primary-container flex items-center justify-center text-primary-container shadow-[0_0_12px_rgba(46,92,255,0.35)]">
+<span class="material-symbols-outlined text-[20px]" data-icon="terminal">terminal</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md font-bold tracking-tight text-ink-white flex items-center gap-1">
+              明策 <span class="text-primary-container font-extrabold tracking-wider">MINGCE</span>
+</div>
+<div class="font-label-sm text-label-sm text-steel-muted tracking-widest">
+              TERMINAL v4.2
+            </div>
+</div>
+</div>
+</div>
+<!-- Navigation Link List -->
+<nav class="flex flex-col gap-0.5">
+<!-- Item 1: 概览 (ACTIVE) -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs bg-card-navy text-ink-white border-l-2 border-primary-container font-headline-sm text-headline-sm shadow-[inset_0_0_16px_rgba(46,92,255,0.08)] cursor-pointer" href="#overview">
+<span class="material-symbols-outlined text-primary-container text-[18px]" data-icon="dashboard">dashboard</span>
+<span>概览</span>
+<span class="ml-auto w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+</a>
+<!-- Item 2: 行情 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#market">
+<span class="material-symbols-outlined text-[18px]" data-icon="candlestick_chart">candlestick_chart</span>
+<span>行情</span>
+</a>
+<!-- Item 3: 多维数据 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#analytics">
+<span class="material-symbols-outlined text-[18px]" data-icon="query_stats">query_stats</span>
+<span>多维数据</span>
+</a>
+<!-- Item 4: 爆仓监控 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#liquidations">
+<span class="material-symbols-outlined text-[18px] text-bear-red/80" data-icon="crisis_alert">crisis_alert</span>
+<span>爆仓监控</span>
+<span class="ml-auto font-label-sm text-[9px] px-1 bg-bear-red/20 text-bear-red border border-bear-red/40 rounded">ALERT</span>
+</a>
+<!-- Item 5: 巨鲸动向 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#whales">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+<span>巨鲸动向</span>
+</a>
+<!-- Item 6: 资金费率 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#funding">
+<span class="material-symbols-outlined text-[18px]" data-icon="percent">percent</span>
+<span>资金费率</span>
+</a>
+<!-- Item 7: 资讯 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#news">
+<span class="material-symbols-outlined text-[18px]" data-icon="newspaper">newspaper</span>
+<span>资讯</span>
+</a>
+<!-- Item 8: 聊天 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#chat">
+<span class="material-symbols-outlined text-[18px]" data-icon="chat">chat</span>
+<span>聊天</span>
+</a>
+<!-- Item 9: 资产理财 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#assets">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>资产理财</span>
+</a>
+<!-- Item 10: 我的 -->
+<a class="flex items-center gap-space-sm px-space-sm py-space-xs text-steel-muted font-body-md text-body-md hover:bg-card-navy hover:text-ink-white transition-colors duration-150 cursor-pointer" href="#profile">
+<span class="material-symbols-outlined text-[18px]" data-icon="person">person</span>
+<span>我的</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Operator Info & CTA (Shared Spec compliance) -->
+<div class="flex flex-col gap-space-sm pt-space-sm border-t border-hairline">
+<!-- Quick Order CTA Button -->
+<button class="w-full h-9 bg-primary-container hover:bg-primary-container/90 text-ink-white font-headline-sm text-headline-sm rounded flex items-center justify-center gap-1.5 transition-colors duration-150 shadow-[0_2px_8px_rgba(46,92,255,0.3)]">
+<span class="material-symbols-outlined text-[18px]" data-icon="bolt">bolt</span>
+<span>快速下单</span>
+</button>
+<!-- Operator Node Card -->
+<div class="p-2.5 bg-card-navy rounded border border-hairline flex flex-col gap-1.5 font-label-sm text-label-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1 text-ink-white">
+<span class="material-symbols-outlined text-[15px] text-primary" data-icon="badge">badge</span>
+<span>操作员: OP-8821</span>
+</div>
+<span class="px-1 text-[9px] bg-primary-container/20 text-primary-fixed border border-primary-container/40 rounded">PRO</span>
+</div>
+<div class="flex items-center justify-between text-steel-muted text-[10px]">
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span>HK-CENTRAL-01</span>
+</div>
+<div class="font-mono-data text-bull-green flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="wifi_tethering">wifi_tethering</span>
+<span>12ms</span>
+</div>
+</div>
+<div class="text-[9px] text-steel-muted font-mono-data tracking-wider opacity-60">
+          AES-256 GCM · ZERO LOG
+        </div>
+</div>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- SHARED COMPONENT: TopNavBar (Fixed top-0 left-60 right-0, h-14)           -->
+<!-- ========================================================================= -->
+<header class="fixed top-0 left-60 right-0 h-14 z-30 border-b border-hairline bg-canvas-obsidian flex justify-between items-center px-margin">
+<!-- Left Module Headline -->
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-sm text-headline-sm font-semibold tracking-wide text-ink-white">OVERVIEW</h1>
+<span class="text-hairline">/</span>
+<span class="font-mono-data text-[11px] px-2 py-0.5 rounded bg-surface-slate border border-hairline text-steel-muted flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-ping"></span>
+          STATUS: LIVE FEED
+        </span>
+</div>
+</div>
+<!-- Center Search Bar -->
+<div class="relative w-96 max-w-md hidden md:block">
+<div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-steel-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="search">search</span>
+</div>
+<input class="w-full h-8 pl-8 pr-12 text-[12px] font-mono-data bg-surface-slate text-ink-white placeholder-steel-muted border border-hairline rounded focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="输入代码/指标快捷键 (⌘+K)" type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+<kbd class="px-1.5 py-0.5 text-[10px] font-mono-data bg-card-navy text-steel-muted border border-hairline rounded">⌘K</kbd>
+</div>
+</div>
+<!-- Right Action Status Cluster -->
+<div class="flex items-center gap-space-md">
+<!-- Market Pulse Chip -->
+<div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-surface-slate border border-hairline rounded text-[11px] font-mono-data">
+<span class="w-2 h-2 rounded-full bg-bull-green"></span>
+<span class="text-steel-muted">市场活跃度</span>
+<span class="text-bull-green font-semibold">HIGH</span>
+</div>
+<!-- Latency & Security Icon Info -->
+<div class="hidden xl:flex items-center gap-1 text-[11px] font-mono-data text-steel-muted">
+<span class="material-symbols-outlined text-[15px] text-bull-green" data-icon="speed">speed</span>
+<span>SSL 256-BIT · 14ms</span>
+</div>
+<!-- Bell / Notification -->
+<button class="relative p-1 text-steel-muted hover:text-ink-white transition-colors duration-150" title="通知待办">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-bear-red border-2 border-canvas-obsidian"></span>
+</button>
+<!-- Terminal Connect Action -->
+<button class="hidden sm:flex items-center gap-1 px-3 py-1 bg-card-navy hover:bg-card-navy-high text-primary font-label-sm text-label-sm border border-hairline hover:border-primary-container rounded transition-all duration-150">
+<span class="material-symbols-outlined text-[14px]" data-icon="sync">sync</span>
+<span>连接终端</span>
+</button>
+<!-- Profile Avatar -->
+<div class="flex items-center gap-2 pl-2 border-l border-hairline">
+<div class="w-8 h-8 rounded bg-card-navy border border-hairline flex items-center justify-center font-mono-data text-xs text-primary font-bold shadow-inner" title="Operator Chief Trader Avatar">
+          OP
+        </div>
+</div>
+</div>
+</header>
+<!-- ========================================================================= -->
+<!-- MAIN WORKSPACE CANVAS (Left margin: 240px, Top margin: 56px)              -->
+<!-- ========================================================================= -->
+<main class="ml-60 pt-14 min-h-screen terminal-grid-bg p-space-lg flex flex-col gap-space-lg">
+<!-- ROW 1: 4 STATS CARDS (12-column grid, 3 cols each) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Card 1: 全网总市值 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between hover:border-primary-container/60 transition-colors duration-150">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">GLOBAL MARKET CAP</span>
+<span class="material-symbols-outlined text-[18px] text-steel-muted" data-icon="public">public</span>
+</div>
+<div class="mt-2">
+<div class="text-[11px] text-steel-muted">全网总市值</div>
+<div class="font-mono-data text-2xl font-bold text-ink-white tracking-tight mt-0.5">$2.41T</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-hairline flex items-center justify-between text-[11px] font-mono-data">
+<div class="flex items-center gap-1 text-bull-green">
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_drop_up">arrow_drop_up</span>
+<span>+3.42% 24H</span>
+</div>
+<div class="text-steel-muted">净流入 <span class="text-ink-white font-medium">+$28.4B</span></div>
+</div>
+</div>
+<!-- Card 2: BTC 市值占比 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between hover:border-primary-container/60 transition-colors duration-150">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">BTC DOMINANCE</span>
+<span class="material-symbols-outlined text-[18px] text-steel-muted" data-icon="pie_chart">pie_chart</span>
+</div>
+<div class="mt-2">
+<div class="text-[11px] text-steel-muted">BTC 占有率</div>
+<div class="font-mono-data text-2xl font-bold text-ink-white tracking-tight mt-0.5">57.3%</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-hairline flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-[11px] font-mono-data">
+<span class="text-bull-green">+0.85% (7D)</span>
+<span class="text-steel-muted">OTHERS 42.7%</span>
+</div>
+<!-- Dominance progress bar -->
+<div class="w-full h-1.5 bg-surface-slate rounded-full overflow-hidden flex border border-hairline">
+<div class="h-full bg-primary-container" style="width: 57.3%"></div>
+<div class="h-full bg-steel-muted/40" style="width: 42.7%"></div>
+</div>
+</div>
+</div>
+<!-- Card 3: 24H 涨跌家数对比 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between hover:border-primary-container/60 transition-colors duration-150">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">MARKET BREADTH</span>
+<span class="material-symbols-outlined text-[18px] text-steel-muted" data-icon="compare_arrows">compare_arrows</span>
+</div>
+<div class="mt-2">
+<div class="text-[11px] text-steel-muted">24H 涨跌家数 (多/空)</div>
+<div class="font-mono-data text-2xl font-bold text-ink-white tracking-tight mt-0.5 flex items-baseline gap-1.5">
+<span class="text-bull-green">68%</span>
+<span class="text-steel-muted text-base font-normal">/</span>
+<span class="text-bear-red">32%</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-hairline flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-[11px] font-mono-data">
+<span class="text-bull-green">多头主导</span>
+<span class="text-steel-muted">多空比 2.12:1</span>
+</div>
+<div class="w-full h-1.5 bg-surface-slate rounded-full overflow-hidden flex border border-hairline">
+<div class="h-full bg-bull-green" style="width: 68%"></div>
+<div class="h-full bg-bear-red" style="width: 32%"></div>
+</div>
+</div>
+</div>
+<!-- Card 4: 情绪指数 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between hover:border-primary-container/60 transition-colors duration-150">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">SENTIMENT INDEX</span>
+<span class="material-symbols-outlined text-[18px] text-amber-warn" data-icon="speed">speed</span>
+</div>
+<div class="mt-2 flex items-baseline justify-between">
+<div>
+<div class="text-[11px] text-steel-muted">恐慌贪婪指数</div>
+<div class="font-mono-data text-2xl font-bold text-bull-green tracking-tight mt-0.5 flex items-center gap-2">
+<span>74</span>
+<span class="px-2 py-0.5 text-xs font-headline-sm rounded bg-bull-green/10 text-bull-green border border-bull-green/30">贪婪 (GREED)</span>
+</div>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-hairline flex items-center justify-between text-[11px] font-mono-data">
+<div class="text-steel-muted">昨日读数: <span class="text-ink-white">69</span></div>
+<div class="text-amber-warn flex items-center gap-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-warn"></span>
+<span>极度亢奋临界点</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 2: 涨幅榜 (7 cols) + BTC 迷你 K 线概览 (5 cols) -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- TOP GAINERS TABLE (7 Columns) -->
+<div class="lg:col-span-7 bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between">
+<!-- Card Header & Filter Tabs -->
+<div>
+<div class="flex flex-wrap items-center justify-between gap-2 pb-space-sm border-b border-hairline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-[20px]" data-icon="trending_up">trending_up</span>
+<h2 class="font-headline-md text-headline-md text-ink-white">24H 涨幅榜 TOP GAINERS</h2>
+<span class="font-mono-data text-[10px] text-steel-muted px-1.5 py-0.5 bg-surface-slate border border-hairline rounded">5s实时</span>
+</div>
+<!-- Sub-tabs -->
+<div class="flex items-center bg-surface-slate p-0.5 rounded border border-hairline text-label-sm font-label-sm">
+<button class="px-2.5 py-1 bg-card-navy text-ink-white rounded shadow-sm border border-hairline/50">主流币</button>
+<button class="px-2.5 py-1 text-steel-muted hover:text-ink-white transition-colors">AI / DeFi</button>
+<button class="px-2.5 py-1 text-steel-muted hover:text-ink-white transition-colors">新上线</button>
+</div>
+</div>
+<!-- Market Table (Dense Flat Spec) -->
+<div class="overflow-x-auto mt-2">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-hairline text-steel-muted font-label-sm text-label-sm tracking-wider uppercase">
+<th class="py-2.5 pl-1 w-8">#</th>
+<th class="py-2.5">交易对</th>
+<th class="py-2.5 text-right">最新价 (USDT)</th>
+<th class="py-2.5 text-right">24H 涨跌幅</th>
+<th class="py-2.5 text-right">24H 成交额</th>
+<th class="py-2.5 text-right pr-2">24H 趋势</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-hairline/60 font-mono-data text-xs">
+<!-- Row 1: BTC -->
+<tr class="hover:bg-surface-slate/70 transition-colors">
+<td class="py-2.5 pl-1 text-steel-muted">01</td>
+<td class="py-2.5">
+<div class="flex items-center gap-2">
+<span class="font-bold text-ink-white">BTC</span>
+<span class="text-[10px] text-steel-muted font-normal">Bitcoin</span>
+<span class="px-1 text-[9px] bg-card-navy-high border border-hairline rounded text-primary">POW</span>
+</div>
+</td>
+<td class="py-2.5 text-right text-ink-white font-semibold">96,420.50</td>
+<td class="py-2.5 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green border border-bull-green/30 text-[11px] font-semibold">+2.85%</span>
+</td>
+<td class="py-2.5 text-right text-steel-muted">$48.92B</td>
+<td class="py-2.5 text-right pr-2">
+<!-- Sparkline SVG -->
+<svg class="w-16 h-5 inline-block text-bull-green stroke-current fill-none stroke-[1.5]" viewbox="0 0 64 20">
+<path d="M 0,16 L 10,14 L 20,15 L 30,9 L 40,11 L 50,4 L 64,2"></path>
+</svg>
+</td>
+</tr>
+<!-- Row 2: ETH -->
+<tr class="hover:bg-surface-slate/70 transition-colors">
+<td class="py-2.5 pl-1 text-steel-muted">02</td>
+<td class="py-2.5">
+<div class="flex items-center gap-2">
+<span class="font-bold text-ink-white">ETH</span>
+<span class="text-[10px] text-steel-muted font-normal">Ethereum</span>
+<span class="px-1 text-[9px] bg-card-navy-high border border-hairline rounded text-steel-muted">L1</span>
+</div>
+</td>
+<td class="py-2.5 text-right text-ink-white font-semibold">3,648.12</td>
+<td class="py-2.5 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green border border-bull-green/30 text-[11px] font-semibold">+4.18%</span>
+</td>
+<td class="py-2.5 text-right text-steel-muted">$26.41B</td>
+<td class="py-2.5 text-right pr-2">
+<svg class="w-16 h-5 inline-block text-bull-green stroke-current fill-none stroke-[1.5]" viewbox="0 0 64 20">
+<path d="M 0,18 L 12,16 L 24,10 L 36,12 L 48,6 L 64,1"></path>
+</svg>
+</td>
+</tr>
+<!-- Row 3: SOL -->
+<tr class="hover:bg-surface-slate/70 transition-colors">
+<td class="py-2.5 pl-1 text-steel-muted">03</td>
+<td class="py-2.5">
+<div class="flex items-center gap-2">
+<span class="font-bold text-ink-white">SOL</span>
+<span class="text-[10px] text-steel-muted font-normal">Solana</span>
+<span class="px-1 text-[9px] bg-card-navy-high border border-hairline rounded text-steel-muted">HIGH-TPS</span>
+</div>
+</td>
+<td class="py-2.5 text-right text-ink-white font-semibold">218.45</td>
+<td class="py-2.5 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green border border-bull-green/30 text-[11px] font-semibold">+8.74%</span>
+</td>
+<td class="py-2.5 text-right text-steel-muted">$9.35B</td>
+<td class="py-2.5 text-right pr-2">
+<svg class="w-16 h-5 inline-block text-bull-green stroke-current fill-none stroke-[1.5]" viewbox="0 0 64 20">
+<path d="M 0,15 L 14,12 L 28,14 L 42,7 L 54,8 L 64,2"></path>
+</svg>
+</td>
+</tr>
+<!-- Row 4: RENDER -->
+<tr class="hover:bg-surface-slate/70 transition-colors">
+<td class="py-2.5 pl-1 text-steel-muted">04</td>
+<td class="py-2.5">
+<div class="flex items-center gap-2">
+<span class="font-bold text-ink-white">RENDER</span>
+<span class="text-[10px] text-steel-muted font-normal">Render</span>
+<span class="px-1 text-[9px] bg-card-navy-high border border-hairline rounded text-amber-warn">AI/GPU</span>
+</div>
+</td>
+<td class="py-2.5 text-right text-ink-white font-semibold">11.42</td>
+<td class="py-2.5 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green border border-bull-green/30 text-[11px] font-semibold">+14.62%</span>
+</td>
+<td class="py-2.5 text-right text-steel-muted">$1.18B</td>
+<td class="py-2.5 text-right pr-2">
+<svg class="w-16 h-5 inline-block text-bull-green stroke-current fill-none stroke-[1.5]" viewbox="0 0 64 20">
+<path d="M 0,19 L 15,15 L 25,12 L 40,6 L 52,8 L 64,1"></path>
+</svg>
+</td>
+</tr>
+<!-- Row 5: SUI -->
+<tr class="hover:bg-surface-slate/70 transition-colors">
+<td class="py-2.5 pl-1 text-steel-muted">05</td>
+<td class="py-2.5">
+<div class="flex items-center gap-2">
+<span class="font-bold text-ink-white">SUI</span>
+<span class="text-[10px] text-steel-muted font-normal">Sui Network</span>
+<span class="px-1 text-[9px] bg-card-navy-high border border-hairline rounded text-steel-muted">MOVE</span>
+</div>
+</td>
+<td class="py-2.5 text-right text-ink-white font-semibold">3.88</td>
+<td class="py-2.5 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green border border-bull-green/30 text-[11px] font-semibold">+11.20%</span>
+</td>
+<td class="py-2.5 text-right text-steel-muted">$840M</td>
+<td class="py-2.5 text-right pr-2">
+<svg class="w-16 h-5 inline-block text-bull-green stroke-current fill-none stroke-[1.5]" viewbox="0 0 64 20">
+<path d="M 0,17 L 16,14 L 32,9 L 45,11 L 55,5 L 64,2"></path>
+</svg>
+</td>
+</tr>
+<!-- Row 6: TAO -->
+<tr class="hover:bg-surface-slate/70 transition-colors">
+<td class="py-2.5 pl-1 text-steel-muted">06</td>
+<td class="py-2.5">
+<div class="flex items-center gap-2">
+<span class="font-bold text-ink-white">TAO</span>
+<span class="text-[10px] text-steel-muted font-normal">Bittensor</span>
+<span class="px-1 text-[9px] bg-card-navy-high border border-hairline rounded text-amber-warn">DE-AI</span>
+</div>
+</td>
+<td class="py-2.5 text-right text-ink-white font-semibold">584.30</td>
+<td class="py-2.5 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green border border-bull-green/30 text-[11px] font-semibold">+9.35%</span>
+</td>
+<td class="py-2.5 text-right text-steel-muted">$512M</td>
+<td class="py-2.5 text-right pr-2">
+<svg class="w-16 h-5 inline-block text-bull-green stroke-current fill-none stroke-[1.5]" viewbox="0 0 64 20">
+<path d="M 0,16 L 15,13 L 28,15 L 42,8 L 56,5 L 64,2"></path>
+</svg>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Table Footer Info -->
+<div class="pt-3 border-t border-hairline flex items-center justify-between text-[11px] font-mono-data text-steel-muted">
+<span>展示 TOP 6 · 全网覆盖 2,400+ 现货交易对</span>
+<button class="hover:text-primary transition-colors flex items-center gap-0.5 text-ink-white">
+<span>进入全维行情矩阵</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- BTC/USDT MINI K-LINE OVERVIEW (5 Columns) -->
+<div class="lg:col-span-5 bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between">
+<div>
+<!-- Header and Range Bar -->
+<div class="flex items-start justify-between pb-2.5 border-b border-hairline">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md font-bold text-ink-white tracking-wide">BTC/USDT</span>
+<span class="font-mono-data text-[10px] px-1 bg-primary-container/20 text-primary border border-primary-container/40 rounded">PERP 永续</span>
+<span class="w-2 h-2 rounded-full bg-bull-green animate-pulse"></span>
+</div>
+<div class="flex items-baseline gap-2 mt-1 font-mono-data">
+<span class="text-xl font-bold text-ink-white">$96,420.50</span>
+<span class="text-xs font-semibold text-bull-green">+2.85%</span>
+</div>
+</div>
+<!-- Timeframe selector -->
+<div class="flex items-center gap-1 bg-surface-slate p-0.5 rounded border border-hairline text-label-sm font-label-sm">
+<button class="px-1.5 py-0.5 text-steel-muted hover:text-ink-white">1M</button>
+<button class="px-1.5 py-0.5 bg-primary-container text-ink-white rounded">15M</button>
+<button class="px-1.5 py-0.5 text-steel-muted hover:text-ink-white">1H</button>
+<button class="px-1.5 py-0.5 text-steel-muted hover:text-ink-white">4H</button>
+<button class="px-1.5 py-0.5 text-steel-muted hover:text-ink-white">1D</button>
+</div>
+</div>
+<!-- Micro indicators bar -->
+<div class="grid grid-cols-3 gap-2 py-2 text-[10px] font-mono-data border-b border-hairline text-steel-muted">
+<div>24H 最高: <span class="text-ink-white font-medium">$97,200.00</span></div>
+<div>24H 最低: <span class="text-ink-white font-medium">$94,800.00</span></div>
+<div class="text-right">资金率: <span class="text-bull-green">+0.0100%</span></div>
+</div>
+<!-- Professional CandleStick Graphic Simulation (Custom SVG) -->
+<div class="relative w-full h-44 bg-surface-slate/80 rounded border border-hairline mt-3 overflow-hidden p-2 flex flex-col justify-between">
+<!-- Background grid watermark lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
+<div class="border-b border-dashed border-steel-muted h-0 w-full"></div>
+<div class="border-b border-dashed border-steel-muted h-0 w-full"></div>
+<div class="border-b border-dashed border-steel-muted h-0 w-full"></div>
+<div class="border-b border-dashed border-steel-muted h-0 w-full"></div>
+</div>
+<!-- MA Legend -->
+<div class="flex items-center gap-3 text-[10px] font-mono-data z-10">
+<span class="text-primary flex items-center gap-1"><span class="w-2 h-0.5 bg-primary-container"></span> MA7: 96,150.2</span>
+<span class="text-amber-warn flex items-center gap-1"><span class="w-2 h-0.5 bg-amber-warn"></span> MA25: 95,480.0</span>
+</div>
+<!-- SVG Candlesticks & MA curves -->
+<svg class="w-full h-28 overflow-visible z-10" viewbox="0 0 380 110">
+<!-- Moving averages lines -->
+<path d="M 10,75 Q 70,68 130,55 T 250,38 T 370,22" fill="none" stroke="#2E5CFF" stroke-width="1.5"></path>
+<path d="M 10,88 Q 90,82 170,68 T 290,52 T 370,36" fill="none" stroke="#F7B733" stroke-dasharray="3,2" stroke-width="1.2"></path>
+<!-- Candle 1 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="25" x2="25" y1="65" y2="92"></line>
+<rect fill="#00E388" height="15" width="8" x="21" y="70"></rect>
+<!-- Candle 2 (Red) -->
+<line stroke="#FF5F6D" stroke-width="1" x1="55" x2="55" y1="68" y2="88"></line>
+<rect fill="#FF5F6D" height="12" width="8" x="51" y="72"></rect>
+<!-- Candle 3 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="85" x2="85" y1="52" y2="80"></line>
+<rect fill="#00E388" height="16" width="8" x="81" y="58"></rect>
+<!-- Candle 4 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="115" x2="115" y1="48" y2="72"></line>
+<rect fill="#00E388" height="18" width="8" x="111" y="50"></rect>
+<!-- Candle 5 (Red) -->
+<line stroke="#FF5F6D" stroke-width="1" x1="145" x2="145" y1="45" y2="68"></line>
+<rect fill="#FF5F6D" height="14" width="8" x="141" y="48"></rect>
+<!-- Candle 6 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="175" x2="175" y1="40" y2="62"></line>
+<rect fill="#00E388" height="15" width="8" x="171" y="44"></rect>
+<!-- Candle 7 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="205" x2="205" y1="32" y2="58"></line>
+<rect fill="#00E388" height="16" width="8" x="201" y="36"></rect>
+<!-- Candle 8 (Red) -->
+<line stroke="#FF5F6D" stroke-width="1" x1="235" x2="235" y1="30" y2="52"></line>
+<rect fill="#FF5F6D" height="12" width="8" x="231" y="34"></rect>
+<!-- Candle 9 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="265" x2="265" y1="22" y2="45"></line>
+<rect fill="#00E388" height="16" width="8" x="261" y="26"></rect>
+<!-- Candle 10 (Green) -->
+<line stroke="#00E388" stroke-width="1" x1="295" x2="295" y1="18" y2="40"></line>
+<rect fill="#00E388" height="15" width="8" x="291" y="20"></rect>
+<!-- Candle 11 (Green - Current breakthrough) -->
+<line stroke="#00E388" stroke-width="1" x1="325" x2="325" y1="10" y2="35"></line>
+<rect fill="#00E388" height="18" width="8" x="321" y="14"></rect>
+<!-- Candle 12 (Live Pin) -->
+<line stroke="#00E388" stroke-width="1" x1="355" x2="355" y1="8" y2="28"></line>
+<rect class="animate-pulse" fill="#00E388" height="14" width="8" x="351" y="10"></rect>
+</svg>
+<!-- Bottom Volume Sub-bars -->
+<div class="h-6 w-full flex items-end justify-between px-3 border-t border-hairline/40 pt-1 z-10">
+<span class="text-[9px] font-mono-data text-steel-muted">VOL: 14.8K BTC</span>
+<div class="flex items-end gap-1.5 h-4">
+<div class="w-1.5 bg-bull-green/60 h-2"></div>
+<div class="w-1.5 bg-bear-red/60 h-1.5"></div>
+<div class="w-1.5 bg-bull-green/70 h-3"></div>
+<div class="w-1.5 bg-bull-green/70 h-2.5"></div>
+<div class="w-1.5 bg-bear-red/60 h-2"></div>
+<div class="w-1.5 bg-bull-green/80 h-3.5"></div>
+<div class="w-1.5 bg-bull-green/90 h-4"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Depth Match Order Micro-Widget -->
+<div class="mt-3 p-2 bg-surface-slate rounded border border-hairline font-mono-data text-[11px] flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="text-steel-muted">买一:</span>
+<span class="text-bull-green font-semibold">96,419.80</span>
+<span class="text-steel-muted text-[10px]">(12.45 BTC)</span>
+</div>
+<div class="text-steel-muted text-[10px] px-1 bg-card-navy border border-hairline rounded">点差 0.01%</div>
+<div class="flex items-center gap-1.5">
+<span class="text-steel-muted">卖一:</span>
+<span class="text-bear-red font-semibold">96,420.50</span>
+<span class="text-steel-muted text-[10px]">(8.90 BTC)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 3: 实时情报快讯与巨鲸异动 (TERMINAL INTEL WIRE) -->
+<section class="bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col gap-space-sm">
+<!-- Section Header & Filter Tabs -->
+<div class="flex flex-wrap items-center justify-between gap-2 pb-space-sm border-b border-hairline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-[20px]" data-icon="rss_feed">rss_feed</span>
+<h2 class="font-headline-md text-headline-md text-ink-white">TERMINAL INTEL WIRE 实时情报快讯</h2>
+<span class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-bull-green/10 border border-bull-green/30 text-bull-green text-[10px] font-mono-data">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-ping"></span>
+            LIVE RADAR
+          </span>
+</div>
+<!-- Intel Filter Buttons -->
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm">
+<button class="px-2.5 py-1 bg-primary-container text-ink-white rounded">全部快讯</button>
+<button class="px-2.5 py-1 bg-surface-slate text-steel-muted hover:text-ink-white rounded border border-hairline transition-colors">巨鲸异动</button>
+<button class="px-2.5 py-1 bg-surface-slate text-steel-muted hover:text-ink-white rounded border border-hairline transition-colors">宏观清算</button>
+<button class="px-2.5 py-1 bg-surface-slate text-steel-muted hover:text-ink-white rounded border border-hairline transition-colors">链上异动</button>
+</div>
+</div>
+<!-- Feed Rows List (Dense, strictly monospace timestamps, professional metadata) -->
+<div class="divide-y divide-hairline">
+<!-- Feed Item 1: Whale -->
+<div class="py-3 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-surface-slate/40 px-2 rounded transition-colors">
+<div class="flex items-start md:items-center gap-3">
+<span class="font-mono-data text-xs text-steel-muted shrink-0 pt-0.5 md:pt-0">14:28:09</span>
+<span class="px-2 py-0.5 text-[10px] font-mono-data rounded bg-primary-container/20 text-primary border border-primary-container/40 shrink-0">巨鲸异动</span>
+<p class="text-ink-white text-body-md font-body-md">
+              某休眠 4 年巨鲸地址向 <span class="font-mono-data text-primary underline underline-offset-2">Coinbase Prime</span> 转移 <span class="font-mono-data font-semibold text-bull-green">1,850 枚 BTC ($1.78 亿)</span>，疑似场外机构流动性补充。
+            </p>
+</div>
+<div class="flex items-center gap-3 ml-auto md:ml-0 shrink-0 font-mono-data text-xs text-steel-muted">
+<span class="text-[11px] text-steel-muted/80">Glassnode Alerts</span>
+<button class="px-2 py-0.5 bg-surface-slate hover:bg-card-navy-high text-primary border border-hairline rounded text-[11px] transition-colors flex items-center gap-0.5">
+<span>深度分析</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="north_east">north_east</span>
+</button>
+</div>
+</div>
+<!-- Feed Item 2: Funding -->
+<div class="py-3 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-surface-slate/40 px-2 rounded transition-colors">
+<div class="flex items-start md:items-center gap-3">
+<span class="font-mono-data text-xs text-steel-muted shrink-0 pt-0.5 md:pt-0">14:25:31</span>
+<span class="px-2 py-0.5 text-[10px] font-mono-data rounded bg-amber-warn/15 text-amber-warn border border-amber-warn/40 shrink-0">资金费率</span>
+<p class="text-ink-white text-body-md font-body-md">
+              主流衍生品市场 BTC 永续费率年化攀升至 <span class="font-mono-data text-amber-warn font-semibold">18.4%</span>，多头持仓集中度处于近 30 日 <span class="font-mono-data text-ink-white font-medium">92%</span> 分位。
+            </p>
+</div>
+<div class="flex items-center gap-3 ml-auto md:ml-0 shrink-0 font-mono-data text-xs text-steel-muted">
+<span class="text-[11px] text-steel-muted/80">Coinglass Intel</span>
+<button class="px-2 py-0.5 bg-surface-slate hover:bg-card-navy-high text-primary border border-hairline rounded text-[11px] transition-colors flex items-center gap-0.5">
+<span>深度分析</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="north_east">north_east</span>
+</button>
+</div>
+</div>
+<!-- Feed Item 3: Macro -->
+<div class="py-3 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-surface-slate/40 px-2 rounded transition-colors">
+<div class="flex items-start md:items-center gap-3">
+<span class="font-mono-data text-xs text-steel-muted shrink-0 pt-0.5 md:pt-0">14:19:40</span>
+<span class="px-2 py-0.5 text-[10px] font-mono-data rounded bg-bull-green/15 text-bull-green border border-bull-green/40 shrink-0">宏观情报</span>
+<p class="text-ink-white text-body-md font-body-md">
+              美联储发布隔夜流动性流动报告，隔夜逆回购规模持续下降，宏观美元流动性处于充裕区间，风险资产承压减轻。
+            </p>
+</div>
+<div class="flex items-center gap-3 ml-auto md:ml-0 shrink-0 font-mono-data text-xs text-steel-muted">
+<span class="text-[11px] text-steel-muted/80">Bloomberg Wire</span>
+<button class="px-2 py-0.5 bg-surface-slate hover:bg-card-navy-high text-primary border border-hairline rounded text-[11px] transition-colors flex items-center gap-0.5">
+<span>深度分析</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="north_east">north_east</span>
+</button>
+</div>
+</div>
+<!-- Feed Item 4: Liquidation -->
+<div class="py-3 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-surface-slate/40 px-2 rounded transition-colors">
+<div class="flex items-start md:items-center gap-3">
+<span class="font-mono-data text-xs text-steel-muted shrink-0 pt-0.5 md:pt-0">14:12:05</span>
+<span class="px-2 py-0.5 text-[10px] font-mono-data rounded bg-bear-red/20 text-bear-red border border-bear-red/40 shrink-0">大额清算</span>
+<p class="text-ink-white text-body-md font-body-md">
+              过去 1 小时全网单向空单爆仓额达 <span class="font-mono-data font-semibold text-bear-red">$3,420 万</span>，最大单笔爆仓发生在 <span class="font-mono-data text-ink-white font-medium">Binance - BTCUSDT ($4.2M)</span>。
+            </p>
+</div>
+<div class="flex items-center gap-3 ml-auto md:ml-0 shrink-0 font-mono-data text-xs text-steel-muted">
+<span class="text-[11px] text-steel-muted/80">Terminal Liquidations</span>
+<button class="px-2 py-0.5 bg-surface-slate hover:bg-card-navy-high text-primary border border-hairline rounded text-[11px] transition-colors flex items-center gap-0.5">
+<span>深度分析</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="north_east">north_east</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Feed Card Bottom Status -->
+<div class="pt-2 border-t border-hairline flex items-center justify-between text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span>WEBSOCKET FEED: 0 DROP / SEC</span>
+</div>
+<span>AUTOSCROLL: ACTIVE</span>
+</div>
+</section>
+</main>
+</body></html>

@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MINGCE / 资讯 / 美联储议息会议前瞻</title>
+<!-- Google Fonts: Space Grotesk, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-container": "#164197",
+            "inverse-primary": "#104aef",
+            "on-error-container": "#ffdad6",
+            "canvas-obsidian": "#070D1C",
+            "tertiary-fixed": "#ffdbcf",
+            "primary-container": "#2e5cff",
+            "on-secondary-fixed": "#001848",
+            "on-surface": "#e2e1ef",
+            "inverse-surface": "#e2e1ef",
+            "inverse-on-surface": "#2e303a",
+            "on-tertiary-fixed": "#380d00",
+            "on-secondary": "#002b73",
+            "surface-container-lowest": "#0c0e17",
+            "surface-container": "#1d1f29",
+            "secondary-fixed": "#dae2ff",
+            "surface-variant": "#33343e",
+            "primary": "#b8c3ff",
+            "hairline": "#34415E",
+            "surface-slate": "#0D1528",
+            "on-primary-container": "#f0f0ff",
+            "on-background": "#e2e1ef",
+            "on-secondary-container": "#98b3ff",
+            "ink-white": "#F0F0FF",
+            "on-primary-fixed": "#001355",
+            "on-tertiary-container": "#ffeee9",
+            "tertiary": "#ffb59b",
+            "surface-bright": "#373943",
+            "surface-container-highest": "#33343e",
+            "on-secondary-fixed-variant": "#164197",
+            "bear-red": "#FF5F6D",
+            "primary-fixed": "#dde1ff",
+            "steel-muted": "#9EA0B2",
+            "secondary": "#b2c5ff",
+            "outline": "#8e90a2",
+            "outline-variant": "#434656",
+            "background": "#11131c",
+            "surface-container-low": "#191b24",
+            "surface-tint": "#b8c3ff",
+            "tertiary-container": "#c44100",
+            "on-error": "#690005",
+            "on-primary-fixed-variant": "#0035bd",
+            "card-navy-high": "#1A2742",
+            "primary-fixed-dim": "#b8c3ff",
+            "amber-warn": "#F7B733",
+            "surface-dim": "#11131c",
+            "card-navy": "#121D34",
+            "secondary-fixed-dim": "#b2c5ff",
+            "error-container": "#93000a",
+            "tertiary-fixed-dim": "#ffb59b",
+            "on-tertiary-fixed-variant": "#822800",
+            "surface-container-high": "#282933",
+            "bull-green": "#00E388",
+            "error": "#ffb4ab",
+            "on-tertiary": "#5c1a00",
+            "surface": "#11131c",
+            "on-surface-variant": "#c4c5d9",
+            "on-primary": "#002487"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "32px",
+            "gutter": "16px",
+            "margin": "24px",
+            "space-md": "16px",
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "space-lg": "24px"
+          },
+          "fontFamily": {
+            "headline-md": ["Space Grotesk"],
+            "mono-data": ["JetBrains Mono"],
+            "headline-sm": ["Space Grotesk"],
+            "label-sm": ["JetBrains Mono"],
+            "body-md": ["Inter"],
+            "headline-lg": ["Space Grotesk"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-lg": ["14px", { "lineHeight": "1.7", "fontWeight": "400" }],
+            "body-md": ["13px", { "lineHeight": "1.6", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "mono-data": ["13px", { "lineHeight": "1.4", "fontWeight": "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom terminal scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070D1C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #34415E;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2e5cff;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-on-surface antialiased overflow-x-hidden select-none min-h-screen flex">
+<!-- ========================================== -->
+<!-- 1. LEFT FIXED SIDEBAR (SideNavBar JSON)   -->
+<!-- ========================================== -->
+<aside class="fixed top-0 left-0 h-screen w-64 flex flex-col justify-between shrink-0 bg-canvas-obsidian border-r border-hairline z-40 select-none">
+<div class="p-3 flex flex-col gap-4">
+<!-- Terminal Header / Logo -->
+<div class="px-2 pt-2 pb-1 flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-slate border border-hairline flex items-center justify-center text-primary-container shadow-inner">
+<span class="material-symbols-outlined text-primary-container" style="font-size: 20px;">terminal</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-sm font-headline-sm tracking-tight text-ink-white uppercase font-bold">MINGCE TERMINAL</span>
+<span class="text-label-sm font-label-sm text-steel-muted tracking-wider">INSTITUTIONAL v4.2</span>
+</div>
+</div>
+<!-- Quick Action / CTA -->
+<div class="px-1">
+<button class="w-full bg-primary-container hover:bg-inverse-primary text-ink-white font-headline-sm text-headline-sm py-2 px-3 rounded-lg flex items-center justify-between transition-colors shadow-sm">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 16px;">bolt</span>
+<span>PRO TERMINAL</span>
+</span>
+<span class="text-label-sm font-label-sm opacity-80 uppercase px-1.5 py-0.5 rounded bg-black/20">F1</span>
+</button>
+</div>
+<!-- Main Navigation Links (Strict Labels from JSON) -->
+<nav class="flex flex-col space-y-0.5">
+<!-- 1: 概览 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>概览</span>
+</a>
+<!-- 2: 行情 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span>行情</span>
+</a>
+<!-- 3: 多维数据 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span>多维数据</span>
+</a>
+<!-- 4: 爆仓监控 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">warning</span>
+<span>爆仓监控</span>
+</a>
+<!-- 5: 巨鲸动向 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">water_drop</span>
+<span>巨鲸动向</span>
+</a>
+<!-- 6: 资金费率 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">swap_horiz</span>
+<span>资金费率</span>
+</a>
+<!-- 7: 资讯 (ACTIVE LOCK: style_active_navigation) -->
+<a class="bg-card-navy text-ink-white border-l-2 border-primary-container px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-primary-container">article</span>
+<span class="font-semibold">资讯</span>
+<span class="ml-auto w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+</a>
+<!-- 8: 资产管理 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span>资产管理</span>
+</a>
+<!-- 9: 系统设置 -->
+<a class="text-steel-muted hover:text-ink-white hover:bg-card-navy/50 px-3 py-2 font-headline-sm text-headline-sm flex items-center gap-3 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>系统设置</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer / Operator Status -->
+<div class="p-3 border-t border-hairline bg-surface-slate/40 flex flex-col gap-2">
+<div class="flex items-center justify-between px-2 py-1.5 rounded bg-card-navy/80 border border-hairline/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-bull-green" style="font-size: 16px;">verified_user</span>
+<span class="text-label-sm font-label-sm text-ink-white">OP-8821 VERIFIED</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-pulse"></span>
+<span class="text-label-sm font-label-sm text-bull-green">12ms</span>
+</div>
+</div>
+<div class="flex justify-between items-center px-2 text-label-sm font-label-sm text-steel-muted">
+<span>GATEWAY: HK-04</span>
+<span>TLS 1.3 / GCM</span>
+</div>
+</div>
+</aside>
+<!-- ========================================== -->
+<!-- MAIN WORKSPACE CONTAINER (Left margin 256px)-->
+<!-- ========================================== -->
+<div class="pl-64 w-full min-h-screen flex flex-col bg-canvas-obsidian">
+<!-- ========================================== -->
+<!-- 2. TOP FIXED/DOCKED NAVBAR (TopNavBar JSON)-->
+<!-- ========================================== -->
+<header class="h-12 w-full bg-surface-slate border-b border-hairline px-4 flex items-center justify-between sticky top-0 z-30">
+<!-- Breadcrumb & Global Search -->
+<div class="flex items-center gap-4 flex-1 max-w-2xl">
+<div class="flex items-center gap-2 text-headline-sm font-headline-sm font-bold text-ink-white whitespace-nowrap">
+<span class="text-steel-muted font-normal">MINGCE</span>
+<span class="text-steel-muted font-normal">/</span>
+<span class="text-steel-muted font-normal">资讯</span>
+<span class="text-steel-muted font-normal">/</span>
+<span class="text-ink-white tracking-tight">美联储议息会议前瞻</span>
+</div>
+<!-- Search Bar -->
+<div class="relative w-64 ml-4">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-steel-muted" style="font-size: 16px;">search</span>
+<input class="w-full bg-card-navy border border-hairline rounded-lg pl-8 pr-8 py-1 text-label-sm font-label-sm text-ink-white placeholder-steel-muted focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container" placeholder="全局检索标的 / 研报 / 地址..." type="text"/>
+<kbd class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-label-sm text-steel-muted bg-surface-slate px-1 py-0.5 rounded border border-hairline">⌘K</kbd>
+</div>
+</div>
+<!-- Navigation Links from JSON: LIVE FEED, MACRO, DERIVATIVES -->
+<div class="hidden xl:flex items-center gap-6">
+<a class="text-steel-muted hover:text-ink-white text-label-sm font-label-sm tracking-wider uppercase transition-colors" href="#">LIVE FEED</a>
+<a class="text-ink-white border-b-2 border-primary-container pb-1 text-label-sm font-label-sm tracking-wider uppercase font-semibold" href="#">MACRO</a>
+<a class="text-steel-muted hover:text-ink-white text-label-sm font-label-sm tracking-wider uppercase transition-colors" href="#">DERIVATIVES</a>
+</div>
+<!-- Trailing Action Cluster -->
+<div class="flex items-center gap-3">
+<!-- Trade Desk Button -->
+<button class="bg-primary-container hover:bg-inverse-primary text-ink-white text-label-sm font-label-sm uppercase tracking-wider px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all">
+<span class="material-symbols-outlined" style="font-size: 15px;">candlestick_chart</span>
+<span>TRADE DESK</span>
+</button>
+<!-- Export Secondary Action -->
+<button class="border border-hairline hover:bg-card-navy text-primary text-label-sm font-label-sm uppercase tracking-wider px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 15px;">file_download</span>
+<span>EXPORT</span>
+</button>
+<div class="h-4 w-px bg-hairline mx-1"></div>
+<!-- Trailing Icons: notifications, wifi, terminal -->
+<div class="flex items-center gap-1 text-steel-muted">
+<button class="p-1.5 hover:text-ink-white hover:bg-card-navy rounded transition-colors relative" title="Notifications">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-primary-container rounded-full ring-2 ring-surface-slate"></span>
+</button>
+<button class="p-1.5 hover:text-ink-white hover:bg-card-navy rounded transition-colors" title="Link Status">
+<span class="material-symbols-outlined text-bull-green">wifi</span>
+</button>
+<button class="p-1.5 hover:text-ink-white hover:bg-card-navy rounded transition-colors" title="Institutional CLI">
+<span class="material-symbols-outlined">terminal</span>
+</button>
+</div>
+<div class="h-4 w-px bg-hairline mx-1"></div>
+<!-- User Operator Avatar Profile -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer group">
+<div class="w-7 h-7 rounded bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-label-sm text-primary group-hover:border-primary-container transition-colors">
+            OP
+          </div>
+<span class="text-label-sm font-label-sm text-ink-white hidden 2xl:inline">OP-8821</span>
+</div>
+</div>
+</header>
+<!-- ========================================== -->
+<!-- 3. MAIN DUAL-COLUMN CONTENT LAYOUT         -->
+<!-- ========================================== -->
+<main class="flex-1 p-6 max-w-[1720px] w-full mx-auto grid grid-cols-12 gap-6 items-start">
+<!-- ======================================== -->
+<!-- LEFT COLUMN: ARTICLE DETAIL (8-Col)      -->
+<!-- ======================================== -->
+<article class="col-span-12 lg:col-span-8 bg-card-navy border border-hairline rounded-xl p-6 lg:p-8 flex flex-col gap-6 shadow-none">
+<!-- Article Header & Badges -->
+<div class="flex flex-col gap-4 border-b border-hairline pb-5">
+<div class="flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2.5">
+<!-- Source Badge (12% cobalt background capsule) -->
+<span class="px-2.5 py-0.5 rounded-full bg-primary-container/15 border border-primary-container/30 text-primary font-label-sm text-label-sm tracking-wide inline-flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+                金色财经
+              </span>
+<!-- Category Tag -->
+<span class="px-2 py-0.5 rounded bg-surface-slate border border-hairline text-steel-muted font-label-sm text-label-sm uppercase">
+                深度研报
+              </span>
+<!-- Release Time (JetBrains Mono) -->
+<span class="font-mono-data text-mono-data text-steel-muted flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
+                2025-05-18 14:30:25 UTC · 3 分钟前
+              </span>
+</div>
+<!-- Header Quick Actions -->
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded hover:bg-card-navy-high text-steel-muted hover:text-ink-white transition-colors" title="加入自选研报">
+<span class="material-symbols-outlined">bookmark</span>
+</button>
+<button class="p-1.5 rounded hover:bg-card-navy-high text-steel-muted hover:text-ink-white transition-colors" title="分享">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="p-1.5 rounded hover:bg-card-navy-high text-steel-muted hover:text-ink-white transition-colors" title="原网页链接">
+<span class="material-symbols-outlined">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Main Article Title -->
+<h1 class="font-headline-lg text-headline-lg text-ink-white tracking-tight leading-snug">
+            美联储议息会议前瞻：市场预期维持利率不变，点阵图指引成关键博弈点
+          </h1>
+<!-- Metadata Summary Bar -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 rounded-lg bg-surface-slate/80 border border-hairline">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-steel-muted uppercase">作者 / 分析机构</span>
+<span class="font-mono-data text-mono-data text-ink-white font-medium flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-primary" style="font-size: 14px;">verified</span>
+                MINGCE 宏观研究组 · 首席策略师
+              </span>
+</div>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-steel-muted uppercase">预估阅读用时</span>
+<span class="font-mono-data text-mono-data text-ink-white font-medium flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-steel-muted" style="font-size: 14px;">hourglass_top</span>
+                4 min · 1,420 词
+              </span>
+</div>
+<div class="flex flex-col col-span-2 sm:col-span-1">
+<span class="text-label-sm font-label-sm text-steel-muted uppercase">高关联标的资产</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="px-1.5 py-0.5 rounded bg-card-navy text-primary font-mono-data text-label-sm border border-hairline">BTC</span>
+<span class="px-1.5 py-0.5 rounded bg-card-navy text-primary font-mono-data text-label-sm border border-hairline">ETH</span>
+<span class="px-1.5 py-0.5 rounded bg-card-navy text-steel-muted font-mono-data text-label-sm border border-hairline">NQ1!</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Article Body Paragraphs -->
+<div class="flex flex-col gap-5 text-on-surface">
+<!-- Paragraph 1 -->
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed text-justify">
+            受美国劳工统计局最新披露的核心通胀数据持续显现黏性、叠加非农就业维持稳健韧性影响，市场关于本次联邦公开市场委员会（FOMC）议息会议的政策预期已高度趋向统一。根据 CME FedWatch 指数最新多源衍生品隐含概率显示，公开市场交易员对美联储将联邦基金利率目标区间维持在 <span class="font-mono-data text-ink-white font-semibold">5.25% - 5.50%</span> 的共识概率已达 <span class="font-mono-data text-bull-green font-semibold">97.4%</span>。在此基准情形下，基准利率本身的调整已完全被现券及衍生品市场所充分定价，本次会议的核心焦点完全转向最新公布的季度经济预测摘要（SEP）以及点阵图（Dot Plot）对 2025 年内降息次数的再校准。
+          </p>
+<!-- Paragraph 2 -->
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed text-justify">
+            流动性层面的结构性变量同样受到机构流动性交易团队的极高关注。随着美联储前期宣布削减国债减持上限至 250 亿美元/月，量化紧缩（QT）步伐的边际放缓显著减轻了货币市场的融资摩擦。特别是在隔夜逆回购协议（Overnight RRP）工具结存余额趋近 4,000 亿美元临界缓冲区间后，准备金向主要商业银行体系的回流速率正在放慢。对于对美元净流动性具有极高贝塔系数的加密数字资产而言，美联储关于常备回购便利（SRF）与流动性底线水位的定性阐释，将直接决定未来二至三季度全球风险资产的杠杆空间。
+          </p>
+<!-- High-Contrast Institutional Blockquote -->
+<blockquote class="bg-card-navy-high border-l-4 border-primary-container p-4 rounded-r-lg my-2">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-container shrink-0 mt-0.5">format_quote</span>
+<div class="flex flex-col gap-1">
+<p class="font-body-lg text-ink-white font-medium italic leading-relaxed">
+                  “在量化紧缩逐渐进入尾声的过渡窗口期，降息时间表的延后不再意味着系统性冲击，反而为具备真实链上资金沉淀的主流资产提供了充裕的流动性沉淀期。”
+                </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-label-sm font-label-sm text-primary font-semibold">— MINGCE 宏观研究组</span>
+<span class="text-label-sm font-label-sm text-steel-muted">《机构季度流动性监测报告》</span>
+</div>
+</div>
+</div>
+</blockquote>
+<!-- Paragraph 3 -->
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed text-justify">
+            透视加密衍生品市场微观指标，当前主要中心化交易所的永续合约年化资金费率（Funding Rates）普遍维系在 <span class="font-mono-data text-bull-green font-semibold">+9.8% 至 +11.2%</span> 的中性偏多区间，未见极端多头轧空或散户非理性杠杆堆积现象。与此相呼应的是，全网未平仓合约总价值（Aggregate Open Interest）依然盘踞在 <span class="font-mono-data text-ink-white font-semibold">384 亿美元</span> 的历史次高水位。永续基差结构与期权波动率曲面（IV Surface）的扁平化表征明示：场内跨期套利基金与对冲机构已在现货与季度期货间构建严密的 delta 中性头寸，多空两军在即将来临的决议窗口期呈高度紧绷博弈态势。
+          </p>
+<!-- Paragraph 4 -->
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed text-justify">
+            综合策略建议：针对高频及波段做市团队，需重点防范北京时间周四凌晨 02:30 美联储主席鲍威尔新闻发布会期间关于“中性利率（R-star）上移”与“抗通胀最后阶段滞阻”措辞变动的非线性传导冲击。在此半小时窗口内，隐波偏度（Skew）存在剧烈逆转可能，建议机构交易员收窄做市挂单价差容忍度，适度降低短期方向性 Gamma 敞口，重点跟踪美债 10 年期收益率对 4.45% 关键阻力位的主动突破行为以作联动对冲。
+          </p>
+</div>
+<!-- Article Footer Tags & Interaction Bar -->
+<div class="border-t border-hairline pt-5 flex flex-wrap items-center justify-between gap-4 mt-2">
+<!-- Capsule Tags -->
+<div class="flex items-center gap-2">
+<a class="px-2.5 py-1 rounded bg-surface-slate hover:bg-card-navy-high border border-hairline text-steel-muted hover:text-ink-white font-label-sm text-label-sm transition-colors" href="#">
+              #宏观
+            </a>
+<a class="px-2.5 py-1 rounded bg-surface-slate hover:bg-card-navy-high border border-hairline text-steel-muted hover:text-ink-white font-label-sm text-label-sm transition-colors" href="#">
+              #美联储
+            </a>
+<a class="px-2.5 py-1 rounded bg-surface-slate hover:bg-card-navy-high border border-hairline text-steel-muted hover:text-ink-white font-label-sm text-label-sm transition-colors" href="#">
+              #利率
+            </a>
+</div>
+<!-- Quick Action Bar -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-slate hover:bg-card-navy-high border border-hairline text-steel-muted hover:text-ink-white font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined" style="font-size: 16px;">thumb_up</span>
+<span>赞同研报 (142)</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-slate hover:bg-card-navy-high border border-hairline text-steel-muted hover:text-ink-white font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined" style="font-size: 16px;">content_copy</span>
+<span>复制引用文本</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container/20 border border-primary-container/40 text-primary hover:bg-primary-container/30 font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined" style="font-size: 16px;">query_stats</span>
+<span>联动对应行情</span>
+</button>
+</div>
+</div>
+</article>
+<!-- ======================================== -->
+<!-- RIGHT COLUMN: SIDEBAR INTELLIGENCE (4-Col)-->
+<!-- ======================================== -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<!-- CARD 1: Sentiment Index Gauge -->
+<div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col gap-4">
+<div class="flex items-center justify-between border-b border-hairline pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-bull-green">speed</span>
+<span class="font-headline-sm text-headline-sm text-ink-white">市场情绪指标 MARKET SENTIMENT</span>
+</div>
+<span class="font-mono-data text-label-sm text-bull-green bg-bull-green/10 border border-bull-green/30 px-2 py-0.5 rounded uppercase">LIVE</span>
+</div>
+<!-- Gauge Visualization Section -->
+<div class="flex flex-col items-center py-2 relative">
+<!-- SVG Semi-circle Gauge -->
+<div class="relative w-48 h-24 overflow-hidden">
+<svg class="w-full h-full" viewbox="0 0 100 50">
+<!-- Background Arc -->
+<path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#1D2A44" stroke-linecap="round" stroke-width="8"></path>
+<!-- Gauge Segment Active (62%) -->
+<path d="M 10 50 A 40 40 0 0 1 76 22" fill="none" stroke="#00E388" stroke-linecap="round" stroke-width="8"></path>
+</svg>
+<!-- Center Hub -->
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-ink-white rounded-full border-2 border-canvas-obsidian z-10 shadow"></div>
+</div>
+<!-- Value Callout -->
+<div class="flex flex-col items-center mt-2">
+<div class="flex items-baseline gap-1.5">
+<span class="font-mono-data text-3xl font-bold text-bull-green tracking-tight">62</span>
+<span class="font-headline-sm text-headline-sm font-bold text-bull-green tracking-wide">GREED / 贪婪</span>
+</div>
+<div class="flex justify-between w-48 text-[10px] font-mono-data text-steel-muted mt-1 px-1">
+<span>0 极度恐慌</span>
+<span>50 中性</span>
+<span>100 极度贪婪</span>
+</div>
+</div>
+</div>
+<!-- Comparative Matrix -->
+<div class="grid grid-cols-2 gap-2 pt-2 border-t border-hairline">
+<div class="bg-surface-slate p-2.5 rounded border border-hairline flex flex-col">
+<span class="text-label-sm font-label-sm text-steel-muted">昨日读数 (YDAY)</span>
+<div class="flex items-center justify-between mt-1">
+<span class="font-mono-data text-mono-data text-ink-white font-semibold">58</span>
+<span class="text-[10px] font-label-sm text-bull-green bg-bull-green/10 px-1 rounded">中性偏多</span>
+</div>
+</div>
+<div class="bg-surface-slate p-2.5 rounded border border-hairline flex flex-col">
+<span class="text-label-sm font-label-sm text-steel-muted">上周均值 (LAST WK)</span>
+<div class="flex items-center justify-between mt-1">
+<span class="font-mono-data text-mono-data text-steel-muted font-semibold">52</span>
+<span class="text-[10px] font-label-sm text-steel-muted bg-surface-bright/20 px-1 rounded">完全中性</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 2: Related Briefings (4 Items) -->
+<div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col gap-3">
+<div class="flex items-center justify-between border-b border-hairline pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">feed</span>
+<span class="font-headline-sm text-headline-sm text-ink-white">相关阅读 RELATED BRIEFINGS</span>
+</div>
+<a class="font-label-sm text-label-sm text-primary hover:underline" href="#">查看全部</a>
+</div>
+<!-- Briefing List -->
+<div class="flex flex-col divide-y divide-hairline">
+<!-- Item 1 -->
+<a class="py-2.5 first:pt-0 last:pb-0 group block transition-colors" href="#">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-1.5 py-0.2 rounded bg-surface-slate border border-hairline text-steel-muted font-mono-data text-[10px]">#宏观</span>
+<span class="font-mono-data text-label-sm text-steel-muted">15分钟前</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                美国 4 月 CPI 年率录得 3.4%，核心通胀降温态势符合预期
+              </p>
+</a>
+<!-- Item 2 -->
+<a class="py-2.5 group block transition-colors" href="#">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-1.5 py-0.2 rounded bg-surface-slate border border-hairline text-steel-muted font-mono-data text-[10px]">#央行</span>
+<span class="font-mono-data text-label-sm text-steel-muted">42分钟前</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                欧央行行长拉加德发表鹰派讲话：降息路径需依赖逐次会议数据
+              </p>
+</a>
+<!-- Item 3 -->
+<a class="py-2.5 group block transition-colors" href="#">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-1.5 py-0.2 rounded bg-surface-slate border border-hairline text-steel-muted font-mono-data text-[10px]">#链上</span>
+<span class="font-mono-data text-label-sm text-steel-muted">1小时前</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                巨鲸实体向托管地址转移 3,200 BTC，避险头寸有所上升
+              </p>
+</a>
+<!-- Item 4 -->
+<a class="py-2.5 last:pb-0 group block transition-colors" href="#">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-1.5 py-0.2 rounded bg-surface-slate border border-hairline text-steel-muted font-mono-data text-[10px]">#衍生品</span>
+<span class="font-mono-data text-label-sm text-steel-muted">2小时前</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                衍生品流动性深度报告：主流交易对隐波偏度回归历史均值
+              </p>
+</a>
+</div>
+</div>
+<!-- CARD 3: Related Asset Radar -->
+<div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col gap-3">
+<div class="flex items-center justify-between border-b border-hairline pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">radar</span>
+<span class="font-headline-sm text-headline-sm text-ink-white">关联资产异动 RELATED ASSET RADAR</span>
+</div>
+<span class="text-label-sm font-label-sm text-steel-muted">REAL-TIME</span>
+</div>
+<!-- Asset Pair 1: BTC/USDT -->
+<div class="p-3 rounded-lg bg-surface-slate border border-hairline flex items-center justify-between hover:border-primary-container transition-colors cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-amber-warn/10 text-amber-warn border border-amber-warn/30 flex items-center justify-center font-bold font-mono-data text-xs">
+                ₿
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-white font-bold">BTC/USDT</span>
+<span class="text-[10px] font-label-sm text-steel-muted bg-card-navy px-1 rounded">BINANCE</span>
+</div>
+<span class="font-mono-data text-mono-data text-ink-white font-semibold">$67,842.13</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono-data text-mono-data text-bull-green font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined" style="font-size: 14px;">arrow_drop_up</span>
+                +5.24%
+              </span>
+<!-- Sparkline Mini SVG Trend -->
+<svg class="w-16 h-4 stroke-bull-green fill-none mt-1" viewbox="0 0 60 16">
+<polyline points="0,14 12,12 24,15 36,8 48,10 60,2" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></polyline>
+</svg>
+</div>
+</div>
+<!-- Asset Pair 2: ETH/USDT -->
+<div class="p-3 rounded-lg bg-surface-slate border border-hairline flex items-center justify-between hover:border-primary-container transition-colors cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 text-primary border border-primary/30 flex items-center justify-center font-bold font-mono-data text-xs">
+                Ξ
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-white font-bold">ETH/USDT</span>
+<span class="text-[10px] font-label-sm text-steel-muted bg-card-navy px-1 rounded">BINANCE</span>
+</div>
+<span class="font-mono-data text-mono-data text-ink-white font-semibold">$3,540.20</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono-data text-mono-data text-bull-green font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined" style="font-size: 14px;">arrow_drop_up</span>
+                +2.15%
+              </span>
+<!-- Sparkline Mini SVG Trend -->
+<svg class="w-16 h-4 stroke-bull-green fill-none mt-1" viewbox="0 0 60 16">
+<polyline points="0,12 15,10 30,13 42,6 50,8 60,3" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></polyline>
+</svg>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1 text-label-sm font-label-sm text-steel-muted">
+<span class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+              WS FEED ACTIVE
+            </span>
+<span>24H VOL $48.2B</span>
+</div>
+</div>
+</div>
+</main>
+<!-- ========================================== -->
+<!-- 4. BOTTOM FIXED/STICKY TERMINAL STATUS BAR -->
+<!-- ========================================== -->
+<footer class="h-8 w-full bg-surface-slate border-t border-hairline px-4 flex items-center justify-between text-label-sm font-label-sm text-steel-muted select-none mt-auto">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1 text-bull-green">
+<span class="material-symbols-outlined" style="font-size: 14px;">lock</span>
+<span>AES-256 GCM 机构级通道</span>
+</span>
+<span class="hidden sm:inline">|</span>
+<span class="hidden sm:inline">节点延迟: <span class="font-mono-data text-bull-green">12ms</span></span>
+<span class="hidden md:inline">|</span>
+<span class="hidden md:inline font-mono-data">CLUSTER: HK-ISLAND-NODE-03</span>
+</div>
+<div class="flex items-center gap-4 font-mono-data">
+<span>MEM: 32% (2.1GB)</span>
+<span>TPS: 14,290</span>
+<span class="text-ink-white bg-card-navy px-1.5 py-0.5 rounded border border-hairline">UTC 14:33:40</span>
+</div>
+</footer>
+</div>
+</body></html>

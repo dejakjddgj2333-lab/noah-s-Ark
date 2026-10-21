@@ -1,6 +1,6 @@
 #!/bin/bash
 # 服务器端部署脚本:GitHub Actions SSH 进来执行
-# 用法: bash deploy/deploy.sh [backend|admin|all...]
+# 用法: bash deploy/deploy.sh [backend|admin|pc|all...]
 # 不传参或传 all = 全量;否则只部署指定目标
 set -e
 
@@ -8,6 +8,7 @@ set -e
 REPO=/www/wwwroot/hk/repo                      # 仓库 clone 位置
 APP_DIR=/www/wwwroot/shipapi.bdxapi.com        # 后端运行目录
 ADMIN_WEB=/www/wwwroot/hk/admin                # 后台静态站点发布目录（宝塔站点根）
+PC_WEB=/www/wwwroot/pc.bdxapi.com              # PC 终端静态站点发布目录（宝塔站点根）
 
 echo "==> git pull"
 cd "$REPO"
@@ -43,15 +44,32 @@ deploy_admin() {
   find "$ADMIN_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
 }
 
+deploy_pc() {
+  if [ ! -d "$REPO/web-terminal" ]; then
+    echo "==> PC 终端:web-terminal/ 尚不存在,跳过"
+    return
+  fi
+  echo "==> PC 终端:build + 发布"
+  cd "$REPO/web-terminal"
+  npm ci
+  npm run build
+  rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' "$REPO/web-terminal/dist/" "$PC_WEB/"
+  # 同 deploy_admin: 重置属主/权限, .user.ini 排除
+  find "$PC_WEB" ! -name '.user.ini' -exec chown www:www {} +
+  find "$PC_WEB" -type d -exec chmod 755 {} \;
+  find "$PC_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
+}
+
 TARGETS="$*"
 if [ -z "$TARGETS" ] || [ "$TARGETS" = "all" ]; then
-  TARGETS="backend admin"
+  TARGETS="backend admin pc"
 fi
 
 for t in $TARGETS; do
   case "$t" in
     backend)  deploy_backend ;;
     admin)    deploy_admin ;;
+    pc)       deploy_pc ;;
     *) echo "未知目标: $t" >&2; exit 1 ;;
   esac
 done
