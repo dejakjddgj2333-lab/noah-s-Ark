@@ -3,6 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   { path: '/login', component: () => import('../views/Login.vue'), meta: { public: true, title: '登录' } },
   { path: '/register', component: () => import('../views/Register.vue'), meta: { public: true, title: '注册' } },
+  { path: '/terms', component: () => import('../views/Legal.vue'), meta: { public: true, kind: 'terms', title: '服务条款' } },
+  { path: '/privacy', component: () => import('../views/Legal.vue'), meta: { public: true, kind: 'privacy', title: '隐私政策' } },
+  { path: '/disclosure', component: () => import('../views/Legal.vue'), meta: { public: true, kind: 'disclosure', title: '监管披露' } },
   {
     path: '/',
     component: () => import('../layout/TerminalLayout.vue'),

@@ -111,7 +111,7 @@ async function submit() {
               <span class="text-label-sm font-label-sm text-steel-muted tracking-wider">MARKET INTELLIGENCE TERMINAL</span>
             </div>
             <h1 class="text-headline-lg font-headline-lg text-ink-white tracking-tight leading-snug mb-4">
-              多维行情洞察 <span class="text-primary">/</span> 机构巨鲸动向 <span class="text-primary">/</span> 实时语音纪要
+              多维行情洞察 <span class="text-primary">/</span> 机构巨鲸动向
             </h1>
             <p class="text-body-lg font-body-lg text-steel-muted leading-relaxed max-w-xl">
               专为高净值买方、宏观对冲基金和量化策略师打造的高密行情情报中枢，毫秒级解析全球流动性异动与结构性信号。
@@ -349,7 +349,7 @@ async function submit() {
             <!-- Bottom Micro Details -->
             <div class="mt-4 text-center">
               <p class="text-[11px] text-steel-muted">
-                注册即代表同意 <a class="underline hover:text-ink-white" href="#">用户协议</a> 与 <a class="underline hover:text-ink-white" href="#">隐私政策</a>
+                注册即代表同意 <router-link class="underline hover:text-ink-white" to="/terms">用户协议</router-link> 与 <router-link class="underline hover:text-ink-white" to="/privacy">隐私政策</router-link>
               </p>
               <div class="mt-1 text-[10px] font-mono-data text-steel-muted flex items-center justify-center space-x-1">
                 <span class="material-symbols-outlined text-[12px] text-bull-green">lan</span>
@@ -368,13 +368,13 @@ async function submit() {
         <span>© 2025 MINGCE Terminal Inc. All rights reserved. AES-256 GCM 机构级端到端加密传输</span>
       </div>
       <div class="flex items-center space-x-4">
-        <a class="text-steel-muted hover:text-ink-white transition-colors duration-150" href="#">服务条款</a>
-        <a class="text-steel-muted hover:text-ink-white transition-colors duration-150" href="#">隐私合规</a>
-        <a class="text-steel-muted hover:text-ink-white transition-colors duration-150" href="#">监管披露</a>
-        <a class="text-steel-muted hover:text-ink-white transition-colors duration-150 flex items-center space-x-1" href="#">
+        <router-link class="text-steel-muted hover:text-ink-white transition-colors duration-150" to="/terms">服务条款</router-link>
+        <router-link class="text-steel-muted hover:text-ink-white transition-colors duration-150" to="/privacy">隐私合规</router-link>
+        <router-link class="text-steel-muted hover:text-ink-white transition-colors duration-150" to="/disclosure">监管披露</router-link>
+        <span class="text-steel-muted flex items-center space-x-1">
           <span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
           <span>节点状态</span>
-        </a>
+        </span>
       </div>
     </footer>
   </div>

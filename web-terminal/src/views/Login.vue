@@ -9,15 +9,10 @@ const store = useUserStore()
 
 const username = ref('')
 const password = ref('')
-const totp = ref('')
 const showPassword = ref(false)
 const remember = ref(false)
 const loading = ref(false)
 const error = ref('')
-
-function onTotpInput(e) {
-  totp.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6)
-}
 
 async function submit() {
   if (!username.value || !password.value) {
@@ -75,10 +70,10 @@ async function submit() {
     <!-- Main Split Layout -->
     <main class="w-full h-screen pt-12 pb-10 flex flex-col md:flex-row">
       <!-- LEFT PANEL: Brand & Technical Context (55%) -->
-      <section class="relative w-full md:w-[55%] h-full bg-canvas-obsidian bg-terminal-grid p-8 lg:p-12 xl:p-16 flex flex-col justify-between overflow-hidden">
+      <section class="relative w-full md:w-[55%] h-full bg-canvas-obsidian bg-terminal-grid p-8 lg:p-12 xl:p-16 flex flex-col overflow-hidden">
         <div class="absolute inset-0 radial-cobalt-glow pointer-events-none"></div>
-        <!-- Top Branding Block -->
-        <div class="relative z-10 space-y-6">
+        <!-- Top Branding Block: 垂直居中, 底部指标条仍贴底 -->
+        <div class="relative z-10 flex-1 flex flex-col justify-center space-y-6">
           <div class="flex items-center space-x-3.5">
             <div class="w-11 h-11 rounded-xl bg-card-navy border border-hairline flex items-center justify-center relative overflow-hidden shadow-sm">
               <svg class="w-6 h-6 text-primary-container" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
@@ -102,8 +97,6 @@ async function submit() {
               <span>多维行情洞察</span>
               <span class="text-hairline font-normal">/</span>
               <span>机构巨鲸动向</span>
-              <span class="text-hairline font-normal">/</span>
-              <span>实时语音纪要</span>
             </p>
             <p class="text-body-md font-body-md text-steel-muted mt-2 leading-relaxed">
               专为高净值买方、宏观对冲基金和量化策略师打造的高密行情情报中枢，毫秒级解析全球流动性异动与结构性信号。
@@ -230,32 +223,6 @@ async function submit() {
                 </button>
               </div>
             </div>
-            <!-- Field 3: TOTP 2FA -->
-            <div class="space-y-1.5">
-              <div class="flex justify-between items-center">
-                <label class="block text-label-sm font-label-sm text-steel-muted uppercase tracking-wider" for="totp">
-                  谷歌验证码 (TOTP)
-                </label>
-                <span class="text-label-sm font-label-sm text-steel-muted/80">已绑定验证器必填</span>
-              </div>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel-muted">
-                  <span class="material-symbols-outlined text-[18px]">verified_user</span>
-                </div>
-                <input
-                  id="totp"
-                  :value="totp"
-                  class="w-full h-10 pl-9 pr-3 bg-surface border border-hairline rounded-lg text-ink-white placeholder-steel-muted/60 text-mono-data font-mono-data tracking-widest focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all duration-150"
-                  inputmode="numeric"
-                  maxlength="6"
-                  name="totp"
-                  pattern="[0-9]{6}"
-                  placeholder="000 000"
-                  type="text"
-                  @input="onTotpInput"
-                />
-              </div>
-            </div>
             <!-- Auxiliary Options -->
             <div class="flex items-center justify-between pt-1">
               <label class="flex items-center space-x-2 cursor-pointer select-none">
@@ -294,7 +261,7 @@ async function submit() {
         <!-- Bottom Compliance Disclaimer -->
         <div class="mt-6 text-center space-y-1">
           <p class="text-label-sm font-label-sm text-steel-muted">
-            登录即代表同意 <a class="underline hover:text-ink-white" href="#">用户协议</a> 与 <a class="underline hover:text-ink-white" href="#">隐私政策</a>
+            登录即代表同意 <router-link class="underline hover:text-ink-white" to="/terms">用户协议</router-link> 与 <router-link class="underline hover:text-ink-white" to="/privacy">隐私政策</router-link>
           </p>
           <div class="flex items-center justify-center space-x-2 text-label-sm font-label-sm text-steel-muted font-mono-data">
             <span>安全接入节点:</span>
@@ -311,16 +278,16 @@ async function submit() {
         <span>© 2025 MINGCE Terminal Inc. All rights reserved. AES-256 GCM 机构级端到端加密传输</span>
       </div>
       <div class="flex items-center space-x-4">
-        <a class="hover:text-ink-white transition-colors duration-150" href="#">服务条款</a>
+        <router-link class="hover:text-ink-white transition-colors duration-150" to="/terms">服务条款</router-link>
         <span class="text-hairline">·</span>
-        <a class="hover:text-ink-white transition-colors duration-150" href="#">隐私合规</a>
+        <router-link class="hover:text-ink-white transition-colors duration-150" to="/privacy">隐私合规</router-link>
         <span class="text-hairline">·</span>
-        <a class="hover:text-ink-white transition-colors duration-150" href="#">监管披露</a>
+        <router-link class="hover:text-ink-white transition-colors duration-150" to="/disclosure">监管披露</router-link>
         <span class="text-hairline">·</span>
-        <a class="hover:text-ink-white transition-colors duration-150 flex items-center space-x-1" href="#">
+        <span class="flex items-center space-x-1">
           <span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
           <span>节点状态</span>
-        </a>
+        </span>
       </div>
     </footer>
   </div>
