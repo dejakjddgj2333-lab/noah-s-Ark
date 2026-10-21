@@ -3,6 +3,7 @@ import { onMounted, onBeforeUnmount, ref, computed, nextTick } from 'vue'
 import { chatApi, marketApi } from '../api'
 import { useUserStore } from '../store/user'
 import { fmtTime } from '../utils/format'
+import { chatWs } from '../utils/chatWs'
 
 const store = useUserStore()
 const conversations = ref([])
@@ -13,6 +14,7 @@ const draft = ref('')
 const sending = ref(false)
 const loading = ref(true)
 const listEl = ref(null)
+const peerReadId = ref(null) // 单聊对方已读游标; null = 群聊/未加载, 不画回执
 let timer = null
 
 async function loadConversations() {
@@ -37,12 +39,33 @@ async function loadMessages(scroll = false) {
   } catch { /* ignore */ }
 }
 
+function scrollBottom() {
+  listEl.value && (listEl.value.scrollTop = listEl.value.scrollHeight)
+}
+
+// 推进已读游标到当前最大消息 id, 并清掉本地未读角标
+function doMarkRead() {
+  const c = current.value
+  if (!c) return
+  const id = messages.value.reduce((max, m) => Math.max(max, m.id || 0), 0)
+  if (!id) return
+  chatApi.markRead(c.id, id).catch(() => {})
+  c.unread_count = 0
+}
+
 async function select(c) {
   current.value = c
   searchQuery.value = ''
+  peerReadId.value = null
   await loadMessages(true)
-  chatApi.markRead(c.id).catch(() => {})
-  c.unread_count = 0
+  doMarkRead()
+  // 单聊拉对方已读游标, 用于回执双勾
+  if (c.type === 'direct') {
+    try {
+      const st = await chatApi.peerReadState(c.id)
+      if (current.value?.id === c.id) peerReadId.value = st.peer_last_read_message_id ?? null
+    } catch { peerReadId.value = null }
+  }
   try {
     const res = await chatApi.members(c.id)
     members.value = res.items || res || []
@@ -54,9 +77,16 @@ async function send() {
   if (!text || !current.value || sending.value) return
   sending.value = true
   try {
-    await chatApi.sendMessage(current.value.id, { type: 'text', content: text })
+    const out = await chatApi.sendMessage(current.value.id, { type: 'text', content: text })
     draft.value = ''
+    // 本地立即上屏 (单聊单勾), 不等 WS 回包
+    if (out && out.id != null && !messages.value.some((x) => x.id === out.id)) {
+      messages.value.push(out)
+      await nextTick()
+      scrollBottom()
+    }
     await loadMessages(true)
+    doMarkRead()
   } catch { /* ignore */ } finally {
     sending.value = false
   }
@@ -69,8 +99,55 @@ function onKeydown(e) {
   }
 }
 
-const isMine = (m) => m.sender_id != null && m.sender_id === store.user?.id
-const nameOf = (m) => m.sender_name || m.sender_username || `用户${m.sender_id ?? ''}`
+// ---------- WebSocket 实时事件 ----------
+function onWsMessage(ev) {
+  const convId = ev.conversation_id
+  const msg = ev.message
+  if (!convId || !msg || msg.id == null) return
+  const mine = msg.sender?.id != null && msg.sender?.id === store.user?.id
+  if (current.value && current.value.id === convId) {
+    // 当前房间: 追加消息并按最新消息推进已读
+    if (!messages.value.some((x) => x.id === msg.id)) {
+      const el = listEl.value
+      const nearBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 120
+      messages.value.push(msg)
+      if (nearBottom) nextTick(scrollBottom)
+    }
+    doMarkRead()
+    return
+  }
+  // 其他房间: 未读+1 并顶到最前 (自己发的消息不计未读)
+  const idx = conversations.value.findIndex((x) => x.id === convId)
+  if (idx >= 0) {
+    const c = conversations.value[idx]
+    if (!mine) c.unread_count = (c.unread_count || 0) + 1
+    c.last_message = {
+      id: msg.id,
+      msg_type: msg.msg_type,
+      content: msg.content,
+      sender_name: msg.sender?.nickname || msg.sender?.username || '',
+      created_at: msg.created_at,
+      is_mine: mine,
+      read: null,
+    }
+    conversations.value.splice(idx, 1)
+    conversations.value.unshift(c)
+  } else {
+    loadConversations() // 未知会话 (新会话), 重新拉列表
+  }
+}
+
+function onWsRead(ev) {
+  if (!current.value || ev.conversation_id !== current.value.id) return
+  const id = Number(ev.message_id)
+  if (!isNaN(id) && (peerReadId.value == null || id > peerReadId.value)) peerReadId.value = id
+}
+
+const isMine = (m) => m.sender?.id != null && m.sender?.id === store.user?.id
+const nameOf = (m) =>
+  m.sender?.nickname ||
+  m.sender?.username ||
+  (isMine(m) ? store.user?.nickname || store.user?.username || '我' : `用户${m.sender?.id ?? ''}`)
 const avatarOf = (name) => (name || 'U').slice(0, 2).toUpperCase()
 const timeOf = (m) => fmtTime(m.created_at ? new Date(m.created_at).getTime() : null)
 const memberName = (m) => m.nickname || m.username || `用户${m.user_id ?? m.id ?? ''}`
@@ -176,9 +253,16 @@ function setMemberFilter(f) {
 
 onMounted(() => {
   loadConversations()
-  timer = setInterval(loadMessages, 5000)
+  chatWs.connect()
+  chatWs.on('message', onWsMessage)
+  chatWs.on('read', onWsRead)
+  timer = setInterval(loadMessages, 5000) // WS 之外的兜底轮询
 })
-onBeforeUnmount(() => clearInterval(timer))
+onBeforeUnmount(() => {
+  clearInterval(timer)
+  chatWs.off('message', onWsMessage)
+  chatWs.off('read', onWsRead)
+})
 </script>
 
 <template>
@@ -246,7 +330,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <span class="material-symbols-outlined text-[15px] text-steel-muted" title="加密通道">lock</span>
         </div>
         <div class="flex justify-between text-[10px] font-mono-data text-steel-muted">
-          <span>轮询同步: 5s</span>
+          <span>WS 实时 · 5s 轮询兜底</span>
           <span class="text-bull-green">SYNCED</span>
         </div>
       </div>
@@ -262,7 +346,7 @@ onBeforeUnmount(() => clearInterval(timer))
             <h2 class="font-headline-sm text-headline-sm text-ink-white truncate">{{ current ? (current.title || current.name || `会话 ${current.id}`) : '聊天室' }}</h2>
           </div>
           <span class="text-hairline">|</span>
-          <p class="text-xs text-steel-muted truncate max-w-md">实时轮询 · 5s 间隔 · {{ messages.length }} 条消息</p>
+          <p class="text-xs text-steel-muted truncate max-w-md">WebSocket 实时 · {{ messages.length }} 条消息</p>
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -326,6 +410,13 @@ onBeforeUnmount(() => clearInterval(timer))
             <div class="flex flex-col items-end max-w-2xl min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-steel-muted font-mono-data text-[11px]">{{ timeOf(m) }}</span>
+                <!-- 单聊已读回执: 已读双勾(青绿) / 未读单勾 -->
+                <span
+                  v-if="peerReadId != null && m.id != null"
+                  class="material-symbols-outlined text-[14px] leading-none"
+                  :class="m.id <= peerReadId ? 'text-[#00E388]' : 'text-steel-muted'"
+                  :title="m.id <= peerReadId ? '已读' : '已送达'"
+                >{{ m.id <= peerReadId ? 'done_all' : 'done' }}</span>
                 <span class="font-headline-sm text-xs text-primary font-semibold">{{ nameOf(m) }} (我)</span>
               </div>
               <div class="bg-primary-container/20 border border-primary-container/40 rounded-lg p-3 text-xs text-ink-white leading-relaxed shadow-sm whitespace-pre-wrap break-words">
@@ -500,7 +591,7 @@ onBeforeUnmount(() => clearInterval(timer))
         </div>
         <div class="flex justify-between items-center">
           <span>同步状态:</span>
-          <span class="text-bull-green">POLLING 5s</span>
+          <span class="text-bull-green">WS LIVE</span>
         </div>
       </div>
     </aside>

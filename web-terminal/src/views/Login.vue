@@ -188,7 +188,7 @@ async function submit() {
                   autocomplete="username"
                   class="w-full h-10 pl-9 pr-3 bg-surface border border-hairline rounded-lg text-ink-white placeholder-steel-muted/60 text-body-md font-body-md focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all duration-150"
                   name="username"
-                  placeholder="name@institution.com 或 ID"
+                  placeholder="请输入账号"
                   required
                   type="text"
                 />

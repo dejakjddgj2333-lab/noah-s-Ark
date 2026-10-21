@@ -9,6 +9,7 @@ export default defineConfig({
       '/api': {
         target: 'http://shipapi.bdxapi.com',
         changeOrigin: true,
+        ws: true, // 聊天 WebSocket 走同一代理
       },
     },
   },

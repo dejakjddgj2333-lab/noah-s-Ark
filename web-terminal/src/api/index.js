@@ -71,7 +71,12 @@ export const chatApi = {
     api.get(`/chat/conversations/${conversationId}/messages`, { params }),
   sendMessage: (conversationId, data) =>
     api.post(`/chat/conversations/${conversationId}/messages`, data),
-  markRead: (conversationId) => api.post(`/chat/conversations/${conversationId}/read`),
+  // 已读游标只增不减, 必须传 message_id
+  markRead: (conversationId, messageId) =>
+    api.post(`/chat/conversations/${conversationId}/read`, { message_id: messageId }),
+  // 单聊对方已读游标; 群聊返回 {peer_last_read_message_id: null}
+  peerReadState: (conversationId) =>
+    api.get(`/chat/conversations/${conversationId}/read-state`),
   members: (conversationId) => api.get(`/chat/conversations/${conversationId}/members`),
   friendsOnline: () => api.get('/chat/friends/online'),
 }
@@ -93,12 +98,20 @@ export const inviteApi = {
   me: () => api.get('/invite/me'),
 }
 export const settlementApi = {
-  commissionsSummary: () => api.get('/settlements/commissions/summary'),
-  commissions: (params = {}) => api.get('/settlements/commissions', { params }),
-  accountLogs: (params = {}) => api.get('/settlements/account/logs', { params }),
+  // settlements router 无 prefix, 真实路径如下 (旧 /settlements/... 全 404)
+  commissionsSummary: () => api.get('/commissions/summary'),
+  commissions: (params = {}) => api.get('/commissions', { params }),
+  accountLogs: (params = {}) => api.get('/account/logs', { params }),
 }
 
-// ---------- 账户 ----------
+// ---------- 账户 (双账户余额 / 收益转本金) ----------
 export const accountApi = {
+  depositAccount: () => api.get('/deposit/account'),
   convertQuote: (params) => api.get('/account/convert/quote', { params }),
+  convert: (data) => api.post('/account/convert', data),
+}
+
+// ---------- VIP ----------
+export const vipApi = {
+  me: () => api.get('/vip/me'),
 }

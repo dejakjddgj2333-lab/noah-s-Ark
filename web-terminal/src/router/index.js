@@ -22,6 +22,8 @@ const routes = [
       { path: 'news/:id', component: () => import('../views/NewsDetail.vue'), meta: { title: '资讯详情' } },
       { path: 'chat', component: () => import('../views/Chat.vue'), meta: { title: '聊天室' } },
       { path: 'assets', component: () => import('../views/Assets.vue'), meta: { title: '资产理财' } },
+      { path: 'deposit', component: () => import('../views/Deposit.vue'), meta: { title: '充值' } },
+      { path: 'withdraw', component: () => import('../views/Withdraw.vue'), meta: { title: '提现' } },
       { path: 'profile', component: () => import('../views/Profile.vue'), meta: { title: '个人中心' } },
     ],
   },

@@ -246,6 +246,14 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
             </button>
           </div>
         </div>
+        <button class="hidden sm:flex items-center gap-1 px-3 py-1 bg-bull-green/90 hover:bg-bull-green text-canvas-obsidian font-label-sm text-label-sm font-semibold rounded transition-all duration-150" @click="router.push('/deposit')" title="充值">
+          <span class="material-symbols-outlined text-[14px]">south</span>
+          <span>充值</span>
+        </button>
+        <button class="hidden sm:flex items-center gap-1 px-3 py-1 bg-card-navy hover:bg-card-navy-high text-ink-white font-label-sm text-label-sm border border-hairline hover:border-amber-warn/60 rounded transition-all duration-150" @click="router.push('/withdraw')" title="提现">
+          <span class="material-symbols-outlined text-[14px]">north</span>
+          <span>提现</span>
+        </button>
         <button class="hidden sm:flex items-center gap-1 px-3 py-1 bg-card-navy hover:bg-card-navy-high text-primary-fixed-dim font-label-sm text-label-sm border border-hairline hover:border-primary-container rounded transition-all duration-150" @click="logout" title="退出登录">
           <span class="material-symbols-outlined text-[14px]">logout</span>
           <span>断开终端</span>

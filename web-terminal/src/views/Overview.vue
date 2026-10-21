@@ -47,7 +47,7 @@ const filteredGainers = computed(() => {
     return gainers.value.filter((t) => /AI|DEFI/i.test(COIN_TAGS[coinOf(t.instId)] || ''))
   }
   if (gainerTab.value === 'new') {
-    return [...allRows.value].sort((a, b) => Number(a.volCcy24h) - Number(b.volCcy24h)).slice(0, 6)
+    return [...allRows.value].sort((a, b) => Number(a.volCcy24h) - Number(b.volCcy24h)).slice(0, 10)
   }
   return gainers.value
 })
@@ -303,7 +303,7 @@ async function load() {
         .filter((t) => t.instId.endsWith('-USDT'))
         .sort((a, b) => Number(b.volCcy24h) - Number(a.volCcy24h))
         .slice(0, 30)
-      gainers.value = [...rows].sort((a, b) => pct(b) - pct(a)).slice(0, 6)
+      gainers.value = [...rows].sort((a, b) => pct(b) - pct(a)).slice(0, 10)
       allRows.value = rows
       // 每个上榜币拉 24 根 1H 收盘做 sparkline
       const results = await Promise.allSettled(
@@ -335,7 +335,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 <template>
   <div v-if="loading" class="text-steel-muted font-mono-data text-body-md py-space-xl">数据加载中…</div>
-  <div v-else class="flex flex-col gap-space-lg">
+  <div v-else class="flex flex-col gap-space-lg min-h-[calc(100vh-56px-72px)]">
     <!-- ROW 1: 4 STATS CARDS -->
     <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
       <!-- Card 1: 全网总市值 -->
@@ -431,8 +431,8 @@ onBeforeUnmount(() => clearInterval(timer))
       </div>
     </section>
 
-    <!-- ROW 2: 涨幅榜 (7) + BTC 迷你 K 线 (5) -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+    <!-- ROW 2: 涨幅榜 (7) + BTC 迷你 K 线 (5), flex-1 撑满剩余视口高度 -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter flex-1">
       <!-- TOP GAINERS TABLE -->
       <div class="lg:col-span-7 bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between">
         <div>
@@ -498,7 +498,7 @@ onBeforeUnmount(() => clearInterval(timer))
           </div>
         </div>
         <div class="pt-3 border-t border-hairline flex items-center justify-between text-[11px] font-mono-data text-steel-muted">
-          <span>展示 TOP 6 · 按 24H 涨跌幅排序 (USDT 现货)</span>
+          <span>展示 TOP 10 · 按 24H 涨跌幅排序 (USDT 现货)</span>
           <button class="hover:text-primary-fixed-dim transition-colors flex items-center gap-0.5 text-ink-white" @click="router.push('/market')">
             <span>进入全维行情矩阵</span>
             <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -508,7 +508,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
       <!-- BTC/USDT MINI K-LINE -->
       <div class="lg:col-span-5 bg-card-navy border border-hairline rounded-xl p-space-md flex flex-col justify-between">
-        <div>
+        <div class="flex flex-col flex-1 min-h-0">
           <div class="flex items-start justify-between pb-2.5 border-b border-hairline">
             <div>
               <div class="flex items-center gap-2">
@@ -537,7 +537,7 @@ onBeforeUnmount(() => clearInterval(timer))
             <div class="text-right">资金率: <span :class="funding != null ? (funding >= 0 ? 'text-bull-green' : 'text-bear-red') : 'text-steel-muted'">{{ funding != null ? fmtPct(funding, 4) : '--' }}</span></div>
           </div>
           <!-- K 线图 -->
-          <div class="relative w-full h-44 bg-surface-slate/80 rounded border border-hairline mt-3 overflow-hidden p-2 flex flex-col justify-between">
+          <div class="relative w-full flex-1 min-h-44 bg-surface-slate/80 rounded border border-hairline mt-3 overflow-hidden p-2 flex flex-col justify-between">
             <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
               <div class="border-b border-dashed border-steel-muted h-0 w-full"></div>
               <div class="border-b border-dashed border-steel-muted h-0 w-full"></div>
@@ -548,7 +548,9 @@ onBeforeUnmount(() => clearInterval(timer))
               <span class="text-primary-fixed-dim flex items-center gap-1"><span class="w-2 h-0.5 bg-primary-container"></span> MA7: {{ ma7Last != null ? fmtPrice(ma7Last) : '--' }}</span>
               <span class="text-amber-warn flex items-center gap-1"><span class="w-2 h-0.5 bg-amber-warn"></span> MA25: {{ ma25Last != null ? fmtPrice(ma25Last) : '--' }}</span>
             </div>
-            <EChart :option="btcChartOption" height="132px" />
+            <div class="flex-1 min-h-0">
+              <EChart :option="btcChartOption" height="100%" />
+            </div>
           </div>
         </div>
         <!-- 盘口微件 -->

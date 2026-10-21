@@ -3,7 +3,7 @@
 主源: Hyperliquid 官方 WS trades 频道 (BTC/ETH/SOL/XRP/DOGE).
 备源: Binance 合约 aggTrade WS — HL 连续失败时自动启用, 恢复后停用.
 
-过滤 >= $300K 的大额单, 视为合约巨鲸异动. 内存环形缓冲 (最新 100 条),
+过滤 >= $100K 的大额单, 视为合约巨鲸异动. 内存环形缓冲 (最新 100 条),
 接口直接读内存. /whale-status 暴露连接状态便于排障.
 命中订阅 (hk_whale_subscriptions) 的大额单会异步 fan-out APNs 推送.
 """
@@ -20,7 +20,7 @@ import websockets
 logger = logging.getLogger(__name__)
 
 _COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
-_MIN_USD = 300_000  # 大额阈值
+_MIN_USD = 100_000  # 大额阈值 (展示用; APNs 推送按订阅各自 min_usd 过滤, 默认 $500K 不受影响)
 _PUSH_COOLDOWN_SEC = 300  # 同用户同币种推送冷却, 防刷屏
 
 _buf: deque[dict] = deque(maxlen=100)  # 最新在前
@@ -93,6 +93,7 @@ def _push(source: str, symbol: str, side: str, usd: float, ts: int) -> None:
         "side": side,
         "positionSize": round(usd, 2),
         "time": ts,
+        "source": source,
         "user": "HL 大户" if source == "hl" else "BN 大户",
     }
     _buf.appendleft(alert)
