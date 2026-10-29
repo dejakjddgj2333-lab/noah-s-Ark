@@ -6,6 +6,8 @@ export const authApi = {
     api.post('/auth/login', { username, password, device_name: 'Web 终端', platform: 'web' }),
   register: (data) => api.post('/auth/register', data),
   sendEmailCode: (email, purpose = 'register') => api.post('/auth/send-email-code', { email, purpose }),
+  resetPassword: (email, code, new_password) =>
+    api.post('/auth/reset-password', { email, code, new_password }),
   me: () => api.get('/auth/me'),
   changePassword: (old_password, new_password) =>
     api.post('/auth/change-password', { old_password, new_password }),

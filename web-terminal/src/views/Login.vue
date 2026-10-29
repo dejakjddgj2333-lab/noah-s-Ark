@@ -211,9 +211,9 @@ async function submit() {
                 <input v-model="remember" class="w-4 h-4 rounded bg-surface border-hairline text-primary-container focus:ring-primary-container focus:ring-offset-0 focus:ring-1 bg-clip-border cursor-pointer" type="checkbox" />
                 <span class="text-label-sm font-label-sm text-steel-muted">记住当前终端 (30天)</span>
               </label>
-              <a class="text-label-sm font-label-sm text-primary hover:underline hover:text-ink-white transition-colors duration-150" href="#">
+              <router-link class="text-label-sm font-label-sm text-primary hover:underline hover:text-ink-white transition-colors duration-150" to="/forgot-password">
                 忘记密码?
-              </a>
+              </router-link>
             </div>
             <!-- Error -->
             <div v-if="error" class="text-bear-red text-label-sm font-label-sm flex items-center space-x-1.5">
