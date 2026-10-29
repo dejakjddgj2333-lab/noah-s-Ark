@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // 手机浏览器访问 PC 域名 -> 跳移动端
+      (function () {
+        var mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent)
+        if (mobile && location.hostname === 'mingcevip.com') location.replace('https://m.mingcevip.com/')
+      })()
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>明策 MINGCE 终端</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-slate': '#0D1528',
+              'steel-muted': '#9EA0B2',
+              'inverse-primary': '#104aef',
+              'error-container': '#93000a',
+              'on-primary-fixed': '#001355',
+              'on-background': '#e2e1ef',
+              outline: '#8e90a2',
+              'surface-container': '#1d1f29',
+              'secondary-fixed': '#dae2ff',
+              'inverse-on-surface': '#2e303a',
+              'card-navy': '#121D34',
+              background: '#11131c',
+              'on-secondary-container': '#98b3ff',
+              'on-tertiary-fixed-variant': '#822800',
+              'surface-tint': '#b8c3ff',
+              'on-surface': '#e2e1ef',
+              hairline: '#34415E',
+              'amber-warn': '#F7B733',
+              'on-tertiary': '#5c1a00',
+              'primary-fixed': '#dde1ff',
+              'canvas-obsidian': '#070D1C',
+              'surface-container-lowest': '#0c0e17',
+              'primary-container': '#2e5cff',
+              'on-tertiary-container': '#ffeee9',
+              'primary-fixed-dim': '#b8c3ff',
+              'on-error-container': '#ffdad6',
+              'on-error': '#690005',
+              'on-secondary-fixed-variant': '#164197',
+              surface: '#11131c',
+              'surface-bright': '#373943',
+              'on-secondary': '#002b73',
+              error: '#ffb4ab',
+              'tertiary-container': '#c44100',
+              'surface-container-highest': '#33343e',
+              'outline-variant': '#434656',
+              tertiary: '#ffb59b',
+              'on-tertiary-fixed': '#380d00',
+              'surface-variant': '#33343e',
+              'surface-container-low': '#191b24',
+              'surface-dim': '#11131c',
+              'surface-container-high': '#282933',
+              'on-secondary-fixed': '#001848',
+              'on-primary-fixed-variant': '#0035bd',
+              'on-surface-variant': '#c4c5d9',
+              'on-primary': '#002487',
+              'secondary-fixed-dim': '#b2c5ff',
+              secondary: '#b2c5ff',
+              'bull-green': '#00E388',
+              'on-primary-container': '#f0f0ff',
+              'ink-white': '#F0F0FF',
+              'tertiary-fixed': '#ffdbcf',
+              'card-navy-high': '#1A2742',
+              'inverse-surface': '#e2e1ef',
+              primary: '#b8c3ff',
+              'tertiary-fixed-dim': '#ffb59b',
+              'bear-red': '#FF5F6D',
+            },
+            borderRadius: { DEFAULT: '0.125rem', lg: '0.25rem', xl: '0.5rem', full: '0.75rem' },
+            spacing: { 'space-xs': '4px', margin: '24px', 'space-xl': '32px', 'space-lg': '24px', 'space-sm': '8px', gutter: '16px', 'space-md': '16px' },
+            fontFamily: {
+              'label-sm': ['JetBrains Mono'],
+              'headline-sm': ['Space Grotesk'],
+              'headline-md': ['Space Grotesk'],
+              'headline-lg': ['Space Grotesk'],
+              'body-md': ['Inter'],
+              'body-lg': ['Inter'],
+              'mono-data': ['JetBrains Mono'],
+            },
+            fontSize: {
+              'label-sm': ['11px', { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' }],
+              'headline-sm': ['14px', { lineHeight: '20px', fontWeight: '600' }],
+              'headline-md': ['18px', { lineHeight: '24px', letterSpacing: '-0.01em', fontWeight: '600' }],
+              'headline-lg': ['24px', { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '700' }],
+              'body-md': ['13px', { lineHeight: '1.5', fontWeight: '400' }],
+              'body-lg': ['14px', { lineHeight: '1.5', fontWeight: '400' }],
+              'mono-data': ['13px', { lineHeight: '1.4', fontWeight: '500' }],
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+      .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      .animate-indicator { animation: pulse-subtle 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -165,6 +166,8 @@ class _McShellState extends State<McShell> {
     links.getInitialLink().then(InviteLinkStore.instance.handleUri);
     _linkSub = links.uriLinkStream.listen(InviteLinkStore.instance.handleUri);
     InviteLinkStore.instance.onCode.listen(_onInviteCode);
+    // Web 端兜底: app_links 在 Web 不一定投递, 直接读当前 URL (?invite=CODE)
+    if (kIsWeb) InviteLinkStore.instance.handleUri(Uri.base);
   }
 
   void _onInviteCode(String code) {

@@ -1,6 +1,6 @@
 #!/bin/bash
 # 服务器端部署脚本:GitHub Actions SSH 进来执行
-# 用法: bash deploy/deploy.sh [backend|admin|all...]
+# 用法: bash deploy/deploy.sh [backend|admin|pc|all...]
 # 不传参或传 all = 全量;否则只部署指定目标
 set -e
 
@@ -8,6 +8,9 @@ set -e
 REPO=/www/wwwroot/hk/repo                      # 仓库 clone 位置
 APP_DIR=/www/wwwroot/shipapi.bdxapi.com        # 后端运行目录
 ADMIN_WEB=/www/wwwroot/hk/admin                # 后台静态站点发布目录（宝塔站点根）
+PC_WEB=/www/wwwroot/pc.bdxapi.com              # PC 终端静态站点发布目录（宝塔站点根）
+PC_WEB2=/www/wwwroot/mingcevip.com             # PC 终端新域名站点根 (与 PC_WEB 同一份产物)
+LANDING_WEB=/www/wwwroot/app.mingcevip.com     # App 邀请落地页静态站点发布目录（宝塔站点根）
 
 echo "==> git pull"
 cd "$REPO"
@@ -43,15 +46,52 @@ deploy_admin() {
   find "$ADMIN_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
 }
 
+deploy_pc() {
+  if [ ! -d "$REPO/web-terminal" ]; then
+    echo "==> PC 终端:web-terminal/ 尚不存在,跳过"
+    return
+  fi
+  echo "==> PC 终端:build + 发布"
+  cd "$REPO/web-terminal"
+  npm ci
+  npm run build
+  rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' "$REPO/web-terminal/dist/" "$PC_WEB/"
+  # 新域名 mingcevip.com 指向同一份 PC 终端产物
+  if [ -d "$PC_WEB2" ]; then
+    rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' "$REPO/web-terminal/dist/" "$PC_WEB2/"
+  fi
+  # 同 deploy_admin: 重置属主/权限, .user.ini 排除
+  for d in "$PC_WEB" "$PC_WEB2"; do
+    [ -d "$d" ] || continue
+    find "$d" ! -name '.user.ini' -exec chown www:www {} +
+    find "$d" -type d -exec chmod 755 {} \;
+    find "$d" -type f ! -name '.user.ini' -exec chmod 644 {} \;
+  done
+}
+
+deploy_landing() {
+  echo "==> App 落地页:发布"
+  rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' "$REPO/server/static/" "$LANDING_WEB/"
+  # 落地页入口: invite.html -> index.html
+  cp "$LANDING_WEB/invite.html" "$LANDING_WEB/index.html"
+  # 后端根路径也直出这份落地页 (app.py invite_landing), 同步一份保持新鲜, 不重启容器
+  rsync -a --delete "$REPO/server/static/" "$APP_DIR/server/static/"
+  find "$LANDING_WEB" ! -name '.user.ini' -exec chown www:www {} +
+  find "$LANDING_WEB" -type d -exec chmod 755 {} \;
+  find "$LANDING_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;
+}
+
 TARGETS="$*"
 if [ -z "$TARGETS" ] || [ "$TARGETS" = "all" ]; then
-  TARGETS="backend admin"
+  TARGETS="backend admin pc landing"
 fi
 
 for t in $TARGETS; do
   case "$t" in
     backend)  deploy_backend ;;
     admin)    deploy_admin ;;
+    pc)       deploy_pc ;;
+    landing)  deploy_landing ;;
     *) echo "未知目标: $t" >&2; exit 1 ;;
   esac
 done

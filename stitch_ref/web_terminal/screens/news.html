@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MINGCE Terminal / 资讯 NEWS - Institutional Suite</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-lowest": "#0c0e17",
+            "surface-container": "#1d1f29",
+            "tertiary-fixed": "#ffdbcf",
+            "secondary-container": "#164197",
+            "on-secondary-fixed-variant": "#164197",
+            "inverse-on-surface": "#2e303a",
+            "on-primary-fixed-variant": "#0035bd",
+            "steel-muted": "#9EA0B2",
+            "on-primary": "#002487",
+            "ink-white": "#F0F0FF",
+            "tertiary-container": "#c44100",
+            "tertiary": "#ffb59b",
+            "amber-warn": "#F7B733",
+            "on-secondary-fixed": "#001848",
+            "on-tertiary-fixed-variant": "#822800",
+            "on-secondary": "#002b73",
+            "on-tertiary-fixed": "#380d00",
+            "on-background": "#e2e1ef",
+            "primary-fixed": "#dde1ff",
+            "surface": "#11131c",
+            "outline": "#8e90a2",
+            "bull-green": "#00E388",
+            "surface-slate": "#0D1528",
+            "secondary-fixed-dim": "#b2c5ff",
+            "on-tertiary-container": "#ffeee9",
+            "on-surface": "#e2e1ef",
+            "bear-red": "#FF5F6D",
+            "on-error": "#690005",
+            "primary-fixed-dim": "#b8c3ff",
+            "on-primary-container": "#f0f0ff",
+            "error": "#ffb4ab",
+            "hairline": "#34415E",
+            "primary": "#b8c3ff",
+            "surface-container-low": "#191b24",
+            "on-surface-variant": "#c4c5d9",
+            "surface-variant": "#33343e",
+            "surface-container-highest": "#33343e",
+            "tertiary-fixed-dim": "#ffb59b",
+            "surface-bright": "#373943",
+            "secondary-fixed": "#dae2ff",
+            "outline-variant": "#434656",
+            "on-error-container": "#ffdad6",
+            "on-secondary-container": "#98b3ff",
+            "inverse-primary": "#104aef",
+            "on-tertiary": "#5c1a00",
+            "canvas-obsidian": "#070D1C",
+            "error-container": "#93000a",
+            "surface-tint": "#b8c3ff",
+            "secondary": "#b2c5ff",
+            "surface-container-high": "#282933",
+            "primary-container": "#2e5cff",
+            "background": "#11131c",
+            "card-navy": "#121D34",
+            "surface-dim": "#11131c",
+            "on-primary-fixed": "#001355",
+            "inverse-surface": "#e2e1ef",
+            "card-navy-high": "#1A2742"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "32px",
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "gutter": "16px",
+            "space-md": "16px",
+            "space-lg": "24px",
+            "margin": "24px"
+          },
+          "fontFamily": {
+            "headline-sm": ["Space Grotesk"],
+            "headline-md": ["Space Grotesk"],
+            "body-md": ["Inter"],
+            "headline-lg": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "mono-data": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "headline-sm": [
+              "14px",
+              {
+                "lineHeight": "20px",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-md": [
+              "18px",
+              {
+                "lineHeight": "24px",
+                "letterSpacing": "-0.01em",
+                "fontWeight": "600"
+              }
+            ],
+            "body-md": [
+              "13px",
+              {
+                "lineHeight": "1.5",
+                "fontWeight": "400"
+              }
+            ],
+            "headline-lg": [
+              "24px",
+              {
+                "lineHeight": "32px",
+                "letterSpacing": "-0.02em",
+                "fontWeight": "700"
+              }
+            ],
+            "body-lg": [
+              "14px",
+              {
+                "lineHeight": "1.5",
+                "fontWeight": "400"
+              }
+            ],
+            "mono-data": [
+              "13px",
+              {
+                "lineHeight": "1.4",
+                "fontWeight": "500"
+              }
+            ],
+            "label-sm": [
+              "11px",
+              {
+                "lineHeight": "16px",
+                "letterSpacing": "0.05em",
+                "fontWeight": "600"
+              }
+            ]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* Custom terminal scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070D1C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #34415E;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2e5cff;
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-ink-white font-body-md antialiased selection:bg-primary-container selection:text-ink-white overflow-x-hidden min-h-screen flex">
+<!-- ==================== 1. SIDE NAVIGATION BAR (SHARED COMPONENT) ==================== -->
+<aside class="fixed left-0 top-0 h-screen w-60 flex flex-col justify-between py-4 px-3 bg-surface-slate border-r border-hairline z-40 select-none">
+<div class="flex flex-col gap-5">
+<!-- Terminal Brand Anchor -->
+<div class="px-2 pt-1 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container/20 border border-primary-container flex items-center justify-center text-primary-container font-mono-data font-bold text-headline-sm">
+          M
+        </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold tracking-wider text-ink-white uppercase">MINGCE TERMINAL</span>
+<span class="font-label-sm text-label-sm text-steel-muted tracking-widest text-[9px]">INSTITUTIONAL SUITE</span>
+</div>
+</div>
+<!-- Live Heartbeat / Latency CTA Badge -->
+<div class="mx-1 px-2.5 py-1.5 rounded bg-card-navy border border-hairline flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-bull-green animate-pulse"></span>
+<span class="font-mono-data text-label-sm text-steel-muted">HK-PROD-01</span>
+</div>
+<span class="font-mono-data text-label-sm text-bull-green font-semibold">12ms LATENCY</span>
+</div>
+<!-- Navigation Links (Exact Shared Component Alignment) -->
+<nav class="flex flex-col gap-0.5 mt-1">
+<!-- 0: Overview -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">dashboard</span>
+<span>Overview</span>
+</a>
+<!-- 1: Market -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">monitoring</span>
+<span>Market</span>
+</a>
+<!-- 2: Multi-dim -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">view_in_ar</span>
+<span>Multi-dim</span>
+</a>
+<!-- 3: Liquidation -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">waterfall_chart</span>
+<span>Liquidation</span>
+</a>
+<!-- 4: Whale -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">hub</span>
+<span>Whale</span>
+</a>
+<!-- 5: Funding Rates -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">percent</span>
+<span>Funding Rates</span>
+</a>
+<!-- 6: News (ACTIVE STATE LOGIC IDENTIFIED FOR NEWS INTENT) -->
+<a class="flex items-center gap-3 px-3 py-2 text-ink-white bg-card-navy border-l-2 border-primary-container font-headline-sm text-headline-sm rounded-r" href="#">
+<span class="material-symbols-outlined text-[19px] text-primary">newspaper</span>
+<span class="font-bold">News</span>
+<span class="ml-auto font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-primary-container/20 text-primary text-[10px]">LIVE</span>
+</a>
+<!-- 7: Asset Management -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">account_balance_wallet</span>
+<span>Asset Management</span>
+</a>
+<!-- 8: Settings -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-headline-sm text-headline-sm rounded" href="#">
+<span class="material-symbols-outlined text-[19px]">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<!-- SideNav System Security / Health Footer -->
+<div class="pt-3 border-t border-hairline flex flex-col gap-2">
+<div class="flex items-center justify-between px-2 text-steel-muted text-[11px] font-mono-data">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-bull-green text-[15px]">sensors</span>
+<span>Status: Optimal</span>
+</div>
+<span class="text-steel-muted/70">v4.18.2</span>
+</div>
+<div class="px-2 py-1.5 rounded bg-card-navy/60 border border-hairline/80 flex items-center justify-between text-[10px] font-mono-data text-steel-muted">
+<span>SECURITY</span>
+<span class="text-ink-white">AES-256 GCM</span>
+</div>
+</div>
+</aside>
+<!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+<div class="w-[calc(100%-15rem)] ml-60 flex flex-col min-h-screen bg-canvas-obsidian">
+<!-- ==================== 2. TOP NAV BAR (SHARED COMPONENT) ==================== -->
+<header class="sticky top-0 h-14 bg-canvas-obsidian/95 backdrop-blur-md border-b border-hairline flex items-center justify-between px-6 z-30 select-none">
+<!-- Breadcrumb + Terminal Search Bar -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 font-headline-sm text-headline-sm font-bold text-ink-white tracking-tight">
+<span class="text-steel-muted font-normal">MINGCE</span>
+<span class="text-hairline">/</span>
+<span class="text-ink-white">资讯</span>
+<span class="text-steel-muted font-mono-data font-normal text-xs ml-1 tracking-normal">NEWS FEED</span>
+</div>
+<!-- Global Search Field -->
+<div class="relative w-80">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel-muted">
+<span class="material-symbols-outlined text-[16px]">search</span>
+</div>
+<input class="w-full h-8 pl-9 pr-14 bg-surface-slate border border-hairline rounded text-xs text-ink-white placeholder:text-steel-muted/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="检索标的、宏观政策、机构研报..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+<kbd class="px-1.5 py-0.5 rounded bg-card-navy border border-hairline font-mono-data text-[10px] text-steel-muted font-medium">⌘K</kbd>
+</div>
+</div>
+</div>
+<!-- Right Control Cluster -->
+<div class="flex items-center gap-4">
+<!-- Live Streaming Status Badge -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-card-navy border border-hairline text-[11px] font-mono-data">
+<span class="w-2 h-2 rounded-full bg-bull-green animate-ping"></span>
+<span class="text-ink-white font-medium">实时推送</span>
+<span class="text-steel-muted text-[10px]">STREAMING</span>
+</div>
+<div class="h-4 w-px bg-hairline"></div>
+<!-- Language Pill Switcher -->
+<div class="flex items-center p-0.5 rounded bg-surface-slate border border-hairline text-[11px] font-mono-data">
+<button class="px-2 py-0.5 rounded bg-primary-container text-ink-white font-bold transition-all">中</button>
+<button class="px-2 py-0.5 text-steel-muted hover:text-ink-white transition-colors">EN</button>
+</div>
+<!-- System Icons -->
+<button class="relative p-1.5 rounded hover:bg-card-navy text-steel-muted hover:text-ink-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-bear-red"></span>
+</button>
+<button class="p-1.5 rounded hover:bg-card-navy text-steel-muted hover:text-ink-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">wifi</span>
+</button>
+<div class="h-4 w-px bg-hairline"></div>
+<!-- Quant Trader Account Monogram Avatar -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer group">
+<div class="w-7 h-7 rounded bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-[11px] font-bold text-primary group-hover:border-primary-container transition-colors">
+            OP
+          </div>
+<div class="flex flex-col text-left">
+<span class="font-mono-data text-label-sm text-ink-white font-semibold leading-tight">OP-8821</span>
+<span class="font-mono-data text-[9px] text-steel-muted leading-tight">QUANT DESK</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ==================== 3. CATEGORY TABS & FILTER TOOLBAR ==================== -->
+<div class="px-6 py-2 bg-surface-slate/60 border-b border-hairline flex items-center justify-between select-none">
+<!-- Underline Styled Navigation Tabs -->
+<nav class="flex items-center gap-6">
+<!-- Tab: 全部 (Active) -->
+<button class="relative py-2 flex items-center gap-2 text-ink-white font-headline-sm text-headline-sm font-bold border-b-2 border-primary-container -mb-[9px] transition-colors">
+<span>全部</span>
+<span class="font-mono-data text-label-sm px-1.5 py-0.2 rounded-full bg-primary-container/20 text-primary border border-primary-container/30">128</span>
+</button>
+<!-- Tab: 快讯 FLASH -->
+<button class="relative py-2 flex items-center gap-1.5 text-steel-muted hover:text-ink-white font-headline-sm text-headline-sm transition-colors border-b-2 border-transparent -mb-[9px]">
+<span>快讯</span>
+<span class="font-mono-data text-[10px] tracking-wider text-steel-muted/70">FLASH</span>
+</button>
+<!-- Tab: 深度 INSIGHTS -->
+<button class="relative py-2 flex items-center gap-1.5 text-steel-muted hover:text-ink-white font-headline-sm text-headline-sm transition-colors border-b-2 border-transparent -mb-[9px]">
+<span>深度</span>
+<span class="font-mono-data text-[10px] tracking-wider text-steel-muted/70">INSIGHTS</span>
+</button>
+<!-- Tab: 政策 REGULATION -->
+<button class="relative py-2 flex items-center gap-1.5 text-steel-muted hover:text-ink-white font-headline-sm text-headline-sm transition-colors border-b-2 border-transparent -mb-[9px]">
+<span>政策</span>
+<span class="font-mono-data text-[10px] tracking-wider text-steel-muted/70">REGULATION</span>
+</button>
+<!-- Tab: 项目 PROJECTS -->
+<button class="relative py-2 flex items-center gap-1.5 text-steel-muted hover:text-ink-white font-headline-sm text-headline-sm transition-colors border-b-2 border-transparent -mb-[9px]">
+<span>项目</span>
+<span class="font-mono-data text-[10px] tracking-wider text-steel-muted/70">PROJECTS</span>
+</button>
+</nav>
+<!-- Right Filtering Switches & Auto-Refresh Indicator -->
+<div class="flex items-center gap-4 text-xs font-mono-data">
+<!-- Switch 1: 仅看重点 -->
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-7 h-4 bg-card-navy peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ink-white after:border-hairline after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary-container relative border border-hairline"></div>
+<span class="text-steel-muted group-hover:text-ink-white transition-colors">仅看重点</span>
+</label>
+<!-- Switch 2: 包含巨鲸动向 -->
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-7 h-4 bg-card-navy peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ink-white after:border-hairline after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary-container relative border border-hairline"></div>
+<span class="text-steel-muted group-hover:text-ink-white transition-colors">巨鲸动向</span>
+</label>
+<!-- Switch 3: 自选标的 -->
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-7 h-4 bg-card-navy peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ink-white after:border-hairline after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary-container relative border border-hairline"></div>
+<span class="text-steel-muted group-hover:text-ink-white transition-colors">自选标的</span>
+</label>
+<div class="h-3 w-px bg-hairline"></div>
+<!-- Refresh Countdown Widget -->
+<div class="flex items-center gap-1.5 text-steel-muted/80 text-[11px]">
+<span class="material-symbols-outlined text-[14px] text-bull-green animate-spin" style="animation-duration: 8s;">sync</span>
+<span>每 10 秒刷新 · <span class="text-ink-white font-mono-data">06s</span></span>
+</div>
+</div>
+</div>
+<!-- ==================== 4. MAIN BENTO CANVAS (8:4 ASYMMETRIC GRID) ==================== -->
+<main class="p-6 flex-1 grid grid-cols-12 gap-6">
+<!-- ==================== LEFT COLUMN: HIGH-DENSITY NEWS FEED (8 COLS) ==================== -->
+<section class="col-span-8 flex flex-col gap-4">
+<!-- Main Structured News Table Card -->
+<div class="bg-card-navy border border-hairline rounded-xl overflow-hidden shadow-2xl flex flex-col">
+<!-- Card Header Bar -->
+<div class="px-5 py-3 bg-surface-slate/80 border-b border-hairline flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-ink-white font-bold tracking-tight">机构级即时情报流</span>
+<span class="font-mono-data text-label-sm text-primary px-2 py-0.5 rounded bg-primary-container/15 border border-primary-container/20">LIVE WIRE</span>
+</div>
+<div class="flex items-center gap-3 text-steel-muted text-xs font-mono-data">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary-container"></span> 快讯</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-warn"></span> 深度</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-bear-red"></span> 政策</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-bull-green"></span> 项目</span>
+</div>
+</div>
+<!-- News Rows Container (8 High-Density Financial Entries) -->
+<div class="divide-y divide-hairline">
+<!-- Item 1: 快讯 FLASH (Cobalt #2E5CFF) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-primary-container"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-bold">快讯 FLASH</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-primary transition-colors">
+                      美国 10 月季调后非农就业人口录得 14.2 万人，失业率维持在 4.1%
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  劳工统计局数据显示，就业增长主要来自医疗保健及政府部门。非农数据符合摩根士丹利预期的 14 万区间，掉期交易员预计年内降息 25BP 概率升至 86.4%。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">Bloomberg Wire</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">3m ago</span>
+<span>·</span>
+<span class="text-amber-warn font-semibold">波动评级: 极高</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">阅读 4.8K</span>
+<span class="text-bull-green font-mono-data">DXY -0.32%</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 2: 深度 INSIGHTS (Amber Warn #F7B733) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-amber-warn"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-amber-warn/20 text-amber-warn font-bold">深度 INSIGHTS</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-amber-warn transition-colors">
+                      Glassnode 报告：长期持有者持仓进入减持放缓期，交易所储备降至 2018 年以来低点
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  链上活跃实体 7 日均值上升 4.2%，衍生品持仓加权资金费率中性收敛，现货 ETF 净流入连续 9 个交易日保持正值，供应侧流动性呈现收紧趋势。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">Glassnode Research</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">14m ago</span>
+<span>·</span>
+<span class="text-steel-muted">机构评级: AA+</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">研报下载 1.2K</span>
+<span class="text-bull-green font-mono-data">BTC 净流出 12,400</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 3: 政策 REGULATION (Bear Red #FF5F6D) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-bear-red"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-bear-red/20 text-bear-red font-bold">政策 REGULATION</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-bear-red transition-colors">
+                      SEC 公布对去中心化借贷协议合规性质询函，重点评估自动清算拍卖清算人身份
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  监管文件第 442-B 条修正条款要求机构参与者披露高频清算机器人实控人，并提交自动化做市商的 KYC 豁免评估，各 DeFi 标的短线急挫 2.8%。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">SEC EDGAR</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">28m ago</span>
+<span>·</span>
+<span class="text-bear-red font-semibold">波动评级: 高</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">法务快讯 · 引用 89 次</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 4: 快讯 FLASH / 巨鲸 (Cobalt #2E5CFF) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-primary-container"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-bold">巨鲸动向 WHALE</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-primary transition-colors">
+                      某巨鲸地址 (0x7a3...c91) 过去 4 小时通过 OTC 累计建仓 14,800 ETH 并质押进 Lido
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  Arkham 链上追踪证实该实体疑似为某主权对冲基金外部账户，转账总估值逾 4,820 万美元，对应流动性池溢价滑点不到 0.04%。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">Arkham / Nansen</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">42m ago</span>
+<span>·</span>
+<span class="text-bull-green font-semibold">看多信号: 强烈</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">监控追踪 · 3.1K 人在看</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 5: 项目生态 PROJECTS (Bull Green #00E388) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-bull-green"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-bull-green/20 text-bull-green font-bold">项目生态 PROJECTS</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-bull-green transition-colors">
+                      Solana 生态主网升级 v1.18 部署完成，全网 TPS 峰值压力测试达到 4,800 并发稳定
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  优先费机制进一步优化，调度程序拥堵率降低 68%，主要 DEX 撮合延迟降至 280ms 历史新优，跨链资产桥接净确认时间缩减三分之二。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">Solana Foundation</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">1h 10m ago</span>
+<span>·</span>
+<span class="text-bull-green font-semibold">主网硬分叉: 成功</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-bull-green font-mono-data">SOL +4.65%</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 6: 快讯 FLASH (Cobalt #2E5CFF) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-primary-container"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-bold">快讯 FLASH</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-primary transition-colors">
+                      芝商所 CME 比特币期货未平仓合约 (OI) 突破 112 亿美元创历史新高
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  CFTC 持仓周报显示非商业机构多头头寸连续四周加仓，期现基差年化收益率攀升至 10.4%，衍生品市场机构资金结构主导权持续上升。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">CME Group Wire</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">1h 45m ago</span>
+<span>·</span>
+<span class="text-steel-muted">持仓规模: $11.2B</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">阅读 2.9K</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 7: 深度 INSIGHTS (Amber Warn #F7B733) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-amber-warn"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-amber-warn/20 text-amber-warn font-bold">深度 INSIGHTS</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-amber-warn transition-colors">
+                      OKX 深度流动性报告：全球主要永续合约买盘厚度于 68,000 美元形成密集支撑带
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  订单薄 ±2% 深度数据显示机构限价买单累计超过 4.3 亿美元，多空未实现盈亏比维持在 2.15，短线清算热力图在 71,500 美元聚集超 1.8 亿空头强平仓位。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">OKX Quantitative Desk</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">2h 10m ago</span>
+<span>·</span>
+<span class="text-bull-green font-semibold">流动性: 极度充裕</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">深度图表 · 2.1K 查看</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 8: 政策 REGULATION (Bear Red #FF5F6D) -->
+<article class="group relative flex transition-colors duration-150 hover:bg-card-navy-high cursor-pointer">
+<div class="w-2 flex-shrink-0 bg-bear-red"></div>
+<div class="flex-1 px-4 py-3 flex flex-col justify-between">
+<div class="flex items-center justify-between gap-4 mb-1">
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded bg-bear-red/20 text-bear-red font-bold">政策 REGULATION</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white font-bold group-hover:text-bear-red transition-colors">
+                      欧盟 MiCA 法案全面实施细则出炉，稳定币储备审计要求自本季度末强制生效
+                    </h2>
+</div>
+<div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="收藏">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-slate text-steel-muted hover:text-ink-white" title="行情联动">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+</button>
+</div>
+</div>
+<p class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">
+                  欧洲证券与市场管理局 (ESMA) 规定发行方须每日披露短期国债与隔夜回购占比，未获完全许可的法币锚定资产在欧元区托管通道将受限。
+                </p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-medium">ESMA Gazette</span>
+<span>·</span>
+<span class="text-steel-muted font-mono-data">3h 05m ago</span>
+<span>·</span>
+<span class="text-amber-warn font-semibold">政策合规周期</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted">阅读 1.6K</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+<!-- Card Pagination & Live Stream Footer -->
+<div class="px-5 py-3 bg-surface-slate/80 border-t border-hairline flex items-center justify-between font-mono-data text-xs">
+<div class="flex items-center gap-2 text-steel-muted">
+<span>显示第 <span class="text-ink-white font-bold">1-8</span> 条 / 共 <span class="text-ink-white font-bold">128</span> 条</span>
+<span class="text-hairline">|</span>
+<span class="text-bull-green flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-pulse"></span>
+                实时流持续接收中...
+              </span>
+</div>
+<!-- Pagination Buttons -->
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-slate border border-hairline text-steel-muted hover:text-ink-white hover:border-primary-container transition-all flex items-center">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded bg-primary-container text-ink-white font-bold">1</button>
+<button class="px-3 py-1 rounded bg-card-navy border border-hairline text-steel-muted hover:text-ink-white transition-all">2</button>
+<button class="px-3 py-1 rounded bg-card-navy border border-hairline text-steel-muted hover:text-ink-white transition-all">3</button>
+<span class="px-1 text-steel-muted">...</span>
+<button class="px-3 py-1 rounded bg-card-navy border border-hairline text-steel-muted hover:text-ink-white transition-all">16</button>
+<button class="px-2.5 py-1 rounded bg-surface-slate border border-hairline text-steel-muted hover:text-ink-white hover:border-primary-container transition-all flex items-center">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- ==================== RIGHT COLUMN: TWO COMPACT PROFESSIONAL CARDS (4 COLS) ==================== -->
+<section class="col-span-4 flex flex-col gap-5">
+<!-- CARD 1: 24H 热榜 TOP GAINERS & HOT STORIES -->
+<div class="bg-card-navy border border-hairline rounded-xl overflow-hidden shadow-xl flex flex-col">
+<!-- Card Header -->
+<div class="px-4 py-3 bg-surface-slate/90 border-b border-hairline flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">local_fire_department</span>
+<h3 class="font-headline-sm text-headline-sm text-ink-white font-bold tracking-tight">24H 热榜 TOP STORIES</h3>
+</div>
+<span class="font-mono-data text-[11px] text-steel-muted">5m 刷新</span>
+</div>
+<!-- TOP 5 Ranking List -->
+<div class="p-3 flex flex-col gap-2">
+<!-- Rank 01 -->
+<div class="p-2.5 rounded-lg bg-surface-slate/70 border border-hairline/80 hover:bg-card-navy-high transition-colors flex items-start gap-3 group cursor-pointer">
+<span class="font-mono-data text-headline-md font-bold text-primary w-6 text-center leading-none mt-0.5">01</span>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.2 rounded bg-card-navy border border-hairline text-[10px] font-mono-data font-semibold text-ink-white">BTC</span>
+<span class="font-mono-data text-[11px] text-bull-green font-bold">+3.42%</span>
+</div>
+<span class="font-mono-data text-[10px] text-amber-warn font-semibold">热度 98.4</span>
+</div>
+<h4 class="font-body-md text-ink-white text-xs font-semibold leading-snug group-hover:text-primary transition-colors">
+                  现货 ETF 单日净流入突破 6.2 亿美元，贝莱德 IBIT 占六成份额
+                </h4>
+<div class="flex items-center justify-between mt-1 text-[10px] font-mono-data text-steel-muted">
+<span>讨论频次 14.2K</span>
+<span>引用新闻 42 篇</span>
+</div>
+</div>
+</div>
+<!-- Rank 02 -->
+<div class="p-2.5 rounded-lg bg-surface-slate/70 border border-hairline/80 hover:bg-card-navy-high transition-colors flex items-start gap-3 group cursor-pointer">
+<span class="font-mono-data text-headline-md font-bold text-primary w-6 text-center leading-none mt-0.5">02</span>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.2 rounded bg-card-navy border border-hairline text-[10px] font-mono-data font-semibold text-ink-white">ETH</span>
+<span class="font-mono-data text-[11px] text-bull-green font-bold">+1.85%</span>
+</div>
+<span class="font-mono-data text-[10px] text-amber-warn font-semibold">热度 91.2</span>
+</div>
+<h4 class="font-body-md text-ink-white text-xs font-semibold leading-snug group-hover:text-primary transition-colors">
+                  以太坊 Dencun 之后 Layer 2 Gas 消耗下降 90%，链上日活激增
+                </h4>
+<div class="flex items-center justify-between mt-1 text-[10px] font-mono-data text-steel-muted">
+<span>讨论频次 9.8K</span>
+<span>引用新闻 31 篇</span>
+</div>
+</div>
+</div>
+<!-- Rank 03 -->
+<div class="p-2.5 rounded-lg bg-surface-slate/70 border border-hairline/80 hover:bg-card-navy-high transition-colors flex items-start gap-3 group cursor-pointer">
+<span class="font-mono-data text-headline-md font-bold text-primary w-6 text-center leading-none mt-0.5">03</span>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.2 rounded bg-card-navy border border-hairline text-[10px] font-mono-data font-semibold text-ink-white">SOL</span>
+<span class="font-mono-data text-[11px] text-bull-green font-bold">+4.65%</span>
+</div>
+<span class="font-mono-data text-[10px] text-steel-muted font-semibold">热度 84.7</span>
+</div>
+<h4 class="font-body-md text-ink-white text-xs font-semibold leading-snug group-hover:text-primary transition-colors">
+                  Solana 链上 DEX 24 小时成交量超越 Uniswap 主网
+                </h4>
+<div class="flex items-center justify-between mt-1 text-[10px] font-mono-data text-steel-muted">
+<span>讨论频次 7.6K</span>
+<span>引用新闻 26 篇</span>
+</div>
+</div>
+</div>
+<!-- Rank 04 -->
+<div class="p-2.5 rounded-lg bg-surface-slate/70 border border-hairline/80 hover:bg-card-navy-high transition-colors flex items-start gap-3 group cursor-pointer">
+<span class="font-mono-data text-headline-md font-bold text-primary w-6 text-center leading-none mt-0.5">04</span>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.2 rounded bg-card-navy border border-hairline text-[10px] font-mono-data font-semibold text-ink-white">SUI</span>
+<span class="font-mono-data text-[11px] text-bear-red font-bold">-2.10%</span>
+</div>
+<span class="font-mono-data text-[10px] text-steel-muted font-semibold">热度 76.0</span>
+</div>
+<h4 class="font-body-md text-ink-white text-xs font-semibold leading-snug group-hover:text-primary transition-colors">
+                  明日面临 6,400 万美元代币大额解锁，衍生品做空费率走高
+                </h4>
+<div class="flex items-center justify-between mt-1 text-[10px] font-mono-data text-steel-muted">
+<span>讨论频次 5.4K</span>
+<span>引用新闻 18 篇</span>
+</div>
+</div>
+</div>
+<!-- Rank 05 -->
+<div class="p-2.5 rounded-lg bg-surface-slate/70 border border-hairline/80 hover:bg-card-navy-high transition-colors flex items-start gap-3 group cursor-pointer">
+<span class="font-mono-data text-headline-md font-bold text-primary w-6 text-center leading-none mt-0.5">05</span>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.2 rounded bg-card-navy border border-hairline text-[10px] font-mono-data font-semibold text-ink-white">FED</span>
+<span class="font-mono-data text-[11px] text-amber-warn font-bold">MACRO</span>
+</div>
+<span class="font-mono-data text-[10px] text-steel-muted font-semibold">热度 72.8</span>
+</div>
+<h4 class="font-body-md text-ink-white text-xs font-semibold leading-snug group-hover:text-primary transition-colors">
+                  鲍威尔即将在国际清算银行年度会议发表全球流动性讲话
+                </h4>
+<div class="flex items-center justify-between mt-1 text-[10px] font-mono-data text-steel-muted">
+<span>讨论频次 4.9K</span>
+<span>引用新闻 15 篇</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 2: 快讯日历 EVENT & FLASH CALENDAR -->
+<div class="bg-card-navy border border-hairline rounded-xl overflow-hidden shadow-xl flex flex-col">
+<!-- Calendar Header -->
+<div class="px-4 py-3 bg-surface-slate/90 border-b border-hairline flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_month</span>
+<h3 class="font-headline-sm text-headline-sm text-ink-white font-bold tracking-tight">EVENT CALENDAR</h3>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-card-navy text-steel-muted hover:text-ink-white">
+<span class="material-symbols-outlined text-[15px]">chevron_left</span>
+</button>
+<span class="font-mono-data text-xs text-ink-white font-bold px-1">OCT 2025</span>
+<button class="p-1 rounded hover:bg-card-navy text-steel-muted hover:text-ink-white">
+<span class="material-symbols-outlined text-[15px]">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<!-- 7x5 Days Grid Table -->
+<div class="grid grid-cols-7 gap-1 text-center font-mono-data text-[11px]">
+<!-- Day Headers -->
+<span class="text-steel-muted py-1 font-semibold">MO</span>
+<span class="text-steel-muted py-1 font-semibold">TU</span>
+<span class="text-steel-muted py-1 font-semibold">WE</span>
+<span class="text-steel-muted py-1 font-semibold">TH</span>
+<span class="text-steel-muted py-1 font-semibold">FR</span>
+<span class="text-steel-muted py-1 font-semibold">SA</span>
+<span class="text-steel-muted py-1 font-semibold">SU</span>
+<!-- Week 1 -->
+<span class="py-1.5 text-steel-muted/30">29</span>
+<span class="py-1.5 text-steel-muted/30">30</span>
+<span class="py-1.5 text-ink-white">01</span>
+<span class="py-1.5 text-ink-white">02</span>
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>03</span>
+<span class="w-1 h-1 rounded-full bg-primary-container mt-0.5"></span>
+</div>
+<span class="py-1.5 text-steel-muted/80">04</span>
+<span class="py-1.5 text-steel-muted/80">05</span>
+<!-- Week 2 -->
+<span class="py-1.5 text-ink-white">06</span>
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>07</span>
+<span class="w-1 h-1 rounded-full bg-amber-warn mt-0.5"></span>
+</div>
+<span class="py-1.5 text-ink-white">08</span>
+<span class="py-1.5 text-ink-white">09</span>
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>10</span>
+<span class="w-1 h-1 rounded-full bg-bear-red mt-0.5"></span>
+</div>
+<span class="py-1.5 text-steel-muted/80">11</span>
+<span class="py-1.5 text-steel-muted/80">12</span>
+<!-- Week 3 (Current Week: Day 15 is Today) -->
+<span class="py-1.5 text-ink-white">13</span>
+<span class="py-1.5 text-ink-white">14</span>
+<!-- TODAY: Day 15 High Contrast Box -->
+<div class="py-1 rounded bg-primary-container text-ink-white font-bold flex flex-col items-center justify-center shadow-lg shadow-primary-container/30">
+<span>15</span>
+<span class="w-1 h-1 rounded-full bg-ink-white mt-0.5"></span>
+</div>
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>16</span>
+<span class="w-1 h-1 rounded-full bg-bull-green mt-0.5"></span>
+</div>
+<span class="py-1.5 text-ink-white">17</span>
+<span class="py-1.5 text-steel-muted/80">18</span>
+<span class="py-1.5 text-steel-muted/80">19</span>
+<!-- Week 4 -->
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>20</span>
+<span class="w-1 h-1 rounded-full bg-primary-container mt-0.5"></span>
+</div>
+<span class="py-1.5 text-ink-white">21</span>
+<span class="py-1.5 text-ink-white">22</span>
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>23</span>
+<span class="w-1 h-1 rounded-full bg-amber-warn mt-0.5"></span>
+</div>
+<span class="py-1.5 text-ink-white">24</span>
+<span class="py-1.5 text-steel-muted/80">25</span>
+<span class="py-1.5 text-steel-muted/80">26</span>
+<!-- Week 5 -->
+<span class="py-1.5 text-ink-white">27</span>
+<span class="py-1.5 text-ink-white">28</span>
+<span class="py-1.5 text-ink-white">29</span>
+<div class="py-1.5 text-ink-white flex flex-col items-center justify-center relative">
+<span>30</span>
+<span class="w-1 h-1 rounded-full bg-primary-container mt-0.5"></span>
+</div>
+<span class="py-1.5 text-ink-white">31</span>
+<span class="py-1.5 text-steel-muted/30">01</span>
+<span class="py-1.5 text-steel-muted/30">02</span>
+</div>
+<!-- Key Events Preview for Today -->
+<div class="mt-2 pt-3 border-t border-hairline flex flex-col gap-2">
+<div class="flex items-center justify-between text-[11px] font-mono-data">
+<span class="text-steel-muted font-medium">今日关键事件</span>
+<span class="text-primary font-bold">2 项待公布</span>
+</div>
+<!-- Event Item A -->
+<div class="p-2 rounded bg-surface-slate/80 border border-hairline/70 flex items-start justify-between gap-2">
+<div class="flex items-start gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-bear-red mt-1.5 flex-shrink-0"></span>
+<div class="flex flex-col">
+<span class="font-body-md text-xs font-semibold text-ink-white">美联储公布最新非农就业与时薪年率</span>
+<span class="font-mono-data text-[10px] text-steel-muted">宏观指标 · 预期值 14.0W</span>
+</div>
+</div>
+<span class="font-mono-data text-[11px] font-bold text-amber-warn">20:30</span>
+</div>
+<!-- Event Item B -->
+<div class="p-2 rounded bg-surface-slate/80 border border-hairline/70 flex items-start justify-between gap-2">
+<div class="flex items-start gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container mt-1.5 flex-shrink-0"></span>
+<div class="flex flex-col">
+<span class="font-body-md text-xs font-semibold text-ink-white">SEC 对 Hashdex 以太坊 ETF 答复窗口</span>
+<span class="font-mono-data text-[10px] text-steel-muted">合规监管 · 关键审批节点</span>
+</div>
+</div>
+<span class="font-mono-data text-[11px] font-bold text-ink-white">22:00</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- ==================== 5. FULL TERMINAL FOOTER STATUS BAR ==================== -->
+<footer class="h-8 bg-surface-slate border-t border-hairline px-6 flex items-center justify-between text-[11px] font-mono-data select-none z-30">
+<!-- Left Infrastructure Nodes -->
+<div class="flex items-center gap-5 text-steel-muted">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-bull-green"></span>
+<span class="text-ink-white font-medium">NODE:</span>
+<span>HK-CENTRAL-01</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="text-ink-white font-medium">HEARTBEAT:</span>
+<span class="text-bull-green">0.4s AGO</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="text-ink-white font-medium">CRYPTO:</span>
+<span>AES-256 GCM</span>
+</div>
+</div>
+<!-- Right Account Tier & Protocol Status -->
+<div class="flex items-center gap-5 text-steel-muted">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.2 rounded bg-primary-container/20 text-primary border border-primary-container/30 text-[10px] font-bold">
+            INSTITUTIONAL TIER 1
+          </span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span class="text-ink-white font-medium">WEBSOCKET:</span>
+<span class="text-bull-green">CONNECTED</span>
+</div>
+<div class="text-steel-muted/70">
+<span>UTC+8 20:14:08</span>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

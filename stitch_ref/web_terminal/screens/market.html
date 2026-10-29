@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>明策 MINGCE PRO TERMINAL | 专业操盘行情</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Space Grotesk, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#2e5cff",
+            "on-secondary-fixed-variant": "#164197",
+            "on-secondary-fixed": "#001848",
+            "hairline": "#34415E",
+            "tertiary": "#ffb59b",
+            "on-error": "#690005",
+            "inverse-surface": "#e2e1ef",
+            "on-primary-fixed": "#001355",
+            "surface-container-highest": "#33343e",
+            "surface-bright": "#373943",
+            "surface-tint": "#b8c3ff",
+            "on-secondary": "#002b73",
+            "secondary-container": "#164197",
+            "on-primary-container": "#f0f0ff",
+            "surface-variant": "#33343e",
+            "on-tertiary-container": "#ffeee9",
+            "inverse-primary": "#104aef",
+            "error": "#ffb4ab",
+            "card-navy": "#121D34",
+            "surface-dim": "#11131c",
+            "tertiary-fixed-dim": "#ffb59b",
+            "on-secondary-container": "#98b3ff",
+            "surface-container": "#1d1f29",
+            "on-surface": "#e2e1ef",
+            "card-navy-high": "#1A2742",
+            "on-tertiary": "#5c1a00",
+            "on-surface-variant": "#c4c5d9",
+            "inverse-on-surface": "#2e303a",
+            "surface-container-lowest": "#0c0e17",
+            "on-error-container": "#ffdad6",
+            "on-background": "#e2e1ef",
+            "primary-fixed-dim": "#b8c3ff",
+            "outline": "#8e90a2",
+            "error-container": "#93000a",
+            "tertiary-fixed": "#ffdbcf",
+            "canvas-obsidian": "#070D1C",
+            "on-tertiary-fixed": "#380d00",
+            "ink-white": "#F0F0FF",
+            "outline-variant": "#434656",
+            "bull-green": "#00E388",
+            "secondary-fixed-dim": "#b2c5ff",
+            "primary-fixed": "#dde1ff",
+            "on-primary": "#002487",
+            "tertiary-container": "#c44100",
+            "surface-container-low": "#191b24",
+            "amber-warn": "#F7B733",
+            "steel-muted": "#9EA0B2",
+            "surface-container-high": "#282933",
+            "primary": "#b8c3ff",
+            "background": "#11131c",
+            "surface-slate": "#0D1528",
+            "secondary": "#b2c5ff",
+            "surface": "#11131c",
+            "on-tertiary-fixed-variant": "#822800",
+            "bear-red": "#FF5F6D",
+            "secondary-fixed": "#dae2ff",
+            "on-primary-fixed-variant": "#0035bd"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-lg": "24px",
+            "space-md": "16px",
+            "margin": "24px",
+            "space-sm": "8px",
+            "gutter": "16px",
+            "space-xs": "4px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono", "monospace"],
+            "mono-data": ["JetBrains Mono", "monospace"],
+            "headline-md": ["Space Grotesk", "sans-serif"],
+            "headline-lg": ["Space Grotesk", "sans-serif"],
+            "headline-sm": ["Space Grotesk", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "mono-data": ["13px", { "lineHeight": "1.4", "fontWeight": "500" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-lg": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "body-md": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-canvas-obsidian text-ink-white font-body-md text-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-ink-white min-h-screen flex">
+<!-- ========================================== -->
+<!-- 1. FIXED LEFT SIDE NAV BAR (240px / w-60)   -->
+<!-- ========================================== -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-40 bg-surface-slate flex flex-col justify-between p-space-md border-r border-hairline select-none">
+<!-- Top Brand & Mode Badge -->
+<div>
+<div class="flex items-center justify-between pb-space-md border-b border-hairline">
+<div class="flex items-center space-x-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 border border-primary-container flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[20px]">candlestick_chart</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md font-bold tracking-tight text-ink-white leading-tight">
+              MINGCE <span class="text-primary font-headline-sm text-headline-sm font-normal">明策</span>
+</div>
+<div class="font-label-sm text-label-sm text-steel-muted tracking-wider">PRO TERMINAL</div>
+</div>
+</div>
+<span class="px-1.5 py-0.5 rounded bg-primary-container/15 text-primary text-[10px] font-label-sm font-bold border border-primary-container/30">L3</span>
+</div>
+<!-- Quick Action CTA -->
+<div class="mt-space-md mb-space-md">
+<button class="w-full h-9 rounded-xl bg-primary-container text-ink-white font-headline-sm text-headline-sm flex items-center justify-center space-x-1.5 hover:bg-opacity-90 active:scale-[0.99] transition-all duration-75 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span>快速下单</span>
+</button>
+</div>
+<!-- Navigation Tabs -->
+<nav class="space-y-1">
+<!-- 1. 行情 (Active) -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-card-navy text-ink-white border-l-2 border-primary-container font-headline-sm text-headline-sm cursor-pointer transition-colors duration-150" href="#market">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-[18px] text-primary-container" style="font-variation-settings: 'FILL' 1;">candlestick_chart</span>
+<span>行情</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+</a>
+<!-- 2. 情报 -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-steel-muted hover:text-ink-white hover:bg-card-navy-high font-body-md text-body-md cursor-pointer transition-colors duration-150" href="#intel">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-[18px]">analytics</span>
+<span>情报</span>
+</div>
+<span class="font-label-sm text-label-sm text-steel-muted/60">LIVE</span>
+</a>
+<!-- 3. 巨鲸 -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-steel-muted hover:text-ink-white hover:bg-card-navy-high font-body-md text-body-md cursor-pointer transition-colors duration-150" href="#whales">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-[18px]">radar</span>
+<span>巨鲸</span>
+</div>
+<span class="px-1 py-0.2 rounded bg-amber-warn/15 text-amber-warn font-label-sm text-[10px]">3新</span>
+</a>
+<!-- 4. 语音纪要 -->
+<a class="flex items-center px-3 py-2.5 rounded-lg text-steel-muted hover:text-ink-white hover:bg-card-navy-high font-body-md text-body-md cursor-pointer transition-colors duration-150 space-x-3" href="#voice">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+<span>语音纪要</span>
+</a>
+<!-- 5. 设置 -->
+<a class="flex items-center px-3 py-2.5 rounded-lg text-steel-muted hover:text-ink-white hover:bg-card-navy-high font-body-md text-body-md cursor-pointer transition-colors duration-150 space-x-3" href="#settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+<span>设置</span>
+</a>
+</nav>
+</div>
+<!-- Footer Network Status & Node Latency -->
+<div class="pt-space-md border-t border-hairline space-y-2">
+<div class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-slate border border-hairline/60">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-[15px] text-bull-green">wifi</span>
+<span class="font-mono-data text-mono-data text-[11px] text-steel-muted">节点延迟 18ms</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-pulse"></span>
+</div>
+<div class="flex items-center space-x-2 px-2 py-1">
+<span class="material-symbols-outlined text-[16px] text-primary">verified_user</span>
+<span class="font-label-sm text-label-sm text-steel-muted truncate">账户: 机构专线</span>
+</div>
+</div>
+</aside>
+<!-- ========================================== -->
+<!-- 2. TOP FIXED APP WORKSPACE BAR (h-14 / 56px)-->
+<!-- ========================================== -->
+<header class="fixed top-0 left-0 right-0 h-14 pl-60 pr-space-lg flex items-center justify-between border-b border-hairline bg-canvas-obsidian z-30 select-none">
+<!-- Left Section: Breadcrumb & Search Box -->
+<div class="flex items-center space-x-6 pl-space-md">
+<div class="flex items-center space-x-2">
+<span class="font-headline-md text-headline-md font-bold text-ink-white tracking-wider">行情 MARKET</span>
+</div>
+<!-- Quick Search Input -->
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-steel-muted text-[16px]">search</span>
+<input class="w-full h-8 pl-8 pr-14 bg-surface-slate rounded-lg border border-hairline text-ink-white placeholder-steel-muted text-[12px] font-mono-data focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="快速查找币种 / 合约代码..." type="text"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-card-navy text-steel-muted border border-hairline text-[10px] font-mono-data">⌘K</span>
+</div>
+</div>
+<!-- Center Section: Rate & Latency Indicator -->
+<div class="hidden lg:flex items-center space-x-3 px-3 py-1 rounded-lg bg-surface-slate border border-hairline text-steel-muted">
+<span class="w-2 h-2 rounded-full bg-bull-green animate-ping"></span>
+<span class="font-mono-data text-mono-data text-[11px] text-ink-white">行情刷新: 1s</span>
+<span class="text-hairline">|</span>
+<span class="font-label-sm text-label-sm text-steel-muted">WEBSOCKET MULTICAST</span>
+</div>
+<!-- Right Section: Trailing Tools, Security, and Pro Avatar -->
+<div class="flex items-center space-x-3">
+<!-- Trailing Primary Action -->
+<button class="h-8 px-3 rounded-lg bg-card-navy hover:bg-card-navy-high border border-hairline text-ink-white font-headline-sm text-headline-sm flex items-center space-x-1.5 transition-colors">
+<span class="material-symbols-outlined text-[15px] text-primary">account_balance_wallet</span>
+<span class="text-[12px]">充值 / 划转</span>
+</button>
+<!-- Trailing Icon Actions -->
+<div class="flex items-center space-x-1 border-l border-hairline pl-3">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors" title="通知中心">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors" title="指标偏好配置">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors" title="全屏视窗模式">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+</div>
+<!-- Trader Pro Avatar -->
+<div class="flex items-center space-x-2 border-l border-hairline pl-3">
+<div class="w-7 h-7 rounded-full bg-card-navy border border-primary-container/60 flex items-center justify-center text-primary font-mono-data text-[11px] font-bold">
+          PR
+        </div>
+<div class="hidden xl:block text-left">
+<div class="text-[12px] font-headline-sm text-ink-white leading-tight">QuantMaster</div>
+<div class="text-[10px] font-label-sm text-steel-muted">VIP 9 机构席位</div>
+</div>
+</div>
+</div>
+</header>
+<!-- ========================================== -->
+<!-- 3. MAIN TERMINAL WORKSPACE (Left pl-60, Top pt-14) -->
+<!-- ========================================== -->
+<main class="ml-60 mt-14 flex-1 min-h-[calc(100vh-3.5rem)] bg-canvas-obsidian p-space-lg xl:p-space-xl space-y-space-md">
+<!-- TOP TELEMETRY STRIP (Mini Market Indicators Bento) -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md">
+<!-- 24H Total Volume -->
+<div class="bg-card-navy border border-hairline rounded-xl p-3.5 flex flex-col justify-between">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase">24H 全网成交额</span>
+<span class="material-symbols-outlined text-[16px] text-steel-muted">query_stats</span>
+</div>
+<div class="flex items-baseline space-x-2 mt-1">
+<span class="font-mono-data text-ink-white font-bold text-[18px] tracking-tight">$142.89 B</span>
+<span class="font-mono-data text-bull-green text-[11px] font-semibold">+8.42%</span>
+</div>
+</div>
+<!-- Long/Short Ratio -->
+<div class="bg-card-navy border border-hairline rounded-xl p-3.5 flex flex-col justify-between">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase">全网多空比 (BTC)</span>
+<span class="material-symbols-outlined text-[16px] text-steel-muted">stacked_bar_chart</span>
+</div>
+<div class="flex items-baseline space-x-2 mt-1">
+<span class="font-mono-data text-ink-white font-bold text-[18px] tracking-tight">1.24 : 1</span>
+<span class="font-mono-data text-bull-green text-[11px] font-semibold">多头占优</span>
+</div>
+</div>
+<!-- Fear & Greed Index -->
+<div class="bg-card-navy border border-hairline rounded-xl p-3.5 flex flex-col justify-between">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase">恐惧 &amp; 贪婪指数</span>
+<span class="material-symbols-outlined text-[16px] text-steel-muted">speed</span>
+</div>
+<div class="flex items-baseline space-x-2 mt-1">
+<span class="font-mono-data text-bull-green font-bold text-[18px] tracking-tight">76</span>
+<span class="font-label-sm text-label-sm text-bull-green">极度贪婪</span>
+</div>
+</div>
+<!-- Liquidation 24H -->
+<div class="bg-card-navy border border-hairline rounded-xl p-3.5 flex flex-col justify-between">
+<div class="flex items-center justify-between text-steel-muted">
+<span class="font-label-sm text-label-sm uppercase">24H 爆仓总额</span>
+<span class="material-symbols-outlined text-[16px] text-steel-muted">warning</span>
+</div>
+<div class="flex items-baseline space-x-2 mt-1">
+<span class="font-mono-data text-ink-white font-bold text-[18px] tracking-tight">$218.40 M</span>
+<span class="font-mono-data text-bear-red text-[11px] font-semibold">空单爆仓 68%</span>
+</div>
+</div>
+</div>
+<!-- TAB FILTER & TOOLBAR BAR -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline pb-2">
+<!-- Underline Styled Tabs -->
+<div class="flex items-center space-x-6">
+<button class="relative pb-2 font-headline-sm text-headline-sm text-ink-white font-semibold transition-all">
+<span>全部</span>
+<span class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container rounded-full"></span>
+</button>
+<button class="relative pb-2 font-body-md text-body-md text-steel-muted hover:text-ink-white transition-all">
+<span>自选</span>
+</button>
+<button class="relative pb-2 font-body-md text-body-md text-steel-muted hover:text-ink-white transition-all">
+<span>主流币</span>
+</button>
+<button class="relative pb-2 font-body-md text-body-md text-steel-muted hover:text-ink-white transition-all">
+<span>DeFi</span>
+</button>
+<button class="relative pb-2 font-body-md text-body-md text-steel-muted hover:text-ink-white transition-all">
+<span>Layer2</span>
+</button>
+<button class="relative pb-2 font-body-md text-body-md text-steel-muted hover:text-ink-white transition-all">
+<span>涨幅榜</span>
+</button>
+<button class="relative pb-2 font-body-md text-body-md text-steel-muted hover:text-ink-white transition-all">
+<span>跌幅榜</span>
+</button>
+</div>
+<!-- Right Toolbar Tools -->
+<div class="flex items-center space-x-3">
+<span class="font-mono-data text-mono-data text-steel-muted text-[11px]">共 128 个币种</span>
+<button class="h-7 px-2.5 rounded-lg border border-hairline bg-surface-slate text-steel-muted hover:text-ink-white hover:border-outline flex items-center space-x-1 font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined text-[14px]">refresh</span>
+<span>刷新</span>
+</button>
+<button class="h-7 px-2.5 rounded-lg border border-hairline bg-surface-slate text-steel-muted hover:text-ink-white flex items-center space-x-1 font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined text-[14px]">filter_list</span>
+<span>指标筛选</span>
+</button>
+</div>
+</div>
+<!-- ========================================== -->
+<!-- 4. INSTITUTIONAL MARKET DATA TABLE CARD    -->
+<!-- ========================================== -->
+<div class="bg-card-navy border border-hairline rounded-xl overflow-hidden shadow-2xl">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="h-11 border-b border-hairline bg-surface-slate/80 text-steel-muted font-label-sm text-label-sm uppercase select-none">
+<th class="pl-4 pr-2 w-12 text-center">#</th>
+<th class="px-3 min-w-[200px]">币种 / 资产</th>
+<th class="px-3 text-right min-w-[120px]">最新价 (USD)</th>
+<th class="px-3 text-right min-w-[110px]">24H 涨跌</th>
+<th class="px-3 text-right min-w-[120px]">24H 最高</th>
+<th class="px-3 text-right min-w-[120px]">24H 最低</th>
+<th class="px-3 text-right min-w-[130px]">24H 成交额</th>
+<th class="px-3 text-right min-w-[140px]">总市值</th>
+<th class="px-4 text-center min-w-[140px]">7日走势</th>
+<th class="pr-4 pl-2 text-center w-14">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-hairline font-mono-data text-mono-data">
+<!-- ROW 1: BTC -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">1</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-amber-warn/20 border border-amber-warn/40 flex items-center justify-center text-amber-warn font-bold text-[11px] shrink-0">
+                    ₿
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">BTC</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Bitcoin 比特币</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$67,420.50</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+3.84%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$68,120.00</td>
+<td class="px-3 text-right text-steel-muted">$64,980.10</td>
+<td class="px-3 text-right text-ink-white">$42.85 B</td>
+<td class="px-3 text-right text-ink-white">$1,324.9 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,18 15,16 30,19 45,11 60,14 75,7 100,4" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 2: ETH -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">2</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-primary-container/20 border border-primary-container/40 flex items-center justify-center text-primary font-bold text-[11px] shrink-0">
+                    Ξ
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">ETH</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Ethereum 以太坊</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$3,540.20</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+2.15%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$3,595.00</td>
+<td class="px-3 text-right text-steel-muted">$3,420.50</td>
+<td class="px-3 text-right text-ink-white">$21.14 B</td>
+<td class="px-3 text-right text-ink-white">$425.8 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,20 20,17 40,18 60,10 80,12 100,5" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 3: SOL -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">3</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 font-bold text-[10px] shrink-0">
+                    S
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">SOL</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Solana 索拉纳</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$178.65</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+6.92%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$182.40</td>
+<td class="px-3 text-right text-steel-muted">$165.10</td>
+<td class="px-3 text-right text-ink-white">$8.62 B</td>
+<td class="px-3 text-right text-ink-white">$83.4 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,21 25,18 45,15 65,8 85,9 100,3" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 4: BNB -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">4</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-yellow-500/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 font-bold text-[10px] shrink-0">
+                    B
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">BNB</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">BNB 币安币</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$592.40</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bear-red/15 text-bear-red text-[12px] font-semibold">-0.82%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$604.20</td>
+<td class="px-3 text-right text-steel-muted">$588.00</td>
+<td class="px-3 text-right text-ink-white">$2.34 B</td>
+<td class="px-3 text-right text-ink-white">$88.9 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,6 20,8 40,7 60,14 80,13 100,18" stroke="#FF5F6D" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 5: XRP -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">5</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-300 font-bold text-[10px] shrink-0">
+                    ✕
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">XRP</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Ripple 瑞波币</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$0.5842</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+1.45%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$0.5960</td>
+<td class="px-3 text-right text-steel-muted">$0.5710</td>
+<td class="px-3 text-right text-ink-white">$1.89 B</td>
+<td class="px-3 text-right text-ink-white">$32.6 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,17 25,18 50,13 75,14 100,8" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 6: DOGE -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">6</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-amber-200 font-bold text-[10px] shrink-0">
+                    Ð
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">DOGE</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Dogecoin 狗狗币</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$0.1428</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bear-red/15 text-bear-red text-[12px] font-semibold">-2.40%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$0.1495</td>
+<td class="px-3 text-right text-steel-muted">$0.1380</td>
+<td class="px-3 text-right text-ink-white">$1.28 B</td>
+<td class="px-3 text-right text-ink-white">$20.7 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,8 20,6 40,12 60,10 80,19 100,21" stroke="#FF5F6D" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 7: ADA -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">7</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 font-bold text-[10px] shrink-0">
+                    ₳
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">ADA</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Cardano 艾达币</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$0.3920</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+0.68%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$0.4010</td>
+<td class="px-3 text-right text-steel-muted">$0.3850</td>
+<td class="px-3 text-right text-ink-white">$740 M</td>
+<td class="px-3 text-right text-ink-white">$14.1 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,15 25,16 50,14 75,12 100,10" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 8: AVAX -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">8</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-red-500/20 border border-red-400/40 flex items-center justify-center text-red-300 font-bold text-[10px] shrink-0">
+                    ▲
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">AVAX</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Avalanche 雪崩</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$27.85</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+4.12%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$28.40</td>
+<td class="px-3 text-right text-steel-muted">$26.20</td>
+<td class="px-3 text-right text-ink-white">$890 M</td>
+<td class="px-3 text-right text-ink-white">$11.2 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,18 20,20 45,14 70,8 100,5" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 9: LINK -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">9</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-[10px] shrink-0">
+                    ⬡
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">LINK</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Chainlink</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$12.45</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bear-red/15 text-bear-red text-[12px] font-semibold">-1.15%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$12.80</td>
+<td class="px-3 text-right text-steel-muted">$12.10</td>
+<td class="px-3 text-right text-ink-white">$430 M</td>
+<td class="px-3 text-right text-ink-white">$7.56 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,7 25,9 50,15 75,13 100,19" stroke="#FF5F6D" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+<!-- ROW 10: TON -->
+<tr class="h-11 hover:bg-card-navy-high transition-colors duration-150 group">
+<td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">10</td>
+<td class="px-3">
+<div class="flex items-center space-x-2.5">
+<div class="w-6 h-6 rounded-full bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 font-bold text-[10px] shrink-0">
+                    💎
+                  </div>
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">TON</span>
+<span class="ml-1 text-[11px] font-body-md text-steel-muted">Toncoin</span>
+</div>
+</div>
+</td>
+<td class="px-3 text-right font-bold text-ink-white">$5.72</td>
+<td class="px-3 text-right">
+<span class="inline-block px-1.5 py-0.5 rounded bg-bull-green/15 text-bull-green text-[12px] font-semibold">+5.34%</span>
+</td>
+<td class="px-3 text-right text-steel-muted">$5.85</td>
+<td class="px-3 text-right text-steel-muted">$5.38</td>
+<td class="px-3 text-right text-ink-white">$620 M</td>
+<td class="px-3 text-right text-ink-white">$14.4 B</td>
+<td class="px-4 text-center">
+<svg class="w-24 h-6 inline-block" fill="none" viewbox="0 0 100 24">
+<polyline points="0,22 25,19 50,15 75,8 100,4" stroke="#00E388" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></polyline>
+</svg>
+</td>
+<td class="pr-4 pl-2 text-center">
+<button class="text-steel-muted hover:text-amber-warn transition-colors" title="自选">
+<span class="material-symbols-outlined text-[16px]">star</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- TABLE FOOTER & PAGINATION STRIP -->
+<div class="h-11 px-4 border-t border-hairline bg-surface-slate flex flex-col sm:flex-row items-center justify-between text-steel-muted font-label-sm text-label-sm">
+<div class="flex items-center space-x-3">
+<span>显示 1 - 10 / 128 条目</span>
+<span class="text-hairline">|</span>
+<span class="flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span>L3 ORDERBOOK: 48 EXCHANGES</span>
+</span>
+<span class="text-hairline hidden md:inline">|</span>
+<span class="hidden md:inline text-steel-muted/70">AES-256 GCM 机构直通传输</span>
+</div>
+<div class="flex items-center space-x-1 mt-1 sm:mt-0">
+<button class="w-7 h-7 rounded border border-hairline bg-card-navy flex items-center justify-center text-steel-muted hover:text-ink-white transition-colors" disabled="">
+<span class="material-symbols-outlined text-[14px]">chevron_left</span>
+</button>
+<button class="w-7 h-7 rounded border border-primary-container bg-primary-container/20 text-primary-container font-bold text-[11px] flex items-center justify-center">
+            1
+          </button>
+<button class="w-7 h-7 rounded border border-hairline bg-card-navy flex items-center justify-center text-steel-muted hover:text-ink-white transition-colors text-[11px]">
+            2
+          </button>
+<button class="w-7 h-7 rounded border border-hairline bg-card-navy flex items-center justify-center text-steel-muted hover:text-ink-white transition-colors text-[11px]">
+            3
+          </button>
+<span class="px-1 text-steel-muted">...</span>
+<button class="w-7 h-7 rounded border border-hairline bg-card-navy flex items-center justify-center text-steel-muted hover:text-ink-white transition-colors text-[11px]">
+            13
+          </button>
+<button class="w-7 h-7 rounded border border-hairline bg-card-navy flex items-center justify-center text-steel-muted hover:text-ink-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

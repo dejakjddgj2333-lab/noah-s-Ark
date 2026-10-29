@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>明策 MINGCE - 注册终端席位</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container": "#1d1f29",
+            "tertiary": "#ffb59b",
+            "secondary-fixed-dim": "#b2c5ff",
+            "surface-dim": "#11131c",
+            "outline-variant": "#434656",
+            "on-background": "#e2e1ef",
+            "outline": "#8e90a2",
+            "tertiary-fixed": "#ffdbcf",
+            "hairline": "#34415E",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#c44100",
+            "on-surface-variant": "#c4c5d9",
+            "card-navy-high": "#1A2742",
+            "on-secondary-container": "#98b3ff",
+            "secondary": "#b2c5ff",
+            "tertiary-fixed-dim": "#ffb59b",
+            "on-tertiary-container": "#ffeee9",
+            "on-primary-fixed-variant": "#0035bd",
+            "on-tertiary-fixed": "#380d00",
+            "primary": "#b8c3ff",
+            "bear-red": "#FF5F6D",
+            "on-tertiary": "#5c1a00",
+            "on-primary-fixed": "#001355",
+            "error": "#ffb4ab",
+            "on-error": "#690005",
+            "primary-fixed": "#dde1ff",
+            "surface-bright": "#373943",
+            "on-primary-container": "#f0f0ff",
+            "surface-tint": "#b8c3ff",
+            "canvas-obsidian": "#070D1C",
+            "bull-green": "#00E388",
+            "inverse-surface": "#e2e1ef",
+            "on-secondary-fixed": "#001848",
+            "surface-container-lowest": "#0c0e17",
+            "inverse-primary": "#104aef",
+            "inverse-on-surface": "#2e303a",
+            "surface-variant": "#33343e",
+            "secondary-container": "#164197",
+            "on-surface": "#e2e1ef",
+            "surface-slate": "#0D1528",
+            "surface-container-high": "#282933",
+            "surface": "#11131c",
+            "ink-white": "#F0F0FF",
+            "background": "#11131c",
+            "on-secondary": "#002b73",
+            "primary-fixed-dim": "#b8c3ff",
+            "surface-container-highest": "#33343e",
+            "steel-muted": "#9EA0B2",
+            "error-container": "#93000a",
+            "primary-container": "#2e5cff",
+            "on-primary": "#002487",
+            "card-navy": "#121D34",
+            "secondary-fixed": "#dae2ff",
+            "surface-container-low": "#191b24",
+            "amber-warn": "#F7B733",
+            "on-tertiary-fixed-variant": "#822800",
+            "on-secondary-fixed-variant": "#164197"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "gutter": "16px",
+            "space-md": "16px",
+            "space-lg": "24px",
+            "margin": "24px"
+          },
+          "fontFamily": {
+            "mono-data": ["JetBrains Mono", "monospace"],
+            "label-sm": ["JetBrains Mono", "monospace"],
+            "body-md": ["Inter", "sans-serif"],
+            "headline-lg": ["Space Grotesk", "sans-serif"],
+            "headline-md": ["Space Grotesk", "sans-serif"],
+            "headline-sm": ["Space Grotesk", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"]
+          },
+          "fontSize": {
+            "mono-data": ["13px", { "lineHeight": "1.4", "fontWeight": "500" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "body-md": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-lg": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .grid-bg {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(52, 65, 94, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(52, 65, 94, 0.15) 1px, transparent 1px);
+    }
+    input::placeholder {
+      color: #9EA0B2;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-ink-white min-h-screen flex flex-col font-body-md select-none antialiased">
+<!-- TOP APP BAR (Shared Components: TopNavBar) -->
+<header class="w-full h-12 px-6 flex justify-between items-center border-b border-hairline bg-canvas-obsidian shrink-0 z-50">
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-2">
+<span class="text-headline-md font-headline-md tracking-wider text-ink-white font-bold">MINGCE</span>
+<span class="px-1.5 py-0.5 text-label-sm font-label-sm bg-primary-container/20 text-primary border border-primary/30 rounded">TERMINAL</span>
+</div>
+<div class="h-4 w-px bg-hairline"></div>
+<div class="flex items-center space-x-2">
+<span class="inline-block w-2 h-2 rounded-full bg-bull-green animate-pulse"></span>
+<span class="text-label-sm font-label-sm text-steel-muted">系统状态: 正常 (14ms)</span>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-1.5 text-steel-muted hover:text-ink-white cursor-pointer px-2 py-1 rounded hover:bg-card-navy/50 transition-colors">
+<span class="material-symbols-outlined text-bull-green" data-icon="security">security</span>
+<span class="text-label-sm font-label-sm">SSL 256-BIT</span>
+</div>
+<div class="flex items-center space-x-1 text-steel-muted hover:text-ink-white cursor-pointer px-2 py-1 rounded hover:bg-card-navy/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+<span class="text-label-sm font-label-sm">ZH-CN</span>
+</div>
+<button class="text-steel-muted hover:text-ink-white p-1 rounded hover:bg-card-navy/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+</header>
+<!-- MAIN CANVAS (Split Left/Right Layout) -->
+<main class="flex-1 w-full grid-bg flex items-center justify-center py-8 px-6 lg:px-12">
+<div class="w-full max-w-[1360px] grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+<!-- LEFT BRAND & INTELLIGENCE HUD PANEL -->
+<section class="lg:col-span-6 flex flex-col justify-between space-y-8 pr-0 lg:pr-6">
+<div>
+<!-- Badge Header -->
+<div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded bg-card-navy border border-hairline mb-5">
+<span class="w-2 h-2 rounded-full bg-bull-green"></span>
+<span class="text-label-sm font-label-sm text-bull-green font-semibold tracking-wider">MINGCE [PRO]</span>
+<span class="text-steel-muted text-label-sm font-label-sm">|</span>
+<span class="text-label-sm font-label-sm text-steel-muted tracking-wider">MARKET INTELLIGENCE TERMINAL</span>
+</div>
+<!-- Headline -->
+<h1 class="text-headline-lg font-headline-lg text-ink-white tracking-tight leading-snug mb-4">
+            多维行情洞察 <span class="text-primary">/</span> 机构巨鲸动向 <span class="text-primary">/</span> 实时语音纪要
+          </h1>
+<p class="text-body-lg font-body-lg text-steel-muted leading-relaxed max-w-xl">
+            专为高净值买方、宏观对冲基金和量化策略师打造的高密行情情报中枢，毫秒级解析全球流动性异动与结构性信号。
+          </p>
+</div>
+<!-- Technical Telemetry Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="bg-card-navy p-4 rounded-xl border border-hairline">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-sm font-label-sm text-steel-muted uppercase">深度流解析源</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-data bg-bull-green/10 text-bull-green border border-bull-green/20">SYNCED</span>
+</div>
+<div class="text-headline-sm font-headline-sm text-ink-white mb-1">L3 ORDERBOOK</div>
+<div class="text-label-sm font-label-sm text-steel-muted flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-xs" data-icon="hub">hub</span>
+<span>48 EXCHANGES · 620K TICK/S</span>
+</div>
+</div>
+<div class="bg-card-navy p-4 rounded-xl border border-hairline">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-sm font-label-sm text-steel-muted uppercase">安全硬件网关</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-data bg-primary-container/20 text-primary border border-primary/30">CERTIFIED</span>
+</div>
+<div class="text-headline-sm font-headline-sm text-ink-white mb-1">HSM VAULT / TPM 2.0</div>
+<div class="text-label-sm font-label-sm text-steel-muted flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-xs" data-icon="verified_user">verified_user</span>
+<span>ISMS ISO-27001 COMPLIANT</span>
+</div>
+</div>
+</div>
+<!-- Telemetry Data Stream -->
+<div class="bg-surface-slate/80 border border-hairline p-3 rounded-lg flex items-center justify-between text-mono-data font-mono-data text-steel-muted">
+<div class="flex items-center space-x-2">
+<span class="text-bull-green text-[10px]">●</span>
+<span class="text-label-sm font-label-sm text-steel-muted">NODE LATENCY:</span>
+<span class="text-ink-white font-semibold">14ms</span>
+</div>
+<div class="h-3 w-px bg-hairline"></div>
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm text-steel-muted">MONITORED:</span>
+<span class="text-ink-white font-semibold">38,420</span>
+</div>
+<div class="h-3 w-px bg-hairline"></div>
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm text-steel-muted">CIPHER:</span>
+<span class="text-primary font-semibold">AES-256 GCM</span>
+</div>
+</div>
+</section>
+<!-- RIGHT REGISTRATION CARD -->
+<section class="lg:col-span-6 flex justify-center lg:justify-end">
+<div class="w-full max-w-[500px] bg-card-navy border border-hairline rounded-xl p-6 sm:p-8 backdrop-blur shadow-2xl relative">
+<!-- Top Card Meta -->
+<div class="flex items-center justify-between mb-4">
+<div class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-ping"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green -ml-3"></span>
+<span class="text-label-sm font-label-sm text-primary tracking-wider">NEW TERMINAL ACCESS</span>
+</div>
+<span class="text-label-sm font-label-sm text-steel-muted">SEC-ID: REG-092</span>
+</div>
+<!-- Header -->
+<h2 class="text-headline-lg font-headline-lg text-ink-white font-bold mb-1">创建账户</h2>
+<p class="text-body-md font-body-md text-steel-muted mb-6">
+            邀请制终端权限开启 · 请录入操作员凭证
+          </p>
+<!-- Registration Form -->
+<form class="space-y-4" onsubmit="event.preventDefault();">
+<!-- 1. Username Field -->
+<div>
+<label class="block text-label-sm font-label-sm text-steel-muted uppercase mb-1.5">
+                操作员用户名
+              </label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-steel-muted" data-icon="badge">badge</span>
+<input class="w-full bg-surface-slate text-ink-white text-body-md font-body-md border border-hairline rounded pl-9 pr-3 py-2 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="例如: quant_trader_01" type="text" value="quant_trader_01"/>
+</div>
+</div>
+<!-- 2. Email Field -->
+<div>
+<label class="block text-label-sm font-label-sm text-steel-muted uppercase mb-1.5">
+                机构 / 工作邮箱
+              </label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-steel-muted" data-icon="alternate_email">alternate_email</span>
+<input class="w-full bg-surface-slate text-ink-white text-body-md font-body-md border border-hairline rounded pl-9 pr-3 py-2 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="name@institution.com" type="email"/>
+</div>
+</div>
+<!-- 3. Password Field -->
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<label class="block text-label-sm font-label-sm text-steel-muted uppercase">
+                  终端访问密码
+                </label>
+<span class="text-label-sm font-label-sm text-bull-green">强度: 中强</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-steel-muted" data-icon="lock">lock</span>
+<input class="w-full bg-surface-slate text-ink-white text-body-md font-body-md border border-hairline rounded pl-9 pr-10 py-2 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" id="reg-pass" placeholder="••••••••••••" type="password" value="QuantMatrix#2025"/>
+<button class="absolute right-3 text-steel-muted hover:text-ink-white" onclick="const p = document.getElementById('reg-pass'); p.type = p.type === 'password' ? 'text' : 'password';" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+<!-- Password Strength Bar (3 Segments) -->
+<div class="grid grid-cols-3 gap-1.5 mt-2">
+<div class="h-1 rounded bg-bull-green"></div>
+<div class="h-1 rounded bg-bull-green"></div>
+<div class="h-1 rounded bg-outline-variant"></div>
+</div>
+<p class="text-label-sm font-label-sm text-steel-muted mt-1.5 flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs text-primary" data-icon="check_circle">check_circle</span>
+<span>至少8位，包含大写字母与特殊字符</span>
+</p>
+</div>
+<!-- 4. Confirm Password Field -->
+<div>
+<label class="block text-label-sm font-label-sm text-steel-muted uppercase mb-1.5">
+                确认终端密码
+              </label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-steel-muted" data-icon="lock_reset">lock_reset</span>
+<input class="w-full bg-surface-slate text-ink-white text-body-md font-body-md border border-hairline rounded pl-9 pr-3 py-2 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="再次输入以确认" type="password" value="QuantMatrix#2025"/>
+</div>
+</div>
+<!-- 5. Invite Code Field -->
+<div class="p-3 rounded-lg bg-surface-slate/70 border border-hairline/80">
+<div class="flex items-center justify-between mb-1.5">
+<label class="block text-label-sm font-label-sm text-ink-white uppercase font-semibold flex items-center space-x-1">
+<span>专属邀请码</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-mono-data bg-amber-warn/20 text-amber-warn border border-amber-warn/30">必填</span>
+</label>
+<span class="text-label-sm font-label-sm text-bull-green">代码有效</span>
+</div>
+<div class="flex space-x-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-steel-muted" data-icon="key">key</span>
+<input class="w-full bg-canvas-obsidian text-ink-white text-mono-data font-mono-data border border-hairline rounded pl-9 pr-3 py-2 uppercase tracking-wide focus:outline-none focus:border-primary-container" placeholder="MGC-XXXX-XXXX" type="text" value="MGC-ALPHA-9821"/>
+</div>
+<button class="px-3 py-2 bg-card-navy-high hover:bg-surface-variant text-ink-white text-label-sm font-label-sm rounded border border-hairline transition-colors flex items-center space-x-1" type="button">
+<span class="material-symbols-outlined text-bull-green text-sm" data-icon="check">check</span>
+<span>校验</span>
+</button>
+</div>
+<p class="text-[11px] font-mono-data text-amber-warn mt-1.5 flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs" data-icon="info">info</span>
+<span>邀请制注册 · 无有效邀请码无法开通席位</span>
+</p>
+</div>
+<!-- Agreement Checkbox -->
+<div class="flex items-start space-x-2.5 pt-1">
+<input checked="" class="mt-1 w-4 h-4 rounded bg-surface-slate border-hairline text-primary-container focus:ring-0 focus:ring-offset-0 cursor-pointer" id="compliance-agree" type="checkbox"/>
+<label class="text-body-md font-body-md text-steel-muted cursor-pointer leading-tight" for="compliance-agree">
+                我已阅读并知悉机构合规接入要求及交易终端访问协议
+              </label>
+</div>
+<!-- Submit Primary CTA -->
+<button class="w-full h-10 mt-2 bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-headline-sm text-headline-sm rounded-lg flex items-center justify-center space-x-2 transition-all shadow-lg shadow-primary-container/20 active:opacity-80" type="submit">
+<span>注册并进入终端</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Secondary Link to Login -->
+<div class="mt-4 pt-4 border-t border-hairline/60 flex items-center justify-between text-body-md">
+<span class="text-steel-muted">已有终端账号？</span>
+<a class="text-primary hover:text-ink-white flex items-center space-x-1 transition-colors text-headline-sm font-headline-sm" href="#">
+<span>去登录</span>
+<span class="material-symbols-outlined text-sm" data-icon="login">login</span>
+</a>
+</div>
+<!-- Bottom Micro Details -->
+<div class="mt-4 text-center">
+<p class="text-[11px] text-steel-muted">
+              注册即代表同意 <a class="underline hover:text-ink-white" href="#">用户协议</a> 与 <a class="underline hover:text-ink-white" href="#">隐私政策</a>
+</p>
+<div class="mt-1 text-[10px] font-mono-data text-steel-muted flex items-center justify-center space-x-1">
+<span class="material-symbols-outlined text-[12px] text-bull-green" data-icon="lan">lan</span>
+<span>安全接入节点: NODE: HK-CENTRAL-01</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- FOOTER (Shared Components: Footer) -->
+<footer class="w-full h-10 px-6 flex justify-between items-center text-label-sm font-label-sm text-steel-muted border-t border-hairline bg-canvas-obsidian shrink-0">
+<div class="flex items-center space-x-3">
+<span class="text-headline-sm font-headline-sm text-steel-muted">MINGCE</span>
+<span>© 2025 MINGCE Terminal Inc. All rights reserved. AES-256 GCM 机构级端到端加密传输</span>
+</div>
+<div class="flex items-center space-x-4">
+<a class="text-steel-muted hover:text-ink-white transition-colors duration-150" href="#">服务条款</a>
+<a class="text-steel-muted hover:text-ink-white transition-colors duration-150" href="#">隐私合规</a>
+<a class="text-steel-muted hover:text-ink-white transition-colors duration-150" href="#">监管披露</a>
+<a class="text-steel-muted hover:text-ink-white transition-colors duration-150 flex items-center space-x-1" href="#">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span>节点状态</span>
+</a>
+</div>
+</footer>
+</body></html>

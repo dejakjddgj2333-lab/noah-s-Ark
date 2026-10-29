@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MINGCE TERMINAL - 聊天室 CHAT</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-primary": "#104aef",
+            "on-error": "#690005",
+            "secondary-fixed-dim": "#b2c5ff",
+            "secondary-container": "#164197",
+            "error-container": "#93000a",
+            "card-navy-high": "#1A2742",
+            "tertiary-fixed": "#ffdbcf",
+            "on-tertiary-container": "#ffeee9",
+            "surface-variant": "#33343e",
+            "amber-warn": "#F7B733",
+            "primary-container": "#2e5cff",
+            "hairline": "#34415E",
+            "outline": "#8e90a2",
+            "primary-fixed": "#dde1ff",
+            "on-primary-fixed": "#001355",
+            "surface-container": "#1d1f29",
+            "steel-muted": "#9EA0B2",
+            "primary": "#b8c3ff",
+            "on-secondary-fixed": "#001848",
+            "canvas-obsidian": "#070D1C",
+            "surface-bright": "#373943",
+            "tertiary": "#ffb59b",
+            "on-tertiary": "#5c1a00",
+            "on-error-container": "#ffdad6",
+            "card-navy": "#121D34",
+            "on-tertiary-fixed-variant": "#822800",
+            "secondary-fixed": "#dae2ff",
+            "surface": "#11131c",
+            "tertiary-container": "#c44100",
+            "inverse-on-surface": "#2e303a",
+            "background": "#11131c",
+            "surface-container-highest": "#33343e",
+            "surface-container-lowest": "#0c0e17",
+            "surface-container-low": "#191b24",
+            "tertiary-fixed-dim": "#ffb59b",
+            "primary-fixed-dim": "#b8c3ff",
+            "bull-green": "#00E388",
+            "ink-white": "#F0F0FF",
+            "on-surface": "#e2e1ef",
+            "on-secondary-container": "#98b3ff",
+            "surface-container-high": "#282933",
+            "surface-tint": "#b8c3ff",
+            "surface-dim": "#11131c",
+            "on-secondary-fixed-variant": "#164197",
+            "on-primary-fixed-variant": "#0035bd",
+            "bear-red": "#FF5F6D",
+            "on-surface-variant": "#c4c5d9",
+            "inverse-surface": "#e2e1ef",
+            "on-primary": "#002487",
+            "secondary": "#b2c5ff",
+            "on-primary-container": "#f0f0ff",
+            "on-tertiary-fixed": "#380d00",
+            "outline-variant": "#434656",
+            "on-background": "#e2e1ef",
+            "error": "#ffb4ab",
+            "on-secondary": "#002b73",
+            "surface-slate": "#0D1528"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "margin": "24px",
+            "space-sm": "8px",
+            "space-lg": "24px",
+            "space-xl": "32px",
+            "gutter": "16px",
+            "space-md": "16px"
+          },
+          "fontFamily": {
+            "headline-sm": ["Space Grotesk", "sans-serif"],
+            "headline-md": ["Space Grotesk", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "label-sm": ["JetBrains Mono", "monospace"],
+            "headline-lg": ["Space Grotesk", "sans-serif"],
+            "mono-data": ["JetBrains Mono", "monospace"],
+            "body-lg": ["Inter", "sans-serif"]
+          },
+          "fontSize": {
+            "headline-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-md": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "mono-data": ["13px", { "lineHeight": "1.4", "fontWeight": "500" }],
+            "body-lg": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom terminal scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070D1C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #34415E;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2E5CFF;
+    }
+    .material-symbols-outlined {
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="bg-canvas-obsidian text-ink-white font-body-md antialiased overflow-hidden select-none">
+<!-- ================= 1. 左侧全局导航栏 (SideNavBar - 240px) ================= -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-40 bg-surface-slate border-r border-hairline flex flex-col justify-between py-4 px-3">
+<!-- 头部品牌 -->
+<div>
+<div class="flex items-center gap-3 px-2 py-1 mb-6 border-b border-hairline pb-4">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center font-headline-md font-bold text-ink-white tracking-wider text-sm shadow-sm">
+          MC
+        </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold tracking-tight text-ink-white">MINGCE TERMINAL</span>
+<span class="font-mono-data text-[10px] text-steel-muted tracking-wide">V2.4 PRO LIVE</span>
+</div>
+</div>
+<!-- 快捷下单按钮 -->
+<div class="px-1 mb-4">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container hover:bg-inverse-primary text-ink-white py-2 px-3 rounded-lg font-headline-sm text-headline-sm transition-colors duration-150 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span>快捷交易</span>
+</button>
+</div>
+<!-- 导航项列表 (10项，聊天处于激活态) -->
+<nav class="space-y-1">
+<!-- 1. 概览 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<span>概览</span>
+</a>
+<!-- 2. 行情 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">candlestick_chart</span>
+<span>行情</span>
+</a>
+<!-- 3. 多维数据 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">query_stats</span>
+<span>多维数据</span>
+</a>
+<!-- 4. 爆仓监控 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">warning</span>
+<span>爆仓监控</span>
+</a>
+<!-- 5. 巨鲸动向 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">waterfall_chart</span>
+<span>巨鲸动向</span>
+</a>
+<!-- 6. 资金费率 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">swap_horiz</span>
+<span>资金费率</span>
+</a>
+<!-- 7. 资讯 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">newspaper</span>
+<span>资讯</span>
+</a>
+<!-- 8. 聊天 (ACTIVE) -->
+<a class="flex items-center gap-3 px-3 py-2 bg-card-navy text-primary border-l-2 border-primary-container font-headline-sm text-headline-sm rounded-r cursor-pointer">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="text-ink-white font-semibold">聊天</span>
+</a>
+<!-- 9. 资产管理 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span>资产管理</span>
+</a>
+<!-- 10. 设置 -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted hover:text-ink-white hover:bg-card-navy/50 transition-colors font-body-md text-body-md rounded cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+<span>设置</span>
+</a>
+</nav>
+</div>
+<!-- 底部状态元数据 -->
+<div class="border-t border-hairline pt-3 px-2 space-y-2">
+<div class="flex items-center justify-between text-steel-muted font-mono-data text-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">badge</span>
+<span>操作员 ID: 8821</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-pulse"></span>
+</div>
+<div class="flex items-center justify-between text-steel-muted font-mono-data text-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">wifi_tethering</span>
+<span>MS: 12ms</span>
+</div>
+<span class="text-bull-green text-[11px] font-mono-data">SYMMETRIC</span>
+</div>
+</div>
+</aside>
+<!-- ================= 2. 顶部导航栏 (TopNavBar - 56px) ================= -->
+<header class="fixed top-0 left-60 right-0 h-14 z-30 bg-canvas-obsidian border-b border-hairline flex items-center justify-between px-6">
+<!-- 左侧面包屑与标题 + 全局搜索 -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="text-steel-muted font-mono-data text-xs">TERMINAL</span>
+<span class="text-hairline">/</span>
+<h1 class="font-headline-md text-headline-md font-semibold text-ink-white flex items-center gap-2">
+<span>聊天室 CHAT</span>
+<span class="px-1.5 py-0.5 rounded bg-primary-container/20 text-primary-container font-mono-data text-[10px] tracking-wide border border-primary-container/30">DESK</span>
+</h1>
+</div>
+<!-- 全局搜索框 -->
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-steel-muted text-[16px]">search</span>
+<input class="w-full bg-surface-slate border border-hairline rounded-lg py-1.5 pl-8 pr-12 text-ink-white placeholder-steel-muted text-xs focus:outline-none focus:border-primary-container transition-colors" placeholder="快速搜索频道、成员或消息... ⌘K" type="text"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-card-navy text-[10px] font-mono-data text-steel-muted border border-hairline">⌘K</span>
+</div>
+</div>
+<!-- 右侧操作与操作员状态 -->
+<div class="flex items-center gap-4">
+<!-- 实时延迟状态 -->
+<div class="flex items-center gap-2 px-3 py-1 rounded bg-surface-slate border border-hairline text-xs font-mono-data">
+<span class="w-2 h-2 rounded-full bg-bull-green animate-pulse"></span>
+<span class="text-bull-green font-semibold">连接状态: 极佳 (12ms)</span>
+</div>
+<!-- 工具图标 -->
+<div class="flex items-center gap-1 border-r border-hairline pr-3">
+<button class="p-1.5 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors relative" title="通知中心">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-bear-red"></span>
+</button>
+<button class="p-1.5 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors" title="网络参数">
+<span class="material-symbols-outlined">wifi</span>
+</button>
+<button class="p-1.5 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors" title="偏好设置">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<!-- 操作员个人简要 -->
+<div class="flex items-center gap-2.5 pl-1 cursor-pointer group">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-primary-container ring-1 ring-primary-container/30">
+          QM
+        </div>
+<div class="flex flex-col text-left">
+<div class="flex items-center gap-1">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors">OP QuantMaster</span>
+<span class="px-1 py-0.2 bg-amber-warn/15 text-amber-warn rounded text-[9px] font-mono-data border border-amber-warn/30">VIP 9</span>
+</div>
+<span class="text-[10px] font-mono-data text-steel-muted">机构自营交易席位</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 3. 主内容区 (三栏金融情报操盘聊天布局) ================= -->
+<main class="ml-60 mt-14 h-[calc(100vh-56px)] p-4 flex gap-4 overflow-hidden bg-canvas-obsidian">
+<!-- 3.1 左窄栏：情报频道 (220px) -->
+<section class="w-56 flex-shrink-0 bg-card-navy border border-hairline rounded-xl flex flex-col justify-between overflow-hidden shadow-sm">
+<!-- 频道列表头部 -->
+<div>
+<div class="p-3 border-b border-hairline flex items-center justify-between">
+<span class="text-xs font-headline-sm tracking-wider text-steel-muted uppercase flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary-container">tag</span>
+            情报频道 CHANNELS
+          </span>
+<button class="text-steel-muted hover:text-ink-white transition-colors" title="新建订阅频道">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+<!-- 频道列表项 -->
+<div class="p-2 space-y-1">
+<!-- 频道 1: 综合讨论 (SELECTED) -->
+<div class="flex items-center justify-between px-2.5 py-2 rounded-lg bg-card-navy-high border-l-2 border-primary-container cursor-pointer transition-colors group">
+<div class="flex items-center gap-2 truncate">
+<span class="font-mono-data text-primary-container font-bold text-sm">#</span>
+<span class="font-headline-sm text-ink-white text-xs">综合讨论</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-primary-container text-ink-white font-mono-data text-[10px] font-semibold">12</span>
+</div>
+<!-- 频道 2: 宏观 -->
+<div class="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-card-navy-high/60 cursor-pointer transition-colors group">
+<div class="flex items-center gap-2 truncate">
+<span class="font-mono-data text-steel-muted group-hover:text-ink-white text-sm">#</span>
+<span class="font-body-md text-steel-muted group-hover:text-ink-white text-xs">宏观分析</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-slate text-steel-muted font-mono-data text-[10px] border border-hairline">5</span>
+</div>
+<!-- 频道 3: 山寨情报 -->
+<div class="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-card-navy-high/60 cursor-pointer transition-colors group">
+<div class="flex items-center gap-2 truncate">
+<span class="font-mono-data text-steel-muted group-hover:text-ink-white text-sm">#</span>
+<span class="font-body-md text-steel-muted group-hover:text-ink-white text-xs">山寨情报</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-bear-red/20 text-bear-red font-mono-data text-[10px] border border-bear-red/30">34</span>
+</div>
+<!-- 频道 4: 巨鲸异动 -->
+<div class="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-card-navy-high/60 cursor-pointer transition-colors group">
+<div class="flex items-center gap-2 truncate">
+<span class="font-mono-data text-steel-muted group-hover:text-ink-white text-sm">#</span>
+<span class="font-body-md text-steel-muted group-hover:text-ink-white text-xs">巨鲸异动</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-slate text-steel-muted font-mono-data text-[10px] border border-hairline">19</span>
+</div>
+<!-- 频道 5: 套利与资金费 -->
+<div class="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-card-navy-high/60 cursor-pointer transition-colors group">
+<div class="flex items-center gap-2 truncate">
+<span class="font-mono-data text-steel-muted group-hover:text-ink-white text-sm">#</span>
+<span class="font-body-md text-steel-muted group-hover:text-ink-white text-xs">套利资金费</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-slate text-steel-muted font-mono-data text-[10px] border border-hairline">7</span>
+</div>
+<!-- 频道 6: 新手问答 -->
+<div class="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-card-navy-high/60 cursor-pointer transition-colors group">
+<div class="flex items-center gap-2 truncate">
+<span class="font-mono-data text-steel-muted group-hover:text-ink-white text-sm">#</span>
+<span class="font-body-md text-steel-muted group-hover:text-ink-white text-xs">新手问答</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-slate text-steel-muted font-mono-data text-[10px] border border-hairline">2</span>
+</div>
+</div>
+</div>
+<!-- 底部状态区 -->
+<div class="p-3 border-t border-hairline bg-surface-slate/80">
+<div class="flex items-center justify-between text-xs font-mono-data text-steel-muted mb-1.5">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-bull-green animate-pulse"></span>
+<span class="text-ink-white font-medium">在线 1,284</span>
+</div>
+<span class="material-symbols-outlined text-[15px] text-steel-muted" title="加密端对端通道">lock</span>
+</div>
+<div class="flex justify-between text-[10px] font-mono-data text-steel-muted">
+<span>加密协议: AES-256</span>
+<span class="text-bull-green">SYNCED</span>
+</div>
+</div>
+</section>
+<!-- 3.2 中栏：核心消息流与操作台 (flex-1) -->
+<section class="flex-1 bg-card-navy border border-hairline rounded-xl flex flex-col justify-between overflow-hidden shadow-sm">
+<!-- 消息流顶部信息条 -->
+<header class="h-12 border-b border-hairline px-4 flex items-center justify-between bg-surface-slate/60">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5">
+<span class="font-mono-data text-primary-container font-bold text-base">#</span>
+<h2 class="font-headline-sm text-headline-sm text-ink-white">综合讨论</h2>
+</div>
+<span class="text-hairline">|</span>
+<p class="text-xs text-steel-muted truncate max-w-md">机构策略与宏观套利讨论区 · 延迟 8ms · 实时深度已挂接</p>
+</div>
+<!-- 顶部操作工具 -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1 px-2.5 py-1 rounded bg-card-navy hover:bg-card-navy-high border border-hairline text-steel-muted hover:text-ink-white text-xs font-mono-data transition-colors">
+<span class="material-symbols-outlined text-[14px]">push_pin</span>
+<span>钉选 (3)</span>
+</button>
+<button class="p-1.5 rounded hover:bg-card-navy-high text-steel-muted hover:text-ink-white transition-colors" title="搜索此频道历史消息">
+<span class="material-symbols-outlined text-[16px]">search</span>
+</button>
+<button class="p-1.5 rounded hover:bg-bear-red/20 text-steel-muted hover:text-bear-red transition-colors" title="清除屏幕缓存">
+<span class="material-symbols-outlined text-[16px]">clear_all</span>
+</button>
+</div>
+</header>
+<!-- 消息滚动区域 (8条操盘级专业情报消息 + 1条系统消息) -->
+<div class="flex-1 p-4 overflow-y-auto space-y-3.5 pr-2">
+<!-- 消息 1: 他人 (做市商) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            MD
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">Morgan_Desk</span>
+<span class="px-1.5 py-0.2 rounded bg-bull-green/10 text-bull-green border border-bull-green/30 text-[10px] font-mono-data">做市商 MM</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:18:22</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed">
+              Coinbase 与 Binance 现货价差在过去 15 分钟持续拉大到 <span class="font-mono-data text-bull-green font-medium">+42.50 USD</span>。主买单集中在 67,800 - 68,000 区间，盘口流动性深度略显失衡，警惕诱多洗盘。
+            </div>
+</div>
+</div>
+<!-- 消息 2: 他人 (资深量化) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            AQ
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">Alex_Quant</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-container/20 text-primary border border-primary-container/30 text-[10px] font-mono-data">资深量化</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:19:40</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed">
+              同意。我们 CTA 动量模型刚刚在 <span class="font-mono-data text-primary font-medium">BTC-USDT-PERP</span> 触发了减仓信号，目前全网资金费率年化已经飙升至 <span class="font-mono-data text-bear-red font-medium">38.4%</span>，多头持有成本极高，反向套利机会出现。
+            </div>
+</div>
+</div>
+<!-- 系统消息 (胶囊格式) -->
+<div class="flex items-center justify-center my-2">
+<div class="px-3 py-1 rounded-full bg-surface-slate border border-hairline text-steel-muted font-mono-data text-[11px] flex items-center gap-2 shadow-inner">
+<span class="w-1.5 h-1.5 rounded-full bg-steel-muted"></span>
+<span>系统: 操作员 OP-7709 已加入频道 # 综合讨论 · 14:22:15</span>
+</div>
+</div>
+<!-- 消息 3: 他人 (宏观分析) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            AF
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">Apex_Fund</span>
+<span class="px-1.5 py-0.2 rounded bg-amber-warn/15 text-amber-warn border border-amber-warn/30 text-[10px] font-mono-data">宏观策略</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:23:05</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed">
+              今晚 20:30 美国核心 PCE 数据公布，彭博预期 <span class="font-mono-data text-ink-white">2.8%</span>。美债 10 年期收益率目前在 <span class="font-mono-data text-bear-red">4.28%</span> 徘徊，宏观流动性偏紧，日内尽量规避大杠杆隔夜。
+            </div>
+</div>
+</div>
+<!-- 消息 4: 他人 (巨鲸监测) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            SW
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">Satoshi_Whale</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-container/20 text-primary border border-primary-container/30 text-[10px] font-mono-data">链上巨鲸</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:24:50</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed space-y-1">
+<div>链上异动预警：地址 <span class="font-mono-data text-steel-muted">0x3b8a...49f1</span> 刚刚向 Binance 充值 <span class="font-mono-data text-bear-red font-medium">3,400 BTC</span>（价值约 2.31 亿美元）。</div>
+<div class="p-1.5 rounded bg-surface-slate/80 border border-hairline font-mono-data text-[11px] text-steel-muted flex justify-between">
+<span>TXID: 7a82...d91c</span>
+<span class="text-bear-red">INFLOW TO CEX</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 消息 5: 他人 (量化做市) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            LL
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">Liquid_Lab</span>
+<span class="px-1.5 py-0.2 rounded bg-bull-green/10 text-bull-green border border-bull-green/30 text-[10px] font-mono-data">做市商 MM</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:26:12</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed">
+              收到。我们已经在衍生品盘口撤掉 68,200 的多头挂单，重新在 66,500 - 66,800 区间布设网格护盘流动性。
+            </div>
+</div>
+</div>
+<!-- 消息 6: 他人 (套利机器人) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            AB
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">Arbitrage_Bot</span>
+<span class="px-1.5 py-0.2 rounded bg-card-navy text-steel-muted border border-hairline text-[10px] font-mono-data">自动节点</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:27:04</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed font-mono-data">
+              [ALERT] OKX / Binance ETH-0927 季度交割基差扩大至 <span class="text-bull-green">+3.12%</span>，套利利差已达到执行阈值，已自动化建仓 400 手。
+            </div>
+</div>
+</div>
+<!-- 消息 7: 自己发送的消息 (专属高亮右对齐风格) -->
+<div class="flex items-start justify-end gap-3 pt-1">
+<div class="flex flex-col items-end max-w-2xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-steel-muted font-mono-data text-[11px]">14:28:10</span>
+<span class="px-1.5 py-0.2 rounded bg-amber-warn/20 text-amber-warn border border-amber-warn/40 text-[10px] font-mono-data">VIP 9 操盘席</span>
+<span class="font-headline-sm text-xs text-primary font-semibold">QuantMaster (我)</span>
+</div>
+<!-- Cobalt 20% 底色配细微钴蓝描边 -->
+<div class="bg-primary-container/20 border border-primary-container/40 rounded-lg p-3 text-xs text-ink-white leading-relaxed shadow-sm">
+              已将现货对冲 Delta 调整归零。目前在观察 67,200 的筹码密集峰支撑测试。如果跌破该线，准备在 66,000 启动期权双卖波动率收缩策略。
+            </div>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container border border-primary text-ink-white flex items-center justify-center font-mono-data text-xs font-bold flex-shrink-0 shadow-sm">
+            QM
+          </div>
+</div>
+<!-- 消息 8: 他人 (交易员) -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs font-bold text-ink-white flex-shrink-0">
+            ZX
+          </div>
+<div class="flex-1 max-w-3xl">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline-sm text-xs text-ink-white font-semibold">ZeroX_Trader</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-container/20 text-primary border border-primary-container/30 text-[10px] font-mono-data">自营交易</span>
+<span class="text-steel-muted font-mono-data text-[11px]">14:29:18</span>
+</div>
+<div class="bg-card-navy-high border border-hairline/80 rounded-lg p-2.5 text-xs text-ink-white leading-relaxed">
+              @QuantMaster 好思路。隐含波动率 (IV) 已经被提前拉高到了 62%，买方溢价严重，做空 Vega 是目前胜率最高的一侧。
+            </div>
+</div>
+</div>
+</div>
+<!-- 底部输入条 -->
+<footer class="p-3 border-t border-hairline bg-surface-slate">
+<div class="bg-card-navy border border-hairline rounded-lg p-2 focus-within:border-primary-container transition-colors">
+<!-- 文本输入区 -->
+<textarea class="w-full bg-transparent border-0 resize-none text-xs text-ink-white placeholder-steel-muted focus:ring-0 p-1 font-body-md" placeholder="在 # 综合讨论 中发言，支持 Markdown 与合约代码 /..." rows="2"></textarea>
+<!-- 输入框工具栏 -->
+<div class="flex items-center justify-between pt-2 border-t border-hairline/60">
+<!-- 快捷工具按钮组 -->
+<div class="flex items-center gap-1">
+<button class="p-1 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy-high transition-colors" title="插入表情与信号">
+<span class="material-symbols-outlined text-[16px]">sentiment_satisfied</span>
+</button>
+<button class="p-1 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy-high transition-colors" title="引用代码块或行情图表">
+<span class="material-symbols-outlined text-[16px]">code</span>
+</button>
+<button class="p-1 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy-high transition-colors" title="提及席位或成员">
+<span class="material-symbols-outlined text-[16px]">alternate_email</span>
+</button>
+<button class="p-1 rounded text-steel-muted hover:text-ink-white hover:bg-card-navy-high transition-colors" title="快速插入标的实时指标">
+<span class="material-symbols-outlined text-[16px]">insights</span>
+</button>
+</div>
+<!-- 提示与发送主按钮 -->
+<div class="flex items-center gap-3">
+<span class="text-[11px] font-mono-data text-steel-muted">Enter 发送 · ⇧+Enter 换行</span>
+<button class="flex items-center gap-1.5 bg-primary-container hover:bg-inverse-primary text-ink-white px-3 py-1.5 rounded-lg text-xs font-headline-sm transition-colors shadow-sm">
+<span>发送</span>
+<span class="material-symbols-outlined text-[14px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</footer>
+</section>
+<!-- 3.3 右窄栏：在线成员列表 (240px) -->
+<aside class="w-60 flex-shrink-0 bg-card-navy border border-hairline rounded-xl flex flex-col justify-between overflow-hidden shadow-sm">
+<!-- 成员列表头部 -->
+<div class="p-3 border-b border-hairline flex items-center justify-between">
+<span class="text-xs font-headline-sm tracking-wider text-steel-muted uppercase flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-bull-green">group</span>
+          在线成员 ONLINE (8/48)
+        </span>
+<button class="text-steel-muted hover:text-ink-white transition-colors" title="成员过滤">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+</button>
+</div>
+<!-- 8个真实专业交易成员项 -->
+<div class="flex-1 overflow-y-auto p-2 space-y-1">
+<!-- 成员 1: Alex_Quant -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-ink-white">
+              AQ
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">Alex_Quant</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-primary-container/20 text-primary text-[9px] font-mono-data border border-primary-container/30">PRO</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">AlphaDesk</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 2: Morgan_Desk -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-bull-green">
+              MD
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">Morgan_Desk</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-bull-green/15 text-bull-green text-[9px] font-mono-data border border-bull-green/30">MM</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">做市流动性</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 3: Satoshi_Whale -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-amber-warn">
+              SW
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">Satoshi_Whale</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-amber-warn/15 text-amber-warn text-[9px] font-mono-data border border-amber-warn/30">ADMIN</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">链上巡航</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 4: ZeroX_Trader -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-ink-white">
+              ZX
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">ZeroX_Trader</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-primary-container/20 text-primary text-[9px] font-mono-data border border-primary-container/30">PRO</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">波动率套利</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 5: Liquid_Lab -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-bull-green">
+              LL
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">Liquid_Lab</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-bull-green/15 text-bull-green text-[9px] font-mono-data border border-bull-green/30">MM</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">高频网格</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 6: Arbitrage_Bot -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-steel-muted">
+              AB
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">Arbitrage_Bot</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-surface-slate text-steel-muted text-[9px] font-mono-data border border-hairline">BOT</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">自动执行</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 7: Apex_Fund -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-card-navy-high cursor-pointer transition-colors group">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-card-navy-high border border-hairline flex items-center justify-center font-mono-data text-xs text-amber-warn">
+              AF
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-ink-white group-hover:text-primary transition-colors truncate">Apex_Fund</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-primary-container/20 text-primary text-[9px] font-mono-data border border-primary-container/30">PRO</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">宏观对冲</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+<!-- 成员 8: QuantMaster (我) -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-card-navy-high/50 border border-primary-container/20 cursor-pointer">
+<div class="flex items-center gap-2.5 truncate">
+<div class="w-7 h-7 rounded-full bg-primary-container text-ink-white border border-primary flex items-center justify-center font-mono-data text-xs font-bold">
+              QM
+            </div>
+<div class="flex flex-col truncate">
+<span class="text-xs font-headline-sm text-primary font-semibold truncate">QuantMaster (我)</span>
+<div class="flex items-center gap-1">
+<span class="px-1 py-0.2 rounded bg-amber-warn/20 text-amber-warn text-[9px] font-mono-data border border-amber-warn/40">VIP 9</span>
+<span class="text-[10px] font-mono-data text-steel-muted truncate">席位 8821</span>
+</div>
+</div>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green flex-shrink-0"></span>
+</div>
+</div>
+<!-- 底部席位状态 -->
+<div class="p-3 border-t border-hairline bg-surface-slate/80 text-[11px] font-mono-data text-steel-muted">
+<div class="flex justify-between items-center mb-1">
+<span>终端会话鉴权:</span>
+<span class="text-ink-white">HMAC-SHA256</span>
+</div>
+<div class="flex justify-between items-center">
+<span>广播延迟:</span>
+<span class="text-bull-green">8.24 ms</span>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#070D1C"/>
 <title>明策 MINGCE · 专属邀请</title>
 <meta name="description" content="好友邀你加入明策 MINGCE 市场情报终端,专属邀请通道已激活。"/>
-<link rel="icon" type="image/png" href="/static/logo.png"/>
-<link rel="apple-touch-icon" href="/static/logo.png"/>
+<link rel="icon" type="image/png" href="logo.png"/>
+<link rel="apple-touch-icon" href="logo.png"/>
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -74,19 +74,6 @@ header .wrap{height:60px; display:flex; align-items:center; justify-content:spac
 h1{font-size:clamp(30px,5.4vw,46px); line-height:1.12; letter-spacing:-1px; font-weight:700; margin:20px 0 14px}
 h1 .grad{background:linear-gradient(92deg,var(--ink) 0%,var(--accent-soft) 90%); -webkit-background-clip:text; background-clip:text; color:transparent}
 .lede{color:var(--muted); max-width:34em; margin-bottom:26px; font-size:15px}
-
-/* 邀请码卡 */
-.code-card{background:var(--card); border:1px solid rgba(46,92,255,.32); border-radius:14px; padding:20px; position:relative; overflow:hidden; margin-bottom:24px}
-.code-card::after{content:""; position:absolute; top:-60%; right:-10%; width:240px; height:240px; background:radial-gradient(circle,rgba(46,92,255,.16),transparent 70%); pointer-events:none}
-.code-head{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; letter-spacing:1.4px; margin-bottom:10px; font-weight:600}
-.tag-valid{color:var(--bull); font-size:10px; padding:2px 7px; border-radius:5px; background:rgba(0,227,136,.12); border:1px solid rgba(0,227,136,.3); letter-spacing:.5px}
-.code-row{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap}
-.code{font-size:clamp(24px,6vw,32px); font-weight:700; letter-spacing:6px; color:var(--accent-soft); animation:float 5s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-.btn-ghost{display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; background:var(--surface); border:1px solid var(--line); color:var(--accent-soft); font-size:13px; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s,transform .1s; white-space:nowrap}
-.btn-ghost:hover{border-color:rgba(130,164,255,.6); color:var(--ink)}
-.btn-ghost:active{transform:scale(.97)}
-.btn-ghost svg{width:16px; height:16px}
 
 /* CTA */
 .cta-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:26px}
@@ -168,6 +155,66 @@ footer a:hover{color:var(--ink)}
 /* Toast */
 .toast{position:fixed; left:50%; bottom:34px; transform:translateX(-50%) translateY(20px); background:var(--card-high); color:var(--ink); border:1px solid var(--line); padding:11px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:50; box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+/* ── 移动端底部常驻 CTA ── */
+.mobile-cta{position:fixed; left:0; right:0; bottom:0; z-index:40; padding:10px 16px calc(10px + env(safe-area-inset-bottom)); background:rgba(7,13,28,.88); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid var(--line); display:none; transform:translateY(105%); transition:transform .3s cubic-bezier(.22,.9,.3,1)}
+.mobile-cta.show{transform:none}
+.mobile-cta .btn-primary{width:100%; justify-content:center; padding:13px 20px}
+
+/* ── 移动端适配 (≤768px) ── */
+@media(max-width:768px){
+  body{padding-bottom:74px} /* 给常驻 CTA 留位 */
+  .mobile-cta{display:block}
+  .toast{bottom:calc(88px + env(safe-area-inset-bottom))}
+
+  /* Hero 收紧 */
+  .hero{padding:28px 0 4px; gap:30px}
+  h1{margin:16px 0 12px; letter-spacing:-.6px}
+  .lede{margin-bottom:20px; font-size:14px; line-height:1.65}
+  .pill{font-size:10px; letter-spacing:1.2px}
+
+  /* 主 CTA 整行 */
+  .cta-row{margin-bottom:18px}
+  .btn-primary{width:100%; justify-content:center}
+  .cta-note{justify-content:center; width:100%; font-size:12px}
+
+  /* 遥测条: 去分隔符, 整行堆叠不折行 */
+  .spec{gap:6px 16px; padding-top:16px; font-size:11px}
+  .spec .dv{display:none}
+  .spec .it{flex:1 1 100%; white-space:nowrap}
+
+  /* 终端卡收紧 */
+  .term-bar{height:38px; padding:0 12px}
+  .term-body{padding:10px; gap:8px; font-size:11px}
+  .feed{padding:10px}
+  .feed .msg{font-size:12px}
+  .feed .ft{display:none} /* 小屏藏时间戳降噪 */
+  .term-foot{padding:8px 12px; font-size:10px}
+
+  /* 功能区收紧 */
+  .caps{margin-top:44px}
+  .caps .lab{margin-bottom:12px}
+  .caps-grid .cap{padding:20px 20px 16px}
+  .cap .ic{width:36px; height:36px; margin-bottom:12px}
+  .cap h3{font-size:16px}
+  .cap .ok{margin-top:12px; padding-top:10px}
+
+  /* 下载带 + 页脚 */
+  .get{margin-top:40px; padding:22px 20px}
+  .get h4{font-size:18px}
+  footer{margin-top:44px}
+  footer .wrap{flex-direction:column; align-items:center; text-align:center; gap:10px; padding:22px 20px 28px}
+}
+@media(max-width:360px){
+  h1{font-size:27px}
+}
+
+/* 减弱动效偏好 */
+@media(prefers-reduced-motion:reduce){
+  .rise,.bg-glow,.dot::before{animation:none !important}
+  .rise{opacity:1; transform:none}
+  .mobile-cta{transition:none}
+}
 </style>
 </head>
 <body>
@@ -177,7 +224,7 @@ footer a:hover{color:var(--ink)}
 <header>
   <div class="wrap">
     <div class="brand rise d1">
-      <img class="logo" src="/static/logo.png" alt="明策"/>
+      <img class="logo" src="logo.png" alt="明策"/>
       <div>
         <div class="t1 display">明策 MINGCE</div>
         <div class="t2 mono">MARKET INTELLIGENCE</div>
@@ -197,28 +244,14 @@ footer a:hover{color:var(--ink)}
         <span class="b">受邀专属通道</span>
       </div>
       <h1 class="display rise d2">好友邀你<br/><span class="grad">洞察市场先机</span></h1>
-      <p class="lede rise d3">明策 MINGCE 市场情报系统的受邀席位已为你激活。接入多维行情洞察、机构巨鲸链上动向与实时语音纪要,安装后使用下方邀请码完成绑定。</p>
-
-      <div class="code-card rise d3">
-        <div class="code-head mono">
-          <span>TERMINAL ACCESS CODE</span>
-          <span class="tag-valid mono">VALIDATED</span>
-        </div>
-        <div class="code-row">
-          <div class="code mono" id="inviteCode">····</div>
-          <button class="btn-ghost mono" id="copyBtn" onclick="copyCode()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-            <span id="copyTxt">复制邀请码</span>
-          </button>
-        </div>
-      </div>
+      <p class="lede rise d3">明策 MINGCE 市场情报系统的受邀席位已为你激活。接入多维行情洞察、机构巨鲸链上动向与实时语音纪要,选择你的设备即刻接入。</p>
 
       <div class="cta-row rise d4">
-        <a class="btn-primary" id="openAppBtn" href="#get">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-          <span>下载 / 打开 App</span>
-        </a>
-        <span class="cta-note"><span class="sd"></span>支持 iOS / Android 实时同步唤醒</span>
+        <button class="btn-primary" id="openAppBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m0 0l-6-6m6 6l-6 6"/></svg>
+          <span id="openAppTxt">进入明策终端</span>
+        </button>
+        <span class="cta-note"><span class="sd"></span><span id="ctaNote">手机自动进入移动版 · 电脑自动进入 PC 终端</span></span>
       </div>
 
       <div class="spec mono rise d5">
@@ -289,20 +322,20 @@ footer a:hover{color:var(--ink)}
     </div>
   </section>
 
-  <!-- 下载引导带 -->
+  <!-- 接入引导带 -->
   <section class="get rise" id="get">
     <div class="l">
-      <h4 class="display">准备好接入了吗</h4>
-      <p>下载明策 App,注册时在邀请码栏填入上方专属码即可完成绑定。已安装则直接打开自动带出。</p>
+      <h4 class="display">选择你的接入方式</h4>
+      <p>手机 / 平板打开移动端网页版,电脑进入 PC 网页终端,账号与行情数据实时同步。</p>
     </div>
     <div class="stores">
-      <button class="store" onclick="openApp('ios')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8.98-.2 1.92-.86 3.24-.77 1.58.13 2.77.75 3.55 1.9-3.27 1.96-2.5 6.27.53 7.5-.6 1.58-1.38 3.15-2.4 3.54zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-        <span><span class="s1">Download on the</span><span class="s2">App Store</span></span>
+      <button class="store" onclick="goMobile()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+        <span><span class="s1">手机 / 平板浏览器</span><span class="s2">移动端网页版</span></span>
       </button>
-      <button class="store" onclick="openApp('android')">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.2 16.8h9.6v-6.4H7.2v6.4zM16.1 7.9l1.1-1.7a.3.3 0 0 0-.5-.3l-1.15 1.74a7.7 7.7 0 0 0-7.02 0L7.4 5.9a.3.3 0 0 0-.5.3L8 7.9a6.5 6.5 0 0 0-3 5.5h14a6.5 6.5 0 0 0-2.9-5.5zM9.7 11.4a.7.7 0 1 1 .7-.7.7.7 0 0 1-.7.7zm4.6 0a.7.7 0 1 1 .7-.7.7.7 0 0 1-.7.7zM5 10.2a1 1 0 0 0-1 1v4.6a1 1 0 0 0 2 0v-4.6a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v4.6a1 1 0 0 0 2 0v-4.6a1 1 0 0 0-1-1z"/></svg>
-        <span><span class="s1">Get it on</span><span class="s2">Android</span></span>
+      <button class="store" onclick="goPc()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8m-4-4v4"/></svg>
+        <span><span class="s1">桌面浏览器</span><span class="s2">PC 网页终端</span></span>
       </button>
     </div>
   </section>
@@ -312,74 +345,53 @@ footer a:hover{color:var(--ink)}
   <div class="wrap">
     <div class="c mono">© <span id="yr">2026</span> 明策 MINGCE · 市场情报终端 · 仅供受邀用户核验使用</div>
     <div class="links">
-      <a href="/api/legal/terms">用户协议</a>
-      <a href="/api/legal/privacy">隐私政策</a>
+      <a href="https://shipapi.bdxapi.com/api/legal/terms">用户协议</a>
+      <a href="https://shipapi.bdxapi.com/api/legal/privacy">隐私政策</a>
     </div>
   </div>
 </footer>
 
-<div class="toast" id="toast">邀请码已复制</div>
+<div class="toast" id="toast">正在跳转…</div>
+
+<!-- 移动端底部常驻 CTA -->
+<div class="mobile-cta" id="mcta">
+  <button class="btn-primary" id="mctaBtn" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m0 0l-6-6m6 6l-6 6"/></svg>
+    <span>进入移动端网页版</span>
+  </button>
+</div>
 
 <script>
 (function(){
-  // 读取 URL 邀请码
+  // 读取 URL 邀请码 (跳转下游时透传, 移动端网页版注册会自动预填)
   var params = new URLSearchParams(location.search);
   var code = (params.get('invite') || params.get('code') || '').trim().toUpperCase();
-  var codeEl = document.getElementById('inviteCode');
-  if (code) { codeEl.textContent = code; }
-  else { codeEl.textContent = '— — — —'; codeEl.style.color = 'var(--muted)'; codeEl.style.letterSpacing='2px'; codeEl.style.fontSize='18px'; }
   document.getElementById('yr').textContent = new Date().getFullYear();
 
-  window.INVITE_CODE = code;
+  var MOBILE_URL = 'https://m.mingcevip.com/' + (code ? '?invite=' + encodeURIComponent(code) : '');
+  var PC_URL = 'https://mingcevip.com/' + (code ? '?invite=' + encodeURIComponent(code) : '');
+  var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent || '');
 
-  // 复制邀请码
-  window.copyCode = function(){
-    if(!code){ toast('未检测到邀请码'); return; }
-    var done = function(){
-      var btn=document.getElementById('copyBtn'), txt=document.getElementById('copyTxt');
-      txt.textContent='已复制'; btn.style.borderColor='rgba(0,227,136,.55)'; btn.style.color='var(--bull)';
-      toast('邀请码已复制');
-      setTimeout(function(){ txt.textContent='复制邀请码'; btn.style.borderColor=''; btn.style.color=''; },2200);
-    };
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(code).then(done, fallbackCopy); }
-    else { fallbackCopy(); }
-    function fallbackCopy(){
-      var ta=document.createElement('textarea'); ta.value=code; ta.style.position='fixed'; ta.style.opacity='0';
-      document.body.appendChild(ta); ta.select();
-      try{ document.execCommand('copy'); done(); }catch(e){ toast('复制失败,请长按复制'); }
-      document.body.removeChild(ta);
-    }
-  };
-
-  // 打开 / 下载 App
-  window.openApp = function(platform){
-    var scheme = 'mingce://invite' + (code ? ('?invite='+encodeURIComponent(code)) : '');
-    // 已安装 → 唤端并自动带出邀请码
-    var start = Date.now();
-    // iOS 用隐藏 iframe / 直接跳转均可;Android Chrome 直接跳 scheme
-    window.location.href = scheme;
-    // 若 ~1.6s 后页面仍在前台,视为未安装 → 引导下载
-    setTimeout(function(){
-      if(document.hidden || Date.now()-start > 2200) return;
-      scrollToGet(platform);
-    }, 1600);
-  };
-
-  function scrollToGet(platform){
-    var el=document.getElementById('get');
-    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
-    toast(platform==='ios' ? '未检测到 App,请先在 App Store 下载' : '未检测到 App,请先下载安装');
+  window.goMobile = function(){ location.href = MOBILE_URL; };
+  window.goPc = function(){ location.href = PC_URL; };
+  function goAuto(){
+    toast(isMobile ? '正在进入移动端网页版…' : '正在进入 PC 网页终端…');
+    location.href = isMobile ? MOBILE_URL : PC_URL;
   }
 
-  // 主 CTA:已装唤端,未装滚到下载带
-  document.getElementById('openAppBtn').addEventListener('click', function(e){
-    e.preventDefault();
-    var ua = navigator.userAgent||'';
-    var isIOS = /iPad|iPhone|iPod/.test(ua);
-    var isAndroid = /Android/.test(ua);
-    if(isIOS||isAndroid){ openApp(isIOS?'ios':'android'); }
-    else { scrollToGet(); }
-  });
+  document.getElementById('openAppBtn').addEventListener('click', goAuto);
+  document.getElementById('mctaBtn').addEventListener('click', goAuto);
+
+  // 常驻 CTA: 主按钮滚出视口才浮现, 滚到引导带时让位
+  var mcta = document.getElementById('mcta');
+  var heroGone = false, getSeen = false;
+  function updCta(){ mcta.classList.toggle('show', heroGone && !getSeen); }
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(en){ heroGone = !en[0].isIntersecting; updCta(); }, {threshold:0})
+      .observe(document.getElementById('openAppBtn'));
+    new IntersectionObserver(function(en){ getSeen = en[0].isIntersecting; updCta(); }, {threshold:0.2})
+      .observe(document.getElementById('get'));
+  }
 
   function toast(msg){
     var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');

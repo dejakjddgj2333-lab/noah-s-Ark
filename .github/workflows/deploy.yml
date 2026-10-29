@@ -17,10 +17,15 @@ jobs:
           filters: |
             backend:
               - 'server/**'
+              - '!server/static/**'
               - 'docker-compose.yml'
               - '.env.config'
             admin:
               - 'admin/**'
+            pc:
+              - 'web-terminal/**'
+            landing:
+              - 'server/static/**'
             all:
               - 'deploy/**'
               - '.github/workflows/deploy.yml'
@@ -30,6 +35,8 @@ jobs:
         env:
           BACKEND: ${{ steps.changes.outputs.backend }}
           ADMIN: ${{ steps.changes.outputs.admin }}
+          PC: ${{ steps.changes.outputs.pc }}
+          LANDING: ${{ steps.changes.outputs.landing }}
           ALL: ${{ steps.changes.outputs.all }}
           APITUBE_API_KEY: ${{ secrets.APITUBE_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -39,7 +46,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: BACKEND,ADMIN,ALL,APITUBE_API_KEY,DEEPSEEK_API_KEY,APNS_KEY_TEXT,SMTP_PASSWORD
+          envs: BACKEND,ADMIN,PC,LANDING,ALL,APITUBE_API_KEY,DEEPSEEK_API_KEY,APNS_KEY_TEXT,SMTP_PASSWORD
           script: |
             cd /www/wwwroot/hk/repo
             git fetch origin master
@@ -50,6 +57,8 @@ jobs:
             if [ -z "$TARGETS" ]; then
               [ "$BACKEND" = "true" ] && TARGETS="$TARGETS backend"
               [ "$ADMIN" = "true" ] && TARGETS="$TARGETS admin"
+              [ "$PC" = "true" ] && TARGETS="$TARGETS pc"
+              [ "$LANDING" = "true" ] && TARGETS="$TARGETS landing"
             fi
 
             if [ -z "$TARGETS" ]; then
@@ -72,3 +81,58 @@ jobs:
             fi
 
             bash deploy/deploy.sh $TARGETS
+
+  # Flutter App 移动网页版: 改动 app/** 时在 runner 构建, rsync 到宝塔站点根
+  flutter-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检测改动范围
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            m:
+              - 'app/**'
+            all:
+              - 'deploy/**'
+              - '.github/workflows/deploy.yml'
+
+      - name: Flutter SDK
+        if: steps.changes.outputs.m == 'true' || steps.changes.outputs.all == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 构建 flutter web
+        if: steps.changes.outputs.m == 'true' || steps.changes.outputs.all == 'true'
+        run: |
+          cd app
+          flutter pub get
+          flutter build web --release --base-href / --dart-define=API_BASE=https://shipapi.bdxapi.com
+
+      - name: rsync 到服务器
+        if: steps.changes.outputs.m == 'true' || steps.changes.outputs.all == 'true'
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete --exclude=.user.ini --exclude=.htaccess
+          path: app/build/web/
+          remote_path: /www/wwwroot/m.mingcevip.com/
+          remote_host: ${{ secrets.SERVER_HOST }}
+          remote_user: ${{ secrets.SERVER_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 重置属主权限
+        if: steps.changes.outputs.m == 'true' || steps.changes.outputs.all == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            M_WEB=/www/wwwroot/m.mingcevip.com
+            find "$M_WEB" ! -name '.user.ini' -exec chown www:www {} +
+            find "$M_WEB" -type d -exec chmod 755 {} \;
+            find "$M_WEB" -type f ! -name '.user.ini' -exec chmod 644 {} \;

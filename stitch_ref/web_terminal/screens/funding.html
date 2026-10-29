@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MINGCE 资金费率 FUNDING RATE | Obsidian Precision Terminal</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-container": "#ffeee9",
+            "outline-variant": "#434656",
+            "primary-fixed-dim": "#b8c3ff",
+            "inverse-on-surface": "#2e303a",
+            "steel-muted": "#9EA0B2",
+            "ink-white": "#F0F0FF",
+            "on-tertiary-fixed-variant": "#822800",
+            "secondary": "#b2c5ff",
+            "on-tertiary": "#5c1a00",
+            "on-error": "#690005",
+            "on-surface": "#e2e1ef",
+            "surface-dim": "#11131c",
+            "on-primary-container": "#f0f0ff",
+            "card-navy": "#121D34",
+            "error-container": "#93000a",
+            "on-secondary-fixed-variant": "#164197",
+            "surface-container-low": "#191b24",
+            "primary-container": "#2e5cff",
+            "primary": "#b8c3ff",
+            "on-secondary-container": "#98b3ff",
+            "primary-fixed": "#dde1ff",
+            "surface-container-lowest": "#0c0e17",
+            "surface-container-high": "#282933",
+            "surface-slate": "#0D1528",
+            "on-primary-fixed-variant": "#0035bd",
+            "error": "#ffb4ab",
+            "on-tertiary-fixed": "#380d00",
+            "background": "#11131c",
+            "surface-tint": "#b8c3ff",
+            "inverse-surface": "#e2e1ef",
+            "secondary-fixed": "#dae2ff",
+            "on-secondary-fixed": "#001848",
+            "on-primary": "#002487",
+            "inverse-primary": "#104aef",
+            "bull-green": "#00E388",
+            "bear-red": "#FF5F6D",
+            "outline": "#8e90a2",
+            "secondary-fixed-dim": "#b2c5ff",
+            "tertiary": "#ffb59b",
+            "on-surface-variant": "#c4c5d9",
+            "on-background": "#e2e1ef",
+            "hairline": "#34415E",
+            "surface-container": "#1d1f29",
+            "on-error-container": "#ffdad6",
+            "surface-bright": "#373943",
+            "amber-warn": "#F7B733",
+            "card-navy-high": "#1A2742",
+            "tertiary-fixed": "#ffdbcf",
+            "canvas-obsidian": "#070D1C",
+            "on-primary-fixed": "#001355",
+            "surface": "#11131c",
+            "on-secondary": "#002b73",
+            "surface-variant": "#33343e",
+            "secondary-container": "#164197",
+            "tertiary-container": "#c44100",
+            "surface-container-highest": "#33343e",
+            "tertiary-fixed-dim": "#ffb59b"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-lg": "24px",
+            "margin": "24px",
+            "space-sm": "8px",
+            "space-md": "16px",
+            "gutter": "16px",
+            "space-xs": "4px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "mono-data": ["JetBrains Mono"],
+            "headline-sm": ["Space Grotesk"],
+            "body-md": ["Inter"],
+            "headline-lg": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Space Grotesk"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "mono-data": ["13px", { "lineHeight": "1.4", "fontWeight": "500" }],
+            "headline-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-md": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-canvas-obsidian text-ink-white font-body-md text-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-ink-white">
+<!-- ==================== FIXED LEFT SIDENAV (SideNavBar) ==================== -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-40 bg-canvas-obsidian border-r border-hairline flex flex-col justify-between py-4 px-3 overflow-y-auto">
+<!-- Top Brand & Hierarchy Header -->
+<div class="flex flex-col gap-5">
+<div class="px-2 pt-1 flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-card-navy border border-hairline flex items-center justify-center text-primary-container shadow-inner">
+<span class="material-symbols-outlined text-[20px]" data-icon="candlestick_chart">candlestick_chart</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-md font-headline-md font-bold tracking-tight text-ink-white">MINGCE</span>
+<span class="text-label-sm font-label-sm text-steel-muted text-[10px] tracking-widest">OBSIDIAN PRECISION</span>
+</div>
+</div>
+<!-- Quick Action CTA -->
+<div class="px-1">
+<button class="w-full h-9 bg-primary-container text-ink-white font-headline-sm text-headline-sm rounded-lg flex items-center justify-center gap-2 hover:bg-opacity-90 active:scale-[0.98] transition-all duration-150 shadow-sm border border-primary-container">
+<span class="material-symbols-outlined text-[18px]" data-icon="bolt">bolt</span>
+<span>快捷下单</span>
+</button>
+</div>
+<!-- Navigation Tabs (9 items exactly mapped to JSON) -->
+<nav class="flex flex-col gap-1">
+<!-- 概览 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="dashboard">dashboard</span>
+<span>概览</span>
+</a>
+<!-- 行情 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="monitoring">monitoring</span>
+<span>行情</span>
+</a>
+<!-- 多维数据 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="analytics">analytics</span>
+<span>多维数据</span>
+</a>
+<!-- 爆仓监控 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="warning">warning</span>
+<span>爆仓监控</span>
+</a>
+<!-- 巨鲸动向 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+<span>巨鲸动向</span>
+</a>
+<!-- 资金费率 (ACTIVE STATE: strict mapped style_active_navigation) -->
+<a class="flex items-center gap-3 px-3 py-2 bg-card-navy text-ink-white border-l-2 border-primary-container font-headline-sm text-headline-sm rounded-r transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="candlestick_chart">candlestick_chart</span>
+<span>资金费率</span>
+</a>
+<!-- 资讯 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="feed">feed</span>
+<span>资讯</span>
+</a>
+<!-- 资产管理 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>资产管理</span>
+</a>
+<!-- 系统设置 (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 text-steel-muted font-body-md text-body-md hover:bg-surface-slate hover:text-ink-white transition-colors duration-150 rounded" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+<span>系统设置</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Institutional Credentials & Node Latency -->
+<div class="pt-4 border-t border-hairline flex flex-col gap-2">
+<div class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-slate border border-hairline text-steel-muted font-mono-data text-label-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="verified_user">verified_user</span>
+<span class="text-ink-white">OP-8821 · 已认证</span>
+</div>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-bull-green animate-pulse"></span>
+</div>
+<div class="flex items-center justify-between px-2 py-1.5 rounded bg-surface-slate border border-hairline text-steel-muted font-mono-data text-label-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-bull-green" data-icon="network_ping">network_ping</span>
+<span>12ms 延迟 稳定</span>
+</div>
+<span class="text-steel-muted text-[10px]">HK-G2</span>
+</div>
+</div>
+</aside>
+<!-- ==================== FIXED TOP APP BAR (TopNavBar) ==================== -->
+<header class="fixed top-0 left-60 right-0 h-14 z-30 bg-surface-slate border-b border-hairline flex justify-between items-center px-6 gap-4">
+<!-- Left: Title & Quick Search -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="text-headline-sm font-headline-sm font-semibold text-ink-white tracking-wide">资金费率 FUNDING RATE</span>
+<span class="px-2 py-0.5 rounded bg-card-navy text-primary font-mono-data text-label-sm border border-hairline">PERP 8H CYCLE</span>
+</div>
+<!-- Quick Search Bar -->
+<div class="relative w-64 hidden xl:block">
+<span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-steel-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="search">search</span>
+</span>
+<input class="w-full h-8 pl-8 pr-3 bg-canvas-obsidian border border-hairline rounded text-ink-white placeholder-steel-muted font-mono-data text-label-sm focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container" placeholder="搜索标的 (如 BTC / SOL / DOGE)..." type="text"/>
+</div>
+</div>
+<!-- Center/Right: Live Telemetry, Notifications & Seat Profile -->
+<div class="flex items-center gap-4">
+<!-- L3 Feed Badge -->
+<div class="flex items-center gap-2 px-3 py-1 bg-card-navy border border-hairline rounded font-mono-data text-label-sm text-steel-muted">
+<span class="inline-block w-2 h-2 rounded-full bg-bull-green animate-ping"></span>
+<span class="text-ink-white font-mono-data">L3 · 实时流 0.4ms</span>
+</div>
+<!-- Settle Countdown Micro-badge -->
+<div class="hidden lg:flex items-center gap-2 px-3 py-1 bg-card-navy border border-hairline rounded font-mono-data text-label-sm">
+<span class="text-steel-muted">下次结算:</span>
+<span class="text-amber-warn font-semibold" id="global-timer">04:23:18</span>
+</div>
+<!-- Trailing Action Icons -->
+<div class="flex items-center gap-1 border-l border-hairline pl-3">
+<button class="w-8 h-8 rounded flex items-center justify-center text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors duration-150" title="通知中心">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-steel-muted hover:text-ink-white hover:bg-card-navy transition-colors duration-150" title="网络网络聚合状态">
+<span class="material-symbols-outlined text-[20px]" data-icon="wifi_tethering">wifi_tethering</span>
+</button>
+</div>
+<!-- Trader Profile Avatar & Seat -->
+<div class="flex items-center gap-2.5 pl-2 border-l border-hairline">
+<div class="w-8 h-8 rounded-full bg-card-navy border border-hairline flex items-center justify-center text-ink-white font-mono-data text-label-sm font-bold">
+          OP
+        </div>
+<div class="hidden sm:flex flex-col text-left">
+<span class="text-ink-white font-headline-sm text-label-sm leading-tight">OP-8821 Pro</span>
+<span class="text-steel-muted font-mono-data text-[10px]">T1 机构席位</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ==================== MAIN HIGH-DENSITY WORKSPACE ==================== -->
+<main class="ml-60 pt-14 min-h-screen bg-canvas-obsidian p-6 flex flex-col gap-6">
+<!-- SUBHEADER / STATUS SUMMARY BANNER -->
+<div class="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-hairline">
+<div class="flex items-center gap-3">
+<h1 class="text-headline-lg font-headline-lg text-ink-white tracking-tight">全网资金费率矩阵与套利引擎</h1>
+<span class="px-2 py-0.5 rounded bg-card-navy border border-hairline text-steel-muted font-mono-data text-label-sm">
+          UTC 结算窗口: 00:00 / 08:00 / 16:00
+        </span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-steel-muted font-body-md text-label-sm flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span> 聚合48家主流交易所衍生品节点
+        </span>
+<button class="h-7 px-2.5 bg-card-navy hover:bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm rounded flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px]" data-icon="refresh">refresh</span>
+<span>强制重校</span>
+</button>
+</div>
+</div>
+<!-- ROW 1: 3 KPI METRIC CARDS (Equal 3-column Grid) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Card 1: 全市场平均资金费率 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-steel-muted font-headline-sm text-label-sm uppercase tracking-wider">AVERAGE FUNDING RATE</span>
+<span class="text-ink-white font-headline-md text-headline-sm">全市场平均资金费率</span>
+</div>
+<span class="p-1.5 bg-surface-slate border border-hairline rounded text-amber-warn">
+<span class="material-symbols-outlined text-[20px]" data-icon="query_stats">query_stats</span>
+</span>
+</div>
+<div class="my-4 flex items-baseline justify-between">
+<div>
+<div class="text-amber-warn font-mono-data text-[32px] font-bold tracking-tight leading-none">+0.0124%</div>
+<div class="text-steel-muted font-body-md text-label-sm mt-1.5">
+              年化折算参考: <span class="font-mono-data text-ink-white">+13.58% p.a.</span>
+</div>
+</div>
+<!-- Mini SVG Sparkline Decorative Visual -->
+<div class="w-24 h-9 flex items-end">
+<svg class="w-full h-full text-amber-warn" fill="none" viewbox="0 0 100 36">
+<path d="M0 28 L15 24 L30 29 L45 18 L60 22 L75 12 L90 15 L100 8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M0 28 L15 24 L30 29 L45 18 L60 22 L75 12 L90 15 L100 8 V36 H0 Z" fill="currentColor" fill-opacity="0.1"></path>
+</svg>
+</div>
+</div>
+<div class="pt-3 border-t border-hairline flex flex-col gap-1.5">
+<div class="flex items-center justify-between font-label-sm text-[11px]">
+<span class="text-amber-warn font-medium flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-warn"></span>
+              多头持仓偏多 · 情绪轻微亢奋
+            </span>
+<span class="text-steel-muted font-mono-data">基准 8H</span>
+</div>
+<div class="text-steel-muted font-mono-data text-[11px]">
+            24H 波动: <span class="text-bull-green">+0.0018%</span> | 监控合约: 148 对
+          </div>
+</div>
+</div>
+<!-- Card 2: 全网最高费率标的 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="text-steel-muted font-headline-sm text-label-sm uppercase tracking-wider">HIGHEST RATE</span>
+<span class="px-1.5 py-0.2 rounded bg-bull-green/10 text-bull-green border border-bull-green/30 font-mono-data text-[10px]">
+                多头极度溢价
+              </span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-ink-white font-headline-md text-headline-sm font-semibold">BTCUSDT</span>
+<span class="text-steel-muted font-label-sm text-[11px]">永续合约</span>
+</div>
+</div>
+<span class="p-1.5 bg-surface-slate border border-hairline rounded text-bull-green">
+<span class="material-symbols-outlined text-[20px]" data-icon="trending_up">trending_up</span>
+</span>
+</div>
+<div class="my-4 flex items-baseline justify-between">
+<div>
+<div class="text-bull-green font-mono-data text-[32px] font-bold tracking-tight leading-none">+0.0450%</div>
+<div class="text-steel-muted font-body-md text-label-sm mt-1.5">
+              年化折算: <span class="font-mono-data text-bull-green font-semibold">+49.27% p.a.</span>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">Binance</span>
+<span class="text-[10px] text-steel-muted font-mono-data mt-1">深度流动性 T0</span>
+</div>
+</div>
+<div class="pt-3 border-t border-hairline flex flex-col gap-1.5">
+<div class="flex items-center justify-between font-label-sm text-[11px]">
+<span class="text-bull-green font-medium flex items-center gap-1">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-bull-green animate-pulse"></span>
+              多空偏离度: 极度贴水 (多付空)
+            </span>
+<span class="text-steel-muted font-mono-data">期现基差 +$142</span>
+</div>
+<div class="text-steel-muted font-mono-data text-[11px]">
+            建议策略: <span class="text-ink-white font-medium">现货多头 + 永续空头基差套利</span>
+</div>
+</div>
+</div>
+<!-- Card 3: 全网最低/负费率标的 -->
+<div class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="text-steel-muted font-headline-sm text-label-sm uppercase tracking-wider">LOWEST RATE</span>
+<span class="px-1.5 py-0.2 rounded bg-bear-red/10 text-bear-red border border-bear-red/30 font-mono-data text-[10px]">
+                反向套利敞口
+              </span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-ink-white font-headline-md text-headline-sm font-semibold">DOGEUSDT</span>
+<span class="text-steel-muted font-label-sm text-[11px]">永续合约</span>
+</div>
+</div>
+<span class="p-1.5 bg-surface-slate border border-hairline rounded text-bear-red">
+<span class="material-symbols-outlined text-[20px]" data-icon="trending_down">trending_down</span>
+</span>
+</div>
+<div class="my-4 flex items-baseline justify-between">
+<div>
+<div class="text-bear-red font-mono-data text-[32px] font-bold tracking-tight leading-none">-0.0210%</div>
+<div class="text-steel-muted font-body-md text-label-sm mt-1.5">
+              年化折算: <span class="font-mono-data text-bear-red font-semibold">-22.99% p.a.</span>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">Bybit</span>
+<span class="text-[10px] text-steel-muted font-mono-data mt-1">空头持仓极度密集</span>
+</div>
+</div>
+<div class="pt-3 border-t border-hairline flex flex-col gap-1.5">
+<div class="flex items-center justify-between font-label-sm text-[11px]">
+<span class="text-bear-red font-medium flex items-center gap-1">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-bear-red animate-pulse"></span>
+              状态: 空头支付多头 (空头挤压预警)
+            </span>
+<span class="text-steel-muted font-mono-data">溢价指数 -0.038%</span>
+</div>
+<div class="text-steel-muted font-mono-data text-[11px]">
+            建议策略: <span class="text-ink-white font-medium">多头持仓获取费率分红</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 2: SPLIT LAYOUT (Heatmap 8 Cols + Intel Guidelines 4 Cols) -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+<!-- Left Card: Cross-Exchange Heatmap (8 Columns) -->
+<div class="lg:col-span-8 bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between">
+<!-- Card Header & Controls -->
+<div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-hairline">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="grid_view">grid_view</span>
+<span class="text-ink-white font-headline-md text-headline-sm font-semibold">全网费率热力图 CROSS-EXCHANGE HEATMAP</span>
+</div>
+<!-- Heatmap Legend & Period Toggle -->
+<div class="flex items-center gap-4">
+<!-- Heatmap Scale Legend -->
+<div class="hidden sm:flex items-center gap-1.5 text-[10px] font-mono-data text-steel-muted">
+<span>&lt;-0.02%</span>
+<div class="w-3 h-3 rounded-sm bg-bear-red/80"></div>
+<div class="w-3 h-3 rounded-sm bg-bear-red/30"></div>
+<div class="w-3 h-3 rounded-sm bg-surface-slate border border-hairline"></div>
+<div class="w-3 h-3 rounded-sm bg-bull-green/30"></div>
+<div class="w-3 h-3 rounded-sm bg-bull-green/80"></div>
+<span>&gt;+0.03%</span>
+</div>
+<!-- Tab Switcher -->
+<div class="flex rounded bg-surface-slate border border-hairline p-0.5">
+<button class="px-2.5 py-1 text-ink-white bg-card-navy font-mono-data text-label-sm rounded font-medium shadow-sm">
+                8H 当前周期
+              </button>
+<button class="px-2.5 py-1 text-steel-muted hover:text-ink-white font-mono-data text-label-sm rounded transition-colors">
+                24H 均值
+              </button>
+</div>
+</div>
+</div>
+<!-- Heatmap Matrix Table -->
+<div class="overflow-x-auto my-3">
+<table class="w-full border-collapse">
+<thead>
+<tr class="border-b border-hairline">
+<th class="py-2.5 px-3 text-left font-mono-data text-label-sm text-steel-muted font-semibold bg-surface-slate/50">EXCHANGE</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">BTC</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">ETH</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">SOL</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">DOGE</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">ARB</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">OP</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">AVAX</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">LINK</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">ATOM</th>
+<th class="py-2.5 px-2 text-center font-mono-data text-label-sm text-ink-white">NEAR</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-hairline">
+<!-- Row 1: Binance -->
+<tr>
+<td class="py-3 px-3 font-headline-sm text-headline-sm text-ink-white font-medium bg-surface-slate/40">Binance</td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-semibold bg-bull-green/70 text-canvas-obsidian border border-bull-green">+0.045%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.015%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/40 text-bull-green border border-bull-green/50">+0.021%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/35 text-bear-red border border-bear-red/40">-0.012%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/30">+0.008%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/25 text-bull-green border border-bull-green/30">+0.010%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/35 text-bull-green border border-bull-green/40">+0.018%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/30">+0.009%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/20 text-bear-red border border-bear-red/30">-0.004%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/45 text-bull-green border border-bull-green/50">+0.023%</div></td>
+</tr>
+<!-- Row 2: OKX -->
+<tr>
+<td class="py-3 px-3 font-headline-sm text-headline-sm text-ink-white font-medium bg-surface-slate/40">OKX</td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/60 text-canvas-obsidian border border-bull-green/80">+0.038%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/25 text-bull-green border border-bull-green/40">+0.012%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/35 text-bull-green border border-bull-green/40">+0.019%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/45 text-bear-red border border-bear-red/50">-0.018%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/15 text-bull-green border border-bull-green/30">+0.006%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.014%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.015%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/25 text-bull-green border border-bull-green/35">+0.011%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/25 text-bear-red border border-bear-red/35">-0.005%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/40 text-bull-green border border-bull-green/50">+0.020%</div></td>
+</tr>
+<!-- Row 3: Bybit -->
+<tr>
+<td class="py-3 px-3 font-headline-sm text-headline-sm text-ink-white font-medium bg-surface-slate/40">Bybit</td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-semibold bg-bull-green/65 text-canvas-obsidian border border-bull-green/90">+0.041%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.014%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.016%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-bold bg-bear-red/65 text-ink-white border border-bear-red">-0.021%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/30">+0.009%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/30">+0.008%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/25 text-bull-green border border-bull-green/35">+0.012%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/15 text-bull-green border border-bull-green/30">+0.007%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/35 text-bear-red border border-bear-red/40">-0.008%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/35 text-bull-green border border-bull-green/45">+0.018%</div></td>
+</tr>
+<!-- Row 4: Bitget -->
+<tr>
+<td class="py-3 px-3 font-headline-sm text-headline-sm text-ink-white font-medium bg-surface-slate/40">Bitget</td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/55 text-canvas-obsidian border border-bull-green/70">+0.035%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/35">+0.010%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/25 text-bull-green border border-bull-green/35">+0.013%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/35 text-bear-red border border-bear-red/45">-0.013%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/30">+0.007%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/25 text-bull-green border border-bull-green/35">+0.011%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.014%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/20 text-bull-green border border-bull-green/30">+0.008%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bear-red/15 text-bear-red border border-bear-red/25">-0.002%</div></td>
+<td class="p-1.5"><div class="h-10 rounded flex items-center justify-center font-mono-data text-[12px] font-medium bg-bull-green/30 text-bull-green border border-bull-green/40">+0.015%</div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pt-3 border-t border-hairline flex items-center justify-between font-mono-data text-label-sm text-steel-muted">
+<span>* 颜色饱和度深度绑定费率绝对值偏离度</span>
+<span>高亮基差利差利器: BTC (+10.0 bps) / DOGE (9.0 bps)</span>
+</div>
+</div>
+<!-- Right Card: Intel & Arbitrage Guidelines (4 Columns) -->
+<div class="lg:col-span-4 bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between">
+<div class="flex items-center gap-2 pb-3 border-b border-hairline">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="lightbulb">lightbulb</span>
+<span class="text-ink-white font-headline-md text-headline-sm font-semibold">费率机制与套利说明 INTEL &amp; GUIDELINES</span>
+</div>
+<!-- 3 Professional Text Sections -->
+<div class="flex flex-col gap-4 my-2">
+<!-- Item 1 -->
+<div class="p-3 rounded bg-surface-slate border border-hairline flex flex-col gap-1.5">
+<div class="flex items-center gap-2 text-primary font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="sync_alt">sync_alt</span>
+<span>1. 结算机制与资金流向</span>
+</div>
+<p class="text-steel-muted text-[12px] leading-relaxed">
+              资金费率每 8 小时（00:00, 08:00, 16:00 UTC）在多空交易者之间直接结算，不经由交易所收取。当费率为正，多头向空头支付；当费率为负，空头向多头支付。
+            </p>
+</div>
+<!-- Item 2 -->
+<div class="p-3 rounded bg-surface-slate border border-hairline flex flex-col gap-1.5">
+<div class="flex items-center gap-2 text-amber-warn font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="troubleshoot">troubleshoot</span>
+<span>2. 市场多空情绪锚定</span>
+</div>
+<p class="text-steel-muted text-[12px] leading-relaxed">
+              正费率溢价过高（&gt;0.03%）反映市场杠杆极度看涨，伴随潜在多头挤压风险；深度负费率通常预示强支撑反弹或空头回补窗口。
+            </p>
+</div>
+<!-- Item 3 -->
+<div class="p-3 rounded bg-surface-slate border border-hairline flex flex-col gap-1.5">
+<div class="flex items-center gap-2 text-bull-green font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="account_balance">account_balance</span>
+<span>3. 现货-合约跨期期现套利 (Cash &amp; Carry)</span>
+</div>
+<p class="text-steel-muted text-[12px] leading-relaxed">
+              利用不同交易所费率差异进行跨平台套利（如币安做空同时OKX做多相同标的），或买入现货同时做空高正费率永续合约，无方向性风险获取稳健年化资金费收益。
+            </p>
+</div>
+</div>
+<div class="pt-3 border-t border-hairline flex items-center justify-between font-mono-data text-[11px] text-steel-muted">
+<span>风险评级: 低至中性 (Delta Neutral)</span>
+<a class="text-primary hover:underline flex items-center gap-0.5" href="#">
+<span>策略回测文档</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+<!-- ROW 3: LIVE FUNDING ARBITRAGE MATRIX FULL TABLE -->
+<section class="bg-card-navy border border-hairline rounded-xl p-5 flex flex-col gap-4">
+<!-- Table Header & Controls -->
+<div class="flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[22px]" data-icon="table_chart">table_chart</span>
+<div>
+<span class="text-ink-white font-headline-md text-headline-sm font-semibold">费率明细全景表 LIVE FUNDING ARBITRAGE MATRIX</span>
+<span class="ml-2 text-steel-muted font-mono-data text-label-sm">8对核心衍生品流动性池</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 px-2.5 py-1 bg-surface-slate border border-hairline rounded font-mono-data text-label-sm text-steel-muted">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+<span>自动重拉取: 3s</span>
+</div>
+<button class="px-3 py-1 bg-surface-slate hover:bg-card-navy-high border border-hairline rounded text-ink-white font-mono-data text-label-sm flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px]" data-icon="filter_list">filter_list</span>
+<span>过滤正负敞口</span>
+</button>
+</div>
+</div>
+<!-- Professional Dark Data Table -->
+<div class="overflow-x-auto border border-hairline rounded-lg">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-slate border-b border-hairline text-steel-muted font-mono-data text-label-sm uppercase tracking-wider">
+<th class="py-3 px-4">标的资产 (PERP)</th>
+<th class="py-3 px-3 text-right">Binance 费率</th>
+<th class="py-3 px-3 text-right">OKX 费率</th>
+<th class="py-3 px-3 text-right">Bybit 费率</th>
+<th class="py-3 px-3 text-right">全网均值 (Avg)</th>
+<th class="py-3 px-4 text-center">下次结算倒计时</th>
+<th class="py-3 px-3 text-right">8H 预期年化 (APR)</th>
+<th class="py-3 px-4 text-center">跨所基差 / 操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-hairline font-mono-data text-mono-data">
+<!-- Row 1: BTC -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-amber-warn text-[10px]">₿</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">BTCUSDT</span>
+<span class="text-[10px] text-steel-muted">Bitcoin 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0450%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0380%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0410%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0413%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green animate-ping"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+49.28%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 7.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 2: ETH -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-secondary text-[10px]">Ξ</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">ETHUSDT</span>
+<span class="text-[10px] text-steel-muted">Ethereum 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0150%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0120%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0140%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0137%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+15.00%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 3.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 3: SOL -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-primary text-[10px]">S</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">SOLUSDT</span>
+<span class="text-[10px] text-steel-muted">Solana 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0210%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0190%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0160%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0187%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+20.47%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 5.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 4: DOGE -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-amber-warn text-[10px]">Ð</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">DOGEUSDT</span>
+<span class="text-[10px] text-steel-muted">Dogecoin 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bear-red font-semibold">-0.0120%</td>
+<td class="py-3 px-3 text-right text-bear-red">-0.0180%</td>
+<td class="py-3 px-3 text-right text-bear-red font-bold">-0.0210%</td>
+<td class="py-3 px-3 text-right text-bear-red font-medium">-0.0170%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bear-red animate-pulse"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bear-red font-bold">-18.61%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-bear-red">Δ 9.0 bps (套利)</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 5: ARB -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-primary text-[10px]">A</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">ARBUSDT</span>
+<span class="text-[10px] text-steel-muted">Arbitrum 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0080%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0060%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0090%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0077%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+8.43%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 3.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 6: OP -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-bear-red text-[10px]">O</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">OPUSDT</span>
+<span class="text-[10px] text-steel-muted">Optimism 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0100%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0140%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0080%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0107%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+11.72%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 6.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 7: AVAX -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-bear-red text-[10px]">▲</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">AVAXUSDT</span>
+<span class="text-[10px] text-steel-muted">Avalanche 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0180%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0150%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0120%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0150%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+16.42%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 6.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 8: LINK -->
+<tr class="hover:bg-surface-slate/60 transition-colors">
+<td class="py-3 px-4">
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-primary text-[10px]">⬡</div>
+<div class="flex flex-col">
+<span class="text-ink-white font-headline-sm font-semibold">LINKUSDT</span>
+<span class="text-[10px] text-steel-muted">Chainlink 永续</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-semibold">+0.0090%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0110%</td>
+<td class="py-3 px-3 text-right text-bull-green">+0.0070%</td>
+<td class="py-3 px-3 text-right text-bull-green font-medium">+0.0090%</td>
+<td class="py-3 px-4 text-center">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-slate border border-hairline text-ink-white font-mono-data text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
+                  04:23:18
+                </span>
+</td>
+<td class="py-3 px-3 text-right text-bull-green font-bold">+9.85%</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<span class="text-[11px] text-steel-muted">Δ 4.0 bps</span>
+<button class="h-6 px-2.5 rounded bg-surface-slate hover:bg-primary-container text-ink-white hover:text-white border border-hairline font-headline-sm text-label-sm transition-colors">
+                    查看基差
+                  </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer Metadata & Pagination -->
+<div class="pt-2 flex flex-wrap items-center justify-between gap-3 text-steel-muted font-mono-data text-label-sm">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-bull-green"></span>
+            数据刷新间隔: 3s 实时多播
+          </span>
+<span>•</span>
+<span>已同步 48 家交易所合约节点</span>
+<span>•</span>
+<span>加权算法: TWAP 8H 指数平滑</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-steel-muted text-[11px]">显示 1-8 共 148 条</span>
+<div class="flex items-center gap-1">
+<button class="w-6 h-6 rounded bg-surface-slate border border-hairline flex items-center justify-center text-steel-muted hover:text-ink-white">
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="px-2 py-0.5 rounded bg-primary-container text-ink-white text-[11px] font-bold">1</span>
+<button class="w-6 h-6 rounded bg-surface-slate border border-hairline flex items-center justify-center text-steel-muted hover:text-ink-white">
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- FOOTER TELEMETRY & ENCRYPTION STATUS -->
+<footer class="pt-4 pb-2 border-t border-hairline flex flex-wrap items-center justify-between text-steel-muted font-mono-data text-[11px] gap-2">
+<div class="flex items-center gap-3">
+<span class="text-ink-white font-semibold">MINGCE TRADING SYSTEM</span>
+<span>|</span>
+<span>端到端加密: AES-256 GCM 传输认证</span>
+<span>|</span>
+<span class="text-bull-green">心跳回响正常 (Heartbeat: 12ms)</span>
+</div>
+<div>
+<span>OBSIDIAN PRECISION ENGINE v4.19.2-PRO · 机构专属席位 OP-8821</span>
+</div>
+</footer>
+</main>
+<!-- Lightweight Micro-interaction Script for Real-time Feel -->
+<script>
+    // Live Settlement Countdown Ticker
+    let totalSeconds = 4 * 3600 + 23 * 60 + 18;
+    const timerElement = document.getElementById('global-timer');
+
+    setInterval(() => {
+      if (totalSeconds > 0) {
+        totalSeconds--;
+        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        if (timerElement) {
+          timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+      }
+    }, 1000);
+  </script>
+</body></html>
