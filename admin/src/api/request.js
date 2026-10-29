@@ -4,8 +4,9 @@ import router from '@/router'
 import { useUserStore } from '@/store/user'
 
 const request = axios.create({
-  // 本地开发走 vite 代理 (/api → localhost:8000); 打包部署显式指向正式 API
-  baseURL: import.meta.env.DEV ? '/api' : 'http://shipapi.bdxapi.com/api',
+  // 本地开发走 vite 代理 (/api → localhost:8000); 打包部署显式指向正式 API。
+  // 必须 https: 服务器已发 HSTS, 浏览器会把 http 内部 307 到 https, 预检吃重定向报 CORS 错。
+  baseURL: import.meta.env.DEV ? '/api' : 'https://shipapi.bdxapi.com/api',
   timeout: 10000,
 })
 

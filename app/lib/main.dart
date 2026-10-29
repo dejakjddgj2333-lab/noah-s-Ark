@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/l10n.dart';
@@ -45,6 +46,18 @@ import 'services/widget_bridge.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 系统栏配深色: 底部导航条不再露白 (App 全深色主题, 默认白条刺眼).
+  // edge-to-edge 下导航条区域由页面 SafeArea 接管, 这里管老版本 Android 的实色条.
+  if (!kIsWeb) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: McColors.surface,
+      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarContrastEnforced: false,
+    ));
+  }
   await ChatDb.init(); // 本地消息库 (先于 runApp, 聊天页秒开)
   await AuthStore.instance.load();
   await L10n.instance.load(); // 语言选择持久化

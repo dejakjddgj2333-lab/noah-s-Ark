@@ -1,0 +1,21 @@
+Dear Apple App Review Team,
+
+Thank you for taking the time to review our application, Mingce (明策).
+
+We received the notice mentioning that our app violates Guideline 4.3 - Design - Spam. We take Apple's guidelines very seriously and strive to provide a unique, high-quality experience for iOS users.
+
+To help us better understand the issue and resolve it efficiently, could you please kindly point out the specific apps that are considered similar or identical to ours?
+
+Additionally, we would like to highlight what makes Mingce unique:
+
+Unique Core Functionality/Value: Mingce is not a trading or exchange app. It is a professional crypto market data monitoring terminal, featuring proprietary multi-dimensional dashboards — a cross-exchange funding rate matrix with settlement countdown, a real-time liquidation monitoring feed with heatmaps, a whale transaction radar tracking large on-chain and perpetual trades, and composite market sentiment indices (fear & greed, long/short ratio, open interest, altcoin season index). In addition, it includes a built-in community with private/group messaging and 1:1 voice calls, allowing users to discuss market movements in real time.
+
+Distinct Target Audience/Scenario: Mingce is built for active crypto derivatives traders and analysts who need professional-grade monitoring tools rather than a place to trade, and it serves a global audience with full localization in 8 languages.
+
+Original Design & Codebase: Our app is completely built and maintained by our own team, featuring original source code, custom-designed UI/UX, and distinct assets.
+
+We are fully committed to complying with Apple's developer guidelines. Once we have more details regarding the similar apps you mentioned, we will immediately review and make any necessary changes to clarify our unique value.
+
+Thank you very much for your guidance and support. We look forward to hearing from you.
+
+Best regards
