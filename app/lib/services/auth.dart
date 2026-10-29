@@ -138,13 +138,28 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 发注册验证码. 返回 dev 调试码 (SMTP 未配置时后端回显), 否则 null.
-  Future<String?> sendEmailCode(String email) async {
+  /// 发邮箱验证码. purpose: register(默认) / reset(忘记密码).
+  /// 返回 dev 调试码 (SMTP 未配置时后端回显), 否则 null.
+  Future<String?> sendEmailCode(String email, {String purpose = 'register'}) async {
     final resp = await McApi.post('/api/auth/send-email-code', {
       'email': email,
-      'purpose': 'register',
+      'purpose': purpose,
     });
     return resp['debug_code'] as String?;
+  }
+
+  /// 忘记密码: 邮箱验证码校验通过后重置密码. 抛 ApiException(含后端 detail 文案).
+  /// 成功不签发 token, 由前端回登录页手动登录.
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await McApi.post('/api/auth/reset-password', {
+      'email': email,
+      'code': code,
+      'new_password': newPassword,
+    });
   }
 
   Future<void> register({

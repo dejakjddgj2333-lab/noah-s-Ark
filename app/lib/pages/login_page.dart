@@ -253,6 +253,24 @@ class _LoginPageState extends State<LoginPage> {
                         keyboard: TextInputType.text),
                   ],
                   _field(_passCtrl, tr('login_password'), Icons.lock_outline, obscure: true),
+                  if (_isLogin) ...[
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pushNamed(
+                            context, '/forgot-password'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            tr('login_forgot'),
+                            style: McText.sans(
+                                size: 12, color: McColors.primary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   if (!_isLogin) ...[
                     const SizedBox(height: 12),
                     _field(_pass2Ctrl, tr('login_confirm_password'), Icons.lock_outline,

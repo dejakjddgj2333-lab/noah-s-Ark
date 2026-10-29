@@ -13,6 +13,7 @@ import 'pages/call_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/commission_page.dart';
 import 'pages/deposit_page.dart';
+import 'pages/forgot_password_page.dart';
 import 'pages/funds_page.dart';
 import 'pages/home_funding_page.dart';
 import 'pages/home_liquidation_page.dart';
@@ -84,6 +85,7 @@ class MingceApp extends StatelessWidget {
           ],
           routes: {
             '/login': (_) => const LoginPage(),
+            '/forgot-password': (_) => const ForgotPasswordPage(),
           },
           onGenerateRoute: (settings) {
             // 需登录的 push 路由

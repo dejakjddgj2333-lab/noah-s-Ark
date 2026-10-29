@@ -452,6 +452,58 @@ final Map<String, Map<String, String>> table = {
     'hi': 'नेटवर्क त्रुटि, बाद में पुनः प्रयास करें',
   },
 
+  // ---------------- forgot_password_page ----------------
+  'login_forgot': {
+    'zh-CN': '忘记密码?', 'zh-TW': '忘記密碼?', 'en': 'Forgot password?',
+    'ja': 'パスワードをお忘れですか?', 'ko': '비밀번호를 잊으셨나요?',
+    'es': '¿Olvidaste tu contraseña?', 'pt': 'Esqueceu a senha?',
+    'hi': 'पासवर्ड भूल गए?',
+  },
+  'forgot_title': {
+    'zh-CN': '忘记密码', 'zh-TW': '忘記密碼', 'en': 'Reset Password',
+    'ja': 'パスワード再設定', 'ko': '비밀번호 재설정',
+    'es': 'Restablecer contraseña', 'pt': 'Redefinir senha',
+    'hi': 'पासवर्ड रीसेट करें',
+  },
+  'forgot_subtitle': {
+    'zh-CN': '通过邮箱验证码重置密码', 'zh-TW': '透過郵箱驗證碼重置密碼',
+    'en': 'Reset your password via email code',
+    'ja': 'メール認証コードでパスワードを再設定します',
+    'ko': '이메일 인증 코드로 비밀번호를 재설정하세요',
+    'es': 'Restablece tu contraseña con el código de correo',
+    'pt': 'Redefina sua senha com o código de e-mail',
+    'hi': 'ईमेल कोड से अपना पासवर्ड रीसेट करें',
+  },
+  'forgot_new_password': {
+    'zh-CN': '新密码', 'zh-TW': '新密碼', 'en': 'New Password',
+    'ja': '新しいパスワード', 'ko': '새 비밀번호',
+    'es': 'Nueva contraseña', 'pt': 'Nova senha', 'hi': 'नया पासवर्ड',
+  },
+  'forgot_btn_reset': {
+    'zh-CN': '重置密码', 'zh-TW': '重置密碼', 'en': 'Reset Password',
+    'ja': 'パスワードをリセット', 'ko': '비밀번호 재설정',
+    'es': 'Restablecer contraseña', 'pt': 'Redefinir senha',
+    'hi': 'पासवर्ड रीसेट करें',
+  },
+  'forgot_success': {
+    'zh-CN': '密码重置成功, 请重新登录', 'zh-TW': '密碼重置成功, 請重新登錄',
+    'en': 'Password reset. Please log in again',
+    'ja': 'パスワードを再設定しました。再度ログインしてください',
+    'ko': '비밀번호가 재설정되었습니다. 다시 로그인하세요',
+    'es': 'Contraseña restablecida. Inicia sesión de nuevo',
+    'pt': 'Senha redefinida. Faça login novamente',
+    'hi': 'पासवर्ड रीसेट हो गया। कृपया फिर से लॉग इन करें',
+  },
+  'forgot_err_pwd_short': {
+    'zh-CN': '密码至少 8 位', 'zh-TW': '密碼至少 8 位',
+    'en': 'Password must be at least 8 characters',
+    'ja': 'パスワードは8文字以上必要です',
+    'ko': '비밀번호는 8자 이상이어야 합니다',
+    'es': 'La contraseña debe tener al menos 8 caracteres',
+    'pt': 'A senha deve ter pelo menos 8 caracteres',
+    'hi': 'पासवर्ड कम से कम 8 अक्षरों का होना चाहिए',
+  },
+
   // ---------------- chat_page ----------------
   'chat_search_hint': {
     'zh-CN': '搜索会话', 'zh-TW': '搜尋會話', 'en': 'Search chats',

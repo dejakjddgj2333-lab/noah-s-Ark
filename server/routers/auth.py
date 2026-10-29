@@ -109,6 +109,14 @@ class ChangePasswordIn(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+class ResetPasswordIn(BaseModel):
+    email: str
+    code: str
+    new_password: str = Field(min_length=8)
+
+    _check_email = field_validator("email")(_valid_email)
+
+
 def _fund_password_6(v: str) -> str:
     if not (len(v) == 6 and v.isdigit()):
         raise ValueError("资金密码须为6位数字")
@@ -187,6 +195,16 @@ async def send_email_code(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="该邮箱已注册"
             )
+    elif data.purpose == "reset":
+        # 忘记密码: 模糊提示不泄露注册状态. 邮箱不存在/非 active 时不写码不发信,
+        # 统一返回 ok (前端恒提示「验证码已发送」).
+        existing = await db.execute(
+            select(HkUser).where(
+                HkUser.email == data.email, HkUser.status == "active"
+            )
+        )
+        if existing.scalar_one_or_none() is None:
+            return {"ok": True}
 
     latest = await _latest_code(db, data.email, data.purpose)
     if latest is not None:
@@ -209,9 +227,10 @@ async def send_email_code(
     await db.commit()
 
     ttl_minutes = config.email_code_ttl_sec // 60
+    subject = "Mingce 重置密码验证码" if data.purpose == "reset" else "Mingce 验证码"
     sent = await email_service.send_email(
         to=data.email,
-        subject="Mingce 验证码",
+        subject=subject,
         text=(
             f"您好, 您的 Mingce 验证码为: {code}\n\n"
             f"验证码 {ttl_minutes} 分钟内有效, 请勿泄露给他人。"
@@ -438,6 +457,57 @@ async def change_password(
             status_code=status.HTTP_400_BAD_REQUEST, detail="新密码不能与原密码相同"
         )
     me.password_hash = auth_service.hash_password(data.new_password)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    data: ResetPasswordIn, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """忘记密码: 邮箱验证码校验通过后重置密码. 不签发 token, 前端回登录页手动登录.
+
+    全程模糊提示: 邮箱不存在/验证码错误统一「验证码错误或已过期」, 不泄露注册状态.
+    """
+    ip = rate_limit_service.client_ip(request)
+    rate_limit_service.check(
+        f"resetpw:{ip}",
+        int(param_service.get("login_rate_limit")),
+        config.login_rate_window_sec,
+    )
+
+    result = await db.execute(
+        select(HkUser).where(
+            HkUser.email == data.email, HkUser.status == "active"
+        )
+    )
+    user = result.scalar_one_or_none()
+    if user is None:
+        # 不暴露邮箱是否注册, 与验证码错误同一文案.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误或已过期"
+        )
+
+    if config.email_verify_enabled:
+        record = await _latest_code(db, data.email, "reset")
+        if record is None or record.expires_at < utc_now():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误或已过期"
+            )
+        if record.attempts >= config.email_code_max_attempts:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="验证码错误次数过多, 请重新获取",
+            )
+        if record.code != data.code:
+            record.attempts += 1  # 累计失败次数, 超限作废防枚举
+            await db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误或已过期"
+            )
+        record.used = True
+
+    user.password_hash = auth_service.hash_password(data.new_password)
     await db.commit()
     return {"ok": True}
 
