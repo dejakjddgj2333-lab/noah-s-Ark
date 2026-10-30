@@ -40,8 +40,9 @@ watch([lang, colorScheme, notif], () => {
 }, { deep: true })
 
 const inviteCode = computed(() => invite.value?.invite_code || invite.value?.code || '--')
+// 统一走落地页: 按设备引导到 PC / 移动端
 const inviteLink = computed(() =>
-  inviteCode.value === '--' ? '' : `${location.origin}/register?invite=${inviteCode.value}`,
+  inviteCode.value === '--' ? '' : `https://app.mingcevip.com/?invite=${inviteCode.value}`,
 )
 const invitedCount = computed(() => invite.value?.invited_count ?? invite.value?.invite_count ?? '--')
 const totalCommission = computed(() => summary.value.total_commission ?? summary.value.total ?? 0)

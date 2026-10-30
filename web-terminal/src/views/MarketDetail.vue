@@ -1,10 +1,11 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import EChart from '../components/EChart.vue'
-import { marketApi } from '../api'
+import KLine from '../components/KLine.vue'
+import { marketApi, alertApi } from '../api'
 import { fmtPrice, fmtPct, fmtBig, fmtNum, fmtTime, coinOf } from '../utils/format'
-import { inWatchlist, toggleWatchlist } from '../utils/watchlist'
+import { inWatchlist, toggleWatchlist, syncWatchlist } from '../utils/watchlist'
+import { subscribeMarket, marketWsAlive } from '../utils/marketWs'
 
 const route = useRoute()
 const instId = computed(() => route.params.instId)
@@ -34,7 +35,7 @@ const chartWrap = ref(null)
 const crossOn = ref(false)
 function toggleCross() { crossOn.value = !crossOn.value }
 function resetZoom() {
-  try { kchart.value?.getChart()?.dispatchAction({ type: 'restore' }) } catch { /* 静默降级 */ }
+  kchart.value?.reset()
 }
 function toggleFullscreen() {
   try {
@@ -49,6 +50,54 @@ function syncWatched() { watched.value = inWatchlist(instId.value) }
 function toggleWatch() {
   toggleWatchlist(instId.value)
   syncWatched()
+}
+
+// ---- 价格预警 (触发后 APNs + 邮件) ----
+const alertOpen = ref(false)
+const alerts = ref([])
+const alertDir = ref('up')
+const alertPrice = ref('')
+const alertMsg = ref('')
+const alertOk = ref(false)
+const alertBusy = ref(false)
+// WS 连接状态 (1s 刷新, 驱动 LIVE/POLLING 指示)
+const wsLive = ref(false)
+
+function openAlerts() {
+  alertOpen.value = true
+  alertMsg.value = ''
+  alertOk.value = false
+  alertDir.value = 'up'
+  alertPrice.value = ticker.value?.last || ''
+  loadAlerts()
+}
+async function loadAlerts() {
+  try {
+    const res = await alertApi.list()
+    const all = res?.alerts || []
+    alerts.value = all.filter((a) => a.symbol === coin.value || a.symbol === `${coin.value}USDT`)
+  } catch { /* 未登录等: 列表留空 */ }
+}
+async function createAlert() {
+  const px = Number(alertPrice.value)
+  if (!px || px <= 0) { alertOk.value = false; alertMsg.value = '请输入有效的预警价'; return }
+  alertBusy.value = true
+  alertMsg.value = ''
+  try {
+    await alertApi.create({ symbol: coin.value, alert_type: 'price', direction: alertDir.value, target_price: px })
+    alertOk.value = true
+    alertMsg.value = '已设置, 触发后 App 推送 + 邮件提醒'
+    alertPrice.value = ''
+    loadAlerts()
+  } catch (e) {
+    alertOk.value = false
+    alertMsg.value = e?.message || '设置失败, 请先登录'
+  } finally {
+    alertBusy.value = false
+  }
+}
+async function removeAlert(a) {
+  try { await alertApi.remove(a.id); loadAlerts() } catch { /* ignore */ }
 }
 
 function pct() {
@@ -74,122 +123,6 @@ function calcMA(n, arr) {
     return +(s / n).toFixed(8)
   })
 }
-const klineOption = computed(() => {
-  const data = candles.value.map((c) => [+c[1], +c[4], +c[3], +c[2]]) // o c l h (echarts 顺序)
-  const cats = candles.value.map((c) => fmtTime(+c[0]))
-  const vols = candles.value.map((c) => +c[5])
-  const dec = pxDec(data.length ? data[data.length - 1][1] : 1)
-  const fmtP = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })
-
-  // 当前视图最高/最低 (基于全部已加载K线)
-  let hi = -Infinity, lo = Infinity, hiI = 0, loI = 0
-  data.forEach((d, i) => {
-    if (d[3] > hi) { hi = d[3]; hiI = i }
-    if (d[2] < lo) { lo = d[2]; loI = i }
-  })
-  const last = data.length ? data[data.length - 1] : null
-  const lastUp = last ? last[1] >= last[0] : true
-  const lastColor = lastUp ? '#00E388' : '#FF5F6D'
-
-  return {
-    backgroundColor: 'transparent',
-    animation: false,
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: crossOn.value ? 'cross' : 'line' },
-      backgroundColor: 'rgba(13,21,40,0.95)',
-      borderColor: '#34415E',
-      textStyle: { color: '#F0F0FF', fontSize: 11, fontFamily: 'JetBrains Mono' },
-      formatter: (ps) => {
-        const i = ps[0]?.dataIndex ?? 0
-        const d = data[i]
-        if (!d) return ''
-        const chg = d[0] ? ((d[1] - d[0]) / d[0]) * 100 : 0
-        const c = chg >= 0 ? '#00E388' : '#FF5F6D'
-        return [
-          `<div style="color:#9EA0B2">${cats[i]}</div>`,
-          `开 <b>${fmtP(d[0])}</b>&nbsp;&nbsp;收 <b style="color:${c}">${fmtP(d[1])}</b>`,
-          `高 <b style="color:#00E388">${fmtP(d[3])}</b>&nbsp;&nbsp;低 <b style="color:#FF5F6D">${fmtP(d[2])}</b>`,
-          `涨跌 <b style="color:${c}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</b>&nbsp;&nbsp;量 <b>${vols[i]?.toLocaleString('en-US') ?? '-'}</b>`,
-        ].join('<br/>')
-      },
-    },
-    axisPointer: { link: [{ xAxisIndex: 'all' }] },
-    dataZoom: [{ type: 'inside', xAxisIndex: [0, 1], start: 40, end: 100 }],
-    xAxis: [
-      { type: 'category', data: cats, axisLine: { lineStyle: { color: '#34415E' } }, axisLabel: { color: '#9EA0B2', fontSize: 10, fontFamily: 'JetBrains Mono' } },
-      { type: 'category', gridIndex: 1, data: cats, axisLine: { lineStyle: { color: '#34415E' } }, axisLabel: { show: false } },
-    ],
-    yAxis: [
-      { scale: true, position: 'right', splitLine: { lineStyle: { color: 'rgba(52,65,94,0.3)' } }, axisLabel: { color: '#9EA0B2', fontSize: 10, fontFamily: 'JetBrains Mono', formatter: (v) => fmtP(v) } },
-      { gridIndex: 1, scale: true, position: 'right', splitNumber: 2, splitLine: { show: false }, axisLabel: { show: false } },
-    ],
-    grid: [
-      { left: 8, right: 76, top: 16, height: '62%' },
-      { left: 8, right: 76, top: '72%', height: '18%' },
-    ],
-    series: [
-      {
-        name: 'K线',
-        type: 'candlestick',
-        data,
-        itemStyle: { color: '#00E388', color0: '#FF5F6D', borderColor: '#00E388', borderColor0: '#FF5F6D' },
-        markPoint: {
-          symbol: 'circle',
-          symbolSize: 0.1, // 只要文字标签
-          label: {
-            show: true,
-            position: 'top',
-            fontSize: 10,
-            fontFamily: 'JetBrains Mono',
-            color: '#F0F0FF',
-            backgroundColor: 'rgba(13,21,40,0.85)',
-            borderColor: '#34415E',
-            borderWidth: 1,
-            borderRadius: 3,
-            padding: [2, 5],
-          },
-          data: [
-            { name: '最高', coord: [hiI, hi], value: `高 ${fmtP(hi)}`, label: { position: 'top' } },
-            { name: '最低', coord: [loI, lo], value: `低 ${fmtP(lo)}`, label: { position: 'bottom' } },
-          ],
-        },
-        markLine: {
-          symbol: 'none',
-          silent: true,
-          animation: false,
-          label: {
-            show: true,
-            position: 'insideEndTop',
-            fontSize: 10,
-            fontFamily: 'JetBrains Mono',
-            color: '#070D1C',
-            backgroundColor: lastColor,
-            borderRadius: 2,
-            padding: [2, 5],
-            formatter: () => fmtP(last ? last[1] : 0),
-          },
-          lineStyle: { color: lastColor, type: 'dashed', width: 1, opacity: 0.8 },
-          data: last ? [{ yAxis: last[1] }] : [],
-        },
-      },
-      { name: 'MA5', type: 'line', data: calcMA(5, data), smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#F7B733' }, z: 3 },
-      { name: 'MA10', type: 'line', data: calcMA(10, data), smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#B8C3FF' }, z: 3 },
-      { name: 'MA20', type: 'line', data: calcMA(20, data), smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#C26BFF' }, z: 3 },
-      {
-        name: '成交量',
-        type: 'bar',
-        xAxisIndex: 1,
-        yAxisIndex: 1,
-        data: candles.value.map((c) => ({
-          value: +c[5],
-          itemStyle: { color: +c[4] >= +c[1] ? 'rgba(0,227,136,0.5)' : 'rgba(255,95,109,0.5)' },
-        })),
-      },
-    ],
-  }
-})
-
 // ---- 盘口精度聚合: 卖盘向上取整 / 买盘向下取整, 同档合并数量 ----
 const maLegend = computed(() => {
   const data = candles.value.map((c) => [+c[1], +c[4], +c[3], +c[2]])
@@ -335,16 +268,50 @@ function loadAll() {
   loadFunding()
 }
 
+// ---- 行情 WS 实时推送: 挂上等 WS, WS 断开时 8s 轮询兜底 ----
+let unsubs = []
+function unbindWs() {
+  unsubs.forEach((u) => u())
+  unsubs = []
+}
+function bindWs(inst) {
+  unbindWs()
+  // 最新价
+  unsubs.push(subscribeMarket('tickers', inst, (frame) => {
+    const d = frame?.data?.[0]
+    if (d) ticker.value = d
+  }))
+  // 逐笔成交: 新帧前置, tradeId 去重
+  unsubs.push(subscribeMarket('trades', inst, (frame) => {
+    const data = frame?.data
+    if (!Array.isArray(data) || !data.length) return
+    const seen = new Set(trades.value.slice(0, 40).map((t) => t.tradeId))
+    const fresh = data.filter((t) => !seen.has(t.tradeId))
+    if (fresh.length) trades.value = [...fresh, ...trades.value].slice(0, 60)
+  }))
+  // 五档盘口
+  unsubs.push(subscribeMarket('books5', inst, (frame) => {
+    const d = frame?.data?.[0]
+    if (d) books.value = { bids: d.bids || [], asks: (d.asks || []).slice().reverse() }
+  }))
+}
+
 watch(bar, loadCandles)
-watch(instId, () => { loadAll(); syncWatched() })
+watch(instId, () => { loadAll(); syncWatched(); bindWs(instId.value) })
 
 onMounted(() => {
   loadAll()
   syncWatched()
-  timer = setInterval(() => { loadTicker(); loadBooks(); loadTrades() }, 8000)
-  cdTimer = setInterval(tickCountdown, 1000)
+  // 服务器自选同步完成后刷新星标 (多端一致)
+  syncWatchlist().then(syncWatched)
+  bindWs(instId.value)
+  // WS 断开才轮询兜底 (WS 活着时数据已实时)
+  timer = setInterval(() => {
+    if (!marketWsAlive()) { loadTicker(); loadBooks(); loadTrades() }
+  }, 8000)
+  cdTimer = setInterval(() => { tickCountdown(); wsLive.value = marketWsAlive() }, 1000)
 })
-onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer) })
+onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs() })
 </script>
 
 <template>
@@ -428,7 +395,10 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer) })
           >star</span>
           <span>{{ watched ? '已自选' : '加入自选' }}</span>
         </button>
-        <button class="h-9 px-4 bg-primary-container hover:bg-inverse-primary text-ink-white rounded font-headline-sm text-headline-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-none">
+        <button
+          class="h-9 px-4 bg-primary-container hover:bg-inverse-primary text-ink-white rounded font-headline-sm text-headline-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-none"
+          @click="openAlerts"
+        >
           <span class="material-symbols-outlined">notifications_active</span>
           <span>设置价格预警</span>
         </button>
@@ -469,7 +439,7 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer) })
         </div>
       </div>
       <div ref="chartWrap" class="relative w-full flex-1 min-h-0 bg-canvas-obsidian">
-        <EChart ref="kchart" :option="klineOption" height="100%" />
+        <KLine ref="kchart" :candles="candles" :magnet="crossOn" />
       </div>
     </section>
 
@@ -548,9 +518,15 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer) })
             <span class="font-headline-sm text-headline-sm font-semibold text-ink-white">最新逐笔成交</span>
             <span class="font-mono-data text-[11px] text-steel-muted">RECENT TRADES</span>
           </div>
-          <div class="flex items-center gap-1.5 font-mono-data text-[11px] text-bull-green">
-            <span class="w-1.5 h-1.5 rounded-full bg-bull-green"></span>
-            <span>8S POLLING</span>
+          <div
+            class="flex items-center gap-1.5 font-mono-data text-[11px]"
+            :class="wsLive ? 'text-bull-green' : 'text-steel-muted'"
+          >
+            <span
+              class="w-1.5 h-1.5 rounded-full"
+              :class="wsLive ? 'bg-bull-green animate-pulse' : 'bg-steel-muted'"
+            ></span>
+            <span>{{ wsLive ? 'LIVE · WS' : '8S POLLING' }}</span>
           </div>
         </div>
         <div class="grid grid-cols-3 px-3 py-1.5 bg-surface-slate/50 border-b border-hairline font-label-sm text-[10px] text-steel-muted uppercase select-none">
@@ -583,6 +559,70 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer) })
         </div>
       </div>
     </section>
+    </div>
+
+    <!-- 价格预警弹窗 -->
+    <div
+      v-if="alertOpen"
+      class="fixed inset-0 z-50 bg-canvas-obsidian/70 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="alertOpen = false"
+    >
+      <div class="w-full max-w-md bg-card-navy border border-hairline rounded-xl overflow-hidden">
+        <div class="h-11 px-4 bg-surface-slate border-b border-hairline flex items-center justify-between select-none">
+          <span class="font-headline-sm text-headline-sm font-semibold text-ink-white">{{ coin }}/USDT 价格预警</span>
+          <button class="text-steel-muted hover:text-ink-white cursor-pointer" @click="alertOpen = false">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="p-4 flex flex-col gap-3">
+          <!-- 新建 -->
+          <div class="flex items-center gap-2">
+            <div class="flex border border-hairline rounded overflow-hidden font-label-sm text-label-sm">
+              <button
+                class="px-3 py-1.5 transition-colors cursor-pointer"
+                :class="alertDir === 'up' ? 'bg-bull-green/15 text-bull-green font-semibold' : 'text-steel-muted hover:text-ink-white'"
+                @click="alertDir = 'up'"
+              >涨破 ≥</button>
+              <button
+                class="px-3 py-1.5 transition-colors cursor-pointer"
+                :class="alertDir === 'down' ? 'bg-bear-red/15 text-bear-red font-semibold' : 'text-steel-muted hover:text-ink-white'"
+                @click="alertDir = 'down'"
+              >跌破 ≤</button>
+            </div>
+            <input
+              v-model="alertPrice"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="预警价 USD"
+              class="flex-1 min-w-0 h-9 px-3 bg-surface-slate border border-hairline rounded font-mono-data text-label-sm text-ink-white placeholder:text-steel-muted focus:border-primary-container focus:outline-none"
+            />
+            <button
+              class="h-9 px-4 bg-primary-container hover:bg-inverse-primary text-ink-white rounded font-headline-sm text-headline-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+              :disabled="alertBusy"
+              @click="createAlert"
+            >{{ alertBusy ? '提交中' : '添加' }}</button>
+          </div>
+          <div class="text-[11px] text-steel-muted">现价 ${{ fmtPrice(ticker?.last) }} · 触发后 App 推送 + 注册邮箱邮件提醒, 单次有效</div>
+          <div v-if="alertMsg" class="text-[12px]" :class="alertOk ? 'text-bull-green' : 'text-bear-red'">{{ alertMsg }}</div>
+          <!-- 我的预警 -->
+          <div class="border-t border-hairline pt-2 flex flex-col divide-y divide-hairline/30 max-h-56 overflow-y-auto">
+            <div v-for="a in alerts" :key="a.id" class="py-2 flex items-center justify-between font-mono-data text-[12px]">
+              <span class="flex items-center gap-2">
+                <span :class="a.direction === 'up' ? 'text-bull-green' : 'text-bear-red'">
+                  {{ a.direction === 'up' ? '≥' : '≤' }} {{ fmtPrice(a.alert_type === 'percent' ? null : a.target_price) }}
+                </span>
+                <span v-if="a.alert_type === 'percent'" class="text-steel-muted">{{ a.direction === 'up' ? '涨' : '跌' }} {{ a.percent }}% (基准 {{ fmtPrice(a.baseline_price) }})</span>
+                <span v-if="a.triggered" class="px-1.5 py-0.5 text-[10px] rounded bg-surface-slate text-steel-muted">已触发</span>
+              </span>
+              <button class="text-steel-muted hover:text-bear-red cursor-pointer" title="删除" @click="removeAlert(a)">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+              </button>
+            </div>
+            <div v-if="!alerts.length" class="py-4 text-center text-steel-muted text-[11px]">该币种暂无预警</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

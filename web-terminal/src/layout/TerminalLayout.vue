@@ -19,6 +19,8 @@ const navs = [
   { path: '/funding', name: '资金费率', en: 'FUNDING', icon: 'percent' },
   { path: '/news', name: '资讯', en: 'NEWS', icon: 'newspaper' },
   { path: '/chat', name: '聊天', en: 'CHAT', icon: 'chat' },
+  { path: '/invite', name: '邀请', en: 'INVITE', icon: 'card_giftcard' },
+  { path: '/team', name: '团队', en: 'TEAM', icon: 'groups' },
   { path: '/assets', name: '资产理财', en: 'ASSETS', icon: 'account_balance_wallet' },
   { path: '/profile', name: '我的', en: 'PROFILE', icon: 'person' },
 ]

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import EChart from '../components/EChart.vue'
 import { marketApi, overviewApi } from '../api'
 import { fmtPrice, fmtPct, fmtBig, fmtUsd, coinOf } from '../utils/format'
-import { getWatchlist, toggleWatchlist } from '../utils/watchlist'
+import { getWatchlist, toggleWatchlist, syncWatchlist } from '../utils/watchlist'
 
 const router = useRouter()
 
@@ -30,6 +30,7 @@ function coinMeta(instId) {
   }
 }
 const instType = ref('SPOT')
+const favOnly = ref(false) // 自选页签: 只看星标币种
 const keyword = ref('')
 const rows = ref([])
 const stats = ref({})
@@ -55,6 +56,7 @@ function pct(t) {
 
 const filtered = computed(() => {
   let list = [...rows.value]
+  if (favOnly.value) list = list.filter((t) => watchlist.value.includes(t.instId))
   const kw = keyword.value.trim().toUpperCase()
   if (kw) list = list.filter((t) => t.instId.includes(kw))
   return list.sort((a, b) => Number(b.volCcy24h) - Number(a.volCcy24h)).slice(0, 100)
@@ -176,9 +178,15 @@ async function load() {
 
 function switchType(t) {
   instType.value = t
+  favOnly.value = false
   page.value = 1
   loading.value = true
   load()
+}
+
+function showFav() {
+  favOnly.value = true
+  page.value = 1
 }
 
 function goPage(p) {
@@ -189,6 +197,8 @@ function goPage(p) {
 onMounted(() => {
   load()
   timer = setInterval(load, 15000)
+  // 服务器自选同步到本地 (多端一致)
+  syncWatchlist().then((list) => { watchlist.value = [...list] })
 })
 onBeforeUnmount(() => clearInterval(timer))
 </script>
@@ -244,19 +254,33 @@ onBeforeUnmount(() => clearInterval(timer))
       <div class="flex items-center space-x-6">
         <button
           class="relative pb-2 transition-all"
-          :class="instType === 'SPOT' ? 'font-headline-sm text-headline-sm text-ink-white font-semibold' : 'font-body-md text-body-md text-steel-muted hover:text-ink-white'"
+          :class="instType === 'SPOT' && !favOnly ? 'font-headline-sm text-headline-sm text-ink-white font-semibold' : 'font-body-md text-body-md text-steel-muted hover:text-ink-white'"
           @click="switchType('SPOT')"
         >
           <span>现货</span>
-          <span v-if="instType === 'SPOT'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container rounded-full"></span>
+          <span v-if="instType === 'SPOT' && !favOnly" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container rounded-full"></span>
         </button>
         <button
           class="relative pb-2 transition-all"
-          :class="instType === 'SWAP' ? 'font-headline-sm text-headline-sm text-ink-white font-semibold' : 'font-body-md text-body-md text-steel-muted hover:text-ink-white'"
+          :class="instType === 'SWAP' && !favOnly ? 'font-headline-sm text-headline-sm text-ink-white font-semibold' : 'font-body-md text-body-md text-steel-muted hover:text-ink-white'"
           @click="switchType('SWAP')"
         >
           <span>永续</span>
-          <span v-if="instType === 'SWAP'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container rounded-full"></span>
+          <span v-if="instType === 'SWAP' && !favOnly" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container rounded-full"></span>
+        </button>
+        <button
+          class="relative pb-2 transition-all flex items-center gap-1"
+          :class="favOnly ? 'font-headline-sm text-headline-sm text-ink-white font-semibold' : 'font-body-md text-body-md text-steel-muted hover:text-ink-white'"
+          @click="showFav"
+        >
+          <span
+            class="material-symbols-outlined text-[15px]"
+            :class="favOnly ? 'text-amber-warn' : ''"
+            :style="favOnly ? { 'font-variation-settings': `'FILL' 1` } : {}"
+          >star</span>
+          <span>自选</span>
+          <span class="font-mono-data text-[11px] opacity-70">{{ watchlist.length }}</span>
+          <span v-if="favOnly" class="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-warn rounded-full"></span>
         </button>
       </div>
       <div class="flex items-center space-x-3">
@@ -350,7 +374,9 @@ onBeforeUnmount(() => clearInterval(timer))
             </tr>
           </tbody>
         </table>
-        <div v-if="!loading && !filtered.length" class="p-10 text-center text-steel-muted font-label-sm text-label-sm">无匹配币种</div>
+        <div v-if="!loading && !filtered.length" class="p-10 text-center text-steel-muted font-label-sm text-label-sm">
+          {{ favOnly ? '自选还是空的, 在行情行尾点星标添加' : '无匹配币种' }}
+        </div>
       </div>
       <!-- 表尾与分页条 -->
       <div class="h-11 px-4 border-t border-hairline bg-surface-slate flex flex-col sm:flex-row items-center justify-between text-steel-muted font-label-sm text-label-sm">

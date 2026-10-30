@@ -98,12 +98,20 @@ export const orderApi = {
 // ---------- 邀请 / 结算 ----------
 export const inviteApi = {
   me: () => api.get('/invite/me'),
+  bind: (invite_code) => api.post('/invite/bind', { invite_code }),
 }
+
+// ---------- 团队等级 ----------
+export const teamApi = {
+  me: () => api.get('/team/me'),
+}
+
 export const settlementApi = {
   // settlements router 无 prefix, 真实路径如下 (旧 /settlements/... 全 404)
   commissionsSummary: () => api.get('/commissions/summary'),
   commissions: (params = {}) => api.get('/commissions', { params }),
   accountLogs: (params = {}) => api.get('/account/logs', { params }),
+  levelLogs: (kind) => api.get('/level-logs', { params: kind ? { kind } : {} }),
 }
 
 // ---------- 账户 (双账户余额 / 收益转本金) ----------
@@ -111,6 +119,20 @@ export const accountApi = {
   depositAccount: () => api.get('/deposit/account'),
   convertQuote: (params) => api.get('/account/convert/quote', { params }),
   convert: (data) => api.post('/account/convert', data),
+}
+
+// ---------- 自选股 ----------
+export const watchlistApi = {
+  list: () => api.get('/watchlist'),
+  add: (inst_id) => api.post('/watchlist', { inst_id }),
+  remove: (instId) => api.delete(`/watchlist/${encodeURIComponent(instId)}`),
+}
+
+// ---------- 行情预警 (触发后 APNs + 邮件推送) ----------
+export const alertApi = {
+  list: () => api.get('/price-alerts'),
+  create: (data) => api.post('/price-alerts', data),
+  remove: (id) => api.delete(`/price-alerts/${id}`),
 }
 
 // ---------- VIP ----------

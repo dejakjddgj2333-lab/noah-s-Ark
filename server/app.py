@@ -47,6 +47,8 @@ from routers import (
     settlements,
     team,
     vip,
+    watchlist,
+    market_ws,
     whale_push,
     widget,
     withdrawals,
@@ -365,9 +367,11 @@ app.include_router(invite.router, prefix="/api")
 app.include_router(news.router, prefix="/api")
 app.include_router(interaction.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
+app.include_router(market_ws.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(vip.router, prefix="/api")
+app.include_router(watchlist.router, prefix="/api")
 app.include_router(team.router, prefix="/api")
 app.include_router(settlements.router, prefix="/api")
 app.include_router(withdrawals.router, prefix="/api")

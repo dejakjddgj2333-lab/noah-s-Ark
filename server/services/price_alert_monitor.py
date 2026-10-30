@@ -1,5 +1,6 @@
-"""行情预警监测: 定时扫未触发预警, 拿最新价判断触发并发 APNs.
+"""行情预警监测: 定时扫未触发预警, 拿最新价判断触发并多渠道推送.
 
+渠道: APNs (App 离线推送) + 邮件 (SMTP, 发到注册邮箱, 覆盖 PC/安卓等无 APNs 端).
 价格源: Binance 公开 REST GET /api/v3/ticker/price (无需鉴权).
 symbol 统一按 USDT 永续/现货对查询: 已含 USDT 则不重复拼.
 """
@@ -12,8 +13,8 @@ import structlog
 from sqlalchemy import select
 
 from database import SessionLocal
-from models.hk import HkPriceAlert
-from services import push_service
+from models.hk import HkPriceAlert, HkUser
+from services import email_service, push_service
 
 logger = structlog.get_logger("hk.price_alert")
 
@@ -119,5 +120,20 @@ async def check_alerts() -> None:
                     body,
                     {"type": "price_alert", "symbol": symbol},
                 )
+                # 邮件渠道: 注册邮箱直达, 覆盖 PC 网页/安卓等无 APNs 端
+                user = await db.get(HkUser, alert.user_id)
+                if user is not None and user.email:
+                    ok = await email_service.send_email(
+                        user.email,
+                        f"【明策】{title}",
+                        f"{body}\n\n登录终端查看行情: https://mingcevip.com\n"
+                        "本邮件由行情预警触发, 预警已自动关闭, 如需继续监控请重新设置。",
+                    )
+                    if not ok:
+                        logger.warning(
+                            "alert_email_failed",
+                            user_id=alert.user_id,
+                            symbol=symbol,
+                        )
         if changed:
             await db.commit()

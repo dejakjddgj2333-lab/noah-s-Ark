@@ -16,3 +16,4 @@ structlog>=24.1
 python-multipart>=0.0.9
 tronpy>=0.5
 eth-account>=0.11
+websockets>=12
