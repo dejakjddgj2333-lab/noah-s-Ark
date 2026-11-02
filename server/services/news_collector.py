@@ -112,7 +112,14 @@ class ApitubeCollector:
             if isinstance(image, dict):
                 image = image.get("url") or image.get("href")
             body = body_html_to_text(a.get("body_html")) or a.get("body") or None
-            summary = a.get("description") or " ".join(a.get("summary") or []) or None
+            # summary 列表项新旧两态: 旧=str, 新={"sentence": str, "sentiment": {...}}
+            parts: list[str] = []
+            for s in a.get("summary") or []:
+                if isinstance(s, str):
+                    parts.append(s)
+                elif isinstance(s, dict):
+                    parts.append(str(s.get("sentence") or s.get("text") or ""))
+            summary = a.get("description") or " ".join(p for p in parts if p) or None
             title = (a.get("title") or "").strip()
             if not title:
                 continue
