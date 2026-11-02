@@ -71,8 +71,8 @@ deploy_pc() {
 
 deploy_landing() {
   echo "==> App 落地页:发布"
-  # app-release.apk 手动上传到站点根, 不入库, rsync 排除防删
-  rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' --exclude='app-release.apk' "$REPO/server/static/" "$LANDING_WEB/"
+  # app-release.apk / mingce-mac.dmg 手动上传到站点根, 不入库, rsync 排除防删
+  rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' --exclude='app-release.apk' --exclude='mingce-mac.dmg' "$REPO/server/static/" "$LANDING_WEB/"
   # 落地页入口: invite.html -> index.html
   cp "$LANDING_WEB/invite.html" "$LANDING_WEB/index.html"
   # 后端根路径也直出这份落地页 (app.py invite_landing), 同步一份保持新鲜, 不重启容器

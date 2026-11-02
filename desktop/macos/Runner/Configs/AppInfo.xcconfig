@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = noahs_ark_desktop
+PRODUCT_NAME = 明策
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.noahsark.noahsArkDesktop
+PRODUCT_BUNDLE_IDENTIFIER = com.hkmc.noahsark.desktop
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.noahsark. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 明策 MINGCE. All rights reserved.
