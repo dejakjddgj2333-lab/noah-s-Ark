@@ -694,36 +694,36 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
         </div>
 
         <div class="p-4 overflow-y-auto flex-1 min-h-0">
-          <div v-if="aiLoading" class="py-10 text-center text-steel-muted font-mono-data text-[11px] animate-pulse">AI 分析中, 约 10~20 秒…</div>
+          <div v-if="aiLoading" class="py-10 text-center text-steel-muted font-mono-data text-[12px] animate-pulse">AI 分析中, 约 10~20 秒…</div>
           <div v-else-if="aiError" class="py-10 text-center">
-            <div class="text-bear-red text-[12px] mb-3">{{ aiError }}</div>
-            <button class="px-3 py-1.5 text-[11px] border border-hairline rounded text-steel-muted hover:text-ink-white" @click="openAi">重试</button>
+            <div class="text-bear-red text-[13px] mb-3">{{ aiError }}</div>
+            <button class="px-3 py-1.5 text-[12px] border border-hairline rounded text-steel-muted hover:text-ink-white" @click="openAi">重试</button>
           </div>
 
           <div v-else-if="aiReport" class="flex flex-col gap-4">
             <!-- 趋势 -->
             <section v-if="aiReport.trend" class="bg-canvas-obsidian border border-hairline rounded-lg p-3">
               <div class="flex items-center gap-2 mb-2">
-                <span class="font-mono-data text-[10px] text-steel-muted tracking-wider">趋势 TREND</span>
-                <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded border" :class="(AI_DIR[aiReport.trend.direction] || AI_DIR.neutral)[1]">
+                <span class="font-mono-data text-[11px] text-steel-muted tracking-wider">趋势 TREND</span>
+                <span class="px-1.5 py-0.5 text-[11px] font-semibold rounded border" :class="(AI_DIR[aiReport.trend.direction] || AI_DIR.neutral)[1]">
                   {{ (AI_DIR[aiReport.trend.direction] || AI_DIR.neutral)[0] }}
                 </span>
-                <span v-if="aiReport.trend.confidence != null" class="ml-auto font-mono-data text-[10px] text-steel-muted">置信度 {{ aiReport.trend.confidence }}%</span>
+                <span v-if="aiReport.trend.confidence != null" class="ml-auto font-mono-data text-[11px] text-steel-muted">置信度 {{ aiReport.trend.confidence }}%</span>
               </div>
               <div v-if="aiReport.trend.confidence != null" class="h-1 bg-surface-slate rounded-full mb-2 overflow-hidden">
                 <div class="h-full rounded-full transition-all" :class="aiReport.trend.direction === 'bearish' ? 'bg-bear-red' : aiReport.trend.direction === 'bullish' ? 'bg-bull-green' : 'bg-amber-warn'" :style="{ width: Math.min(100, aiReport.trend.confidence) + '%' }"></div>
               </div>
-              <div v-if="aiReport.trend.ma_status" class="text-[11px] text-ink-white mb-1">{{ aiReport.trend.ma_status }}</div>
-              <div class="text-[11px] text-steel-muted leading-relaxed">{{ aiReport.trend.reason }}</div>
+              <div v-if="aiReport.trend.ma_status" class="text-[13px] text-ink-white mb-1">{{ aiReport.trend.ma_status }}</div>
+              <div class="text-[13px] text-steel-muted leading-relaxed">{{ aiReport.trend.reason }}</div>
             </section>
 
             <!-- 形态 -->
             <section v-if="aiReport.patterns?.length" class="bg-canvas-obsidian border border-hairline rounded-lg p-3">
-              <div class="font-mono-data text-[10px] text-steel-muted tracking-wider mb-2">形态 PATTERNS</div>
+              <div class="font-mono-data text-[11px] text-steel-muted tracking-wider mb-2">形态 PATTERNS</div>
               <div class="flex flex-col gap-1.5">
-                <div v-for="(p, i) in aiReport.patterns" :key="i" class="flex items-start gap-2 text-[11px]">
-                  <span class="flex-shrink-0 px-1.5 py-0.5 text-[10px] rounded border text-primary-fixed-dim border-primary-container/40 bg-primary-container/10">{{ p.name }}</span>
-                  <span class="flex-shrink-0 text-steel-muted font-mono-data text-[10px] pt-0.5">{{ p.type }} · {{ p.validity }}</span>
+                <div v-for="(p, i) in aiReport.patterns" :key="i" class="flex items-start gap-2 text-[12px]">
+                  <span class="flex-shrink-0 px-1.5 py-0.5 text-[11px] rounded border text-primary-fixed-dim border-primary-container/40 bg-primary-container/10">{{ p.name }}</span>
+                  <span class="flex-shrink-0 text-steel-muted font-mono-data text-[11px] pt-0.5">{{ p.type }} · {{ p.validity }}</span>
                   <span class="text-steel-muted leading-relaxed">{{ p.description }}</span>
                 </div>
               </div>
@@ -731,60 +731,60 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
 
             <!-- 关键位 -->
             <section v-if="aiReport.key_levels" class="bg-canvas-obsidian border border-hairline rounded-lg p-3">
-              <div class="font-mono-data text-[10px] text-steel-muted tracking-wider mb-2">关键位 KEY LEVELS</div>
+              <div class="font-mono-data text-[11px] text-steel-muted tracking-wider mb-2">关键位 KEY LEVELS</div>
               <div class="grid grid-cols-2 gap-2 mb-2">
                 <div>
-                  <div class="text-[10px] text-bull-green mb-1">支撑位</div>
+                  <div class="text-[11px] text-bull-green mb-1">支撑位</div>
                   <div class="flex flex-wrap gap-1">
-                    <span v-for="(s, i) in aiReport.key_levels.supports || []" :key="i" class="px-1.5 py-0.5 font-mono-data text-[10px] rounded bg-bull-green/10 border border-bull-green/30 text-bull-green">{{ fmtPrice(s) }}</span>
+                    <span v-for="(s, i) in aiReport.key_levels.supports || []" :key="i" class="px-1.5 py-0.5 font-mono-data text-[12px] rounded bg-bull-green/10 border border-bull-green/30 text-bull-green">{{ fmtPrice(s) }}</span>
                   </div>
                 </div>
                 <div>
-                  <div class="text-[10px] text-bear-red mb-1">阻力位</div>
+                  <div class="text-[11px] text-bear-red mb-1">阻力位</div>
                   <div class="flex flex-wrap gap-1">
-                    <span v-for="(r, i) in aiReport.key_levels.resistances || []" :key="i" class="px-1.5 py-0.5 font-mono-data text-[10px] rounded bg-bear-red/10 border border-bear-red/30 text-bear-red">{{ fmtPrice(r) }}</span>
+                    <span v-for="(r, i) in aiReport.key_levels.resistances || []" :key="i" class="px-1.5 py-0.5 font-mono-data text-[12px] rounded bg-bear-red/10 border border-bear-red/30 text-bear-red">{{ fmtPrice(r) }}</span>
                   </div>
                 </div>
               </div>
-              <div v-if="aiReport.key_levels.breakout" class="text-[11px] text-ink-white mb-1">{{ aiReport.key_levels.breakout }}</div>
-              <div class="text-[11px] text-steel-muted leading-relaxed">{{ aiReport.key_levels.description }}</div>
+              <div v-if="aiReport.key_levels.breakout" class="text-[13px] text-ink-white mb-1">{{ aiReport.key_levels.breakout }}</div>
+              <div class="text-[13px] text-steel-muted leading-relaxed">{{ aiReport.key_levels.description }}</div>
             </section>
 
             <!-- 量能 -->
             <section v-if="aiReport.volume" class="bg-canvas-obsidian border border-hairline rounded-lg p-3">
               <div class="flex items-center gap-2 mb-1.5">
-                <span class="font-mono-data text-[10px] text-steel-muted tracking-wider">量能 VOLUME</span>
-                <span class="text-[10px] text-ink-white">{{ aiReport.volume.state }}</span>
-                <span v-if="aiReport.volume.divergence && aiReport.volume.divergence !== '无'" class="px-1.5 py-0.5 text-[10px] rounded border text-amber-warn border-amber-warn/40 bg-amber-warn/10">{{ aiReport.volume.divergence }}</span>
+                <span class="font-mono-data text-[11px] text-steel-muted tracking-wider">量能 VOLUME</span>
+                <span class="text-[12px] text-ink-white">{{ aiReport.volume.state }}</span>
+                <span v-if="aiReport.volume.divergence && aiReport.volume.divergence !== '无'" class="px-1.5 py-0.5 text-[11px] rounded border text-amber-warn border-amber-warn/40 bg-amber-warn/10">{{ aiReport.volume.divergence }}</span>
               </div>
-              <div class="text-[11px] text-steel-muted leading-relaxed">{{ aiReport.volume.description }}</div>
+              <div class="text-[13px] text-steel-muted leading-relaxed">{{ aiReport.volume.description }}</div>
             </section>
 
             <!-- 信号 -->
             <section v-if="aiReport.signal" class="bg-canvas-obsidian border border-hairline rounded-lg p-3">
               <div class="flex items-center gap-2 mb-2">
-                <span class="font-mono-data text-[10px] text-steel-muted tracking-wider">信号 SIGNAL</span>
-                <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded border" :class="(AI_ACTION[aiReport.signal.action] || AI_ACTION.hold)[1]">
+                <span class="font-mono-data text-[11px] text-steel-muted tracking-wider">信号 SIGNAL</span>
+                <span class="px-1.5 py-0.5 text-[11px] font-semibold rounded border" :class="(AI_ACTION[aiReport.signal.action] || AI_ACTION.hold)[1]">
                   {{ (AI_ACTION[aiReport.signal.action] || AI_ACTION.hold)[0] }}
                 </span>
               </div>
-              <div class="grid grid-cols-2 gap-2 mb-2 font-mono-data text-[11px]">
+              <div class="grid grid-cols-2 gap-2 mb-2 font-mono-data text-[13px]">
                 <div v-if="aiReport.signal.stop_loss != null" class="flex justify-between px-2 py-1.5 bg-surface-slate rounded">
-                  <span class="text-steel-muted text-[10px]">止损</span>
+                  <span class="text-steel-muted text-[11px]">止损</span>
                   <span class="text-bear-red">{{ fmtPrice(aiReport.signal.stop_loss) }}</span>
                 </div>
                 <div v-if="aiReport.signal.take_profit != null" class="flex justify-between px-2 py-1.5 bg-surface-slate rounded">
-                  <span class="text-steel-muted text-[10px]">止盈</span>
+                  <span class="text-steel-muted text-[11px]">止盈</span>
                   <span class="text-bull-green">{{ fmtPrice(aiReport.signal.take_profit) }}</span>
                 </div>
               </div>
-              <div class="text-[11px] text-steel-muted leading-relaxed mb-2">{{ aiReport.signal.summary }}</div>
-              <ul v-if="aiReport.signal.risks?.length" class="text-[10px] text-steel-muted/80 space-y-0.5 list-disc pl-4">
+              <div class="text-[13px] text-steel-muted leading-relaxed mb-2">{{ aiReport.signal.summary }}</div>
+              <ul v-if="aiReport.signal.risks?.length" class="text-[12px] text-steel-muted/80 space-y-0.5 list-disc pl-4">
                 <li v-for="(r, i) in aiReport.signal.risks" :key="i">{{ r }}</li>
               </ul>
             </section>
 
-            <div class="text-[10px] text-steel-muted/60 font-mono-data text-center">AI 技术分析仅供参考, 不构成投资建议</div>
+            <div class="text-[11px] text-steel-muted/60 font-mono-data text-center">AI 技术分析仅供参考, 不构成投资建议</div>
           </div>
         </div>
       </div>

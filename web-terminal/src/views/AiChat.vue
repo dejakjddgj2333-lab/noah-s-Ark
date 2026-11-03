@@ -1,7 +1,13 @@
 <script setup>
-// AI 助手: 每日综述卡片 + DeepSeek 流式对话 (SSE)
-import { onMounted, onBeforeUnmount, ref, nextTick } from 'vue'
+// AI 助手: 左对话 (DeepSeek SSE 流式) + 右每日综述卡片
+// 对话存 localStorage 按用户分隔, 刷新/重进不丢 (最多留 50 条)
+import { onMounted, onBeforeUnmount, ref, nextTick, watch } from 'vue'
 import { aiApi } from '../api'
+import { useUserStore } from '../store/user'
+
+const store = useUserStore()
+const LS_KEY = `ai_chat_${store.user?.id || 'anon'}`
+const LS_MAX = 50
 
 const msgs = ref([]) // {role: 'user'|'assistant', content}
 const draft = ref('')
@@ -11,7 +17,6 @@ let ctrl = null
 
 // 每日综述
 const summary = ref(null) // {date, text, cached}
-const summaryOpen = ref(true)
 const summaryLoading = ref(true)
 
 const quicks = [
@@ -34,6 +39,22 @@ function scrollBottom() {
   nextTick(() => {
     if (listEl.value) listEl.value.scrollTop = listEl.value.scrollHeight
   })
+}
+
+// 持久化: 只留最近 LS_MAX 条, 防 localStorage 膨胀
+watch(msgs, (v) => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(v.slice(-LS_MAX)))
+  } catch { /* 存储满/隐私模式, 忽略 */ }
+}, { deep: true })
+
+function restore() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+    if (Array.isArray(arr)) {
+      msgs.value = arr.filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    }
+  } catch { /* 坏数据忽略 */ }
 }
 
 async function loadSummary() {
@@ -91,33 +112,18 @@ function onKey(e) {
   }
 }
 
-onMounted(loadSummary)
+onMounted(() => {
+  restore()
+  scrollBottom()
+  loadSummary()
+})
 onBeforeUnmount(() => ctrl?.abort())
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 overflow-hidden" style="height: calc(100vh - 56px - 72px)">
-    <!-- 每日综述卡片 -->
-    <section class="flex-shrink-0 bg-card-navy border border-hairline rounded-xl overflow-hidden">
-      <button
-        class="w-full px-4 py-2.5 flex items-center gap-2 text-left hover:bg-card-navy-high transition-colors"
-        @click="summaryOpen = !summaryOpen"
-      >
-        <span class="material-symbols-outlined text-[16px] text-primary-container">today</span>
-        <span class="text-xs font-semibold text-ink-white">今日市场综述</span>
-        <span v-if="summary?.date" class="font-mono-data text-[10px] text-steel-muted">{{ summary.date }}</span>
-        <span v-if="summary?.cached" class="font-mono-data text-[9px] px-1 py-0.5 bg-canvas-obsidian border border-hairline rounded text-steel-muted">已缓存</span>
-        <span class="ml-auto material-symbols-outlined text-[16px] text-steel-muted transition-transform" :class="summaryOpen ? 'rotate-180' : ''">expand_more</span>
-      </button>
-      <div v-if="summaryOpen" class="px-4 pb-3.5 border-t border-hairline/60">
-        <div v-if="summaryLoading" class="py-3 text-steel-muted font-mono-data text-[11px]">AI 生成中, 稍候…</div>
-        <div v-else-if="summary" class="pt-2.5 text-[12px] leading-relaxed text-steel-muted" v-html="mdLite(summary.text)"></div>
-        <div v-else class="py-3 text-steel-muted font-mono-data text-[11px]">综述暂不可用</div>
-      </div>
-    </section>
-
-    <!-- 对话区 -->
-    <section class="flex-1 min-h-0 bg-card-navy border border-hairline rounded-xl flex flex-col overflow-hidden">
+  <div class="flex gap-3 overflow-hidden" style="height: calc(100vh - 56px - 72px)">
+    <!-- 左: AI 对话 -->
+    <section class="flex-1 min-w-0 bg-card-navy border border-hairline rounded-xl flex flex-col overflow-hidden">
       <div class="px-4 py-2.5 border-b border-hairline flex items-center gap-2 flex-shrink-0">
         <span class="material-symbols-outlined text-[16px] text-primary-container">smart_toy</span>
         <span class="text-xs font-semibold text-ink-white">明策 AI 助手</span>
@@ -187,6 +193,32 @@ onBeforeUnmount(() => ctrl?.abort())
         </div>
         <div class="mt-1.5 text-[10px] text-steel-muted/60 font-mono-data">AI 解读仅供参考, 不构成投资建议</div>
       </div>
+    </section>
+
+    <!-- 右: 每日市场综述 -->
+    <section class="w-80 flex-shrink-0 bg-card-navy border border-hairline rounded-xl hidden lg:flex flex-col overflow-hidden">
+      <div class="px-4 py-2.5 border-b border-hairline flex items-center gap-2 flex-shrink-0">
+        <span class="material-symbols-outlined text-[16px] text-primary-container">today</span>
+        <span class="text-xs font-semibold text-ink-white">今日市场综述</span>
+        <span v-if="summary?.cached" class="ml-auto font-mono-data text-[9px] px-1 py-0.5 bg-canvas-obsidian border border-hairline rounded text-steel-muted">已缓存</span>
+        <button
+          class="text-steel-muted hover:text-ink-white transition-colors"
+          :class="summary?.cached ? '' : 'ml-auto'"
+          title="刷新"
+          @click="loadSummary"
+        >
+          <span class="material-symbols-outlined text-[15px]">refresh</span>
+        </button>
+      </div>
+      <div class="flex-1 min-h-0 overflow-y-auto p-4">
+        <div v-if="summaryLoading" class="py-6 text-center text-steel-muted font-mono-data text-[11px] animate-pulse">AI 生成中, 稍候…</div>
+        <template v-else-if="summary">
+          <div class="font-mono-data text-[10px] text-steel-muted mb-2">{{ summary.date }}</div>
+          <div class="text-[12px] leading-relaxed text-steel-muted" v-html="mdLite(summary.text)"></div>
+        </template>
+        <div v-else class="py-6 text-center text-steel-muted font-mono-data text-[11px]">综述暂不可用</div>
+      </div>
+      <div class="flex-shrink-0 px-4 py-2 border-t border-hairline text-[10px] text-steel-muted/60 font-mono-data">每天首次访问生成一次, 全日共享</div>
     </section>
   </div>
 </template>
