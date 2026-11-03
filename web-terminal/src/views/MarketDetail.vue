@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import KLine from '../components/KLine.vue'
 import { marketApi, alertApi, aiApi } from '../api'
 import { fmtPrice, fmtPct, fmtBig, fmtNum, fmtTime, coinOf } from '../utils/format'
@@ -8,6 +8,7 @@ import { inWatchlist, toggleWatchlist, syncWatchlist } from '../utils/watchlist'
 import { subscribeMarket, marketWsAlive } from '../utils/marketWs'
 
 const route = useRoute()
+const router = useRouter()
 const instId = computed(() => route.params.instId)
 const coin = computed(() => coinOf(instId.value))
 // 纯展示: 常见币种英文全名 (对齐设计稿顶部报价条)
@@ -42,6 +43,45 @@ function toggleFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen()
     else chartWrap.value?.requestFullscreen?.()
   } catch { /* 静默降级 */ }
+}
+
+// ---- 币种切换器 (搜索 + 现货/合约筛选) ----
+const switchOpen = ref(false)
+const switchType = ref('SPOT')
+const switchQuery = ref('')
+const switchList = ref([])
+const switchLoading = ref(false)
+
+async function loadSwitch() {
+  switchLoading.value = true
+  try {
+    const res = await marketApi.tickers(switchType.value)
+    switchList.value = (res?.data || []).slice().sort((a, b) => (+b.volCcy24h || 0) - (+a.volCcy24h || 0))
+  } catch { /* 保留旧列表 */ } finally {
+    switchLoading.value = false
+  }
+}
+
+function openSwitch() {
+  switchOpen.value = !switchOpen.value
+  if (switchOpen.value) {
+    switchType.value = isSwap.value ? 'SWAP' : 'SPOT'
+    switchQuery.value = ''
+    loadSwitch()
+  }
+}
+
+watch(switchType, () => { if (switchOpen.value) loadSwitch() })
+
+const switchFiltered = computed(() => {
+  const q = switchQuery.value.trim().toUpperCase()
+  const arr = q ? switchList.value.filter((t) => t.instId.toUpperCase().includes(q)) : switchList.value
+  return arr.slice(0, 80)
+})
+
+function goCoin(t) {
+  switchOpen.value = false
+  if (t.instId !== instId.value) router.push(`/market/${t.instId}`)
 }
 
 // ---- 自选 (localStorage) ----
@@ -362,16 +402,17 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
     <!-- A. 顶部报价条 -->
     <section class="w-full bg-card-navy border border-hairline rounded-xl p-3.5 flex items-center justify-between select-none flex-wrap gap-4">
       <div class="flex items-center gap-6 flex-wrap">
-        <!-- 币种图标 + 名称 -->
-        <div class="flex items-center gap-3 pr-6 border-r border-hairline">
+        <!-- 币种图标 + 名称 (点击切换币种) -->
+        <div class="relative flex items-center gap-3 pr-6 border-r border-hairline">
           <div
             class="w-9 h-9 rounded-full flex items-center justify-center font-bold font-mono-data text-base"
             :class="coin === 'BTC' ? 'bg-[#F7931A]/10 border border-[#F7931A]/30 text-[#F7931A]' : 'bg-primary-container/15 border border-primary-container/40 text-primary'"
           >{{ coin === 'BTC' ? '₿' : coin.slice(0, 1) }}</div>
-          <div class="flex flex-col">
+          <div class="flex flex-col cursor-pointer group" @click="openSwitch">
             <div class="flex items-center gap-2">
-              <h1 class="font-headline-md text-headline-md font-bold text-ink-white">{{ coinName }}</h1>
+              <h1 class="font-headline-md text-headline-md font-bold text-ink-white group-hover:text-primary transition-colors">{{ coinName }}</h1>
               <span class="font-mono-data text-mono-data text-steel-muted font-medium">{{ coin }}/USDT</span>
+              <span class="material-symbols-outlined text-[16px] text-steel-muted group-hover:text-primary transition-colors">expand_more</span>
             </div>
             <div class="flex items-center gap-1.5 mt-0.5">
               <span
@@ -382,6 +423,60 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
                 class="px-1.5 py-0.5 text-[10px] font-label-sm rounded"
                 :class="isSwap ? 'bg-primary-container/20 border border-primary-container/40 text-primary' : 'bg-surface-slate border border-hairline text-steel-muted'"
               >PERP 永续</span>
+            </div>
+          </div>
+
+          <!-- 切换面板 -->
+          <div v-if="switchOpen" class="fixed inset-0 z-40" @click="switchOpen = false"></div>
+          <div
+            v-if="switchOpen"
+            class="absolute left-0 top-full mt-2 z-50 w-80 bg-card-navy border border-hairline rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col"
+            style="max-height: 420px"
+          >
+            <!-- 搜索 -->
+            <div class="p-2.5 border-b border-hairline">
+              <div class="flex items-center gap-1.5 px-2.5 bg-canvas-obsidian border border-hairline rounded-lg focus-within:border-primary-container/60">
+                <span class="material-symbols-outlined text-[15px] text-steel-muted">search</span>
+                <input
+                  v-model="switchQuery"
+                  placeholder="搜索币种, 如 BTC"
+                  class="flex-1 min-w-0 h-8 bg-transparent text-[12px] text-ink-white placeholder:text-steel-muted/50 focus:outline-none"
+                />
+              </div>
+            </div>
+            <!-- 现货/合约 -->
+            <div class="px-2.5 pt-2 flex gap-1.5 border-b border-hairline">
+              <button
+                class="px-3 pb-1.5 text-[11px] transition-colors cursor-pointer"
+                :class="switchType === 'SPOT' ? 'text-ink-white font-semibold border-b-2 border-primary-container' : 'text-steel-muted hover:text-ink-white'"
+                @click="switchType = 'SPOT'"
+              >现货</button>
+              <button
+                class="px-3 pb-1.5 text-[11px] transition-colors cursor-pointer"
+                :class="switchType === 'SWAP' ? 'text-ink-white font-semibold border-b-2 border-primary-container' : 'text-steel-muted hover:text-ink-white'"
+                @click="switchType = 'SWAP'"
+              >永续合约</button>
+            </div>
+            <!-- 列表 -->
+            <div class="flex-1 min-h-0 overflow-y-auto">
+              <div v-if="switchLoading" class="py-8 text-center text-steel-muted font-mono-data text-[11px]">加载中…</div>
+              <div v-else-if="!switchFiltered.length" class="py-8 text-center text-steel-muted text-[11px]">没有匹配的币种</div>
+              <button
+                v-for="t in switchFiltered"
+                :key="t.instId"
+                class="w-full px-3 py-2 flex items-center justify-between hover:bg-card-navy-high transition-colors cursor-pointer"
+                :class="t.instId === instId ? 'bg-primary-container/10' : ''"
+                @click="goCoin(t)"
+              >
+                <span class="flex items-center gap-2">
+                  <span class="font-mono-data text-[12px] font-semibold text-ink-white">{{ coinOf(t.instId) }}</span>
+                  <span class="font-mono-data text-[10px] text-steel-muted">/USDT</span>
+                </span>
+                <span class="flex items-center gap-2.5 font-mono-data text-[11px]">
+                  <span class="text-ink-white">${{ fmtPrice(t.last) }}</span>
+                  <span class="w-14 text-right" :class="(t.last - t.open24h) >= 0 ? 'text-bull-green' : 'text-bear-red'">{{ fmtPct(t.open24h ? ((t.last - t.open24h) / t.open24h) : 0) }}</span>
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -425,6 +520,13 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
       </div>
       <!-- 操作按钮 -->
       <div class="flex items-center gap-2.5">
+        <button
+          class="h-9 px-3 bg-surface-slate hover:bg-card-navy-high border border-hairline rounded font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors cursor-pointer text-primary"
+          @click="openAi"
+        >
+          <span class="material-symbols-outlined">smart_toy</span>
+          <span>AI 分析</span>
+        </button>
         <button
           class="h-9 px-3 bg-surface-slate hover:bg-card-navy-high border border-hairline rounded font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors cursor-pointer"
           :class="watched ? 'text-amber-warn' : 'text-primary'"
@@ -470,11 +572,6 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
         </div>
         <div class="flex items-center gap-2 text-steel-muted">
           <span class="font-mono-data text-[11px] mr-2">OKX · {{ bar }}</span>
-          <button
-            class="flex items-center gap-1 px-2 py-0.5 mr-1 rounded border border-primary-container/50 text-primary-fixed-dim hover:bg-primary-container/15 transition-colors cursor-pointer font-label-sm text-[11px]"
-            title="AI K线技术分析"
-            @click="openAi"
-          ><span class="material-symbols-outlined text-[14px]">smart_toy</span>AI 分析</button>
           <button
             class="p-1 cursor-pointer transition-colors"
             :class="crossOn ? 'text-primary' : 'hover:text-ink-white'"
