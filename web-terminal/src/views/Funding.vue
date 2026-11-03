@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { overviewApi } from '../api'
+import CoinIcon from '../components/CoinIcon.vue'
 import { fmtPct, cls } from '../utils/format'
 
 const allRates = ref([]) // 全币种 [{symbol, stablecoin_margin_list:[...]}] — 上游忽略 symbol 返回全币种
@@ -110,12 +111,6 @@ const sparkPath = computed(() => {
     .join(' L ')
 })
 const sparkArea = computed(() => (sparkPath.value ? `M ${sparkPath.value} L 100 36 L 0 36 Z` : ''))
-
-const COIN_AVATAR = {
-  BTC: 'text-amber-warn', ETH: 'text-primary-fixed-dim', SOL: 'text-bull-green', DOGE: 'text-amber-warn',
-  XRP: 'text-steel-muted', ARB: 'text-primary-fixed-dim', BNB: 'text-amber-warn', LINK: 'text-primary-fixed-dim',
-}
-const COIN_CHAR = { BTC: '₿', ETH: 'Ξ', DOGE: 'Ð', AVAX: '▲', LINK: '⬡' }
 
 // ---------- 8H 当前 / 24H 均值 口径切换 ----------
 const rateMode = ref('8h') // '8h' | '24h'
@@ -496,10 +491,7 @@ onBeforeUnmount(() => {
               <tr class="hover:bg-surface-slate/60 transition-colors">
                 <td class="py-3 px-4">
                   <div class="flex items-center gap-2.5">
-                    <div
-                      class="w-6 h-6 rounded-full bg-surface-slate border border-hairline flex items-center justify-center font-bold text-[10px]"
-                      :class="COIN_AVATAR[row.symbol] || 'text-steel-muted'"
-                    >{{ COIN_CHAR[row.symbol] || row.symbol.slice(0, 1) }}</div>
+                    <CoinIcon :inst-id="row.symbol + '-USDT-SWAP'" :size="24" />
                     <div class="flex flex-col">
                       <span class="text-ink-white font-headline-sm font-semibold">{{ row.symbol }}USDT</span>
                       <span class="text-[10px] text-steel-muted">{{ row.symbol }} 永续</span>

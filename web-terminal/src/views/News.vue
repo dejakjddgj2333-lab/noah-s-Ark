@@ -2,6 +2,7 @@
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { newsApi, marketApi, interactionApi } from '../api'
+import CoinIcon from '../components/CoinIcon.vue'
 import { fmtAgo, fmtPct, fmtPrice, fmtUsd, ts, coinOf } from '../utils/format'
 
 const router = useRouter()
@@ -300,6 +301,7 @@ onBeforeUnmount(() => clearInterval(timer))
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center gap-1.5">
+                    <CoinIcon :inst-id="t.instId" :size="16" />
                     <span class="px-1.5 rounded bg-card-navy border border-hairline text-[10px] font-mono-data font-semibold text-ink-white">{{ coinOf(t.instId) }}</span>
                     <span class="font-mono-data text-[11px] font-bold" :class="t.pct >= 0 ? 'text-bull-green' : 'text-bear-red'">{{ fmtPct(t.pct) }}</span>
                   </div>

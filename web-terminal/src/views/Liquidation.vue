@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import EChart from '../components/EChart.vue'
+import CoinIcon from '../components/CoinIcon.vue'
 import { overviewApi } from '../api'
 import { fmtUsd, fmtBig, fmtPct, fmtPrice, fmtTime, coinOf } from '../utils/format'
 
@@ -105,14 +106,6 @@ const donutOption = computed(() => ({
     },
   ],
 }))
-
-const AVATAR = {
-  BTC: 'bg-amber-warn/20 text-amber-warn',
-  ETH: 'bg-primary-container/20 text-primary-fixed-dim',
-  SOL: 'bg-bull-green/15 text-bull-green',
-}
-const avatarCls = (sym) => AVATAR[coinOf(sym)] || 'bg-card-navy-high text-steel-muted'
-const avatarChar = (sym) => ({ BTC: '₿', ETH: 'Ξ', SOL: '◎' }[coinOf(sym)] || coinOf(sym).slice(0, 1))
 
 async function load() {
   try {
@@ -359,7 +352,7 @@ onBeforeUnmount(() => clearInterval(timer))
               <td class="py-2 px-4 text-steel-muted text-xs">{{ fmtTime(e.ts) }}</td>
               <td class="py-2 px-4 font-bold text-ink-white">
                 <div class="flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" :class="avatarCls(e.symbol)">{{ avatarChar(e.symbol) }}</span>
+                  <CoinIcon :inst-id="e.symbol" :size="20" />
                   {{ coinOf(e.symbol) }}
                 </div>
               </td>
