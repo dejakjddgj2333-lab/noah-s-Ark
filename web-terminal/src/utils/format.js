@@ -81,7 +81,9 @@ export function ts(v) {
   return isNaN(t) ? null : t
 }
 
-// BTC-USDT / BTCUSDT -> BTC
+// BTC-USDT / BTC-USDT-SWAP / BTCUSDT -> BTC
 export function coinOf(instId = '') {
-  return instId.replace(/-USDT?/i, '').replace(/USDT?$/i, '')
+  const s = String(instId)
+  if (s.includes('-')) return s.split('-')[0].toUpperCase()
+  return s.replace(/USDT?$/i, '').toUpperCase()
 }
