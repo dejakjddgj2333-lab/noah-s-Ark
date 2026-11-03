@@ -16,7 +16,10 @@ import {
 const props = defineProps({
   candles: { type: Array, default: () => [] },
   magnet: { type: Boolean, default: false }, // 十字光标磁吸模式
+  loadingMore: { type: Boolean, default: false }, // 左侧历史加载中
+  noMore: { type: Boolean, default: false }, // 没有更早历史
 })
+const emit = defineEmits(['loadMore'])
 
 const el = ref(null)
 const legend = ref(null) // { o,h,l,c,vol,chg,up }
@@ -30,6 +33,7 @@ let ma20S = null
 let markersApi = null
 let priceLine = null
 let didInitView = false // 首次定位过可视范围
+let curData = [] // 当前蜡烛数据 (apply 时刷新, 供可视范围高低点用)
 
 const TZ = 8 * 3600 // 东八区平移秒数
 
@@ -87,6 +91,7 @@ function apply() {
   if (!chart) return
   const { candleData, volData, closes } = dataSets()
   if (!candleData.length) return
+  curData = candleData
   lastDec.value = pxDec(candleData[candleData.length - 1].close)
 
   cs.setData(candleData)
@@ -111,10 +116,31 @@ function apply() {
     title: '',
   })
 
-  // 最高/最低标记
-  let hi = candleData[0]
-  let lo = candleData[0]
-  for (const d of candleData) {
+  refreshMarkers()
+  legend.value = mkLegend(last)
+
+  // 首次有数据时定位 (否则数据少时左半屏空白)
+  if (!didInitView) {
+    didInitView = true
+    reposition()
+  }
+}
+
+// 最高/最低标记: 跟随可视范围 (拖动/缩放实时重算); 拿不到范围时用全量
+function refreshMarkers() {
+  if (!chart || !markersApi || !curData.length) return
+  let from = 0
+  let to = curData.length - 1
+  const r = chart.timeScale().getVisibleLogicalRange()
+  if (r) {
+    from = Math.max(0, Math.floor(r.from))
+    to = Math.min(curData.length - 1, Math.ceil(r.to))
+  }
+  if (to < from) return
+  let hi = curData[from]
+  let lo = curData[from]
+  for (let i = from; i <= to; i++) {
+    const d = curData[i]
     if (d.high > hi.high) hi = d
     if (d.low < lo.low) lo = d
   }
@@ -122,13 +148,14 @@ function apply() {
     { time: hi.time, position: 'aboveBar', color: '#9EA0B2', shape: 'arrowDown', text: `高 ${fmtP(hi.high)}` },
     { time: lo.time, position: 'belowBar', color: '#9EA0B2', shape: 'arrowUp', text: `低 ${fmtP(lo.low)}` },
   ])
+}
 
-  legend.value = mkLegend(last)
-
-  // 首次有数据时定位 (否则数据少时左半屏空白)
-  if (!didInitView) {
-    didInitView = true
-    reposition()
+// 可视范围变化: 重算高低点 + 拖到左边缘加载更多历史
+function onVisibleRange(r) {
+  refreshMarkers()
+  if (!r || !didInitView) return
+  if (r.from < 10 && !props.loadingMore && !props.noMore && curData.length) {
+    emit('loadMore')
   }
 }
 
@@ -194,6 +221,9 @@ onMounted(() => {
 
   markersApi = createSeriesMarkers(cs, [])
 
+  // 拖动/缩放: 高低点跟随可视范围, 左边缘触发加载历史
+  chart.timeScale().subscribeVisibleLogicalRangeChange(onVisibleRange)
+
   // 十字悬浮读数
   chart.subscribeCrosshairMove((param) => {
     const d = param?.seriesData?.get(cs)
@@ -219,6 +249,11 @@ onBeforeUnmount(() => {
 <template>
   <div class="relative w-full h-full">
     <div ref="el" class="absolute inset-0"></div>
+    <!-- 左侧历史加载中 -->
+    <div
+      v-if="loadingMore"
+      class="absolute top-2 right-2 z-10 pointer-events-none px-2 py-0.5 rounded bg-canvas-obsidian/80 border border-hairline font-mono-data text-[10px] text-steel-muted"
+    >加载历史…</div>
     <!-- OHLC 悬浮读数 -->
     <div
       v-if="legend"

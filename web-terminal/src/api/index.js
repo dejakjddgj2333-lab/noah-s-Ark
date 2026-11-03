@@ -18,8 +18,8 @@ export const authApi = {
 export const marketApi = {
   tickers: (instType = 'SPOT') => api.get('/market/tickers', { params: { inst_type: instType } }),
   ticker: (instId) => api.get(`/market/ticker/${instId}`),
-  candles: (instId, bar = '1H', limit = 100) =>
-    api.get(`/market/candles/${instId}`, { params: { bar, limit } }),
+  candles: (instId, bar = '1H', limit = 100, after = null) =>
+    api.get(`/market/candles/${instId}`, { params: { bar, limit, ...(after ? { after } : {}) } }),
   books: (instId, sz = 20) => api.get(`/market/books/${instId}`, { params: { sz } }),
   trades: (instId, limit = 60) => api.get(`/market/trades/${instId}`, { params: { limit } }),
   fundingRate: (instId) => api.get(`/market/funding-rate/${instId}`),

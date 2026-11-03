@@ -24,6 +24,8 @@ const bars = ['15m', '1H', '4H', '1D', '1W']
 
 const ticker = ref(null)
 const candles = ref([])
+const candlesLoadingMore = ref(false)
+const candlesNoMore = ref(false)
 const books = ref({ bids: [], asks: [] })
 const trades = ref([])
 const funding = ref(null)
@@ -361,10 +363,29 @@ async function loadTicker() {
   } catch { /* 保留旧值 */ }
 }
 async function loadCandles() {
+  candlesLoadingMore.value = false
+  candlesNoMore.value = false
   try {
     const res = await marketApi.candles(instId.value, bar.value, 300)
     candles.value = (res?.data || []).reverse() // OKX 新在前
   } catch { /* ignore */ }
+}
+// 拖到最左侧: 以最早一根时间为 after, 向前翻页加载历史
+async function loadMoreCandles() {
+  if (candlesLoadingMore.value || candlesNoMore.value || !candles.value.length) return
+  candlesLoadingMore.value = true
+  try {
+    const oldest = candles.value[0][0]
+    const res = await marketApi.candles(instId.value, bar.value, 300, String(oldest))
+    const older = (res?.data || []).reverse().filter((c) => +c[0] < +oldest)
+    if (!older.length) {
+      candlesNoMore.value = true
+      return
+    }
+    candles.value = [...older, ...candles.value]
+  } catch { /* 失败下次拖到边缘再试 */ } finally {
+    candlesLoadingMore.value = false
+  }
 }
 async function loadBooks() {
   try {
@@ -430,7 +451,7 @@ function bindCandleWs(inst, b) {
         changed = true
       }
     }
-    if (changed) candles.value = list.slice(-300)
+    if (changed) candles.value = list.slice(-5000) // 留足历史余量, 防无限膨胀
   })
 }
 function bindWs(inst) {
@@ -669,7 +690,14 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); clearInter
         </div>
       </div>
       <div ref="chartWrap" class="relative w-full flex-1 min-h-0 bg-canvas-obsidian">
-        <KLine ref="kchart" :candles="candles" :magnet="crossOn" />
+        <KLine
+          ref="kchart"
+          :candles="candles"
+          :magnet="crossOn"
+          :loading-more="candlesLoadingMore"
+          :no-more="candlesNoMore"
+          @load-more="loadMoreCandles"
+        />
       </div>
     </section>
 

@@ -35,6 +35,7 @@ _CACHE_TTL = {
     "/api/v5/market/tickers": 10,
     "/api/v5/market/ticker": 5,
     "/api/v5/market/candles": 5,
+    "/api/v5/market/history-candles": 60,
     "/api/v5/market/books": 2,
     "/api/v5/market/trades": 2,
     "/api/v5/public/funding-rate": 5,
@@ -87,12 +88,14 @@ async def candles(
     inst_id: str,
     bar: str = Query("1H"),
     limit: int = Query(100, ge=1, le=300),
+    after: str | None = Query(None, description="毫秒时间戳, 取比它更早的数据 (左滑加载历史)"),
 ):
-    """K 线数据."""
-    return await _proxy(
-        "/api/v5/market/candles",
-        {"instId": inst_id, "bar": bar, "limit": str(limit)},
-    )
+    """K 线数据. 带 after 时走 history-candles (更早历史)."""
+    params = {"instId": inst_id, "bar": bar, "limit": str(limit)}
+    if after:
+        params["after"] = after
+        return await _proxy("/api/v5/market/history-candles", params)
+    return await _proxy("/api/v5/market/candles", params)
 
 
 @router.get("/books/{inst_id}")
