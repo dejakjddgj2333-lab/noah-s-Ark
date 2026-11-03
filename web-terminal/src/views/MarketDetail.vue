@@ -398,10 +398,40 @@ async function loadAll() {
 }
 
 // ---- 行情 WS 实时推送: 挂上等 WS, WS 断开时 8s 轮询兜底 ----
+// 周期 -> OKX 蜡烛频道
+const BAR_CH = { '15m': 'candle15m', '1H': 'candle1H', '4H': 'candle4H', '1D': 'candle1D', '1W': 'candle1W' }
 let unsubs = []
+let unsubCandle = null
 function unbindWs() {
   unsubs.forEach((u) => u())
   unsubs = []
+  unsubCandle?.()
+  unsubCandle = null
+}
+// 订阅当前周期蜡烛频道: 新帧合并进 candles (同时刻覆盖, 新时刻追加)
+function bindCandleWs(inst, b) {
+  unsubCandle?.()
+  unsubCandle = null
+  const ch = BAR_CH[b]
+  if (!ch) return
+  unsubCandle = subscribeMarket(ch, inst, (frame) => {
+    const rows = frame?.data
+    if (!Array.isArray(rows) || !rows.length) return
+    const list = [...candles.value]
+    let changed = false
+    for (const r of rows) {
+      const t = +r[0]
+      const row = [r[0], r[1], r[2], r[3], r[4], r[5]]
+      if (!list.length || t > +list[list.length - 1][0]) {
+        list.push(row)
+        changed = true
+      } else if (t === +list[list.length - 1][0]) {
+        list[list.length - 1] = row
+        changed = true
+      }
+    }
+    if (changed) candles.value = list.slice(-300)
+  })
 }
 function bindWs(inst) {
   unbindWs()
@@ -418,10 +448,12 @@ function bindWs(inst) {
     const fresh = data.filter((t) => !seen.has(t.tradeId))
     if (fresh.length) trades.value = [...fresh, ...trades.value].slice(0, 60)
   }))
+  // K线蜡烛实时推送
+  bindCandleWs(inst, bar.value)
   // 盘口不走 WS: books5 只有 5 档填不满面板, 用 REST 5s 轮询 50 档
 }
 
-watch(bar, async () => { await loadCandles(); kchart.value?.reposition() })
+watch(bar, async () => { await loadCandles(); bindCandleWs(instId.value, bar.value); kchart.value?.reposition() })
 watch(instId, async () => { await loadAll(); syncWatched(); bindWs(instId.value); kchart.value?.reposition() })
 
 onMounted(() => {
@@ -433,7 +465,7 @@ onMounted(() => {
   // 盘口 5s 轮询 50 档; ticker/成交走 WS, WS 断开才轮询兜底
   timer = setInterval(() => {
     loadBooks()
-    if (!marketWsAlive()) { loadTicker(); loadTrades() }
+    if (!marketWsAlive()) { loadTicker(); loadTrades(); loadCandles() }
   }, 5000)
   cdTimer = setInterval(() => { tickCountdown(); wsLive.value = marketWsAlive() }, 1000)
   // 盘口行数随面板高度自适应

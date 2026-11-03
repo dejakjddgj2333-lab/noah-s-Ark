@@ -19,6 +19,8 @@ from services.market_ws_hub import hub
 router = APIRouter(tags=["行情WS"])
 
 ALLOWED_CHANNELS = {"tickers", "books5", "trades"}
+# K线蜡烛频道: candle15m / candle1H / candle4H / candle1D / candle1W 等
+CANDLE_RE = re.compile(r"^candle\d+[mHDWM]$")
 INST_RE = re.compile(r"^[A-Z0-9][A-Z0-9-]{2,31}$")
 MAX_SUBS_PER_CLIENT = 40
 
@@ -70,7 +72,9 @@ async def market_gateway(websocket: WebSocket):
                     continue
                 channel = str(a.get("channel") or "")
                 inst_id = str(a.get("instId") or "").upper()
-                if channel not in ALLOWED_CHANNELS or not INST_RE.match(inst_id):
+                if channel not in ALLOWED_CHANNELS and not CANDLE_RE.match(channel):
+                    continue
+                if not INST_RE.match(inst_id):
                     continue
                 if op == "subscribe":
                     await add_sub(channel, inst_id)
