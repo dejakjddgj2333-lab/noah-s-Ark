@@ -22,6 +22,7 @@ const routes = [
       { path: 'news', component: () => import('../views/News.vue'), meta: { title: '资讯' } },
       { path: 'news/:id', component: () => import('../views/NewsDetail.vue'), meta: { title: '资讯详情' } },
       { path: 'chat', component: () => import('../views/Chat.vue'), meta: { title: '聊天室' } },
+      { path: 'ai', component: () => import('../views/AiChat.vue'), meta: { title: 'AI 助手' } },
       { path: 'invite', component: () => import('../views/Invite.vue'), meta: { title: '邀请好友' } },
       { path: 'team', component: () => import('../views/Team.vue'), meta: { title: '我的团队' } },
       { path: 'assets', component: () => import('../views/Assets.vue'), meta: { title: '资产理财' } },

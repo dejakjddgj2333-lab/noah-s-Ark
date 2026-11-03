@@ -135,6 +135,54 @@ export const alertApi = {
   remove: (id) => api.delete(`/price-alerts/${id}`),
 }
 
+// ---------- AI 助手 (DeepSeek, 对话为 SSE 流式) ----------
+export const aiApi = {
+  dailySummary: (lang = 'zh') => api.get('/ai/daily-summary', { params: { lang } }),
+  klineAnalysis: (instId, bar = '1D') =>
+    api.get('/ai/kline-analysis', { params: { inst_id: instId, bar } }),
+  // SSE 流式对话: axios 不支持流, 用 fetch 读 reader; onDelta(piece) 逐段回调
+  chatStream: async ({ message, history, lang = 'zh', signal }, onDelta) => {
+    const t = localStorage.getItem('mc_token')
+    const resp = await fetch(`${api.defaults.baseURL}/ai/market-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(t ? { Authorization: `Bearer ${t}` } : {}),
+      },
+      body: JSON.stringify({ message, history, lang }),
+      signal,
+    })
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        localStorage.removeItem('mc_token')
+        localStorage.removeItem('mc_user')
+        location.href = '/login'
+      }
+      throw new Error(`AI 请求失败 (${resp.status})`)
+    }
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      let idx
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const line = buf.slice(0, idx).trim()
+        buf = buf.slice(idx + 2)
+        if (!line.startsWith('data:')) continue
+        const payload = line.slice(5).trim()
+        if (payload === '[DONE]') return
+        try {
+          const d = JSON.parse(payload)
+          if (d.delta) onDelta(d.delta)
+        } catch { /* 坏行忽略 */ }
+      }
+    }
+  },
+}
+
 // ---------- VIP ----------
 export const vipApi = {
   me: () => api.get('/vip/me'),

@@ -30,6 +30,7 @@ from routers import (
     admin_sweep,
     admin_users,
     admin_withdrawals,
+    ai,
     app_config,
     auth,
     chat,
@@ -368,6 +369,7 @@ app.include_router(news.router, prefix="/api")
 app.include_router(interaction.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
 app.include_router(market_ws.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(vip.router, prefix="/api")
