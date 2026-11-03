@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import QRCode from 'qrcode'
 import { walletApi } from '../api/wallet'
 import { fmtNum, fmtDateTime, ts } from '../utils/format'
 
@@ -11,6 +12,27 @@ const network = ref('trc20')
 const addr = ref(null) // { network, address, required_confirmations, min_deposit }
 const addrLoading = ref(false)
 const copied = ref(false)
+const qrUrl = ref('')
+
+// 地址变化时重新生成二维码
+watch(
+  () => addr.value?.address,
+  async (a) => {
+    if (!a) {
+      qrUrl.value = ''
+      return
+    }
+    try {
+      qrUrl.value = await QRCode.toDataURL(a, {
+        width: 320,
+        margin: 1,
+        color: { dark: '#0a0f1a', light: '#ffffff' },
+      })
+    } catch {
+      qrUrl.value = ''
+    }
+  },
+)
 
 const records = ref([])
 const loading = ref(true)
@@ -146,6 +168,16 @@ onUnmounted(() => clearInterval(timer))
             <span class="material-symbols-outlined text-[15px]">{{ copied ? 'check' : 'content_copy' }}</span>
             <span>{{ copied ? '已复制' : '复制地址' }}</span>
           </button>
+        </div>
+        <!-- 扫码充值二维码 + 风险提示 -->
+        <div v-if="qrUrl" class="flex flex-col items-center gap-2 py-1">
+          <div class="bg-white rounded-lg p-2 border border-hairline">
+            <img :src="qrUrl" alt="充值地址二维码" class="w-40 h-40 block" />
+          </div>
+          <div class="text-bear-red font-mono-data text-label-sm flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">warning</span>
+            请核对扫码解析出的地址与上方地址完全一致, 谨防地址被篡改
+          </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div class="bg-surface-slate border border-hairline rounded-lg p-3">

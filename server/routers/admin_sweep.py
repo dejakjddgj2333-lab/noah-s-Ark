@@ -56,6 +56,10 @@ async def set_target(
         if not re.fullmatch(r"0x[0-9a-fA-F]{40}", addr):
             raise HTTPException(status.HTTP_400_BAD_REQUEST,
                                 "EVM 地址须 0x 开头 42 位")
+    # 合约地址不是钱包: 误填 USDT 合约会把归集资金永久锁死, 直接拒绝
+    if addr.lower() == cfg["usdt_contract"].lower():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "主钱包不能是 USDT 合约地址, 请填自己的钱包")
     await sweep_service.set_setting(db, f"sweep_target_{body.network}", addr)
     await sweep_service.set_setting(
         db, f"sweep_threshold_{body.network}", str(body.threshold)

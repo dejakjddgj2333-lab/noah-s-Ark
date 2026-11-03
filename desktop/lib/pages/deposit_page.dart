@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_client.dart';
 import '../theme.dart';
@@ -235,6 +236,8 @@ class _DepositPageState extends State<DepositPage> {
         else if (_addr != null) ...[
           _addressBox(),
           const SizedBox(height: 12),
+          _qrBlock(),
+          const SizedBox(height: 12),
           _infoTiles(),
         ] else
           Padding(
@@ -307,6 +310,40 @@ class _DepositPageState extends State<DepositPage> {
             onPressed: _copyAddr),
       ]),
     );
+  }
+
+  // 扫码充值二维码 + 风险提示
+  Widget _qrBlock() {
+    final a = _addr!['address']?.toString() ?? '';
+    return Column(children: [
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Mc.hairline),
+        ),
+        child: QrImageView(
+          data: a,
+          size: 160,
+          backgroundColor: Colors.white,
+          eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square, color: Color(0xFF0A0F1A)),
+          dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Color(0xFF0A0F1A)),
+        ),
+      ),
+      const SizedBox(height: 8),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.warning_amber_rounded, size: 14, color: Mc.bear),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text('请核对扫码解析出的地址与上方地址完全一致, 谨防地址被篡改',
+              style: Mc.mono(11, color: Mc.bear)),
+        ),
+      ]),
+    ]);
   }
 
   Widget _infoTiles() {
