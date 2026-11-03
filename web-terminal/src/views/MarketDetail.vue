@@ -280,9 +280,18 @@ function aggLevels(levels, side) {
   return arr
 }
 
-// ---- 盘口: 卖 8 档 (上高下低) + 买 8 档, 带累计深度条 ----
-const asks8 = computed(() => aggLevels(books.value.asks, 'ask').slice(0, 6).reverse())
-const bids8 = computed(() => aggLevels(books.value.bids, 'bid').slice(0, 6))
+// ---- 盘口: 行数按面板高度动态撑满 (REST 拉 50 档, 行高 18px) ----
+const bookBox = ref(null)
+const bookRows = ref(6)
+let bookObs = null
+function measureBook() {
+  const h = bookBox.value?.clientHeight || 0
+  if (!h) return
+  const per = Math.floor((h - 44) / 2 / 18) // 扣掉中间价差条, 两边均分
+  bookRows.value = Math.max(5, Math.min(24, per))
+}
+const asks8 = computed(() => aggLevels(books.value.asks, 'ask').slice(0, bookRows.value).reverse())
+const bids8 = computed(() => aggLevels(books.value.bids, 'bid').slice(0, bookRows.value))
 
 const askRows = computed(() => {
   const list = asks8.value
@@ -359,7 +368,7 @@ async function loadCandles() {
 }
 async function loadBooks() {
   try {
-    const res = await marketApi.books(instId.value, 14)
+    const res = await marketApi.books(instId.value, 50)
     const d = res?.data?.[0]
     if (d) books.value = { bids: d.bids || [], asks: (d.asks || []).slice().reverse() }
   } catch { /* ignore */ }
@@ -409,11 +418,7 @@ function bindWs(inst) {
     const fresh = data.filter((t) => !seen.has(t.tradeId))
     if (fresh.length) trades.value = [...fresh, ...trades.value].slice(0, 60)
   }))
-  // 五档盘口
-  unsubs.push(subscribeMarket('books5', inst, (frame) => {
-    const d = frame?.data?.[0]
-    if (d) books.value = { bids: d.bids || [], asks: (d.asks || []).slice().reverse() }
-  }))
+  // 盘口不走 WS: books5 只有 5 档填不满面板, 用 REST 5s 轮询 50 档
 }
 
 watch(bar, async () => { await loadCandles(); kchart.value?.reposition() })
@@ -425,13 +430,18 @@ onMounted(() => {
   // 服务器自选同步完成后刷新星标 (多端一致)
   syncWatchlist().then(syncWatched)
   bindWs(instId.value)
-  // WS 断开才轮询兜底 (WS 活着时数据已实时)
+  // 盘口 5s 轮询 50 档; ticker/成交走 WS, WS 断开才轮询兜底
   timer = setInterval(() => {
-    if (!marketWsAlive()) { loadTicker(); loadBooks(); loadTrades() }
-  }, 8000)
+    loadBooks()
+    if (!marketWsAlive()) { loadTicker(); loadTrades() }
+  }, 5000)
   cdTimer = setInterval(() => { tickCountdown(); wsLive.value = marketWsAlive() }, 1000)
+  // 盘口行数随面板高度自适应
+  bookObs = new ResizeObserver(measureBook)
+  if (bookBox.value) bookObs.observe(bookBox.value)
+  measureBook()
 })
-onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); clearInterval(swTimer); unbindWs() })
+onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); clearInterval(swTimer); bookObs?.disconnect(); unbindWs() })
 </script>
 
 <template>
@@ -666,7 +676,7 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); clearInter
           <div class="text-right">数量 ({{ coin }})</div>
           <div class="text-right">累计深度 ({{ coin }})</div>
         </div>
-        <div class="flex-1 min-h-0 overflow-y-auto flex flex-col font-mono-data text-[12px] select-none justify-between">
+        <div ref="bookBox" class="flex-1 min-h-0 overflow-y-auto flex flex-col font-mono-data text-[12px] select-none justify-between">
           <!-- 卖盘 -->
           <div class="flex flex-col justify-end flex-1">
             <div v-for="(a, i) in askRows" :key="'a' + i" class="relative grid grid-cols-3 px-3 py-px leading-[16px] hover:bg-card-navy-high/50 cursor-pointer">
