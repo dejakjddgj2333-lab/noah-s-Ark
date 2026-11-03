@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import KLine from '../components/KLine.vue'
+import CoinIcon from '../components/CoinIcon.vue'
 import { marketApi, alertApi, aiApi } from '../api'
 import { fmtPrice, fmtPct, fmtBig, fmtNum, fmtTime, coinOf } from '../utils/format'
 import { inWatchlist, toggleWatchlist, syncWatchlist } from '../utils/watchlist'
@@ -45,12 +46,34 @@ function toggleFullscreen() {
   } catch { /* 静默降级 */ }
 }
 
-// ---- 币种切换器 (搜索 + 现货/合约筛选) ----
+// ---- 币种切换器 (搜索 + 现货/合约筛选 + 排序, 对齐 okx) ----
 const switchOpen = ref(false)
 const switchType = ref('SPOT')
 const switchQuery = ref('')
 const switchList = ref([])
 const switchLoading = ref(false)
+const swSortKey = ref('vol') // name | price | pct | vol
+const swSortDir = ref('desc')
+let swTimer = null
+
+function swPct(t) {
+  const open = Number(t.open24h)
+  if (!open) return 0
+  return ((Number(t.last) - open) / open) * 100
+}
+
+function toggleSwSort(key) {
+  if (swSortKey.value === key) {
+    swSortDir.value = swSortDir.value === 'desc' ? 'asc' : 'desc'
+  } else {
+    swSortKey.value = key
+    swSortDir.value = key === 'name' ? 'asc' : 'desc'
+  }
+}
+function swSortIcon(key) {
+  if (swSortKey.value !== key) return '↕'
+  return swSortDir.value === 'desc' ? '↓' : '↑'
+}
 
 async function loadSwitch() {
   switchLoading.value = true
@@ -67,15 +90,30 @@ function openSwitch() {
   if (switchOpen.value) {
     switchType.value = isSwap.value ? 'SWAP' : 'SPOT'
     switchQuery.value = ''
+    swSortKey.value = 'vol'
+    swSortDir.value = 'desc'
     loadSwitch()
   }
 }
+
+// 开着时 15s 轮询价格, 关掉即停
+watch(switchOpen, (open) => {
+  clearInterval(swTimer)
+  swTimer = open ? setInterval(loadSwitch, 15000) : null
+})
 
 watch(switchType, () => { if (switchOpen.value) loadSwitch() })
 
 const switchFiltered = computed(() => {
   const q = switchQuery.value.trim().toUpperCase()
-  const arr = q ? switchList.value.filter((t) => t.instId.toUpperCase().includes(q)) : switchList.value
+  const arr = q ? switchList.value.filter((t) => t.instId.toUpperCase().includes(q)) : [...switchList.value]
+  const dir = swSortDir.value === 'asc' ? 1 : -1
+  arr.sort((a, b) => {
+    if (swSortKey.value === 'name') return coinOf(a.instId).localeCompare(coinOf(b.instId)) * dir
+    if (swSortKey.value === 'price') return ((+a.last || 0) - (+b.last || 0)) * dir
+    if (swSortKey.value === 'pct') return (swPct(a) - swPct(b)) * dir
+    return ((+a.volCcy24h || 0) - (+b.volCcy24h || 0)) * dir
+  })
   return arr.slice(0, 80)
 })
 
@@ -393,7 +431,7 @@ onMounted(() => {
   }, 8000)
   cdTimer = setInterval(() => { tickCountdown(); wsLive.value = marketWsAlive() }, 1000)
 })
-onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs() })
+onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); clearInterval(swTimer); unbindWs() })
 </script>
 
 <template>
@@ -404,10 +442,7 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
       <div class="flex items-center gap-6 flex-wrap">
         <!-- 币种图标 + 名称 (点击切换币种) -->
         <div class="relative flex items-center gap-3 pr-6 border-r border-hairline">
-          <div
-            class="w-9 h-9 rounded-full flex items-center justify-center font-bold font-mono-data text-base"
-            :class="coin === 'BTC' ? 'bg-[#F7931A]/10 border border-[#F7931A]/30 text-[#F7931A]' : 'bg-primary-container/15 border border-primary-container/40 text-primary'"
-          >{{ coin === 'BTC' ? '₿' : coin.slice(0, 1) }}</div>
+          <CoinIcon :inst-id="instId" :size="36" />
           <div class="flex flex-col cursor-pointer group" @click="openSwitch">
             <div class="flex items-center gap-2">
               <h1 class="font-headline-md text-headline-md font-bold text-ink-white group-hover:text-primary transition-colors">{{ coinName }}</h1>
@@ -457,6 +492,14 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
                 @click="switchType = 'SWAP'"
               >永续合约</button>
             </div>
+            <!-- 排序表头 (点击切换升降) -->
+            <div class="px-3 py-1.5 border-b border-hairline flex items-center justify-between font-mono-data text-[10px] text-steel-muted select-none">
+              <button class="cursor-pointer hover:text-ink-white transition-colors" @click="toggleSwSort('name')">名称 <span>{{ swSortIcon('name') }}</span></button>
+              <span class="flex items-center gap-2.5">
+                <button class="w-20 text-right cursor-pointer hover:text-ink-white transition-colors" @click="toggleSwSort('price')">最新价 <span>{{ swSortIcon('price') }}</span></button>
+                <button class="w-14 text-right cursor-pointer hover:text-ink-white transition-colors" @click="toggleSwSort('pct')">涨跌幅 <span>{{ swSortIcon('pct') }}</span></button>
+              </span>
+            </div>
             <!-- 列表 -->
             <div class="flex-1 min-h-0 overflow-y-auto">
               <div v-if="switchLoading" class="py-8 text-center text-steel-muted font-mono-data text-[11px]">加载中…</div>
@@ -469,12 +512,13 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); unbindWs()
                 @click="goCoin(t)"
               >
                 <span class="flex items-center gap-2">
+                  <CoinIcon :inst-id="t.instId" :size="18" />
                   <span class="font-mono-data text-[12px] font-semibold text-ink-white">{{ coinOf(t.instId) }}</span>
                   <span class="font-mono-data text-[10px] text-steel-muted">/USDT</span>
                 </span>
                 <span class="flex items-center gap-2.5 font-mono-data text-[11px]">
-                  <span class="text-ink-white">${{ fmtPrice(t.last) }}</span>
-                  <span class="w-14 text-right" :class="(t.last - t.open24h) >= 0 ? 'text-bull-green' : 'text-bear-red'">{{ fmtPct(t.open24h ? ((t.last - t.open24h) / t.open24h) : 0) }}</span>
+                  <span class="w-20 text-right text-ink-white">${{ fmtPrice(t.last) }}</span>
+                  <span class="w-14 text-right" :class="swPct(t) >= 0 ? 'text-bull-green' : 'text-bear-red'">{{ fmtPct(swPct(t)) }}</span>
                 </span>
               </button>
             </div>

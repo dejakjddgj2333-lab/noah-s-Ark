@@ -176,20 +176,26 @@ onBeforeUnmount(() => ctrl?.abort())
             v-model="draft"
             rows="1"
             placeholder="问行情、问指标、问新闻… (Enter 发送, Shift+Enter 换行)"
-            class="flex-1 resize-none bg-canvas-obsidian border border-hairline rounded-lg px-3 py-2 text-[13px] text-ink-white placeholder:text-steel-muted/50 focus:outline-none focus:border-primary-container/60"
+            class="flex-1 resize-none bg-canvas-obsidian border border-hairline rounded-lg px-3 py-2 text-[13px] text-ink-white placeholder:text-steel-muted/50 focus:outline-none focus:border-primary-container/60 min-h-[38px]"
             @keydown="onKey"
           ></textarea>
           <button
             v-if="sending"
-            class="px-3.5 py-2 bg-bear-red/20 text-bear-red border border-bear-red/40 rounded-lg text-[12px] font-semibold hover:bg-bear-red/30 transition-colors"
+            class="h-[38px] px-3.5 bg-bear-red/20 text-bear-red border border-bear-red/40 rounded-lg text-[12px] font-semibold hover:bg-bear-red/30 transition-colors flex items-center gap-1"
             @click="stop"
-          >停止</button>
+          >
+            <span class="material-symbols-outlined text-[15px]">stop</span>
+            <span>停止</span>
+          </button>
           <button
             v-else
-            class="px-3.5 py-2 bg-primary-container text-canvas-obsidian rounded-lg text-[12px] font-bold hover:brightness-110 transition-all disabled:opacity-40"
+            class="h-[38px] px-3.5 bg-primary-container hover:bg-inverse-primary text-ink-white rounded-lg text-[12px] font-bold transition-colors flex items-center gap-1 disabled:opacity-40"
             :disabled="!draft.trim()"
             @click="send()"
-          >发送</button>
+          >
+            <span class="material-symbols-outlined text-[15px]">send</span>
+            <span>发送</span>
+          </button>
         </div>
         <div class="mt-1.5 text-[11px] text-steel-muted/60 font-mono-data">AI 解读仅供参考, 不构成投资建议</div>
       </div>

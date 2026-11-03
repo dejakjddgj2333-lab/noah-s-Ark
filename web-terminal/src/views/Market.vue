@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import EChart from '../components/EChart.vue'
+import CoinIcon from '../components/CoinIcon.vue'
 import { marketApi, overviewApi } from '../api'
 import { fmtPrice, fmtPct, fmtBig, fmtUsd, coinOf } from '../utils/format'
 import { getWatchlist, toggleWatchlist, syncWatchlist } from '../utils/watchlist'
@@ -54,12 +55,36 @@ function pct(t) {
   return ((Number(t.last) - open) / open) * 100
 }
 
+// ---- 表头排序 (对齐 okx: 名称/价格/涨跌/成交额, 点击切换升降, 默认成交额降序) ----
+const sortKey = ref('vol') // name | price | pct | vol
+const sortDir = ref('desc')
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'
+  } else {
+    sortKey.value = key
+    sortDir.value = key === 'name' ? 'asc' : 'desc'
+  }
+  page.value = 1
+}
+function sortIcon(key) {
+  if (sortKey.value !== key) return '↕'
+  return sortDir.value === 'desc' ? '↓' : '↑'
+}
+
 const filtered = computed(() => {
   let list = [...rows.value]
   if (favOnly.value) list = list.filter((t) => watchlist.value.includes(t.instId))
   const kw = keyword.value.trim().toUpperCase()
   if (kw) list = list.filter((t) => t.instId.includes(kw))
-  return list.sort((a, b) => Number(b.volCcy24h) - Number(a.volCcy24h)).slice(0, 100)
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  list.sort((a, b) => {
+    if (sortKey.value === 'name') return coinOf(a.instId).localeCompare(coinOf(b.instId)) * dir
+    if (sortKey.value === 'price') return ((+a.last || 0) - (+b.last || 0)) * dir
+    if (sortKey.value === 'pct') return (pct(a) - pct(b)) * dir
+    return ((+a.volCcy24h || 0) - (+b.volCcy24h || 0)) * dir
+  })
+  return list.slice(0, 100)
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
@@ -312,12 +337,12 @@ onBeforeUnmount(() => clearInterval(timer))
           <thead>
             <tr class="h-11 border-b border-hairline bg-surface-slate/80 text-steel-muted font-label-sm text-label-sm uppercase select-none">
               <th class="pl-4 pr-2 w-12 text-center">#</th>
-              <th class="px-3 min-w-[200px]">币种 / 资产</th>
-              <th class="px-3 text-right min-w-[120px]">最新价 (USD)</th>
-              <th class="px-3 text-right min-w-[110px]">24H 涨跌</th>
+              <th class="px-3 min-w-[200px] cursor-pointer hover:text-ink-white transition-colors" @click="toggleSort('name')">币种 / 资产 <span class="text-[10px]">{{ sortIcon('name') }}</span></th>
+              <th class="px-3 text-right min-w-[120px] cursor-pointer hover:text-ink-white transition-colors" @click="toggleSort('price')">最新价 (USD) <span class="text-[10px]">{{ sortIcon('price') }}</span></th>
+              <th class="px-3 text-right min-w-[110px] cursor-pointer hover:text-ink-white transition-colors" @click="toggleSort('pct')">24H 涨跌 <span class="text-[10px]">{{ sortIcon('pct') }}</span></th>
               <th class="px-3 text-right min-w-[120px]">24H 最高</th>
               <th class="px-3 text-right min-w-[120px]">24H 最低</th>
-              <th class="px-3 text-right min-w-[130px]">24H 成交额</th>
+              <th class="px-3 text-right min-w-[130px] cursor-pointer hover:text-ink-white transition-colors" @click="toggleSort('vol')">24H 成交额 <span class="text-[10px]">{{ sortIcon('vol') }}</span></th>
               <th class="px-3 text-right min-w-[140px]">总市值</th>
               <th class="px-4 text-center min-w-[140px]">7日走势</th>
               <th class="pr-4 pl-2 text-center w-14">操作</th>
@@ -333,9 +358,7 @@ onBeforeUnmount(() => clearInterval(timer))
               <td class="pl-4 pr-2 text-center text-steel-muted text-[11px]">{{ (page - 1) * pageSize + i + 1 }}</td>
               <td class="px-3">
                 <div class="flex items-center space-x-2.5">
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 uppercase" :class="coinMeta(t.instId).cls">
-                    {{ coinMeta(t.instId).sym }}
-                  </div>
+                  <CoinIcon :inst-id="t.instId" :size="24" />
                   <div>
                     <span class="font-headline-sm text-headline-sm font-bold text-ink-white group-hover:text-primary transition-colors">{{ coinOf(t.instId) }}</span>
                     <span class="ml-1 text-[11px] font-body-md text-steel-muted">{{ coinMeta(t.instId).name }}</span>
