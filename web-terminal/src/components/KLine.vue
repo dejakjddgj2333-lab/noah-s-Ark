@@ -29,6 +29,7 @@ let ma10S = null
 let ma20S = null
 let markersApi = null
 let priceLine = null
+let didInitView = false // 首次定位过可视范围
 
 const TZ = 8 * 3600 // 东八区平移秒数
 
@@ -123,12 +124,26 @@ function apply() {
   ])
 
   legend.value = mkLegend(last)
+
+  // 首次有数据时定位 (否则数据少时左半屏空白)
+  if (!didInitView) {
+    didInitView = true
+    reposition()
+  }
 }
 
 function reset() {
-  chart?.timeScale().fitContent()
+  chart?.timeScale().scrollToRealTime() // 回到最新一根, 保持当前缩放
 }
-defineExpose({ reset })
+// 定位可视范围: 数据撑不满一屏收缩适配, 够一屏贴右侧最新
+function reposition() {
+  if (!chart || !props.candles.length) return
+  const ts = chart.timeScale()
+  const cap = Math.floor(ts.width() / (ts.options().barSpacing || 6))
+  if (props.candles.length < cap) ts.fitContent()
+  else ts.scrollToRealTime()
+}
+defineExpose({ reset, reposition })
 
 watch(() => props.candles, apply, { deep: false })
 watch(

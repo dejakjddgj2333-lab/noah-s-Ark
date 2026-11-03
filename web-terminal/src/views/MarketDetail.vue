@@ -235,7 +235,7 @@ async function loadTicker() {
 }
 async function loadCandles() {
   try {
-    const res = await marketApi.candles(instId.value, bar.value, 120)
+    const res = await marketApi.candles(instId.value, bar.value, 300)
     candles.value = (res?.data || []).reverse() // OKX 新在前
   } catch { /* ignore */ }
 }
@@ -260,12 +260,14 @@ async function loadFunding() {
   } catch { /* ignore */ }
 }
 
-function loadAll() {
-  loadTicker()
-  loadCandles()
-  loadBooks()
-  loadTrades()
-  loadFunding()
+async function loadAll() {
+  await Promise.all([
+    loadTicker(),
+    loadCandles(),
+    loadBooks(),
+    loadTrades(),
+    loadFunding(),
+  ])
 }
 
 // ---- 行情 WS 实时推送: 挂上等 WS, WS 断开时 8s 轮询兜底 ----
@@ -296,8 +298,8 @@ function bindWs(inst) {
   }))
 }
 
-watch(bar, loadCandles)
-watch(instId, () => { loadAll(); syncWatched(); bindWs(instId.value) })
+watch(bar, async () => { await loadCandles(); kchart.value?.reposition() })
+watch(instId, async () => { await loadAll(); syncWatched(); bindWs(instId.value); kchart.value?.reposition() })
 
 onMounted(() => {
   loadAll()
