@@ -14,7 +14,7 @@ import re
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from services.market_ws_hub import hub
+from services.market_ws_hub import hub, hub_candle
 
 router = APIRouter(tags=["行情WS"])
 
@@ -23,6 +23,11 @@ ALLOWED_CHANNELS = {"tickers", "books5", "trades"}
 CANDLE_RE = re.compile(r"^candle\d+[mHDWM]$")
 INST_RE = re.compile(r"^[A-Z0-9][A-Z0-9-]{2,31}$")
 MAX_SUBS_PER_CLIENT = 40
+
+
+def _hub_for(channel: str):
+    # 蜡烛频道走 OKX business 端点, 其余走 public
+    return hub_candle if CANDLE_RE.match(channel) else hub
 
 
 @router.websocket("/market/ws")
@@ -42,7 +47,7 @@ async def market_gateway(websocket: WebSocket):
         q: asyncio.Queue = asyncio.Queue(maxsize=200)
         task = asyncio.create_task(forward(q))
         forwards[key] = (q, task)
-        await hub.subscribe(channel, inst_id, q)
+        await _hub_for(channel).subscribe(channel, inst_id, q)
 
     async def drop_sub(channel: str, inst_id: str) -> None:
         key = (channel, inst_id)
@@ -51,7 +56,7 @@ async def market_gateway(websocket: WebSocket):
             return
         q, task = entry
         task.cancel()
-        await hub.unsubscribe(channel, inst_id, q)
+        await _hub_for(channel).unsubscribe(channel, inst_id, q)
 
     try:
         while True:
@@ -85,4 +90,4 @@ async def market_gateway(websocket: WebSocket):
     finally:
         for (channel, inst_id), (q, task) in list(forwards.items()):
             task.cancel()
-            await hub.unsubscribe(channel, inst_id, q)
+            await _hub_for(channel).unsubscribe(channel, inst_id, q)

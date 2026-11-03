@@ -14,11 +14,14 @@ import websockets
 
 log = logging.getLogger("market_ws_hub")
 
-OKX_WS = "wss://ws.okx.com:8443/ws/v5/public"
+# OKX 蜡烛频道 (candle*) 已迁到 business 端点, 公共端点订阅直接报错
+OKX_WS = "wss://ws.okx.com/ws/v5/public"
+OKX_WS_BUSINESS = "wss://ws.okx.com/ws/v5/business"
 
 
 class MarketHub:
-    def __init__(self) -> None:
+    def __init__(self, url: str = OKX_WS) -> None:
+        self._url = url
         self._subs: dict[tuple[str, str], set[asyncio.Queue]] = {}
         self._ws = None
         self._lock = asyncio.Lock()
@@ -66,7 +69,7 @@ class MarketHub:
         backoff = 1
         while True:
             try:
-                async with websockets.connect(OKX_WS, ping_interval=None) as ws:
+                async with websockets.connect(self._url, ping_interval=None) as ws:
                     self._ws = ws
                     backoff = 1
                     async with self._lock:
@@ -117,3 +120,5 @@ class MarketHub:
 
 
 hub = MarketHub()
+# 蜡烛频道专用 (OKX business 端点)
+hub_candle = MarketHub(OKX_WS_BUSINESS)
