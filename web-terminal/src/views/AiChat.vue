@@ -126,8 +126,8 @@ onBeforeUnmount(() => ctrl?.abort())
     <section class="flex-1 min-w-0 bg-card-navy border border-hairline rounded-xl flex flex-col overflow-hidden">
       <div class="px-4 py-2.5 border-b border-hairline flex items-center gap-2 flex-shrink-0">
         <span class="material-symbols-outlined text-[16px] text-primary-container">smart_toy</span>
-        <span class="text-xs font-semibold text-ink-white">明策 AI 助手</span>
-        <span class="font-mono-data text-[10px] text-steel-muted">数据实时注入 · AI 只做解读</span>
+        <span class="text-sm font-semibold text-ink-white">明策 AI 助手</span>
+        <span class="font-mono-data text-[11px] text-steel-muted">数据实时注入 · AI 只做解读</span>
         <button
           class="ml-auto text-steel-muted hover:text-ink-white transition-colors disabled:opacity-40"
           title="清空对话"
@@ -143,12 +143,12 @@ onBeforeUnmount(() => ctrl?.abort())
         <div v-if="!msgs.length" class="h-full flex flex-col items-center justify-center gap-3">
           <span class="material-symbols-outlined text-[40px] text-primary-container/60">smart_toy</span>
           <div class="text-sm text-ink-white">问点什么吧</div>
-          <div class="text-[11px] text-steel-muted">行情、指标、新闻都在它脑子里 (实时注入)</div>
+          <div class="text-[12px] text-steel-muted">行情、指标、新闻都在它脑子里 (实时注入)</div>
           <div class="flex flex-wrap justify-center gap-2 mt-2 max-w-lg">
             <button
               v-for="q in quicks"
               :key="q"
-              class="px-3 py-1.5 text-[11px] text-steel-muted bg-canvas-obsidian border border-hairline rounded-lg hover:text-ink-white hover:border-primary-container/60 transition-colors"
+              class="px-3 py-1.5 text-[12px] text-steel-muted bg-canvas-obsidian border border-hairline rounded-lg hover:text-ink-white hover:border-primary-container/60 transition-colors"
               @click="send(q)"
             >{{ q }}</button>
           </div>
@@ -157,12 +157,12 @@ onBeforeUnmount(() => ctrl?.abort())
         <!-- 消息 -->
         <div v-for="(m, i) in msgs" :key="i" class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
           <div
-            class="max-w-[78%] px-3.5 py-2.5 rounded-xl text-[12px] leading-relaxed break-words"
+            class="max-w-[78%] px-3.5 py-2.5 rounded-xl text-[14px] leading-relaxed break-words"
             :class="m.role === 'user'
               ? 'bg-primary-container/20 text-ink-white border border-primary-container/40 rounded-br-sm'
               : 'bg-canvas-obsidian text-steel-muted border border-hairline rounded-bl-sm'"
           >
-            <span v-if="m.role === 'assistant' && !m.content && sending && i === msgs.length - 1" class="font-mono-data text-[11px] animate-pulse">思考中…</span>
+            <span v-if="m.role === 'assistant' && !m.content && sending && i === msgs.length - 1" class="font-mono-data text-[12px] animate-pulse">思考中…</span>
             <span v-else-if="m.role === 'assistant'" v-html="mdLite(m.content)"></span>
             <span v-else class="whitespace-pre-wrap">{{ m.content }}</span>
           </div>
@@ -176,22 +176,22 @@ onBeforeUnmount(() => ctrl?.abort())
             v-model="draft"
             rows="1"
             placeholder="问行情、问指标、问新闻… (Enter 发送, Shift+Enter 换行)"
-            class="flex-1 resize-none bg-canvas-obsidian border border-hairline rounded-lg px-3 py-2 text-[12px] text-ink-white placeholder:text-steel-muted/50 focus:outline-none focus:border-primary-container/60"
+            class="flex-1 resize-none bg-canvas-obsidian border border-hairline rounded-lg px-3 py-2 text-[13px] text-ink-white placeholder:text-steel-muted/50 focus:outline-none focus:border-primary-container/60"
             @keydown="onKey"
           ></textarea>
           <button
             v-if="sending"
-            class="px-3.5 py-2 bg-bear-red/20 text-bear-red border border-bear-red/40 rounded-lg text-[11px] font-semibold hover:bg-bear-red/30 transition-colors"
+            class="px-3.5 py-2 bg-bear-red/20 text-bear-red border border-bear-red/40 rounded-lg text-[12px] font-semibold hover:bg-bear-red/30 transition-colors"
             @click="stop"
           >停止</button>
           <button
             v-else
-            class="px-3.5 py-2 bg-primary-container text-canvas-obsidian rounded-lg text-[11px] font-bold hover:brightness-110 transition-all disabled:opacity-40"
+            class="px-3.5 py-2 bg-primary-container text-canvas-obsidian rounded-lg text-[12px] font-bold hover:brightness-110 transition-all disabled:opacity-40"
             :disabled="!draft.trim()"
             @click="send()"
           >发送</button>
         </div>
-        <div class="mt-1.5 text-[10px] text-steel-muted/60 font-mono-data">AI 解读仅供参考, 不构成投资建议</div>
+        <div class="mt-1.5 text-[11px] text-steel-muted/60 font-mono-data">AI 解读仅供参考, 不构成投资建议</div>
       </div>
     </section>
 
@@ -199,7 +199,7 @@ onBeforeUnmount(() => ctrl?.abort())
     <section class="w-80 flex-shrink-0 bg-card-navy border border-hairline rounded-xl hidden lg:flex flex-col overflow-hidden">
       <div class="px-4 py-2.5 border-b border-hairline flex items-center gap-2 flex-shrink-0">
         <span class="material-symbols-outlined text-[16px] text-primary-container">today</span>
-        <span class="text-xs font-semibold text-ink-white">今日市场综述</span>
+        <span class="text-sm font-semibold text-ink-white">今日市场综述</span>
         <span v-if="summary?.cached" class="ml-auto font-mono-data text-[9px] px-1 py-0.5 bg-canvas-obsidian border border-hairline rounded text-steel-muted">已缓存</span>
         <button
           class="text-steel-muted hover:text-ink-white transition-colors"
@@ -213,12 +213,12 @@ onBeforeUnmount(() => ctrl?.abort())
       <div class="flex-1 min-h-0 overflow-y-auto p-4">
         <div v-if="summaryLoading" class="py-6 text-center text-steel-muted font-mono-data text-[11px] animate-pulse">AI 生成中, 稍候…</div>
         <template v-else-if="summary">
-          <div class="font-mono-data text-[10px] text-steel-muted mb-2">{{ summary.date }}</div>
-          <div class="text-[12px] leading-relaxed text-steel-muted" v-html="mdLite(summary.text)"></div>
+          <div class="font-mono-data text-[11px] text-steel-muted mb-2">{{ summary.date }}</div>
+          <div class="text-[13px] leading-relaxed text-steel-muted" v-html="mdLite(summary.text)"></div>
         </template>
         <div v-else class="py-6 text-center text-steel-muted font-mono-data text-[11px]">综述暂不可用</div>
       </div>
-      <div class="flex-shrink-0 px-4 py-2 border-t border-hairline text-[10px] text-steel-muted/60 font-mono-data">每天首次访问生成一次, 全日共享</div>
+      <div class="flex-shrink-0 px-4 py-2 border-t border-hairline text-[11px] text-steel-muted/60 font-mono-data">每天首次访问生成一次, 全日共享</div>
     </section>
   </div>
 </template>
