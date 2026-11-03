@@ -8,6 +8,7 @@ import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import '../widgets/coin_icon.dart';
 
 /// 资金费率页: 全网费率 KPI / 跨平台热力图 / 费率明细全景表。
 /// 数据组织参考 web-terminal/src/views/Funding.vue。
@@ -848,19 +849,7 @@ class _FundingPageState extends State<FundingPage> {
         Expanded(
           flex: 3,
           child: Row(children: [
-            Container(
-              width: 26,
-              height: 26,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Mc.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: Mc.hairline),
-              ),
-              child: Text(row.symbol.substring(0, 1),
-                  style: Mc.mono(10,
-                      w: FontWeight.w700, color: Mc.cobaltSoft)),
-            ),
+            CoinIcon(row.symbol, size: 26),
             const SizedBox(width: 8),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${row.symbol}USDT',

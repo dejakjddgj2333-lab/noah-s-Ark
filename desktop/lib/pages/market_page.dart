@@ -8,6 +8,7 @@ import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import '../widgets/coin_icon.dart';
 import '../widgets/shell.dart';
 import 'market_detail_page.dart';
 
@@ -520,20 +521,7 @@ class _MarketPageState extends State<MarketPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Mc.cobalt.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Mc.cobalt.withValues(alpha: 0.4)),
-                    ),
-                    child: Text(
-                      coin.isEmpty ? '?' : coin.substring(0, 1),
-                      style: Mc.mono(10, w: FontWeight.w700, color: Mc.cobaltSoft),
-                    ),
-                  ),
+                  CoinIcon(coin, size: 24),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(coin,

@@ -10,6 +10,8 @@ import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import '../widgets/coin_icon.dart';
+import '../widgets/ai_report.dart';
 
 /// 行情详情页: 报价头(资金费率/自选/预警) + 蜡烛K线(MA/成交量/高低点/最新价线)
 /// + 右栏 L2 盘口深度 + 逐笔成交 + 基础信息。8S 轮询刷新, 对齐网页版 MarketDetail。
@@ -425,20 +427,7 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
             instId: _instId,
             onSelect: _switchCoin,
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Mc.cobalt.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Mc.cobalt.withValues(alpha: 0.4)),
-                ),
-                child: Text(
-                  _coin.isEmpty ? '?' : _coin.substring(0, 1),
-                  style: Mc.mono(14, w: FontWeight.w700, color: Mc.cobaltSoft),
-                ),
-              ),
+              CoinIcon(_instId, size: 40),
               const SizedBox(width: 12),
               Column(
                   mainAxisSize: MainAxisSize.min,
@@ -481,6 +470,14 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
             McBadge(Fmt.pct(pct), color: Mc.upDown(pct)),
           ],
           const Spacer(),
+          McButton(
+            'AI 分析',
+            kind: McBtnKind.ghost,
+            height: 36,
+            icon: Icons.smart_toy_outlined,
+            onPressed: () => showAiKlineReport(context, _instId, _bar),
+          ),
+          const SizedBox(width: 10),
           McButton(
             _watched ? '已自选' : '加入自选',
             kind: McBtnKind.ghost,
@@ -1790,18 +1787,7 @@ class _CoinSwitcherState extends State<_CoinSwitcher> {
             color: current ? Mc.cardHigh.withValues(alpha: 0.6) : null,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(children: [
-              Container(
-                width: 26,
-                height: 26,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Mc.cobalt.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(coin.isEmpty ? '?' : coin.substring(0, 1),
-                    style: Mc.mono(10,
-                        w: FontWeight.w700, color: Mc.cobaltSoft)),
-              ),
+              CoinIcon(id, size: 26),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

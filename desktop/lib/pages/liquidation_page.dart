@@ -8,6 +8,7 @@ import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import '../widgets/coin_icon.dart';
 
 /// 爆仓监控页: 24H 爆仓 KPI / 爆仓分布柱状图 / 多空比例环图 / 实时爆仓明细。
 /// 数据组织参考 web-terminal/src/views/Liquidation.vue。
@@ -597,7 +598,11 @@ class _LiquidationPageState extends State<LiquidationPage> {
                 Text(Fmt.hm(e['ts']), style: Mc.mono(12, color: Mc.muted))),
         Expanded(
             flex: 2,
-            child: Text(coin, style: Mc.mono(12, w: FontWeight.w600))),
+            child: Row(children: [
+              CoinIcon(e['symbol']?.toString() ?? '', size: 18),
+              const SizedBox(width: 6),
+              Text(coin, style: Mc.mono(12, w: FontWeight.w600)),
+            ])),
         Expanded(
           flex: 4,
           child: Row(children: [

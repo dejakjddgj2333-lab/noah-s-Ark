@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/l10n.dart';
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -681,6 +682,8 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
                   alignment: Alignment.centerLeft,
                   child: Row(
                     children: [
+                      CoinIcon(symbol, size: 22),
+                      const SizedBox(width: 8),
                       Text(symbol, style: McText.sans(size: 14, weight: FontWeight.w700, color: Colors.white)),
                       const SizedBox(width: 6),
                       Text(tr('fund_basis_hedge'), style: McText.mono(size: 10, color: McColors.onSurfaceVariant)),
@@ -985,6 +988,8 @@ class _HomeFundingPageState extends State<HomeFundingPage> {
               children: [
                 Row(
                   children: [
+                    CoinIcon(r.symbol, size: 22),
+                    const SizedBox(width: 8),
                     Text(r.symbol, style: McText.sans(size: 14, weight: FontWeight.w700, color: Colors.white)),
                     const SizedBox(width: 4),
                     Text('/USDT', style: McText.mono(size: 10, color: McColors.outline)),

@@ -8,6 +8,7 @@ import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import '../widgets/coin_icon.dart';
 import '../widgets/shell.dart';
 import 'market_detail_page.dart';
 import 'market_page.dart';
@@ -608,6 +609,8 @@ class _OverviewPageState extends State<OverviewPage> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(children: [
+                CoinIcon(instId, size: 20),
+                const SizedBox(width: 8),
                 Text(coin, style: Mc.mono(12, w: FontWeight.w700)),
                 const SizedBox(width: 6),
                 Flexible(
@@ -1080,7 +1083,11 @@ class _OverviewPageState extends State<OverviewPage> {
                 style: Mc.mono(12, color: Mc.muted))),
         Expanded(
             flex: 2,
-            child: Text(coin, style: Mc.mono(12, w: FontWeight.w600))),
+            child: Row(children: [
+              CoinIcon(e['symbol']?.toString() ?? '', size: 18),
+              const SizedBox(width: 6),
+              Text(coin, style: Mc.mono(12, w: FontWeight.w600)),
+            ])),
         Expanded(
             flex: 3,
             child: Center(

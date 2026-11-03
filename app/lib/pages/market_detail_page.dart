@@ -13,6 +13,7 @@ import '../services/api.dart';
 import '../services/data.dart';
 import '../services/live_activity.dart';
 import '../services/ticker_ws.dart';
+import '../widgets/ai_report_sheet.dart';
 
 /// 行情详情页: 实时价格 (OKX WS), 24H 统计, K线 / 盘口 / 成交 三 Tab,
 /// 资金费率倒计时, 持仓量 (后端缺失时整卡隐藏).
@@ -458,6 +459,16 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
               ),
             ),
             const Spacer(),
+            // AI 技术分析 (按当前周期, 后端缓存)
+            IconButton(
+              icon: const Icon(Icons.smart_toy_outlined,
+                  size: 19, color: McColors.onSurfaceVariant),
+              tooltip: tr('ai_analysis'),
+              onPressed: () =>
+                  showAiKlineReport(context, _instId, _bar),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
             // 盯盘 (Live Activities, 锁屏/灵动岛实时价)
             ValueListenableBuilder<int>(
               valueListenable: LiveActivityService.instance.version,

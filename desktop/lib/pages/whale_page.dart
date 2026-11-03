@@ -8,6 +8,7 @@ import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import '../widgets/coin_icon.dart';
 
 /// 巨鲸监控页: 筛选栏 / 大额成交流水表 / 币种分布环图 / 买卖净额与时序。
 /// 数据组织参考 web-terminal/src/views/Whale.vue。
@@ -322,8 +323,12 @@ class _WhalePageState extends State<WhalePage> {
                 overflow: TextOverflow.ellipsis, style: Mc.body(12))),
         Expanded(
             flex: 2,
-            child: Text(_coinOf(a['symbol']),
-                style: Mc.mono(12, w: FontWeight.w600))),
+            child: Row(children: [
+              CoinIcon(a['symbol']?.toString() ?? '', size: 18),
+              const SizedBox(width: 6),
+              Text(_coinOf(a['symbol']),
+                  style: Mc.mono(12, w: FontWeight.w600)),
+            ])),
         Expanded(
             flex: 3,
             child: Text(Fmt.compact(a['positionSize'], prefix: '\$'),

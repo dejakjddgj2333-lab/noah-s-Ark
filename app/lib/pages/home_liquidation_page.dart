@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/l10n.dart';
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -1663,14 +1664,7 @@ class _HomeLiquidationPageState extends State<HomeLiquidationPage> {
             flex: 4,
             child: Row(
               children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(color: item.avatarBg, shape: BoxShape.circle),
-                  alignment: Alignment.center,
-                  child: Text(item.avatarLabel,
-                      style: McText.sans(size: 12, weight: FontWeight.w700, color: item.avatarColor)),
-                ),
+                CoinIcon(item.symbol, size: 24),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Column(

@@ -17,6 +17,7 @@ import 'pages/commission_page.dart';
 import 'pages/deposit_page.dart';
 import 'pages/forgot_password_page.dart';
 import 'pages/funds_page.dart';
+import 'pages/home_ai_page.dart';
 import 'pages/home_funding_page.dart';
 import 'pages/home_liquidation_page.dart';
 import 'pages/home_market_page.dart';
@@ -680,6 +681,7 @@ class _HomePageState extends State<HomePage> {
         tr('home_tab_liquidation'),
         tr('home_tab_whale'),
         tr('home_tab_funding'),
+        tr('home_tab_ai'),
       ];
 
   @override
@@ -691,6 +693,7 @@ class _HomePageState extends State<HomePage> {
       const HomeLiquidationPage(),
       const HomeWhalePage(),
       const HomeFundingPage(),
+      const HomeAiPage(),
     ];
     return Column(
       children: [

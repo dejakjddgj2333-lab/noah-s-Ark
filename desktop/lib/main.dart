@@ -10,6 +10,7 @@ import 'pages/whale_page.dart';
 import 'pages/funding_page.dart';
 import 'pages/news_page.dart';
 import 'pages/chat_page.dart';
+import 'pages/ai_page.dart';
 import 'pages/assets_page.dart';
 import 'pages/profile_page.dart';
 import 'state/auth_store.dart';
@@ -64,6 +65,7 @@ class TerminalApp extends StatelessWidget {
             NavItem(Icons.percent, '资金费率', 'FUNDING', const FundingPage()),
             NavItem(Icons.article_outlined, '资讯', 'NEWS', const NewsPage()),
             NavItem(Icons.chat_bubble_outline, '聊天', 'CHAT', const ChatPage()),
+            NavItem(Icons.smart_toy_outlined, 'AI 助手', 'AI', const AiPage()),
             NavItem(Icons.account_balance_wallet_outlined, '资产理财', 'ASSETS', const AssetsPage()),
             NavItem(Icons.person_outline, '我的', 'PROFILE', const ProfilePage()),
           ]);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/l10n.dart';
+import '../core/coin_icon.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../services/api.dart';
@@ -253,6 +254,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
           : (isLong ? McColors.tertiary : McColors.primary);
       final ts = m['time'] ?? m['timestamp'] ?? m['createTime'] ?? m['ts'];
       out.add(_WhaleFeedItem(
+        symbol: symbol,
         pillIcon: isShort
             ? Icons.warning
             : (isLong ? Icons.download_for_offline : Icons.sync_alt),
@@ -863,12 +865,21 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item.amount,
-                          style: McText.display(
-                              size: 18,
-                              weight: FontWeight.w700,
-                              color: McColors.onSurface),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CoinIcon(item.symbol, size: 22),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                item.amount,
+                                style: McText.display(
+                                    size: 18,
+                                    weight: FontWeight.w700,
+                                    color: McColors.onSurface),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -1147,6 +1158,7 @@ class _HomeWhalePageState extends State<HomeWhalePage> {
 /// 时间线条目的不可变数据模型.
 class _WhaleFeedItem {
   const _WhaleFeedItem({
+    required this.symbol,
     required this.pillIcon,
     required this.pillText,
     required this.pillColor,
@@ -1165,6 +1177,7 @@ class _WhaleFeedItem {
     this.category = '',
   });
 
+  final String symbol; // 基础币 (BTC/ETH...), 图标用
   final IconData pillIcon;
   final String pillText;
   final Color pillColor;

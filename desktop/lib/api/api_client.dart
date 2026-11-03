@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 /// HTTP client for the MingCe backend.
@@ -177,4 +179,51 @@ class ApiClient {
 
   // ---------- Auth extras ----------
   Future<dynamic> devices() => _get('/auth/devices');
+
+  // ---------- AI 助手 (DeepSeek; 对话为 SSE 流式) ----------
+  Future<dynamic> aiDailySummary({String lang = 'zh'}) =>
+      _get('/ai/daily-summary', {'lang': lang});
+  Future<dynamic> aiKlineAnalysis(String instId, {String bar = '1D'}) =>
+      _get('/ai/kline-analysis', {'inst_id': instId, 'bar': bar});
+
+  /// SSE 流式对话: onDelta 逐段回调; cancelToken 可中断。返回完整文本。
+  Future<String> aiChatStream({
+    required String message,
+    required List<Map<String, String>> history,
+    String lang = 'zh',
+    required void Function(String delta) onDelta,
+    CancelToken? cancelToken,
+  }) async {
+    final resp = await _dio.post<ResponseBody>(
+      '/ai/market-chat',
+      data: {'message': message, 'history': history, 'lang': lang},
+      options: Options(
+        responseType: ResponseType.stream,
+        receiveTimeout: const Duration(seconds: 90),
+      ),
+      cancelToken: cancelToken,
+    );
+    final full = StringBuffer();
+    var buf = '';
+    await for (final chunk in resp.data!.stream) {
+      buf += utf8.decode(chunk, allowMalformed: true);
+      final lines = buf.split('\n');
+      buf = lines.removeLast(); // 最后一段可能不完整, 留到下次
+      for (final raw in lines) {
+        final line = raw.trim();
+        if (!line.startsWith('data:')) continue;
+        final payload = line.substring(5).trim();
+        if (payload == '[DONE]') return full.toString();
+        try {
+          final d = jsonDecode(payload);
+          final delta = d is Map ? d['delta'] as String? : null;
+          if (delta != null && delta.isNotEmpty) {
+            full.write(delta);
+            onDelta(delta);
+          }
+        } catch (_) {}
+      }
+    }
+    return full.toString();
+  }
 }
