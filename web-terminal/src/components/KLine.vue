@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
     <!-- 跟随鼠标的十字 tooltip -->
     <div
       v-if="tip"
-      class="absolute z-10 pointer-events-none rounded-lg bg-canvas-obsidian/90 border border-hairline shadow-lg px-2.5 py-2 font-mono-data text-[11px] leading-relaxed"
+      class="absolute z-10 pointer-events-none w-max rounded-lg bg-canvas-obsidian/90 border border-hairline shadow-lg px-2.5 py-2 font-mono-data text-[11px] leading-relaxed"
       :style="{
         left: tip.x + 'px',
         top: Math.max(8, Math.min(tip.y - 60, 9999)) + 'px',
