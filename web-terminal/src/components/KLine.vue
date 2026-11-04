@@ -247,8 +247,8 @@ onMounted(() => {
           x: param.point.x,
           y: param.point.y,
           flipX: param.point.x > w * 0.62, // 靠右时翻到光标左侧
-          time: fmtTipTime(param.time),
           ...lg,
+          time: fmtTipTime(param.time), // 放在 ...lg 之后: lg 含原始 time 会覆盖格式化结果
           showVol: v != null && param.point.y > h * 0.55, // 停在量区时高亮量
         }
       } else {
