@@ -42,11 +42,12 @@ class McApi {
     return _decode(resp);
   }
 
-  static Future<Map<String, dynamic>> get(String path, {String? token}) async {
+  static Future<Map<String, dynamic>> get(String path,
+      {String? token, Duration? timeout}) async {
     final resp = await http.get(
       Uri.parse('$baseUrl$path'),
       headers: {if (token != null) 'Authorization': 'Bearer $token'},
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(timeout ?? const Duration(seconds: 10));
     _checkUnauthorized(resp, token);
     return _decode(resp);
   }

@@ -12,6 +12,7 @@ import '../services/chat_ws.dart';
 import 'chat_conversation_page.dart';
 import 'friends_page.dart';
 import 'group_create_page.dart';
+import 'home_ai_page.dart';
 
 /// 聊天 (社区 Tab): 会话列表 + 搜索 + 全部/私聊/群聊 过滤,
 /// 右上角 新朋友 / 发起群聊, 长按删除/退群, WS 实时更新.
@@ -28,7 +29,8 @@ class _ChatPageState extends State<ChatPage> {
   List<Conversation> _conversations = [];
   bool _loading = true;
   bool _failed = false;
-  int _tab = 0; // 0 全部 1 私聊 2 群聊
+  int _topTab = 0; // 0 聊天 1 AI助手
+  int _filterTab = 0; // 0 全部 1 私聊 2 群聊
   // 好友请求角标用全局 ChatApi.friendRequestCount (底部导航也读它).
   Set<int> _onlineIds = const {};
 
@@ -213,9 +215,9 @@ class _ChatPageState extends State<ChatPage> {
 
   List<Conversation> get _filtered {
     var list = _conversations;
-    if (_tab == 1) {
+    if (_filterTab == 1) {
       list = list.where((c) => !c.isGroup).toList();
-    } else if (_tab == 2) {
+    } else if (_filterTab == 2) {
       list = list.where((c) => c.isGroup).toList();
     }
     final q = _search.text.trim().toLowerCase();
@@ -327,14 +329,88 @@ class _ChatPageState extends State<ChatPage> {
       color: McColors.surfaceContainerLowest,
       child: Column(
         children: [
-          _buildHeader(),
-          _buildSearch(),
-          _buildTabs(),
-          _buildSectionHeader(),
-          const SizedBox(height: 6),
-          Expanded(child: _buildBody()),
+          _buildTopTabs(),
+          Expanded(
+            child: IndexedStack(
+              index: _topTab,
+              children: [
+                _buildChatList(),
+                const HomeAiPage(),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  /// 顶层切换: 聊天 / AI助手.
+  Widget _buildTopTabs() {
+    final tabs = [tr('nav_chat'), tr('ai_title')];
+    return Container(
+      decoration: BoxDecoration(
+        color: McColors.surface.withValues(alpha: 0.6),
+        border: Border(
+          bottom: BorderSide(
+              color: McColors.outlineVariant.withValues(alpha: 0.4)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            for (var i = 0; i < tabs.length; i++) ...[
+              if (i > 0) const SizedBox(width: 24),
+              _topTabItem(i, tabs[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _topTabItem(int i, String label) {
+    final active = _topTab == i;
+    return GestureDetector(
+      onTap: () => setState(() => _topTab = i),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              label,
+              style: McText.sans(
+                size: 15,
+                weight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? McColors.primary : McColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Container(
+            height: 2,
+            width: 22,
+            decoration: BoxDecoration(
+              color: active ? McColors.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 聊天子页: 原有会话列表整套 (header/搜索/过滤/列表).
+  Widget _buildChatList() {
+    return Column(
+      children: [
+        _buildHeader(),
+        _buildSearch(),
+        _buildTabs(),
+        _buildSectionHeader(),
+        const SizedBox(height: 6),
+        Expanded(child: _buildBody()),
+      ],
     );
   }
 
@@ -449,9 +525,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _tabChip(int i, String label) {
-    final active = _tab == i;
+    final active = _filterTab == i;
     return GestureDetector(
-      onTap: () => setState(() => _tab = i),
+      onTap: () => setState(() => _filterTab = i),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(

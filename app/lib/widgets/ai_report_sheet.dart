@@ -78,7 +78,10 @@ class _AiKlineSheetState extends State<_AiKlineSheet> {
 
   static String _num(dynamic v) {
     if (v is num) {
-      final s = v.toStringAsFixed(6);
+      // 按数量级给小数位: 大价格 2 位够, 小币种多给. 避免超长串被裁.
+      final abs = v.abs();
+      final digits = abs >= 1000 ? 2 : abs >= 1 ? 4 : 6;
+      final s = v.toStringAsFixed(digits);
       // 去掉多余尾零, 至少 2 位小数
       var t = s.replaceAll(RegExp(r'0+$'), '');
       if (t.endsWith('.')) t += '00';
@@ -416,10 +419,15 @@ class _AiKlineSheetState extends State<_AiKlineSheet> {
       child: Row(children: [
         Text(label,
             style: McText.mono(size: 10, color: McColors.onSurfaceVariant)),
-        const Spacer(),
-        Text(value,
-            style:
-                McText.mono(size: 13, weight: FontWeight.w600, color: color)),
+        const SizedBox(width: 8),
+        // 数字紧跟 label 靠左, 超长按尾部省略 (保留高位有效数字)
+        Expanded(
+          child: Text(value,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style:
+                  McText.mono(size: 13, weight: FontWeight.w600, color: color)),
+        ),
       ]),
     );
   }

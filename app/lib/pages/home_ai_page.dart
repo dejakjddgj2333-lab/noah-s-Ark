@@ -5,12 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/l10n.dart';
 import '../core/theme.dart';
-import '../core/widgets.dart';
 import '../services/ai_api.dart';
 import '../services/api.dart';
 import '../services/auth.dart';
 
-/// AI 助手 (首页 tab) — 对话 (SSE 流式) + 今日综述折叠卡.
+/// AI 助手 — 对话 (SSE 流式).
 /// 对齐 web /ai 与 desktop AiPage; 对话按用户存本机 (最多 50 条).
 class HomeAiPage extends StatefulWidget {
   const HomeAiPage({super.key});
@@ -33,10 +32,6 @@ class _HomeAiPageState extends State<HomeAiPage> {
   bool _sending = false;
   AiChatCancel? _cancel;
 
-  Map<String, dynamic>? _summary; // {date, text, cached}
-  bool _summaryLoading = false;
-  bool _summaryOpen = false;
-
   static const _maxKeep = 50;
   String get _lsKey => 'ai_chat_${AuthStore.instance.userId ?? 0}';
   String get _token => AuthStore.instance.token ?? '';
@@ -50,7 +45,6 @@ class _HomeAiPageState extends State<HomeAiPage> {
     super.initState();
     if (AuthStore.instance.loggedIn) {
       _restore();
-      _loadSummary();
     }
   }
 
@@ -92,18 +86,6 @@ class _HomeAiPageState extends State<HomeAiPage> {
       await sp.setString(
           _lsKey, jsonEncode(keep.map((m) => m.toJson()).toList()));
     } catch (_) {}
-  }
-
-  // ---------- 每日综述 ----------
-  Future<void> _loadSummary() async {
-    setState(() => _summaryLoading = true);
-    try {
-      final res = await AiApi.dailySummary(_token, lang: _lang);
-      _summary = res['text'] != null ? res : null;
-    } catch (_) {
-      _summary = null;
-    }
-    if (mounted) setState(() => _summaryLoading = false);
   }
 
   // ---------- 对话 ----------
@@ -192,7 +174,6 @@ class _HomeAiPageState extends State<HomeAiPage> {
       );
     }
     return Column(children: [
-      _summaryCard(),
       Expanded(
         child: _msgs.isEmpty
             ? _emptyState()
@@ -205,70 +186,6 @@ class _HomeAiPageState extends State<HomeAiPage> {
       ),
       _inputBar(),
     ]);
-  }
-
-  // ---------- 今日综述折叠卡 ----------
-  Widget _summaryCard() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-      child: McCard(
-        padding: EdgeInsets.zero,
-        onTap: () => setState(() => _summaryOpen = !_summaryOpen),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(children: [
-              const Icon(Icons.today_outlined,
-                  size: 16, color: McColors.primarySoft),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(tr('ai_summary_title'),
-                    style: McText.sans(
-                        size: 13,
-                        weight: FontWeight.w700,
-                        color: McColors.onSurface)),
-              ),
-              if (_summaryLoading)
-                Text(tr('ai_generating'),
-                    style: McText.mono(
-                        size: 10, color: McColors.onSurfaceVariant))
-              else
-                Icon(
-                  _summaryOpen
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  size: 18,
-                  color: McColors.onSurfaceVariant,
-                ),
-            ]),
-          ),
-          if (_summaryOpen)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              child: _summary == null
-                  ? Text(tr('ai_summary_unavailable'),
-                      style: McText.sans(
-                          size: 12, color: McColors.onSurfaceVariant))
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_summary!['date']?.toString() ?? '',
-                            style: McText.mono(
-                                size: 10, color: McColors.onSurfaceVariant)),
-                        const SizedBox(height: 6),
-                        Text.rich(
-                          _mdLite(_summary!['text']?.toString() ?? ''),
-                          style: McText.sans(
-                              size: 12,
-                              height: 1.6,
-                              color: McColors.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-            ),
-        ]),
-      ),
-    );
   }
 
   Widget _emptyState() {

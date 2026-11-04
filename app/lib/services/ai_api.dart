@@ -10,17 +10,12 @@ import 'api.dart';
 class AiApi {
   AiApi._();
 
-  /// 当日市场综述 {date, text, cached}
-  static Future<Map<String, dynamic>> dailySummary(String token,
-      {String lang = 'zh'}) {
-    return McApi.get('/api/ai/daily-summary?lang=$lang', token: token);
-  }
-
   /// K线技术分析 {ok, report, cached, error}
+  /// 冷启动要拉 K线 + 调 DeepSeek 生成, 较慢, 放宽到 60s (后端缓存命中则秒回).
   static Future<Map<String, dynamic>> klineAnalysis(String token, String instId,
       {String bar = '1D'}) {
     return McApi.get('/api/ai/kline-analysis?inst_id=$instId&bar=$bar',
-        token: token);
+        token: token, timeout: const Duration(seconds: 60));
   }
 
   /// SSE 流式对话. onDelta 逐段回调; 返回完整文本.
