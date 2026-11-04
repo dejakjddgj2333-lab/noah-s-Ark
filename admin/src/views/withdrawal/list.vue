@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminWithdrawals, approveWithdrawal, rejectWithdrawal } from '@/api/product'
+import { fmtTime } from '@/utils/time'
 
 const loading = ref(false)
 const list = ref([])
@@ -96,7 +97,7 @@ onMounted(fetchList)
         <el-table-column label="申请" min-width="170">
           <template #default="{ row }">
             <div class="cell-main" style="font-weight: 600">#{{ row.id }} · UID: {{ row.user_id }}</div>
-            <div class="cell-sub">{{ row.created_at?.replace('T', ' ')?.slice(0, 19) }}</div>
+            <div class="cell-sub">{{ fmtTime(row.created_at) }}</div>
           </template>
         </el-table-column>
         <el-table-column label="账户" width="80" align="center">

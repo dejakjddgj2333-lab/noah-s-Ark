@@ -12,6 +12,7 @@ import {
   updateAdmin,
 } from '@/api/admin'
 import { useUserStore } from '@/store/user'
+import { fmtTime } from '@/utils/time'
 
 const userStore = useUserStore()
 const loading = ref(false)
@@ -223,7 +224,7 @@ onMounted(fetchAll)
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="160">
-          <template #default="{ row }">{{ String(row.created_at).replace('T', ' ').slice(0, 19) }}</template>
+          <template #default="{ row }">{{ fmtTime(row.created_at) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="360" fixed="right" align="center">
           <template #default="{ row }">

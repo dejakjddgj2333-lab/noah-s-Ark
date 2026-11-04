@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { getDepositRecords, getDepositStats } from '@/api/deposit'
+import { fmtTime } from '@/utils/time'
 
 const loading = ref(false)
 const stats = ref({})
@@ -36,10 +37,6 @@ function search() {
 
 function shortTx(txid) {
   return txid ? `${txid.slice(0, 10)}...${txid.slice(-6)}` : '-'
-}
-
-function fmtTime(t) {
-  return t ? t.replace('T', ' ').slice(0, 19) : '-'
 }
 
 const statCards = computed(() => [

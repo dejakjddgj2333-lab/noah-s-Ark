@@ -8,6 +8,7 @@ import {
   runSweep,
   setSweepTarget,
 } from '@/api/admin'
+import { fmtTime as fmt } from '@/utils/time'
 
 const NETWORKS = [
   { key: 'trc20', label: 'TRC20', chain: 'Tron 主网', gas: 'TRX', scan: 'https://tronscan.org/#/address/', scanName: 'Tronscan' },
@@ -191,10 +192,6 @@ function exportRecords() {
   a.download = `归集记录_${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(a.href)
-}
-
-function fmt(t) {
-  return t && t !== 'None' ? String(t).replace('T', ' ').slice(0, 19) : '-'
 }
 
 function fmtNum(v, digits = 2) {
