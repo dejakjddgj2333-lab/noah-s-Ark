@@ -81,6 +81,23 @@ export const chatApi = {
     api.get(`/chat/conversations/${conversationId}/read-state`),
   members: (conversationId) => api.get(`/chat/conversations/${conversationId}/members`),
   friendsOnline: () => api.get('/chat/friends/online'),
+  // ---------- 好友 ----------
+  searchUsers: (q) => api.get('/chat/users/search', { params: { q } }),
+  friends: () => api.get('/chat/friends'),
+  friendRequests: () => api.get('/chat/friends/requests'),
+  friendRequest: (to_user_id) => api.post('/chat/friends/request', { to_user_id }),
+  friendAccept: (from_user_id) => api.post('/chat/friends/accept', { from_user_id }),
+  friendReject: (from_user_id) => api.post('/chat/friends/reject', { from_user_id }),
+  friendRemove: (userId) => api.delete(`/chat/friends/${userId}`),
+  // ---------- 会话创建 / 群管理 ----------
+  createDirect: (other_user_id) => api.post('/chat/conversations/direct', { other_user_id }),
+  createGroup: (name, member_ids) => api.post('/chat/conversations/group', { name, member_ids }),
+  deleteConversation: (conversationId) => api.delete(`/chat/conversations/${conversationId}`),
+  renameGroup: (conversationId, name) => api.put(`/chat/conversations/${conversationId}`, { name }),
+  addMember: (conversationId, user_id) =>
+    api.post(`/chat/conversations/${conversationId}/members`, { user_id }),
+  removeMember: (conversationId, userId) =>
+    api.delete(`/chat/conversations/${conversationId}/members/${userId}`),
 }
 
 // ---------- 理财产品 ----------

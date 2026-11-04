@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { getAdminOrders, getAdminOrderSettlements } from '@/api/order'
+import { fmtTime as fmt } from '@/utils/time'
 
 const loading = ref(false)
 const list = ref([])
@@ -41,10 +42,6 @@ async function openDetail(row) {
   } finally {
     detailLoading.value = false
   }
-}
-
-function fmt(t) {
-  return t ? t.replace('T', ' ').slice(0, 19) : '-'
 }
 
 function pct(v) {

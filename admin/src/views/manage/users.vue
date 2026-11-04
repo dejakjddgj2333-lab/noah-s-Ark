@@ -9,6 +9,7 @@ import {
   unfreezeUser,
   updateUser,
 } from '@/api/admin'
+import { fmtTime as fmt } from '@/utils/time'
 
 const loading = ref(false)
 const list = ref([])
@@ -136,10 +137,6 @@ async function submitUpdate() {
   ElMessage.success('已更新')
   updateVisible.value = false
   fetchList()
-}
-
-function fmt(t) {
-  return t && t !== 'None' ? String(t).replace('T', ' ').slice(0, 19) : '-'
 }
 
 // 资金明细: 枚举值 -> 中文 (与 server balance_log 写入值对应)

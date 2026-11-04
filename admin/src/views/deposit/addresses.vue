@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { generateDepositAddresses, getDepositAddresses, getDepositStats } from '@/api/deposit'
+import { fmtTime } from '@/utils/time'
 
 const loading = ref(false)
 const generating = ref(false)
@@ -41,10 +42,6 @@ async function handleGenerate() {
   } finally {
     generating.value = false
   }
-}
-
-function fmtTime(t) {
-  return t ? t.replace('T', ' ').slice(0, 19) : '-'
 }
 
 onMounted(() => {

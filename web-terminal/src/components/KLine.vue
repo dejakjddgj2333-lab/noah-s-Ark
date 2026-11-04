@@ -23,6 +23,14 @@ const emit = defineEmits(['loadMore'])
 
 const el = ref(null)
 const legend = ref(null) // { o,h,l,c,vol,chg,up }
+const tip = ref(null) // 跟随鼠标的 tooltip: { x,y,flipX,time,o,h,l,c,vol,chg,up }
+
+// 蜡烛 time 已平移 +8h, 用 UTC 读数还原东八区墙钟
+function fmtTipTime(t) {
+  const d = new Date(Number(t) * 1000)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`
+}
 
 let chart = null
 let cs = null // 蜡烛
@@ -224,13 +232,30 @@ onMounted(() => {
   // 拖动/缩放: 高低点跟随可视范围, 左边缘触发加载历史
   chart.timeScale().subscribeVisibleLogicalRangeChange(onVisibleRange)
 
-  // 十字悬浮读数
+  // 十字悬浮读数: 顶部固定栏 + 跟随鼠标的 tooltip
   chart.subscribeCrosshairMove((param) => {
     const d = param?.seriesData?.get(cs)
     if (d) {
       const v = param.seriesData.get(volS)?.value
-      legend.value = { ...mkLegend(d), vol: v }
+      const lg = { ...mkLegend(d), vol: v }
+      legend.value = lg
+      // tooltip 跟随: point 为图表内像素坐标, 越界(图外/图例区)不显示
+      if (param.point && param.time != null) {
+        const w = el.value?.clientWidth || 0
+        const h = el.value?.clientHeight || 0
+        tip.value = {
+          x: param.point.x,
+          y: param.point.y,
+          flipX: param.point.x > w * 0.62, // 靠右时翻到光标左侧
+          ...lg,
+          time: fmtTipTime(param.time), // 放在 ...lg 之后: lg 含原始 time 会覆盖格式化结果
+          showVol: v != null && param.point.y > h * 0.55, // 停在量区时高亮量
+        }
+      } else {
+        tip.value = null
+      }
     } else {
+      tip.value = null
       const { candleData } = dataSets()
       const last = candleData[candleData.length - 1]
       legend.value = last ? mkLegend(last) : null
@@ -265,6 +290,28 @@ onBeforeUnmount(() => {
       <span class="text-steel-muted">收 <span :class="legend.up ? 'text-bull-green' : 'text-bear-red'">{{ fmtP(legend.close) }}</span></span>
       <span :class="legend.up ? 'text-bull-green' : 'text-bear-red'">{{ legend.up ? '+' : '' }}{{ legend.chg.toFixed(2) }}%</span>
       <span v-if="legend.vol != null" class="text-steel-muted">量 <span class="text-ink-white">{{ Number(legend.vol).toLocaleString('en-US') }}</span></span>
+    </div>
+    <!-- 跟随鼠标的十字 tooltip -->
+    <div
+      v-if="tip"
+      class="absolute z-10 pointer-events-none w-max rounded-lg bg-canvas-obsidian/90 border border-hairline shadow-lg px-2.5 py-2 font-mono-data text-[11px] leading-relaxed"
+      :style="{
+        left: tip.x + 'px',
+        top: Math.max(8, Math.min(tip.y - 60, 9999)) + 'px',
+        transform: tip.flipX ? 'translateX(calc(-100% - 14px))' : 'translateX(14px)',
+      }"
+    >
+      <div class="text-steel-muted mb-1">{{ tip.time }}</div>
+      <div class="grid grid-cols-2 gap-x-3 gap-y-0.5">
+        <span class="text-steel-muted">开 <span class="text-ink-white">{{ fmtP(tip.open) }}</span></span>
+        <span class="text-steel-muted">高 <span class="text-bull-green">{{ fmtP(tip.high) }}</span></span>
+        <span class="text-steel-muted">低 <span class="text-bear-red">{{ fmtP(tip.low) }}</span></span>
+        <span class="text-steel-muted">收 <span :class="tip.up ? 'text-bull-green' : 'text-bear-red'">{{ fmtP(tip.close) }}</span></span>
+      </div>
+      <div class="mt-1 flex items-center justify-between gap-3">
+        <span :class="tip.up ? 'text-bull-green' : 'text-bear-red'">{{ tip.up ? '+' : '' }}{{ tip.chg.toFixed(2) }}%</span>
+        <span v-if="tip.vol != null" :class="tip.showVol ? 'text-ink-white' : 'text-steel-muted'">量 {{ Number(tip.vol).toLocaleString('en-US') }}</span>
+      </div>
     </div>
   </div>
 </template>
