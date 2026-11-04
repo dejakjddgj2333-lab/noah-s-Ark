@@ -9,6 +9,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import time
 from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta, timezone
@@ -378,7 +379,23 @@ _KLINE_SYSTEM = """你是资深的加密货币技术分析师「明策 AI」。�
   · action=hold (观望) 时, stop_loss/take_profit 也要按 trend 方向给出, 作为"若按当前方向进场的参考位", 并在 summary 中说明是条件参考;
   · take_profit 与 stop_loss 的相对方向必须与 trend.direction 严格一致, 严禁反向。
 - signal 是技术参考不是确定性预测, risks 必须包含止损失效或假突破等风险。
-- 全部用简体中文。"""
+- 全部用简体中文。
+- JSON 里的数字必须是标准 JSON 数字, 严禁千分位逗号 (写 78066.3, 不要写 78,066.3), 字符串里的价格也同样不要带千分位。"""
+
+
+# AI 偶发把数字写成千分位 (78,066.30): 数组被拆成两个元素, 且碎片带前导零
+# (066/000) 时 json.loads 直接报 "Expecting ',' delimiter"。全局去千分位逗号兜底。
+# 用零宽断言只删"前后都是数字、后面恰好 3 位"的逗号: 真千分位 (8,066.30) 命中,
+# 数组分隔符 (76904.06,76517.84 里 ,7651...) 因 3 位后仍是数字而不命中, 单趟即可。
+_THOUSANDS_RE = re.compile(r"(?<=\d),(?=\d{3}(?!\d))")
+
+
+def _parse_ai_json(text: str) -> dict:
+    """解析 AI 返回的 JSON; 千分位逗号导致失败时, 去逗号后重试一次。"""
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return json.loads(_THOUSANDS_RE.sub("", text))  # 仍失败抛给上层记日志
 
 
 def _to_float(value) -> float | None:
@@ -497,10 +514,12 @@ async def kline_analyze(
             )
             resp.raise_for_status()
         text = resp.json()["choices"][0]["message"]["content"].strip()
-        report = json.loads(text)
+        report = _parse_ai_json(text)
         return _enforce_signal_direction(report, current_price)
     except Exception as exc:
-        logger.warning("ai_kline_failed: %s", str(exc)[:200])
+        # 带原文片段, 下次再挂能直接看到模型输出了什么
+        raw = text[:300] if "text" in locals() else ""
+        logger.warning("ai_kline_failed: %s raw=%s", str(exc)[:200], raw)
         return None
 
 
