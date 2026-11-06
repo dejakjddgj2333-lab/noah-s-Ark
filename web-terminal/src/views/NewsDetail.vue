@@ -69,6 +69,14 @@ const sentiText = computed(() => {
   return s === 'positive' ? '偏多' : s === 'negative' ? '偏空' : s ? '中性' : '--'
 })
 
+// 情绪徽章样式: 与列表页 News.vue 的 SENTI 对齐
+const SENTI = {
+  positive: { label: '利好', cls: 'bg-bull-green/15 text-bull-green border-bull-green/30' },
+  negative: { label: '利空', cls: 'bg-bear-red/15 text-bear-red border-bear-red/30' },
+  neutral: { label: '中性', cls: 'bg-surface-slate text-steel-muted border-hairline' },
+}
+const sentiBadge = computed(() => SENTI[article.value?.sentiment] || null)
+
 // ---------- 关联资产雷达 (BTC/ETH 实时行情 + 1H 走势) ----------
 const assets = ref([])
 function sparkPoints(candles) {
@@ -219,6 +227,12 @@ onMounted(load)
               <span class="px-2 py-0.5 rounded bg-surface-slate border border-hairline text-steel-muted font-label-sm text-label-sm uppercase">
                 {{ catName[article.category] || article.category }}
               </span>
+              <!-- 情绪徽章 (apitube sentiment) -->
+              <span
+                v-if="sentiBadge"
+                class="px-2 py-0.5 rounded font-label-sm text-label-sm font-bold border"
+                :class="sentiBadge.cls"
+              >{{ sentiBadge.label }}</span>
               <!-- 发布时间 -->
               <span class="font-mono-data text-mono-data text-steel-muted flex items-center gap-1">
                 <span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
@@ -267,6 +281,15 @@ onMounted(load)
             </div>
           </div>
         </div>
+
+        <!-- 封面横幅 (后端已采集 cover_url; 加载失败自动隐藏) -->
+        <img
+          v-if="article.cover_url"
+          :src="article.cover_url"
+          alt=""
+          class="w-full max-h-80 object-cover rounded-xl border border-hairline"
+          @error="$event.target.style.display = 'none'"
+        />
 
         <!-- 正文 -->
         <div class="flex flex-col gap-5 text-on-surface">

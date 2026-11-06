@@ -39,6 +39,14 @@ const LEGEND = [
 ]
 const styleOf = (c) => CAT_STYLE[c] || { bar: 'bg-hairline', badge: 'bg-surface-slate text-steel-muted', hover: 'group-hover:text-primary' }
 
+// 情绪标签: 后端采集 apitube sentiment (positive/negative/neutral)
+const SENTI = {
+  positive: { label: '利好', cls: 'bg-bull-green/15 text-bull-green border-bull-green/30' },
+  negative: { label: '利空', cls: 'bg-bear-red/15 text-bear-red border-bear-red/30' },
+  neutral: { label: '中性', cls: 'bg-surface-slate text-steel-muted border-hairline' },
+}
+const sentiOf = (s) => SENTI[s] || null
+
 async function load() {
   loading.value = true
   try {
@@ -213,6 +221,11 @@ onBeforeUnmount(() => clearInterval(timer))
                     <span class="font-mono-data text-label-sm px-1.5 py-0.5 rounded font-bold whitespace-nowrap" :class="styleOf(n.category).badge">
                       {{ catName[n.category] || n.category }} {{ catEn[n.category] || '' }}
                     </span>
+                    <span
+                      v-if="sentiOf(n.sentiment)"
+                      class="font-mono-data text-label-sm px-1.5 py-0.5 rounded font-bold whitespace-nowrap border"
+                      :class="sentiOf(n.sentiment).cls"
+                    >{{ sentiOf(n.sentiment).label }}</span>
                     <h2 class="font-headline-sm text-headline-sm text-ink-white font-bold transition-colors truncate" :class="styleOf(n.category).hover">
                       {{ n.title }}
                     </h2>
@@ -240,6 +253,15 @@ onBeforeUnmount(() => clearInterval(timer))
                   </div>
                 </div>
               </div>
+              <!-- 封面缩略图 (后端已采集 cover_url; 加载失败自动隐藏) -->
+              <img
+                v-if="n.cover_url"
+                :src="n.cover_url"
+                loading="lazy"
+                alt=""
+                class="w-28 h-[72px] object-cover rounded-lg flex-shrink-0 self-center mr-4 opacity-80 group-hover:opacity-100 transition-opacity"
+                @error="$event.target.style.display = 'none'"
+              />
             </article>
           </div>
           <!-- 分页 -->
