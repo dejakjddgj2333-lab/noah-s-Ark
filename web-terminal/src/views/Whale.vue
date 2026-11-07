@@ -1,8 +1,27 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import EChart from '../components/EChart.vue'
 import { overviewApi } from '../api'
 import { fmtUsd, fmtBig, fmtTime, coinOf } from '../utils/format'
+
+const router = useRouter()
+const detail = ref(null) // 当前查看详情的大额成交
+
+function openDetail(a) { detail.value = a }
+function closeDetail() { detail.value = null }
+function goMarket(a) {
+  const coin = coinOf(a.symbol)
+  detail.value = null
+  router.push(`/market/${coin}-USDT`)
+}
+// 详情弹窗用完整时间 (列表 fmtTime 只到时分秒)
+function fmtFullTime(ts) {
+  const d = new Date(Number(ts))
+  if (isNaN(d.getTime())) return '--'
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
 
 const alerts = ref([])
 const status = ref({})
@@ -235,9 +254,13 @@ onBeforeUnmount(() => clearInterval(timer))
                   </span>
                 </td>
                 <td class="py-2.5 px-3 pr-4 text-center">
-                  <span class="text-steel-muted inline-block" title="实时流事件">
+                  <button
+                    class="text-steel-muted hover:text-primary-fixed-dim transition-colors inline-block cursor-pointer"
+                    title="查看详情"
+                    @click="openDetail(a)"
+                  >
                     <span class="material-symbols-outlined text-[16px]">open_in_new</span>
-                  </span>
+                  </button>
                 </td>
               </tr>
               <tr v-if="!filtered.length">
@@ -365,6 +388,68 @@ onBeforeUnmount(() => clearInterval(timer))
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 大额成交详情弹窗 -->
+    <div
+      v-if="detail"
+      class="fixed inset-0 z-50 bg-canvas-obsidian/70 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="closeDetail"
+    >
+      <div class="w-full max-w-md bg-card-navy border border-hairline rounded-xl overflow-hidden">
+        <div class="h-11 px-4 bg-surface-slate border-b border-hairline flex items-center justify-between select-none">
+          <span class="font-headline-sm text-headline-sm font-semibold text-ink-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px] text-primary-container">receipt_long</span>
+            大额成交详情
+          </span>
+          <button class="text-steel-muted hover:text-ink-white cursor-pointer" @click="closeDetail">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="p-4 flex flex-col gap-3 font-mono-data text-[12px]">
+          <!-- 方向 + 金额大字 -->
+          <div class="flex items-center justify-between p-3 rounded-lg bg-canvas-obsidian/60 border border-hairline">
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border"
+              :class="detail.side === 'Buy' ? 'bg-bull-green/15 text-bull-green border-bull-green/30' : 'bg-bear-red/15 text-bear-red border-bear-red/30'"
+            >{{ detail.side === 'Buy' ? '大额买入' : '大额卖出' }}</span>
+            <span class="text-[18px] font-bold tracking-tight" :class="detail.side === 'Buy' ? 'text-bull-green' : 'text-bear-red'">{{ fmtUsd(detail.positionSize) }}</span>
+          </div>
+          <!-- 字段表 -->
+          <div class="flex flex-col divide-y divide-hairline/30">
+            <div class="py-2 flex items-center justify-between">
+              <span class="text-steel-muted">币种</span>
+              <span class="text-ink-white font-bold">{{ coinOf(detail.symbol) }}</span>
+            </div>
+            <div class="py-2 flex items-center justify-between">
+              <span class="text-steel-muted">交易方</span>
+              <span class="text-ink-white">{{ detail.user || '匿名大户' }}</span>
+            </div>
+            <div class="py-2 flex items-center justify-between">
+              <span class="text-steel-muted">数据来源</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold border" :class="sourceCls(detail)">{{ detail.source || '链上' }}</span>
+            </div>
+            <div class="py-2 flex items-center justify-between">
+              <span class="text-steel-muted">成交时间</span>
+              <span class="text-ink-white">{{ fmtFullTime(detail.time) }}</span>
+            </div>
+            <div class="py-2 flex items-center justify-between">
+              <span class="text-steel-muted">名义价值</span>
+              <span class="text-ink-white">{{ fmtUsd(detail.positionSize) }}</span>
+            </div>
+          </div>
+          <div class="text-[11px] text-steel-muted/80 leading-relaxed">
+            实时流事件来自交易所公开成交通道 (Hyperliquid / Binance), 单笔 ≥ $100K 即入流, 不含链上转账哈希。
+          </div>
+          <button
+            class="h-9 px-4 bg-primary-container hover:bg-inverse-primary text-ink-white rounded font-headline-sm text-headline-sm font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            @click="goMarket(detail)"
+          >
+            <span class="material-symbols-outlined text-[16px]">candlestick_chart</span>
+            查看 {{ coinOf(detail.symbol) }} K线行情
+          </button>
         </div>
       </div>
     </div>
