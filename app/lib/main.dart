@@ -15,6 +15,7 @@ import 'pages/call_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/commission_page.dart';
 import 'pages/deposit_page.dart';
+import 'pages/finance_page.dart';
 import 'pages/forgot_password_page.dart';
 import 'pages/funds_page.dart';
 import 'pages/home_funding_page.dart';
@@ -141,7 +142,7 @@ Locale _mcLocale(String code) {
       : Locale(parts[0]);
 }
 
-/// App shell: fixed top header + 4-tab bottom nav.
+/// App shell: fixed top header + bottom nav (4 tab, FINANCE_ENABLED 时 5 tab 含理财).
 class McShell extends StatefulWidget {
   const McShell({super.key});
 
@@ -155,12 +156,18 @@ class _McShellState extends State<McShell> {
   StreamSubscription<Uri>? _linkSub;
   bool _callPageShown = false; // CallPage 是否已 push (root navigator)
 
-  final _pages = const [
-    HomePage(),
-    NewsPage(),
-    ChatPage(),
-    AssetsPage(),
-  ];
+  /// 理财 tab 在 FINANCE_ENABLED 编译期开启时插入第 3 位 (index 2),
+  /// 聊天/我的 顺移; 关闭时保持 4 tab 原布局.
+  static bool get _financeOn => FeatureFlag.instance.financeEnabled;
+  static int get _chatIndex => _financeOn ? 3 : 2;
+
+  List<Widget> get _pages => [
+        const HomePage(),
+        const NewsPage(),
+        if (_financeOn) const FinancePage(),
+        const ChatPage(),
+        const AssetsPage(),
+      ];
 
   @override
   void initState() {
@@ -243,7 +250,7 @@ class _McShellState extends State<McShell> {
         action: SnackBarAction(
           label: tr('view'),
           textColor: McColors.primarySoft,
-          onPressed: () => setState(() => _index = 2),
+          onPressed: () => setState(() => _index = _chatIndex),
         ),
         duration: const Duration(seconds: 4),
       ));
@@ -332,10 +339,17 @@ class _McShellState extends State<McShell> {
               listenable: AuthStore.instance,
               builder: (context, _) {
                 final loggedIn = AuthStore.instance.loggedIn;
-                // 聊天/我的 需登录
-                final gated = {
-                  2: loggedIn ? const ChatPage() : _LoginGate(tr('nav_chat')),
-                  3: loggedIn ? const AssetsPage() : _LoginGate(tr('nav_mine')),
+                // 理财/聊天/我的 需登录
+                final gated = <int, Widget>{
+                  if (_financeOn)
+                    2: loggedIn
+                        ? const FinancePage()
+                        : _LoginGate(tr('nav_finance')),
+                  _chatIndex:
+                      loggedIn ? const ChatPage() : _LoginGate(tr('nav_chat')),
+                  _chatIndex + 1: loggedIn
+                      ? const AssetsPage()
+                      : _LoginGate(tr('nav_mine')),
                 };
                 return IndexedStack(
                   index: _index,
@@ -541,7 +555,7 @@ class McAppHeader extends StatelessWidget {
   }
 }
 
-/// Bottom nav: 首页 / 资讯 / 聊天(动态未读角标) / 我的. h=56, blur dark bar.
+/// Bottom nav: 首页 / 资讯 / [理财(编译期开关)] / 聊天(动态未读角标) / 我的. h=56, blur dark bar.
 class McBottomNav extends StatelessWidget {
   const McBottomNav({super.key, required this.current, required this.onTap});
 
@@ -550,6 +564,8 @@ class McBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final financeOn = FeatureFlag.instance.financeEnabled;
+    final chatIndex = financeOn ? 3 : 2;
     return Container(
       decoration: BoxDecoration(
         color: McColors.surface.withValues(alpha: 0.95),
@@ -569,6 +585,7 @@ class McBottomNav extends StatelessWidget {
             children: [
               _item(0, Icons.radar, tr('nav_home')),
               _item(1, Icons.query_stats, tr('nav_news')),
+              if (financeOn) _item(2, Icons.savings_outlined, tr('nav_finance')),
               ValueListenableBuilder<int>(
                 valueListenable: ChatApi.unreadCount,
                 builder: (context, unread, _) => ValueListenableBuilder<int>(
@@ -576,7 +593,7 @@ class McBottomNav extends StatelessWidget {
                   builder: (context, reqs, _) {
                     final count = unread + reqs; // 未读消息 + 待处理好友请求
                     return _item(
-                      2,
+                      chatIndex,
                       Icons.chat_bubble_outline,
                       tr('nav_chat'),
                       badge: count > 0 ? (count > 99 ? '99+' : '$count') : null,
@@ -584,7 +601,7 @@ class McBottomNav extends StatelessWidget {
                   },
                 ),
               ),
-              _item(3, Icons.account_balance_wallet, tr('nav_mine')),
+              _item(chatIndex + 1, Icons.account_balance_wallet, tr('nav_mine')),
             ],
           ),
         ),
