@@ -1,11 +1,11 @@
 {
-    "name": "Noah’s Ark",
-    "short_name": "Noah’s Ark",
+    "name": "明策 MINGCE",
+    "short_name": "明策",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#070D1C",
+    "theme_color": "#070D1C",
+    "description": "明策 MINGCE 市场情报终端",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
