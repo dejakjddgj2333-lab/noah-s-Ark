@@ -69,3 +69,6 @@ shots2/
 server/uploads/
 .env.secrets
 server/.env.local
+
+# 本地临时产物 (打包 zip / 测试脚本)
+_scratch/
