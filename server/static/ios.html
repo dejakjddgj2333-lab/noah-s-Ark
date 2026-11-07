@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#070D1C"/>
+<title>明策 MINGCE · iOS 安装指南</title>
+<meta name="description" content="iPhone / iPad 通过描述文件安装明策终端:主屏幕图标,全屏体验,与网页版数据实时同步。"/>
+<link rel="icon" type="image/png" href="logo.png"/>
+<link rel="apple-touch-icon" href="logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --canvas:#070D1C; --surface:#0D1528; --card:#121D34; --card-high:#1A2742;
+  --line:#34415E; --accent:#2E5CFF; --accent-soft:#82A4FF;
+  --ink:#F0F0FF; --muted:#9EA0B2; --bull:#00E388; --bear:#FF5F6D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--canvas); color:var(--ink);
+  font-family:"Inter","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.7; min-height:100dvh;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+.mono{font-family:"JetBrains Mono",monospace}
+.display{font-family:"Space Grotesk","Inter","PingFang SC",sans-serif}
+
+/* ── 背景 ── */
+.bg-grid,.bg-glow{position:fixed; inset:0; pointer-events:none; z-index:0}
+.bg-grid{
+  background-size:24px 24px;
+  background-image:
+    linear-gradient(to right, rgba(52,65,94,.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(52,65,94,.12) 1px, transparent 1px);
+}
+.bg-glow{background:radial-gradient(circle 620px at 50% -4%, rgba(46,92,255,.12), transparent 70%); animation:breathe 6s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.75}50%{opacity:1}}
+
+.rise{opacity:0; transform:translateY(14px); animation:rise .6s cubic-bezier(.22,.9,.3,1) forwards}
+@keyframes rise{to{opacity:1; transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.13s}.d3{animation-delay:.21s}
+
+.wrap{position:relative; z-index:1; max-width:860px; margin:0 auto; padding:0 20px}
+
+/* ── 顶栏 (与 invite.html 一致) ── */
+header{position:relative; z-index:2; border-bottom:1px solid var(--line); background:rgba(7,13,28,.82); backdrop-filter:blur(8px)}
+header .wrap{max-width:1100px; height:60px; display:flex; align-items:center; justify-content:space-between}
+.brand{display:flex; align-items:center; gap:11px; text-decoration:none}
+.brand .logo{width:36px; height:36px; border-radius:10px; display:block; object-fit:cover; flex:none}
+.brand .t1{font-weight:700; font-size:16px; letter-spacing:-.2px}
+.brand .t2{color:var(--muted); font-size:11px; letter-spacing:1.2px}
+.badge{display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; background:var(--card-high); border:1px solid var(--line); font-size:11px; letter-spacing:1px; color:var(--bull); font-weight:600}
+.dot{position:relative; width:7px; height:7px}
+.dot::before,.dot::after{content:""; position:absolute; inset:0; border-radius:50%; background:var(--bull)}
+.dot::before{animation:ping 1.8s cubic-bezier(0,0,.2,1) infinite; opacity:.7}
+@keyframes ping{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(2.4);opacity:0}}
+
+/* ── Hero ── */
+.hero{padding:44px 0 8px; text-align:center}
+.pill{display:inline-flex; align-items:center; gap:8px; padding:5px 11px; border-radius:6px; background:var(--surface); border:1px solid var(--line); font-size:11px; letter-spacing:1.6px}
+.pill .a{color:var(--accent-soft); font-weight:600}
+.pill .sep{width:3px; height:3px; border-radius:50%; background:var(--line)}
+.pill .b{color:var(--muted)}
+h1{font-size:clamp(28px,6vw,40px); line-height:1.15; letter-spacing:-1px; font-weight:700; margin:18px 0 12px}
+h1 .grad{background:linear-gradient(92deg,var(--ink) 0%,var(--accent-soft) 90%); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lede{color:var(--muted); max-width:32em; margin:0 auto 24px; font-size:14px}
+
+.cta-row{display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:14px}
+.btn-primary{display:inline-flex; align-items:center; gap:10px; padding:14px 34px; border-radius:11px; background:var(--accent); color:#fff; font-weight:600; font-size:16px; text-decoration:none; border:none; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,.22); transition:filter .15s,transform .1s; min-height:50px}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-primary:active{transform:translateY(1px)}
+.btn-primary svg{width:19px; height:19px}
+.cta-note{display:flex; align-items:center; gap:7px; color:var(--muted); font-size:12.5px}
+.cta-note .sd{width:7px; height:7px; border-radius:50%; background:var(--bull)}
+
+/* 浏览器提示条 (JS 按环境显示) */
+.ua-banner{display:none; margin:18px auto 0; max-width:560px; padding:12px 16px; border-radius:11px; font-size:13px; line-height:1.6; text-align:left; border:1px solid}
+.ua-banner.show{display:block}
+.ua-banner.warn{background:rgba(255,95,109,.08); border-color:rgba(255,95,109,.35); color:#ffb9c0}
+.ua-banner.info{background:rgba(46,92,255,.08); border-color:rgba(46,92,255,.35); color:#b8c3ff}
+.ua-banner b{color:var(--ink)}
+
+/* ── 步骤区 ── */
+.steps{margin:52px 0 0}
+.lab{color:var(--muted); font-size:11px; letter-spacing:2px; font-weight:600; margin-bottom:16px; text-align:center}
+.step-grid{display:grid; grid-template-columns:1fr; gap:16px}
+@media(min-width:760px){.step-grid{grid-template-columns:repeat(2,1fr)}}
+.step{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; display:flex; gap:18px; align-items:flex-start}
+.step .num{flex:none; width:34px; height:34px; border-radius:10px; background:var(--accent); color:#fff; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.step h3{font-size:16px; font-weight:600; margin-bottom:5px; letter-spacing:-.2px}
+.step p{color:var(--muted); font-size:13px; line-height:1.7}
+.step p b{color:var(--ink); font-weight:600}
+.step p .hl{color:var(--accent-soft); font-weight:600}
+
+/* CSS 手机示意框 */
+.mock{flex:none; width:118px; border-radius:16px; background:var(--card); border:1px solid var(--line); padding:8px; display:flex; flex-direction:column; gap:6px}
+.mock .bar{height:8px; border-radius:4px; background:var(--card-high)}
+.mock .bar.w60{width:60%} .mock .bar.w40{width:40%} .mock .bar.w80{width:80%}
+.mock .row{display:flex; align-items:center; justify-content:space-between; background:var(--card-high); border-radius:7px; padding:7px 8px; font-size:9px; color:var(--muted)}
+.mock .row.hl{border:1px solid var(--accent); color:var(--ink); background:rgba(46,92,255,.14)}
+.mock .row .chev{color:var(--muted)}
+.mock .dlg{background:var(--card-high); border:1px solid var(--line); border-radius:9px; padding:8px; text-align:center}
+.mock .dlg .t{font-size:8.5px; color:var(--ink); line-height:1.5; margin-bottom:7px}
+.mock .dlg .btns{display:flex; gap:6px}
+.mock .dlg .btns span{flex:1; font-size:9px; padding:4px 0; border-radius:5px; background:var(--card); color:var(--muted)}
+.mock .dlg .btns span.ok{background:var(--accent); color:#fff; font-weight:600}
+.mock .icons{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.mock .icons i{aspect-ratio:1; border-radius:6px; background:var(--card-high); display:block}
+.mock .icons i.app{background:linear-gradient(135deg,var(--accent),var(--accent-soft)); box-shadow:0 0 10px rgba(46,92,255,.55)}
+.mock .cap-label{text-align:center; font-size:8.5px; color:var(--muted)}
+.mock .red{font-size:9px; color:var(--bear); text-align:center}
+.mock .install{align-self:flex-end; font-size:9px; font-weight:600; color:#fff; background:var(--accent); border-radius:5px; padding:3px 8px}
+
+/* ── 说明卡 / FAQ ── */
+.note{margin:20px 0 0; background:linear-gradient(120deg,var(--card),var(--card-high)); border:1px solid var(--line); border-radius:14px; padding:20px 22px; display:flex; gap:14px; align-items:flex-start}
+.note .ic{flex:none; width:34px; height:34px; border-radius:10px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--accent-soft)}
+.note .ic svg{width:17px; height:17px}
+.note h4{font-size:14.5px; font-weight:600; margin-bottom:4px}
+.note p{color:var(--muted); font-size:12.5px; line-height:1.7}
+.note p b{color:var(--ink)}
+
+.faq{margin:44px 0 0}
+.faq details{background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:0 18px}
+.faq details + details{margin-top:10px}
+.faq summary{cursor:pointer; list-style:none; padding:14px 0; font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:10px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+"; color:var(--muted); font-size:18px; font-weight:400; transition:transform .15s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq .a{color:var(--muted); font-size:13px; line-height:1.75; padding:0 0 15px}
+.faq .a b{color:var(--ink)}
+
+/* ── 页脚 ── */
+footer{position:relative; z-index:1; border-top:1px solid var(--line); margin-top:56px}
+footer .wrap{max-width:1100px; padding:26px 20px 34px; display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap}
+footer .c{color:var(--muted); font-size:12px}
+footer .links{display:flex; gap:20px}
+footer a{color:var(--muted); font-size:13px; text-decoration:none; transition:color .15s}
+footer a:hover{color:var(--ink)}
+
+@media(max-width:768px){
+  .hero{padding:30px 0 2px}
+  .step{padding:18px}
+  .mock{width:104px}
+  footer .wrap{flex-direction:column; align-items:center; text-align:center; gap:10px}
+}
+@media(max-width:420px){
+  .step{flex-direction:column}
+  .mock{width:100%; max-width:200px; align-self:center}
+}
+@media(prefers-reduced-motion:reduce){
+  .rise,.bg-glow,.dot::before{animation:none !important}
+  .rise{opacity:1; transform:none}
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/">
+      <img class="logo" src="logo.png" alt="明策"/>
+      <div>
+        <div class="t1 display">明策 MINGCE</div>
+        <div class="t2 mono">MARKET INTELLIGENCE</div>
+      </div>
+    </a>
+    <div class="badge mono"><span class="dot"></span>iOS GUIDE</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="pill mono rise d1">
+      <span class="a">iOS INSTALL GUIDE</span>
+      <span class="sep"></span>
+      <span class="b">iPhone / iPad 专用</span>
+    </div>
+    <h1 class="display rise d2">一分钟把明策<br/><span class="grad">装进你的 iPhone</span></h1>
+    <p class="lede rise d3">安装描述文件后,主屏幕会出现「明策」图标,点开即是全屏终端体验,账号与行情数据和网页版实时同步。</p>
+
+    <div class="cta-row rise d3">
+      <a class="btn-primary" id="dlBtn" href="mingce.mobileconfig">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <span>下载描述文件</span>
+      </a>
+      <span class="cta-note"><span class="sd"></span><span>仅支持 Safari 浏览器下载安装 · 约 30 秒完成</span></span>
+    </div>
+
+    <!-- 环境提示条: JS 按浏览器环境切换 -->
+    <div class="ua-banner warn" id="uaWechat">
+      <b>微信内无法安装描述文件。</b>请点右上角 <b>···</b>,选择「在 Safari 打开」,再回到本页点下载。
+    </div>
+    <div class="ua-banner warn" id="uaNotSafari">
+      <b>当前浏览器不支持安装描述文件。</b>请复制本页网址,改用 iPhone 自带的 <b>Safari</b> 打开。
+    </div>
+    <div class="ua-banner info" id="uaNotIOS">
+      本页面向 iPhone / iPad。你正在用电脑访问——电脑无需安装,直接用 <b>网页版</b> 即可:<b>mingcevip.com</b>
+    </div>
+  </div>
+
+  <!-- 安装步骤 -->
+  <section class="steps">
+    <div class="lab mono rise">INSTALL STEPS · 四步完成安装</div>
+    <div class="step-grid rise d2">
+
+      <div class="step">
+        <div class="num">1</div>
+        <div>
+          <h3>下载描述文件</h3>
+          <p>用 <b>Safari</b> 打开本页,点上方「下载描述文件」。弹出<span class="hl">「此网站正尝试下载一个配置描述文件」</span>时,点「允许」。</p>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="bar w60"></div>
+          <div class="dlg">
+            <div class="t">此网站正尝试下载一个配置描述文件</div>
+            <div class="btns"><span>忽略</span><span class="ok">允许</span></div>
+          </div>
+          <div class="bar w40"></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">2</div>
+        <div>
+          <h3>打开设置,找到描述文件</h3>
+          <p>回到桌面打开<b>「设置」</b>,首页顶部会出现<span class="hl">「已下载描述文件」</span>,点它进入。(也可走 设置 → 通用 → VPN与设备管理)</p>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="bar w40"></div>
+          <div class="row"><span>无线局域网</span><span class="chev">›</span></div>
+          <div class="row hl"><span>已下载描述文件</span><span class="chev">›</span></div>
+          <div class="row"><span>通知</span><span class="chev">›</span></div>
+          <div class="row"><span>通用</span><span class="chev">›</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">3</div>
+        <div>
+          <h3>安装「明策」描述文件</h3>
+          <p>点右上角<span class="hl">「安装」</span>,输入锁屏密码,再点一次「安装」确认。看到红色的「未签名」提示属正常现象,继续安装即可(下方有说明)。</p>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="install">安装</div>
+          <div class="bar w60"></div>
+          <div class="row"><span>Web Clip</span><span class="chev">›</span></div>
+          <div class="row"><span>证书 1 个</span><span class="chev">›</span></div>
+          <div class="red">未签名</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">4</div>
+        <div>
+          <h3>完成,从主屏幕进入</h3>
+          <p>回到主屏幕,出现<span class="hl">「明策」图标</span>即安装成功。以后点图标全屏打开终端,不用再走浏览器。</p>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="icons"><i></i><i></i><i></i><i></i><i class="app"></i><i></i></div>
+          <div class="cap-label">明策</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 未签名说明 -->
+    <div class="note rise d3">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div>
+        <h4>关于安装时的「未签名」红色提示</h4>
+        <p>该提示仅表示描述文件未附加苹果开发者签名认证,<b>不影响安装与使用</b>。本描述文件由明策官方邀请页直发,内容仅为「主屏幕图标 + 接入证书」两项,不含任何监控或 VPN 配置,可随时在 设置 → 通用 → VPN与设备管理 中查看与移除。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq">
+    <div class="lab mono rise">FAQ · 常见问题</div>
+    <div class="rise d2">
+      <details open>
+        <summary>不想装描述文件,有别的方式吗?</summary>
+        <div class="a">有。用 Safari 打开 <b>m.mingcevip.com</b>,点底部分享按钮 <b>「添加到主屏幕」</b>即可,效果相同。描述文件方式的优势是图标与全屏体验更稳定。</div>
+      </details>
+      <details>
+        <summary>安装时需要输入描述文件密码吗?</summary>
+        <div class="a"><b>不需要。</b>接入证书密码已内置在描述文件中,全程只需输入一次你手机的锁屏密码。</div>
+      </details>
+      <details>
+        <summary>以后想卸载怎么办?</summary>
+        <div class="a">打开 设置 → 通用 → <b>VPN与设备管理</b> → 点「明策」→「移除描述文件」即可,主屏幕图标会一并消失,不影响已注册的账号数据。</div>
+      </details>
+      <details>
+        <summary>装好后和网页版是同一个账号吗?</summary>
+        <div class="a">是。图标打开的就是明策移动端网页版,行情、聊天、资产数据与 PC 端、安卓端<b>实时同步</b>。</div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="c mono">© <span id="yr">2026</span> 明策 MINGCE · 市场情报终端 · 仅供受邀用户核验使用</div>
+    <div class="links">
+      <a href="/">返回邀请页</a>
+      <a href="https://shipapi.bdxapi.com/api/legal/terms">用户协议</a>
+      <a href="https://shipapi.bdxapi.com/api/legal/privacy">隐私政策</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // 环境检测: 微信 / 非 Safari / 非 iOS 分别给提示
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPhone|iPad|iPod/.test(ua);
+  var isWechat = /MicroMessenger/i.test(ua);
+  // iOS 上 Chrome/Firefox/Edge 的 UA 分别含 CriOS/FxiOS/EdgiOS, 都不能装描述文件
+  var isSafari = /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|MicroMessenger|QQ\//i.test(ua);
+
+  if (isWechat) {
+    document.getElementById('uaWechat').classList.add('show');
+  } else if (isIOS && !isSafari) {
+    document.getElementById('uaNotSafari').classList.add('show');
+  } else if (!isIOS) {
+    document.getElementById('uaNotIOS').classList.add('show');
+  }
+})();
+</script>
+</body>
+</html>
