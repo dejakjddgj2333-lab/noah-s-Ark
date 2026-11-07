@@ -88,12 +88,16 @@ h1 .grad{background:linear-gradient(92deg,var(--ink) 0%,var(--accent-soft) 90%);
 .lab{color:var(--muted); font-size:11px; letter-spacing:2px; font-weight:600; margin-bottom:16px; text-align:center}
 .step-grid{display:grid; grid-template-columns:1fr; gap:16px}
 @media(min-width:760px){.step-grid{grid-template-columns:repeat(2,1fr)}}
-.step{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; display:flex; gap:18px; align-items:flex-start}
+.step{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; display:flex; flex-direction:column; gap:14px}
+.step-head{display:flex; gap:14px; align-items:flex-start}
 .step .num{flex:none; width:34px; height:34px; border-radius:10px; background:var(--accent); color:#fff; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
 .step h3{font-size:16px; font-weight:600; margin-bottom:5px; letter-spacing:-.2px}
 .step p{color:var(--muted); font-size:13px; line-height:1.7}
 .step p b{color:var(--ink); font-weight:600}
 .step p .hl{color:var(--accent-soft); font-weight:600}
+
+/* 真实步骤截图 */
+.shot{width:100%; border-radius:12px; border:1px solid var(--line); display:block; box-shadow:0 8px 22px rgba(0,0,0,.35)}
 
 /* CSS 手机示意框 */
 .mock{flex:none; width:118px; border-radius:16px; background:var(--card); border:1px solid var(--line); padding:8px; display:flex; flex-direction:column; gap:6px}
@@ -121,6 +125,7 @@ h1 .grad{background:linear-gradient(92deg,var(--ink) 0%,var(--accent-soft) 90%);
 .note h4{font-size:14.5px; font-weight:600; margin-bottom:4px}
 .note p{color:var(--muted); font-size:12.5px; line-height:1.7}
 .note p b{color:var(--ink)}
+.note-shot{flex:none; width:220px; border-radius:12px; border:1px solid var(--line); display:block; box-shadow:0 8px 22px rgba(0,0,0,.35)}
 
 .faq{margin:44px 0 0}
 .faq details{background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:0 18px}
@@ -146,9 +151,9 @@ footer a:hover{color:var(--ink)}
   .mock{width:104px}
   footer .wrap{flex-direction:column; align-items:center; text-align:center; gap:10px}
 }
-@media(max-width:420px){
-  .step{flex-direction:column}
-  .mock{width:100%; max-width:200px; align-self:center}
+@media(max-width:640px){
+  .note{flex-wrap:wrap}
+  .note-shot{width:100%; order:3}
 }
 @media(prefers-reduced-motion:reduce){
   .rise,.bg-glow,.dot::before{animation:none !important}
@@ -210,58 +215,47 @@ footer a:hover{color:var(--ink)}
     <div class="step-grid rise d2">
 
       <div class="step">
-        <div class="num">1</div>
-        <div>
-          <h3>下载描述文件</h3>
-          <p>用 <b>Safari</b> 打开本页,点上方「下载安装APP」。弹出<span class="hl">「此网站正尝试下载一个配置描述文件」</span>时,点「允许」。</p>
-        </div>
-        <div class="mock" aria-hidden="true">
-          <div class="bar w60"></div>
-          <div class="dlg">
-            <div class="t">此网站正尝试下载一个配置描述文件</div>
-            <div class="btns"><span>忽略</span><span class="ok">允许</span></div>
+        <div class="step-head">
+          <div class="num">1</div>
+          <div>
+            <h3>下载描述文件</h3>
+            <p>用 <b>Safari</b> 打开本页,点上方「下载安装APP」。弹出<span class="hl">「此网站正尝试下载一个配置描述文件」</span>时,点「允许」。</p>
           </div>
-          <div class="bar w40"></div>
         </div>
+        <img class="shot" src="ios-steps/step1.webp" alt="Safari 弹窗:允许下载配置描述文件" loading="lazy"/>
       </div>
 
       <div class="step">
-        <div class="num">2</div>
-        <div>
-          <h3>打开设置,找到描述文件</h3>
-          <p>回到桌面打开<b>「设置」</b>,首页顶部会出现<span class="hl">「已下载描述文件」</span>,点它进入。(也可走 设置 → 通用 → VPN与设备管理)</p>
+        <div class="step-head">
+          <div class="num">2</div>
+          <div>
+            <h3>打开设置,找到描述文件</h3>
+            <p>回到桌面打开<b>「设置」</b>,首页顶部会出现<span class="hl">「已下载描述文件」</span>,点它进入。(也可走 设置 → 通用 → VPN与设备管理)</p>
+          </div>
         </div>
-        <div class="mock" aria-hidden="true">
-          <div class="bar w40"></div>
-          <div class="row"><span>无线局域网</span><span class="chev">›</span></div>
-          <div class="row hl"><span>已下载描述文件</span><span class="chev">›</span></div>
-          <div class="row"><span>通知</span><span class="chev">›</span></div>
-          <div class="row"><span>通用</span><span class="chev">›</span></div>
-        </div>
+        <img class="shot" src="ios-steps/step2.webp" alt="设置 VPN与设备管理:已下载的描述文件 明策" loading="lazy"/>
       </div>
 
       <div class="step">
-        <div class="num">3</div>
-        <div>
-          <h3>安装「明策」描述文件</h3>
-          <p>点右上角<span class="hl">「安装」</span>,输入锁屏密码,再点一次「安装」确认。看到红色的「未签名」提示属正常现象,继续安装即可(下方有说明)。</p>
+        <div class="step-head">
+          <div class="num">3</div>
+          <div>
+            <h3>安装「明策」描述文件</h3>
+            <p>点右上角<span class="hl">「安装」</span>,输入锁屏密码,再点一次「安装」确认。看到红色的「未签名」提示属正常现象,继续安装即可(下方有说明)。</p>
+          </div>
         </div>
-        <div class="mock" aria-hidden="true">
-          <div class="install">安装</div>
-          <div class="bar w60"></div>
-          <div class="row"><span>Web Clip</span><span class="chev">›</span></div>
-          <div class="row"><span>证书 1 个</span><span class="chev">›</span></div>
-          <div class="red">未签名</div>
-        </div>
+        <img class="shot" src="ios-steps/step3.webp" alt="安装描述文件页面:点右上角安装" loading="lazy"/>
       </div>
 
       <div class="step">
-        <div class="num">4</div>
-        <div>
-          <h3>完成,从主屏幕进入</h3>
-          <p>回到主屏幕,出现<span class="hl">「明策」图标</span>即安装成功。以后点图标全屏打开终端,不用再走浏览器。</p>
+        <div class="step-head">
+          <div class="num">4</div>
+          <div>
+            <h3>完成,从主屏幕进入</h3>
+            <p>回到主屏幕,出现<span class="hl">「明策」图标</span>即安装成功。以后点图标全屏打开终端,不用再走浏览器。</p>
+          </div>
         </div>
-        <div class="mock" aria-hidden="true">
+        <div class="mock" aria-hidden="true" style="align-self:center">
           <div class="icons"><i></i><i></i><i></i><i></i><i class="app"></i><i></i></div>
           <div class="cap-label">明策</div>
         </div>
@@ -272,10 +266,11 @@ footer a:hover{color:var(--ink)}
     <!-- 未签名说明 -->
     <div class="note rise d3">
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
-      <div>
+      <div style="flex:1; min-width:0">
         <h4>关于安装时的「未签名」红色提示</h4>
         <p>该提示仅表示描述文件未附加苹果开发者签名认证,<b>不影响安装与使用</b>。本描述文件由明策官方邀请页直发,内容仅为「主屏幕图标 + 接入证书」两项,不含任何监控或 VPN 配置,可随时在 设置 → 通用 → VPN与设备管理 中查看与移除。</p>
       </div>
+      <img class="note-shot" src="ios-steps/warn.webp" alt="iOS 未签名描述文件警告与安装确认" loading="lazy"/>
     </div>
   </section>
 
