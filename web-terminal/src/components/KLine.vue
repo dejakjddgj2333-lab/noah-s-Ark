@@ -106,6 +106,7 @@ function apply() {
   try {
     const { candleData, volData, closes } = dataSets()
     if (!candleData.length) return
+    const prevCount = curData.length
     curData = candleData
     lastDec.value = pxDec(candleData[candleData.length - 1].close)
 
@@ -134,8 +135,11 @@ function apply() {
     refreshMarkers()
     legend.value = mkLegend(last)
 
-    // 首次有数据时定位 (否则数据少时左半屏空白)
-    if (!didInitView) {
+    // 首次有数据时定位 (否则数据少时左半屏空白);
+    // 或数据从零星几根 (WS 先到帧) 跳变为完整 REST 集时重新定位,
+    // 否则视图会停留在按 2 根蜡烛 fitContent 的巨宽状态
+    const grewFromSparse = prevCount > 0 && prevCount < 30 && candleData.length >= 50
+    if (!didInitView || grewFromSparse) {
       didInitView = true
       reposition()
     }

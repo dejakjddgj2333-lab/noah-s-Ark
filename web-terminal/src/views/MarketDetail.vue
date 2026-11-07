@@ -362,13 +362,17 @@ async function loadTicker() {
     ticker.value = res?.data?.[0] || null
   } catch { /* 保留旧值 */ }
 }
+let candlesReady = true // 首次 REST 落地前为 false: 忽略 WS 蜡烛帧, 防零星 1~2 根先到把视图定成巨宽蜡烛
 async function loadCandles() {
   candlesLoadingMore.value = false
   candlesNoMore.value = false
+  candlesReady = false
   try {
     const res = await marketApi.candles(instId.value, bar.value, 300)
     candles.value = (res?.data || []).reverse() // OKX 新在前
-  } catch { /* ignore */ }
+  } catch { /* ignore */ } finally {
+    candlesReady = true
+  }
 }
 // 拖到最左侧: 以最早一根时间为 after, 向前翻页加载历史
 async function loadMoreCandles() {
@@ -436,6 +440,7 @@ function bindCandleWs(inst, b) {
   const ch = BAR_CH[b]
   if (!ch) return
   unsubCandle = subscribeMarket(ch, inst, (frame) => {
+    if (!candlesReady) return // REST 初始装载进行中, 丢弃先到帧 (下一帧自然会合并)
     const rows = frame?.data
     if (!Array.isArray(rows) || !rows.length) return
     const list = [...candles.value]
