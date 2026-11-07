@@ -64,15 +64,21 @@ function dataSets() {
   const volData = []
   const closes = []
   for (const c of props.candles) {
+    if (!Array.isArray(c) || c.length < 5) continue
     const t = Math.floor(+c[0] / 1000) + TZ
     const o = +c[1]
     const h = +c[2]
     const l = +c[3]
     const cl = +c[4]
+    // 防御: WS/REST 偶发异常行 (null/NaN/乱序) 直接跳过,
+    // 否则喂给 lightweight-charts 会抛 "Value is null" 白屏
+    if (!Number.isFinite(t) || !Number.isFinite(o) || !Number.isFinite(h) ||
+        !Number.isFinite(l) || !Number.isFinite(cl)) continue
+    if (candleData.length && t <= candleData[candleData.length - 1].time) continue
     candleData.push({ time: t, open: o, high: h, low: l, close: cl })
     volData.push({
       time: t,
-      value: +c[5],
+      value: Number.isFinite(+c[5]) ? +c[5] : 0,
       color: cl >= o ? 'rgba(0,227,136,0.5)' : 'rgba(255,95,109,0.5)',
     })
     closes.push({ time: t, value: cl })
@@ -97,40 +103,45 @@ function mkLegend(d) {
 
 function apply() {
   if (!chart) return
-  const { candleData, volData, closes } = dataSets()
-  if (!candleData.length) return
-  curData = candleData
-  lastDec.value = pxDec(candleData[candleData.length - 1].close)
+  try {
+    const { candleData, volData, closes } = dataSets()
+    if (!candleData.length) return
+    curData = candleData
+    lastDec.value = pxDec(candleData[candleData.length - 1].close)
 
-  cs.setData(candleData)
-  volS.setData(volData)
-  ma5S.setData(maData(5, closes))
-  ma10S.setData(maData(10, closes))
-  ma20S.setData(maData(20, closes))
+    cs.setData(candleData)
+    volS.setData(volData)
+    ma5S.setData(maData(5, closes))
+    ma10S.setData(maData(10, closes))
+    ma20S.setData(maData(20, closes))
 
-  // 最新价虚线
-  if (priceLine) {
-    try { cs.removePriceLine(priceLine) } catch { /* 已移除 */ }
-    priceLine = null
-  }
-  const last = candleData[candleData.length - 1]
-  const lastColor = last.close >= last.open ? '#00E388' : '#FF5F6D'
-  priceLine = cs.createPriceLine({
-    price: last.close,
-    color: lastColor,
-    lineWidth: 1,
-    lineStyle: LineStyle.Dashed,
-    axisLabelVisible: true,
-    title: '',
-  })
+    // 最新价虚线
+    if (priceLine) {
+      try { cs.removePriceLine(priceLine) } catch { /* 已移除 */ }
+      priceLine = null
+    }
+    const last = candleData[candleData.length - 1]
+    const lastColor = last.close >= last.open ? '#00E388' : '#FF5F6D'
+    priceLine = cs.createPriceLine({
+      price: last.close,
+      color: lastColor,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: '',
+    })
 
-  refreshMarkers()
-  legend.value = mkLegend(last)
+    refreshMarkers()
+    legend.value = mkLegend(last)
 
-  // 首次有数据时定位 (否则数据少时左半屏空白)
-  if (!didInitView) {
-    didInitView = true
-    reposition()
+    // 首次有数据时定位 (否则数据少时左半屏空白)
+    if (!didInitView) {
+      didInitView = true
+      reposition()
+    }
+  } catch (e) {
+    // 数据边界导致的图表异常不炸页面 (历史: lightweight-charts "Value is null")
+    console.warn('[KLine] apply failed:', e)
   }
 }
 
@@ -152,10 +163,12 @@ function refreshMarkers() {
     if (d.high > hi.high) hi = d
     if (d.low < lo.low) lo = d
   }
-  markersApi.setMarkers([
-    { time: hi.time, position: 'aboveBar', color: '#9EA0B2', shape: 'arrowDown', text: `高 ${fmtP(hi.high)}` },
-    { time: lo.time, position: 'belowBar', color: '#9EA0B2', shape: 'arrowUp', text: `低 ${fmtP(lo.low)}` },
-  ])
+  try {
+    markersApi.setMarkers([
+      { time: hi.time, position: 'aboveBar', color: '#9EA0B2', shape: 'arrowDown', text: `高 ${fmtP(hi.high)}` },
+      { time: lo.time, position: 'belowBar', color: '#9EA0B2', shape: 'arrowUp', text: `低 ${fmtP(lo.low)}` },
+    ])
+  } catch { /* 换周期瞬间旧标记时间不在新数据里, 下帧重算即可 */ }
 }
 
 // 可视范围变化: 重算高低点 + 拖到左边缘加载更多历史
