@@ -73,6 +73,8 @@ deploy_landing() {
   echo "==> App 落地页:发布"
   # app-release.apk / mingce-win.zip / mingce-mac.dmg 手动上传到站点根, 不入库, rsync 排除防删
   rsync -a --delete --exclude='.user.ini' --exclude='.htaccess' --exclude='app-release.apk' --exclude='mingce-win.zip' --exclude='mingce-mac.dmg' "$REPO/server/static/" "$LANDING_WEB/"
+  # iOS 描述文件: 源文件在仓库 证书/ 下, 不入 static 目录, 发布时复制到站点根 (ios.html 下载链接指向它)
+  [ -f "$REPO/证书/mingce.mobileconfig" ] && cp "$REPO/证书/mingce.mobileconfig" "$LANDING_WEB/mingce.mobileconfig"
   # 落地页入口: invite.html -> index.html
   cp "$LANDING_WEB/invite.html" "$LANDING_WEB/index.html"
   # 后端根路径也直出这份落地页 (app.py invite_landing), 同步一份保持新鲜, 不重启容器
