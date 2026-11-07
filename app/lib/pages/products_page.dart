@@ -10,8 +10,12 @@ import '../services/invite_api.dart';
 /// 产品列表/详情/购买 (V0.7 Phase 7.5 + 7.2).
 /// 7.2 首购提示: 未绑定上级且仍可补绑的用户, 首次购买前弹窗告知
 /// "本人或任意层级下级购买成功后将无法补填邀请码".
+/// embedded=true 时作为底部「理财」tab 内容体: 不带 Scaffold/AppBar
+/// (header + bottom nav 由 shell 提供).
 class ProductsPage extends StatefulWidget {
-  const ProductsPage({super.key});
+  const ProductsPage({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<ProductsPage> createState() => _ProductsPageState();
@@ -60,6 +64,35 @@ class _ProductsPageState extends State<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final body = RefreshIndicator(
+      color: McColors.primarySoft,
+      backgroundColor: McColors.surfaceContainer,
+      onRefresh: _load,
+      child: _busy && _items.isEmpty
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
+              children: [
+                if (_error != null) ...[
+                  _errorBox(_error!),
+                  const SizedBox(height: 12),
+                ],
+                if (!_busy && _items.isEmpty && _error == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 80),
+                    child: Center(
+                      child: Text(tr('prod_empty'), style: McText.sans(color: McColors.onSurfaceVariant)),
+                    ),
+                  ),
+                for (final p in _items) ...[
+                  _productCard(p),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ),
+    );
+    // 嵌入底部 tab: 只要内容体, 背景色沿用 shell
+    if (widget.embedded) return body;
     return Scaffold(
       backgroundColor: McColors.surface,
       appBar: AppBar(
@@ -71,33 +104,7 @@ class _ProductsPageState extends State<ProductsPage> {
         ),
         title: Text(tr('prod_title'), style: McText.display(size: 16, weight: FontWeight.w700)),
       ),
-      body: RefreshIndicator(
-        color: McColors.primarySoft,
-        backgroundColor: McColors.surfaceContainer,
-        onRefresh: _load,
-        child: _busy && _items.isEmpty
-            ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
-                children: [
-                  if (_error != null) ...[
-                    _errorBox(_error!),
-                    const SizedBox(height: 12),
-                  ],
-                  if (!_busy && _items.isEmpty && _error == null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 80),
-                      child: Center(
-                        child: Text(tr('prod_empty'), style: McText.sans(color: McColors.onSurfaceVariant)),
-                      ),
-                    ),
-                  for (final p in _items) ...[
-                    _productCard(p),
-                    const SizedBox(height: 12),
-                  ],
-                ],
-              ),
-      ),
+      body: body,
     );
   }
 

@@ -15,7 +15,6 @@ import 'pages/call_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/commission_page.dart';
 import 'pages/deposit_page.dart';
-import 'pages/finance_page.dart';
 import 'pages/forgot_password_page.dart';
 import 'pages/funds_page.dart';
 import 'pages/home_funding_page.dart';
@@ -157,14 +156,15 @@ class _McShellState extends State<McShell> {
   bool _callPageShown = false; // CallPage 是否已 push (root navigator)
 
   /// 理财 tab 在 FINANCE_ENABLED 编译期开启时插入第 3 位 (index 2),
-  /// 聊天/我的 顺移; 关闭时保持 4 tab 原布局.
+  /// 内容为理财产品列表 (ProductsPage 嵌入模式); 聊天/我的 顺移,
+  /// 开关关闭时保持 4 tab 原布局.
   static bool get _financeOn => FeatureFlag.instance.financeEnabled;
   static int get _chatIndex => _financeOn ? 3 : 2;
 
   List<Widget> get _pages => [
         const HomePage(),
         const NewsPage(),
-        if (_financeOn) const FinancePage(),
+        if (_financeOn) const ProductsPage(embedded: true),
         const ChatPage(),
         const AssetsPage(),
       ];
@@ -343,7 +343,7 @@ class _McShellState extends State<McShell> {
                 final gated = <int, Widget>{
                   if (_financeOn)
                     2: loggedIn
-                        ? const FinancePage()
+                        ? const ProductsPage(embedded: true)
                         : _LoginGate(tr('nav_finance')),
                   _chatIndex:
                       loggedIn ? const ChatPage() : _LoginGate(tr('nav_chat')),
