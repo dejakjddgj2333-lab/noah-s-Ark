@@ -36,6 +36,44 @@ List<String> relatedCoinsOf(Map article) {
 String sentiTextOf(dynamic s) =>
     s == 'positive' ? '偏多' : s == 'negative' ? '偏空' : s != null ? '中性' : '--';
 
+/// 情绪徽章 (apitube sentiment; 对齐 News.vue SENTI: 利好/利空/中性)。
+McBadge? sentiBadgeOf(dynamic s) {
+  final (label, color) = switch (s) {
+    'positive' => ('利好', Mc.bull),
+    'negative' => ('利空', Mc.bear),
+    'neutral' => ('中性', Mc.muted),
+    _ => ('', Mc.muted),
+  };
+  return label.isEmpty ? null : McBadge(label, color: color);
+}
+
+/// 资讯封面图 (cover_url; 加载失败时自动隐藏, 不留破图)。
+class NewsCover extends StatelessWidget {
+  const NewsCover(this.url, {super.key, this.width, this.height, this.radius = 8});
+  final String url;
+  final double? width;
+  final double? height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.trim().isEmpty) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.network(
+        url,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        // 失败/空帧都收缩为 0, 避免破图图标
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        loadingBuilder: (_, child, progress) =>
+            progress == null ? child : SizedBox(width: width, height: height),
+      ),
+    );
+  }
+}
+
 /// 全屏资讯文章页: 供顶栏铃铛/概览资讯流 ShellRouter.push 使用。
 /// 内容复用 [_ArticlePanel] (正文 + 互动区 + 评论), 宽屏右侧挂情报三卡。
 class NewsArticleOverlay extends StatelessWidget {
@@ -555,6 +593,10 @@ class _NewsCardState extends State<_NewsCard> {
                       McBadge(widget.catName!, color: widget.catColor),
                       const SizedBox(width: 8),
                     ],
+                    if (sentiBadgeOf(item['sentiment']) != null) ...[
+                      sentiBadgeOf(item['sentiment'])!,
+                      const SizedBox(width: 8),
+                    ],
                     // 悬停快捷操作: 收藏 (对齐 News.vue hover actions)
                     if (_hover) ...[
                       InkWell(
@@ -578,17 +620,33 @@ class _NewsCardState extends State<_NewsCard> {
                     ),
                   ]),
                   const SizedBox(height: 8),
-                  Text(title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Mc.display(14)),
-                  if (summary.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(summary,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Mc.body(12, color: Mc.muted)),
-                  ],
+                  // 标题/摘要 (+ 右侧封面缩略图, 对齐 News.vue 列表行)
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Mc.display(14)),
+                            if (summary.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(summary,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Mc.body(12, color: Mc.muted)),
+                            ],
+                          ]),
+                    ),
+                    if ((item['cover_url']?.toString() ?? '')
+                        .trim()
+                        .isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      NewsCover(item['cover_url'].toString(),
+                          width: 112, height: 72),
+                    ],
+                  ]),
                   const SizedBox(height: 10),
                   Container(
                     decoration: const BoxDecoration(
@@ -891,6 +949,10 @@ class _ArticlePanelState extends State<_ArticlePanel> {
                 McBadge(widget.catName!, color: widget.catColor),
                 const SizedBox(width: 10),
               ],
+              if (sentiBadgeOf(article['sentiment']) != null) ...[
+                sentiBadgeOf(article['sentiment'])!,
+                const SizedBox(width: 10),
+              ],
               Text(article['source']?.toString() ?? 'MINGCE',
                   style: Mc.body(12, w: FontWeight.w600)),
               const Spacer(),
@@ -937,6 +999,12 @@ class _ArticlePanelState extends State<_ArticlePanel> {
               ]),
             ],
             const SizedBox(height: 16),
+            // 封面横幅 (对齐 NewsDetail.vue cover)
+            if ((article['cover_url']?.toString() ?? '').trim().isNotEmpty) ...[
+              NewsCover(article['cover_url'].toString(),
+                  height: 220, radius: 12),
+              const SizedBox(height: 16),
+            ],
             const Divider(height: 1, color: Mc.hairline),
             const SizedBox(height: 16),
             if (summary.isNotEmpty) ...[

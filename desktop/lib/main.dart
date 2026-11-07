@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'pages/login_page.dart';
@@ -21,15 +24,29 @@ import 'widgets/shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
-  const opts = WindowOptions(
-    size: Size(1440, 900),
-    minimumSize: Size(1120, 700),
+  // 屏幕比 1440x900 小时收缩初始尺寸: 否则居中后标题栏(最小化/最大化/关闭)顶出屏幕外
+  var size = const Size(1440, 900);
+  try {
+    final d = await ScreenRetriever.instance.getPrimaryDisplay();
+    final avail = d.visibleSize ?? d.size;
+    size = Size(
+      math.min(size.width, math.max(avail.width - 40, 800)),
+      math.min(size.height, math.max(avail.height - 40, 560)),
+    );
+  } catch (_) {}
+  final opts = WindowOptions(
+    size: size,
+    minimumSize:
+        Size(math.min(1120, size.width), math.min(700, size.height)),
     center: true,
     title: '明策终端',
     backgroundColor: Color(0xFF070D1C),
   );
   windowManager.waitUntilReadyToShow(opts, () async {
     await windowManager.show();
+    // 深色标题栏由原生层 UpdateTheme 强制 (win32_window.cpp);
+    // 不要用 windowManager.setBrightness: 其实现是 系统深色&&请求dark 才生效,
+    // 浅色系统上反而会把标题栏刷回浅色.
     await windowManager.focus();
   });
   await AuthStore.I.init();

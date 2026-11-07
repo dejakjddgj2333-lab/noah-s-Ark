@@ -47,6 +47,9 @@ class ApiClient {
       (await _dio.get(path, queryParameters: params)).data;
   Future<dynamic> _post(String path, [Object? data]) async =>
       (await _dio.post(path, data: data)).data;
+  Future<dynamic> _put(String path, [Object? data]) async =>
+      (await _dio.put(path, data: data)).data;
+  Future<dynamic> _delete(String path) async => (await _dio.delete(path)).data;
 
   // ---------- Auth ----------
   Future<dynamic> login(String username, String password) => _post(
@@ -118,6 +121,30 @@ class ApiClient {
   // Peer read cursor: direct chats return peer_last_read_message_id.
   Future<dynamic> peerReadState(int conversationId) =>
       _get('/chat/conversations/$conversationId/read-state');
+
+  // ---------- Chat 好友 / 群组管理 (对齐 web-terminal chatApi) ----------
+  Future<dynamic> searchUsers(String q) => _get('/chat/users/search', {'q': q});
+  Future<dynamic> friends() => _get('/chat/friends');
+  Future<dynamic> friendRequests() => _get('/chat/friends/requests');
+  Future<dynamic> friendRequest(int toUserId) =>
+      _post('/chat/friends/request', {'to_user_id': toUserId});
+  Future<dynamic> friendAccept(int fromUserId) =>
+      _post('/chat/friends/accept', {'from_user_id': fromUserId});
+  Future<dynamic> friendReject(int fromUserId) =>
+      _post('/chat/friends/reject', {'from_user_id': fromUserId});
+  Future<dynamic> friendRemove(int userId) => _delete('/chat/friends/$userId');
+  Future<dynamic> createDirect(int otherUserId) =>
+      _post('/chat/conversations/direct', {'other_user_id': otherUserId});
+  Future<dynamic> createGroup(String name, List<int> memberIds) =>
+      _post('/chat/conversations/group', {'name': name, 'member_ids': memberIds});
+  Future<dynamic> deleteConversation(int conversationId) =>
+      _delete('/chat/conversations/$conversationId');
+  Future<dynamic> renameGroup(int conversationId, String name) =>
+      _put('/chat/conversations/$conversationId', {'name': name});
+  Future<dynamic> addChatMember(int conversationId, int userId) =>
+      _post('/chat/conversations/$conversationId/members', {'user_id': userId});
+  Future<dynamic> removeChatMember(int conversationId, int userId) =>
+      _delete('/chat/conversations/$conversationId/members/$userId');
 
   // ---------- Account / products / orders ----------
   Future<dynamic> depositAccount() => _get('/deposit/account');

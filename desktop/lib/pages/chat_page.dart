@@ -10,6 +10,7 @@ import '../state/auth_store.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
+import 'chat_friends.dart';
 
 /// 聊天 WebSocket 单例: JWT 鉴权 / 25s 心跳 / 指数退避重连 / 事件订阅.
 /// 协议对齐 web-terminal/src/utils/chatWs.js; 事件 type: message / read / ping(忽略).
@@ -164,6 +165,9 @@ class _ChatPageState extends State<ChatPage> {
   bool _searchOpen = false;
   final _searchCtrl = TextEditingController();
 
+  // ---------- 好友 / 群组管理 (对齐 Chat.vue) ----------
+  int _pendingFriendReqs = 0; // 待处理好友申请数 (侧栏角标)
+
   // ---------- 输入工具: emoji 面板 (对齐 Chat.vue EMOJIS) ----------
   bool _showEmoji = false;
   static const _emojis = [
@@ -184,10 +188,15 @@ class _ChatPageState extends State<ChatPage> {
     _ChatWs.I.live.addListener(_onWsLiveChanged);
     _ChatWs.I.on('message', _onWsMessage);
     _ChatWs.I.on('read', _onWsRead);
+    _ChatWs.I.on('friend_request', _onWsFriendRequest);
+    _ChatWs.I.on('group_updated', _onWsGroupChanged);
+    _ChatWs.I.on('member_added', _onWsGroupChanged);
+    _ChatWs.I.on('member_removed', _onWsGroupChanged);
     AuthStore.I.addListener(_onAuthChanged);
     _timer = Timer.periodic(const Duration(seconds: 5), (_) => _poll());
     _draft.addListener(_onDraftChanged);
     _loadPinned();
+    _loadFriendReqCount();
   }
 
   @override
@@ -195,6 +204,10 @@ class _ChatPageState extends State<ChatPage> {
     _ChatWs.I.live.removeListener(_onWsLiveChanged);
     _ChatWs.I.off('message', _onWsMessage);
     _ChatWs.I.off('read', _onWsRead);
+    _ChatWs.I.off('friend_request', _onWsFriendRequest);
+    _ChatWs.I.off('group_updated', _onWsGroupChanged);
+    _ChatWs.I.off('member_added', _onWsGroupChanged);
+    _ChatWs.I.off('member_removed', _onWsGroupChanged);
     _ChatWs.I.disconnect();
     AuthStore.I.removeListener(_onAuthChanged);
     _timer?.cancel();
@@ -398,6 +411,196 @@ class _ChatPageState extends State<ChatPage> {
     if (id == null) return;
     if (_peerReadId == null || id > _peerReadId!) {
       setState(() => _peerReadId = id);
+    }
+  }
+
+  // ---------- 好友 / 群组管理 (对齐 Chat.vue) ----------
+
+  void _toast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+  }
+
+  /// 待处理好友申请角标数 (静默).
+  Future<void> _loadFriendReqCount() async {
+    try {
+      final r = await ApiClient.I.friendRequests();
+      final n = r is List ? r.length : 0;
+      if (mounted) setState(() => _pendingFriendReqs = n);
+    } catch (_) {}
+  }
+
+  /// type=friend_request: 收到新好友申请, 刷角标 + 提示.
+  void _onWsFriendRequest(Map<String, dynamic> ev) {
+    if (!mounted) return;
+    _loadFriendReqCount();
+    _toast('收到新的好友申请');
+  }
+
+  /// type=group_updated/member_added/member_removed: 群变更 (改名/加人/踢人).
+  void _onWsGroupChanged(Map<String, dynamic> ev) {
+    if (!mounted) return;
+    _loadConversations();
+    final cur = _current;
+    if (cur == null || '${ev['conversation_id']}' != '${cur['id']}') return;
+    if (ev['type'] == 'group_updated' && ev['name'] != null) {
+      setState(() {
+        cur['name'] = ev['name'];
+        cur['title'] = ev['name']; // _convTitle 优先读 title
+      });
+    }
+    _loadMembers((cur['id'] as num).toInt());
+    // 我被踢出当前群: 清空并回列表
+    final my = _myId;
+    if (ev['type'] == 'member_removed' && my != null && '${ev['user_id']}' == '$my') {
+      setState(() {
+        _current = null;
+        _messages = [];
+        _members = [];
+      });
+      _toast('你已被移出该群聊');
+    }
+  }
+
+  /// 我在当前群的角色; 仅群主可改名/踢人 (对齐 Chat.vue amOwner).
+  String get _myRole {
+    final my = _myId;
+    if (my == null) return '';
+    for (final m in _members) {
+      if ('${m['user_id'] ?? m['id']}' == '$my') return '${m['role'] ?? ''}';
+    }
+    return '';
+  }
+
+  bool get _amOwner => _myRole == 'owner';
+
+  Future<void> _openFriends({String tab = 'list'}) async {
+    await showFriendDialog(context, initialTab: tab, onChatWith: _chatWith);
+    _loadFriendReqCount(); // 对话框里可能处理过申请
+  }
+
+  /// 发起单聊: 复用后端已有会话, 成功后跳进去 (对齐 Chat.vue chatWith).
+  Future<void> _chatWith(Map<String, dynamic> u) async {
+    final uid = (u['id'] as num?)?.toInt();
+    if (uid == null) return;
+    try {
+      final conv = await ApiClient.I.createDirect(uid);
+      await _loadConversations();
+      final cid = conv is Map ? conv['id'] : null;
+      final c = _convs.firstWhere((x) => '${x['id']}' == '$cid',
+          orElse: () => {});
+      if (c.isNotEmpty) await _select(c);
+    } on ApiException catch (e) {
+      _toast(e.message);
+    } catch (_) {
+      _toast('发起会话失败');
+    }
+  }
+
+  Future<void> _openGroupCreate() async {
+    await showGroupCreateDialog(context, onCreated: (cid) async {
+      await _loadConversations();
+      final c = _convs.firstWhere((x) => '${x['id']}' == '$cid',
+          orElse: () => {});
+      if (c.isNotEmpty) await _select(c);
+      _toast('群聊已创建');
+    });
+  }
+
+  /// 退出群聊 (群) / 删除会话 (单聊对我隐藏, 对齐 Chat.vue leaveConv).
+  Future<void> _leaveConv() async {
+    final c = _current;
+    if (c == null) return;
+    final isGroup = c['type'] == 'group';
+    final ok = await confirmMcDialog(
+        context, isGroup ? '确定退出该群聊吗?' : '确定删除该会话吗?');
+    if (ok != true) return;
+    try {
+      await ApiClient.I.deleteConversation((c['id'] as num).toInt());
+      setState(() {
+        _current = null;
+        _messages = [];
+        _members = [];
+      });
+      _loadConversations();
+    } on ApiException catch (e) {
+      _toast(e.message);
+    } catch (_) {
+      _toast('操作失败');
+    }
+  }
+
+  /// 改群名 (仅群主).
+  Future<void> _renameGroup() async {
+    final c = _current;
+    if (c == null || !_amOwner) return;
+    final ctrl = TextEditingController(text: '${c['name'] ?? c['title'] ?? ''}');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Mc.surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Mc.hairline)),
+        title: Text('修改群名', style: Mc.display(15)),
+        content: McInput(controller: ctrl, hint: '群名称'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('取消', style: Mc.body(12, color: Mc.muted)),
+          ),
+          McButton('保存',
+              height: 32,
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim())),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || name.isEmpty) return;
+    try {
+      await ApiClient.I.renameGroup((c['id'] as num).toInt(), name);
+      setState(() {
+        c['name'] = name;
+        c['title'] = name;
+      });
+      _loadConversations();
+      _toast('群名已修改');
+    } on ApiException catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  void _openAddMember() {
+    final c = _current;
+    if (c == null || c['type'] != 'group') return;
+    showAddMemberDialog(context,
+        convId: (c['id'] as num).toInt(),
+        members: _members,
+        onAdded: () {
+          _loadMembers((c['id'] as num).toInt());
+          _toast('已添加成员');
+        });
+  }
+
+  /// 移出成员 (仅群主, 对齐 Chat.vue kickMember).
+  Future<void> _kickMember(Map<String, dynamic> m) async {
+    final c = _current;
+    final uid = m['user_id'] ?? m['id'];
+    if (c == null || uid == null) return;
+    final ok =
+        await confirmMcDialog(context, '确定将 ${_memberName(m)} 移出群聊吗?');
+    if (ok != true) return;
+    try {
+      await ApiClient.I
+          .removeChatMember((c['id'] as num).toInt(), (uid as num).toInt());
+      setState(() =>
+          _members.removeWhere((x) => '${x['user_id'] ?? x['id']}' == '$uid'));
+      _toast('已移出成员');
+    } on ApiException catch (e) {
+      _toast(e.message);
+    } catch (_) {
+      _toast('移除失败');
     }
   }
 
@@ -690,7 +893,25 @@ class _ChatPageState extends State<ChatPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const McTag('ONLINE', color: Mc.bull),
+            Row(children: [
+              const McTag('ONLINE', color: Mc.bull),
+              const Spacer(),
+              InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: _openAddMember,
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.person_add_alt,
+                        size: 13, color: Mc.cobaltSoft),
+                    const SizedBox(width: 3),
+                    Text('添加',
+                        style: Mc.body(10,
+                            w: FontWeight.w600, color: Mc.cobaltSoft)),
+                  ]),
+                ),
+              ),
+            ]),
             const SizedBox(height: 4),
             Text('在线成员 (${list.length})', style: Mc.display(14)),
           ]),
@@ -712,6 +933,11 @@ class _ChatPageState extends State<ChatPage> {
                     online: _isOnlineMember(list[i]),
                     isMe: '${list[i]['user_id'] ?? list[i]['id']}' == '$_myId',
                     onTap: () => _pickMember(list[i]),
+                    // 群主可踢人 (不踢自己), 对齐 Chat.vue kickMember
+                    onKick: _amOwner &&
+                            '${list[i]['user_id'] ?? list[i]['id']}' != '$_myId'
+                        ? () => _kickMember(list[i])
+                        : null,
                   ),
                 ),
         ),
@@ -824,11 +1050,40 @@ class _ChatPageState extends State<ChatPage> {
               const SizedBox(height: 4),
               Text('情报频道', style: Mc.display(15)),
             ]),
-            IconButton(
-              icon: const Icon(Icons.refresh, size: 18, color: Mc.muted),
-              tooltip: '刷新会话',
-              onPressed: _loadConversations,
-            ),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              // 好友 (有待处理申请时带角标)
+              Stack(clipBehavior: Clip.none, children: [
+                IconButton(
+                  icon: const Icon(Icons.people_outline,
+                      size: 18, color: Mc.muted),
+                  tooltip: '好友 (列表/申请/搜索添加)',
+                  onPressed: _openFriends,
+                ),
+                if (_pendingFriendReqs > 0)
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: IgnorePointer(
+                      child: McBadge(
+                          _pendingFriendReqs > 99
+                              ? '99+'
+                              : '$_pendingFriendReqs',
+                          color: Mc.bear),
+                    ),
+                  ),
+              ]),
+              IconButton(
+                icon: const Icon(Icons.group_add_outlined,
+                    size: 18, color: Mc.muted),
+                tooltip: '创建群聊',
+                onPressed: _openGroupCreate,
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 18, color: Mc.muted),
+                tooltip: '刷新会话',
+                onPressed: _loadConversations,
+              ),
+            ]),
           ]),
         ),
         const Divider(height: 1, color: Mc.hairline),
@@ -882,6 +1137,28 @@ class _ChatPageState extends State<ChatPage> {
               style: Mc.mono(11, color: Mc.muted)),
           const SizedBox(width: 10),
           _buildPinButton(c),
+          if (c != null && c['type'] == 'group') ...[
+            IconButton(
+              icon: const Icon(Icons.person_add_alt, size: 18, color: Mc.muted),
+              tooltip: '添加成员 (从好友中选择)',
+              onPressed: _openAddMember,
+            ),
+            if (_amOwner)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Mc.muted),
+                tooltip: '修改群名',
+                onPressed: _renameGroup,
+              ),
+          ],
+          if (c != null)
+            IconButton(
+              icon: Icon(
+                  c['type'] == 'group' ? Icons.logout : Icons.delete_outline,
+                  size: 18,
+                  color: Mc.muted),
+              tooltip: c['type'] == 'group' ? '退出群聊' : '删除会话',
+              onPressed: _leaveConv,
+            ),
           IconButton(
             icon: Icon(Icons.search,
                 size: 18, color: _searchOpen ? Mc.cobaltSoft : Mc.muted),
@@ -1377,12 +1654,16 @@ class _MemberTile extends StatelessWidget {
     required this.online,
     required this.isMe,
     required this.onTap,
+    this.onKick,
   });
   final String name;
   final String badge;
   final bool online;
   final bool isMe;
   final VoidCallback onTap;
+
+  /// 群主可见的移出按钮; null 不显示.
+  final VoidCallback? onKick;
 
   @override
   Widget build(BuildContext context) {
@@ -1415,6 +1696,16 @@ class _MemberTile extends StatelessWidget {
                       ],
                     ]),
               ),
+              if (onKick != null)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onKick,
+                  child: const Padding(
+                    padding: EdgeInsets.all(3),
+                    child: Icon(Icons.person_remove_outlined,
+                        size: 14, color: Mc.bear),
+                  ),
+                ),
               Container(
                 width: 7,
                 height: 7,
