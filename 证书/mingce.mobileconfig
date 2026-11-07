@@ -26203,17 +26203,17 @@
 			<key>PayloadDisplayName</key>
 			<string>Web Clip</string>
 			<key>PayloadIdentifier</key>
-			<string>com.apple.webClip.managed.613F64AB-62CE-4B8C-8BAD-7EB3EAAE18FB</string>
+			<string>com.apple.webClip.managed.C42FFA0E-0EEA-4C14-A051-AD7D8FF2B705</string>
 			<key>PayloadType</key>
 			<string>com.apple.webClip.managed</string>
 			<key>PayloadUUID</key>
-			<string>613F64AB-62CE-4B8C-8BAD-7EB3EAAE18FB</string>
+			<string>C42FFA0E-0EEA-4C14-A051-AD7D8FF2B705</string>
 			<key>PayloadVersion</key>
 			<integer>1</integer>
 			<key>Precomposed</key>
 			<true/>
 			<key>URL</key>
-			<string>m.mingcevip.com</string>
+			<string>https://m.mingcevip.com</string>
 		</dict>
 	</array>
 	<key>PayloadDisplayName</key>
@@ -26225,7 +26225,7 @@
 	<key>PayloadType</key>
 	<string>Configuration</string>
 	<key>PayloadUUID</key>
-	<string>124305CA-77D8-48EA-AEF5-F1CD2CA58711</string>
+	<string>33ACC6E3-4090-4C2D-B41B-16A307880A3D</string>
 	<key>PayloadVersion</key>
 	<integer>1</integer>
 </dict>
