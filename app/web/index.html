@@ -12,6 +12,25 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <!-- viewport-fit=cover 让 iOS 报告安全区 (env(safe-area-inset-*)), 否则 Web Clip
+       全屏下底部横条遮挡 Tab 栏. Flutter 引擎启动后会接管 viewport meta, 用
+       MutationObserver 保证 viewport-fit=cover 不被引擎覆盖丢掉. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>
+    (function () {
+      function ensureViewportFit() {
+        var m = document.querySelector('meta[name="viewport"]')
+        if (!m) return
+        if (!/viewport-fit\s*=\s*cover/.test(m.content)) {
+          m.content = m.content.replace(/,?\s*viewport-fit\s*=\s*\w+/, '') + ', viewport-fit=cover'
+        }
+      }
+      new MutationObserver(ensureViewportFit).observe(document.head, {
+        subtree: true, childList: true, attributes: true, attributeFilter: ['content']
+      })
+      ensureViewportFit()
+    })()
+  </script>
   <meta name="description" content="明策 MINGCE 市场情报终端">
 
   <!-- iOS meta tags & icons -->
