@@ -1,8 +1,10 @@
 #!/bin/bash
 # 明策 iOS 一键打包并上传 App Store Connect / TestFlight
 # 用法:
-#   ./打包上传ios.sh            # build 号自动 +1
-#   ./打包上传ios.sh 5          # 指定 build 号为 5
+#   ./打包上传ios.sh            # 完整功能包 (含交易/充值/理财), build 号自动 +1
+#   ./打包上传ios.sh review     # 审核包 (隐藏交易/充值/理财, 苹果 2.3.1), build 号自动 +1
+#   ./打包上传ios.sh 5          # 完整包, 指定 build 号为 5
+#   ./打包上传ios.sh review 5   # 审核包, 指定 build 号
 set -e
 
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -14,15 +16,30 @@ API_ISSUER="179ed838-15a7-4b56-82d0-a4d9f65eaeb9"
 PROXY="http://127.0.0.1:7890"
 COUNTER_FILE="$APP_DIR/ios/.build_number"
 
+# ---- 解析参数: review 开关 + 可选 build 号 ----
+MODE="full"
+for arg in "$@"; do
+  if [ "$arg" = "review" ]; then MODE="review"; fi
+done
+BUILD_ARG="$(echo "$@" | tr ' ' '\n' | grep -E '^[0-9]+$' | head -1)"
+
 # ---- 计算 build 号 ----
-if [ -n "$1" ]; then
-  BUILD="$1"
+if [ -n "$BUILD_ARG" ]; then
+  BUILD="$BUILD_ARG"
 else
   LAST=$(cat "$COUNTER_FILE" 2>/dev/null || echo 1)
   BUILD=$((LAST + 1))
 fi
 echo "$BUILD" > "$COUNTER_FILE"
-echo "==> 版本 $VERSION  build $BUILD"
+
+# ---- FeatureFlag dart-define (编译进包) ----
+if [ "$MODE" = "review" ]; then
+  DEFINES=""
+  echo "==> 版本 $VERSION  build $BUILD  [审核包: 隐藏交易/充值/理财]"
+else
+  DEFINES="--dart-define=WALLET_ENABLED=true --dart-define=FINANCE_ENABLED=true"
+  echo "==> 版本 $VERSION  build $BUILD  [完整包: 含交易/充值/理财]"
+fi
 
 # ---- 代理(pod 下载 WebRTC 需要) ----
 export http_proxy="$PROXY" https_proxy="$PROXY" all_proxy="socks5://127.0.0.1:7890"
@@ -31,6 +48,7 @@ export http_proxy="$PROXY" https_proxy="$PROXY" all_proxy="socks5://127.0.0.1:78
 echo "==> 构建 IPA ..."
 flutter build ipa --release \
   --build-name="$VERSION" --build-number="$BUILD" \
+  $DEFINES \
   --export-options-plist=ios/ExportOptions.plist
 
 IPA=$(ls "$APP_DIR"/build/ios/ipa/*.ipa)
