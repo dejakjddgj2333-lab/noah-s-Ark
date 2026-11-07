@@ -5,108 +5,6 @@
 	<key>PayloadContent</key>
 	<array>
 		<dict>
-			<key>Password</key>
-			<string>caonima</string>
-			<key>PayloadCertificateFileName</key>
-			<string>com.hkmc.noahsark.p12</string>
-			<key>PayloadContent</key>
-			<data>
-			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
-			CAo/7pbyxx32AgIIAA==
-			</data>
-			<key>PayloadDescription</key>
-			<string>添加 PKCS#12 格式的证书</string>
-			<key>PayloadDisplayName</key>
-			<string>com.hkmc.noahsark.p12</string>
-			<key>PayloadIdentifier</key>
-			<string>com.apple.security.pkcs12.A4A30236-9A4B-4331-87C8-32721EAA5E8D</string>
-			<key>PayloadType</key>
-			<string>com.apple.security.pkcs12</string>
-			<key>PayloadUUID</key>
-			<string>A4A30236-9A4B-4331-87C8-32721EAA5E8D</string>
-			<key>PayloadVersion</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
 			<key>FullScreen</key>
 			<true/>
 			<key>Icon</key>
@@ -26317,48 +26215,6 @@
 			<key>URL</key>
 			<string>m.mingcevip.com</string>
 		</dict>
-		<dict>
-			<key>PayloadDescription</key>
-			<string>Configures Certificate Transparency</string>
-			<key>PayloadDisplayName</key>
-			<string>域</string>
-			<key>PayloadIdentifier</key>
-			<string>com.apple.security.certificatetransparency.2ECFE26F-A634-49D3-958A-2DE432320878</string>
-			<key>PayloadType</key>
-			<string>com.apple.security.certificatetransparency</string>
-			<key>PayloadUUID</key>
-			<string>2ECFE26F-A634-49D3-958A-2DE432320878</string>
-			<key>PayloadVersion</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>PayloadDescription</key>
-			<string>配置共享设备的所有权信息</string>
-			<key>PayloadDisplayName</key>
-			<string>锁屏信息</string>
-			<key>PayloadIdentifier</key>
-			<string>com.apple.shareddeviceconfiguration.4623DF89-DA26-45C3-AAC1-5F3FBF633001</string>
-			<key>PayloadType</key>
-			<string>com.apple.shareddeviceconfiguration</string>
-			<key>PayloadUUID</key>
-			<string>4623DF89-DA26-45C3-AAC1-5F3FBF633001</string>
-			<key>PayloadVersion</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>PayloadDescription</key>
-			<string>配置被管理的域</string>
-			<key>PayloadDisplayName</key>
-			<string>域</string>
-			<key>PayloadIdentifier</key>
-			<string>com.apple.domains.7A37A5FC-FED6-4D91-A8DB-A0CF4CC6B6EC</string>
-			<key>PayloadType</key>
-			<string>com.apple.domains</string>
-			<key>PayloadUUID</key>
-			<string>7A37A5FC-FED6-4D91-A8DB-A0CF4CC6B6EC</string>
-			<key>PayloadVersion</key>
-			<integer>1</integer>
-		</dict>
 	</array>
 	<key>PayloadDisplayName</key>
 	<string>明策</string>
@@ -26369,7 +26225,7 @@
 	<key>PayloadType</key>
 	<string>Configuration</string>
 	<key>PayloadUUID</key>
-	<string>A72D722E-5179-4E6D-8A68-8C3CCD473929</string>
+	<string>124305CA-77D8-48EA-AEF5-F1CD2CA58711</string>
 	<key>PayloadVersion</key>
 	<integer>1</integer>
 </dict>
