@@ -31,19 +31,6 @@
       ensureViewportFit()
     })()
   </script>
-  <script>
-    // iOS/iPadOS 26.1 Web Clip 全屏回归 bug (WebKit#301994):
-    // env(safe-area-inset-top) 恒为 0 且状态栏不透明压住页面, 顶部按钮点不到.
-    // 检测 26.1 + standalone (Web Clip) 后写全局值, Dart 侧 McAppHeader 读取
-    // 并手动补顶部间距. 26.2 已修复, 此补偿只命中 26.1.
-    (function () {
-      var standalone = window.navigator.standalone === true ||
-        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-      if (/OS 26_1/.test(navigator.userAgent) && standalone) {
-        window.__mcIos261TopInset = 59 // 灵动岛机型状态栏高 59pt, 刘海 47pt 多补一点无碍
-      }
-    })()
-  </script>
   <meta name="description" content="明策 MINGCE 市场情报终端">
 
   <!-- iOS meta tags & icons -->
