@@ -44,6 +44,32 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <!-- 文档底色与主题色一致: 状态栏透出区/启动首帧/回退路径都不再露白 -->
   <style>html, body { background-color: #070D1C; }</style>
+  <script>
+    // WebKit#301994 (26.1 出现, 26.2 修复, 26.5+/27 复发) 的两种表现:
+    //   A. 系统画白块把网页下推 (26.1) — 无需补偿
+    //   B. 网页顶到屏幕顶端, 状态栏浮盖 header, 顶部按钮点不到 (复发版)
+    // 运行时探测: black-translucent 下健康系统必上报非零 inset-top,
+    // 报 0 即中 bug. 被盖高度 = screen.height - innerHeight, 写入全局值,
+    // Dart 侧 McAppHeader 读取并手动下推顶栏.
+    (function () {
+      try {
+        var ua = navigator.userAgent
+        if (!/iPhone|iPod|iPad/.test(ua)) return
+        var standalone = window.navigator.standalone === true ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        if (!standalone) return
+        if (/OS 26_[12]_/.test(ua)) return // 26.1 为表现A(下推), 26.2 已修复
+        var probe = document.createElement('div')
+        probe.style.cssText = 'position:absolute;top:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)'
+        document.documentElement.appendChild(probe)
+        var inset = parseFloat(getComputedStyle(probe).paddingTop) || 0
+        probe.remove()
+        if (inset > 0) return // 系统正常上报, Flutter SafeArea 自处理
+        var gap = window.screen.height - window.innerHeight
+        window.__mcTopCover = (gap >= 40 && gap <= 80) ? gap : 59
+      } catch (e) { /* 探测失败静默 */ }
+    })()
+  </script>
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>

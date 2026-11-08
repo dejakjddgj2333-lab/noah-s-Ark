@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:js_interop';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -428,13 +429,33 @@ class _LoginGate extends StatelessWidget {
   }
 }
 
+/// index.html 在 iOS 状态栏浮盖 bug (WebKit#301994 表现B) 下写入的
+/// 被盖高度 (px), 详见 index.html 探测逻辑.
+@JS('__mcTopCover')
+external JSNumber? get _jsTopCover;
+
+/// iOS standalone 状态栏浮盖补偿: 系统 inset-top 归 0 且 header 被盖住时,
+/// 用 JS 侧实测的 screen.innerHeight 差值手动下推顶栏; 健康系统返回 0.
+double _topCoverInset() {
+  if (!kIsWeb) return 0;
+  try {
+    return _jsTopCover?.toDartDouble ?? 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
 /// Shared top header: brand logo + sync status + avatar. h=56, cobalt blur bar.
 class McAppHeader extends StatelessWidget {
   const McAppHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // 正常机型 inset 由 SafeArea 处理; 中 bug (inset=0) 时手动下推顶栏
+    final extraTop =
+        MediaQuery.of(context).padding.top <= 0 ? _topCoverInset() : 0.0;
     return Container(
+      padding: EdgeInsets.only(top: extraTop),
       decoration: BoxDecoration(
         color: McColors.surface.withValues(alpha: 0.9),
         border: Border(
