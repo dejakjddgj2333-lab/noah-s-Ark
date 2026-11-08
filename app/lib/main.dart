@@ -555,6 +555,14 @@ class McAppHeader extends StatelessWidget {
   }
 }
 
+/// 底部导航避让量: 常规手势条 inset (iOS ~34 / 安卓手势 ~24) 只留 10px,
+/// 超大 inset (>40, 安卓三键导航不透明按键条) 全量保留以免挡点击.
+double _bottomPad(BuildContext context) {
+  final inset = MediaQuery.of(context).padding.bottom;
+  if (inset > 40) return inset;
+  return inset > 0 ? 10 : 0;
+}
+
 /// Bottom nav: 首页 / 资讯 / [理财(编译期开关)] / 聊天(动态未读角标) / 我的. h=56, blur dark bar.
 class McBottomNav extends StatelessWidget {
   const McBottomNav({super.key, required this.current, required this.onTap});
@@ -576,8 +584,11 @@ class McBottomNav extends StatelessWidget {
           BoxShadow(color: Colors.black54, blurRadius: 24, offset: Offset(0, -4)),
         ],
       ),
-      child: SafeArea(
-        top: false,
+      child: Padding(
+        // 底部最多留 10px: iOS 手势条 inset ~34px 全量保留是一条死空
+        // (指示条自动隐藏后空间不回收), 手势条半透明遮住一点 tab 可接受.
+        // 例外: 超大 inset (>40, 安卓三键导航 ~48) 不透明且会挡点击, 全量避让.
+        padding: EdgeInsets.only(bottom: _bottomPad(context)),
         child: SizedBox(
           height: 56,
           child: Row(
