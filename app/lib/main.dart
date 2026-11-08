@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:js_interop';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -428,13 +429,32 @@ class _LoginGate extends StatelessWidget {
   }
 }
 
+/// index.html 在 iOS 26.1 Web Clip 下写入的全局补偿值 (px), 见 WebKit#301994.
+@JS('__mcIos261TopInset')
+external JSNumber? get _jsIos261TopInset;
+
+/// iOS 26.1 standalone bug: env(safe-area-inset-top)=0 且状态栏不透明压住顶栏,
+/// 顶部按钮点不到. SafeArea 读到 0 时改用 JS 侧写入的手动补偿 (59pt).
+double _ios261TopInset() {
+  if (!kIsWeb) return 0;
+  try {
+    return _jsIos261TopInset?.toDartDouble ?? 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
 /// Shared top header: brand logo + sync status + avatar. h=56, cobalt blur bar.
 class McAppHeader extends StatelessWidget {
   const McAppHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // 正常机型 inset 由 SafeArea 处理; iOS 26.1 inset=0 时手动下推顶栏
+    final extraTop =
+        MediaQuery.of(context).padding.top <= 0 ? _ios261TopInset() : 0.0;
     return Container(
+      padding: EdgeInsets.only(top: extraTop),
       decoration: BoxDecoration(
         color: McColors.surface.withValues(alpha: 0.9),
         border: Border(
