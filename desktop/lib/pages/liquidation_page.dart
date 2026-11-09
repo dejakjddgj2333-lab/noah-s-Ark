@@ -460,6 +460,14 @@ class _LiquidationPageState extends State<LiquidationPage> {
       maxSum = math.max(maxSum, b.longs[i] + b.shorts[i]);
     }
     if (maxSum <= 0) return const McEmpty('当前窗口暂无爆仓');
+    final maxY = maxSum * 1.15;
+    // 取整刻度间隔: 自动 interval 会在顶部 maxY 多画一个标签, 与邻近刻度重叠
+    const steps = [
+      1e5, 2e5, 5e5, 1e6, 2e6, 5e6, 1e7, 2e7, 5e7,
+      1e8, 2e8, 5e8, 1e9, 2e9, 5e9, 1e10,
+    ];
+    final yInterval = steps.firstWhere((s) => s >= maxY / 4,
+        orElse: () => maxY / 4);
     final barW = switch (_gran) {
       '1H' => 14.0,
       '4H' => 10.0,
@@ -467,10 +475,11 @@ class _LiquidationPageState extends State<LiquidationPage> {
     };
     final labelEvery = (b.labels.length / 6).ceil();
     return BarChart(BarChartData(
-      maxY: maxSum * 1.15,
+      maxY: maxY,
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
+        horizontalInterval: yInterval,
         getDrawingHorizontalLine: (v) => FlLine(
             color: Mc.hairline.withValues(alpha: 0.3),
             strokeWidth: 0.5,
@@ -513,6 +522,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 44,
+            interval: yInterval,
             getTitlesWidget: (v, meta) => Text(Fmt.compact(v),
                 style: Mc.mono(9, color: Mc.muted)),
           ),
