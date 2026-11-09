@@ -391,7 +391,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
     });
   }
 
-  // ---------- ROW 2: 分布柱状图 + 环图 / ROW 3: 交易所热力分布 ----------
+  // ---------- ROW 2: 分布柱状图 + 热力分布 + 环图 (宽屏一行三等分) ----------
   void _onGranChanged(String v) {
     setState(() {
       _gran = v;
@@ -405,8 +405,8 @@ class _LiquidationPageState extends State<LiquidationPage> {
     return LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth > 980;
       final dist = _distCard();
-      final donut = _donutCard();
       final heat = _heatmapCard();
+      final donut = _donutCard();
       if (!wide) {
         return Column(children: [
           dist,
@@ -416,11 +416,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
           donut,
         ]);
       }
-      return Column(children: [
-        McRow(spans: const [8, 4], children: [dist, donut]),
-        const SizedBox(height: 16),
-        heat,
-      ]);
+      return McRow(spans: const [4, 4, 4], children: [dist, heat, donut]);
     });
   }
 
@@ -551,8 +547,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
           const Expanded(
             child: McSection('交易所爆仓热力分布', tag: 'EXCHANGE HEATMAP'),
           ),
-          Text('窗口 $_gran · 随分布图粒度联动',
-              style: Mc.mono(10, color: Mc.muted)),
+          Text('窗口 $_gran', style: Mc.mono(10, color: Mc.muted)),
         ]),
         const SizedBox(height: 12),
         SizedBox(

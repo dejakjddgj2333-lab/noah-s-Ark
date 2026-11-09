@@ -336,10 +336,10 @@ onBeforeUnmount(() => clearInterval(timer))
       </div>
     </section>
 
-    <!-- ROW 2: CHARTS & ANALYTICS (GRID 8:4) -->
+    <!-- ROW 2: CHARTS & ANALYTICS (一行三等分) -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <!-- LEFT: 爆仓分布堆叠柱状图 (8 COLS) -->
-      <div class="lg:col-span-8 bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between">
+      <!-- LEFT: 爆仓分布堆叠柱状图 (4 COLS) -->
+      <div class="lg:col-span-4 bg-card-navy border border-hairline rounded-xl p-5 flex flex-col justify-between">
         <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-hairline/60">
           <div class="flex items-center gap-3">
             <span class="text-headline-sm font-headline-sm text-ink-white font-semibold">爆仓分布 (LIQUIDATION TIMELINE)</span>
@@ -367,6 +367,27 @@ onBeforeUnmount(() => clearInterval(timer))
         </div>
         <div class="mt-4 pt-2">
           <EChart :option="chartOption" height="220px" />
+        </div>
+      </div>
+
+      <!-- MIDDLE: 交易所爆仓热力分布 TREEMAP (4 COLS) -->
+      <div class="lg:col-span-4 bg-card-navy border border-hairline rounded-xl p-5 flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-hairline/60">
+          <span class="text-headline-sm font-headline-sm text-ink-white font-semibold">交易所热力分布</span>
+          <span class="text-label-sm font-mono-data text-steel-muted uppercase">{{ gran }} HEATMAP</span>
+        </div>
+        <div class="mt-4 pt-2 flex-1">
+          <EChart v-if="exRows.length" :option="heatmapOption" height="220px" />
+          <div v-else class="text-steel-muted font-mono-data text-xs py-16 text-center">当前窗口暂无爆仓</div>
+        </div>
+        <div class="flex items-center gap-3 pt-3 mt-2 border-t border-hairline/60 text-label-sm font-mono-data">
+          <span class="flex items-center gap-1.5 text-bull-green">
+            <span class="w-2.5 h-2.5 bg-bull-green rounded-sm"></span> 多头主导
+          </span>
+          <span class="flex items-center gap-1.5 text-bear-red">
+            <span class="w-2.5 h-2.5 bg-bear-red rounded-sm"></span> 空头主导
+          </span>
+          <span class="ml-auto text-steel-muted">面积 ∝ 爆仓额</span>
         </div>
       </div>
 
@@ -412,29 +433,6 @@ onBeforeUnmount(() => clearInterval(timer))
             <span class="text-ink-white font-medium">{{ longPct != null && longPct >= 50 ? '多头去杠杆 · 注意回踩风险' : '空头逼仓 · 注意反弹风险' }}</span>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- ROW 2.5: 交易所爆仓热力分布 (EXCHANGE HEATMAP) -->
-    <section class="bg-card-navy border border-hairline rounded-xl p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-hairline/60">
-        <div class="flex items-center gap-3">
-          <span class="text-headline-sm font-headline-sm text-ink-white font-semibold">交易所爆仓热力分布 (EXCHANGE HEATMAP)</span>
-          <span class="text-label-sm font-label-sm text-steel-muted">窗口 {{ gran }} · 随分布图粒度联动</span>
-        </div>
-        <div class="flex items-center gap-3 text-label-sm font-mono-data">
-          <span class="flex items-center gap-1.5 text-bull-green">
-            <span class="w-2.5 h-2.5 bg-bull-green rounded-sm"></span> 多头清算主导
-          </span>
-          <span class="flex items-center gap-1.5 text-bear-red">
-            <span class="w-2.5 h-2.5 bg-bear-red rounded-sm"></span> 空头清算主导
-          </span>
-          <span class="text-steel-muted">面积 ∝ 爆仓额</span>
-        </div>
-      </div>
-      <div class="mt-4 pt-2">
-        <EChart v-if="exRows.length" :option="heatmapOption" height="260px" />
-        <div v-else class="text-steel-muted font-mono-data text-xs py-16 text-center">当前窗口暂无爆仓</div>
       </div>
     </section>
 
