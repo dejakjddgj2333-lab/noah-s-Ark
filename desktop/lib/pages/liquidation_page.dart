@@ -523,8 +523,12 @@ class _LiquidationPageState extends State<LiquidationPage> {
             showTitles: true,
             reservedSize: 44,
             interval: yInterval,
-            getTitlesWidget: (v, meta) => Text(Fmt.compact(v),
-                style: Mc.mono(9, color: Mc.muted)),
+            getTitlesWidget: (v, meta) {
+              // fl_chart 会额外在轴顶画 maxY 标签, 压到邻近刻度 → 抑制
+              if (v >= meta.max) return const SizedBox.shrink();
+              return Text(Fmt.compact(v),
+                  style: Mc.mono(9, color: Mc.muted));
+            },
           ),
         ),
       ),
