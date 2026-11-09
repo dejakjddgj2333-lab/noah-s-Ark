@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ import '../utils/format.dart';
 import '../widgets/kit.dart';
 import '../widgets/coin_icon.dart';
 
-/// 爆仓监控页: 24H 爆仓 KPI / 爆仓分布柱状图 / 多空比例环图 / 实时爆仓明细。
+/// 爆仓监控页: 24H 爆仓 KPI / 爆仓分布柱状图 / 交易所热力分布 / 多空比例环图 / 实时爆仓明细。
 /// 数据组织参考 web-terminal/src/views/Liquidation.vue。
 class LiquidationPage extends StatefulWidget {
   const LiquidationPage({super.key});
@@ -24,6 +25,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
 
   List<dynamic> _events = const [];
   List<dynamic> _coins = const [];
+  Map<String, dynamic>? _tl; // 爆仓分布时间序列 (服务端全窗口聚合)
   // 交易所爆仓热力分布 (exchange-list, 按当前粒度拉取)
   List<({String name, double total, double long, double short})> _exRows =
       const [];
@@ -60,6 +62,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
       _safe(api.liqRecent(limit: 50)),
       _safe(api.liqCoinList()),
       _safe(api.liqExchangeList(range: _gran.toLowerCase())),
+      _safe(api.liqTimeline(range: _gran.toLowerCase())),
     ]);
     if (!mounted) return;
     setState(() {
@@ -67,6 +70,9 @@ class _LiquidationPageState extends State<LiquidationPage> {
       if (r[1] is Map && r[1]['coins'] is List) _coins = r[1]['coins'] as List;
       final rows = _parseExList(r[2]);
       if (rows.isNotEmpty) _exRows = rows;
+      if (r[3] is Map && r[3]['longs'] is List) {
+        _tl = Map<String, dynamic>.from(r[3] as Map);
+      }
       _fatal = _events.isEmpty && _coins.isEmpty;
       _loading = false;
     });
@@ -139,6 +145,67 @@ class _LiquidationPageState extends State<LiquidationPage> {
           .toList();
     }
     return _events.where((e) => _coinOf(e['symbol']) == _filter).toList();
+  }
+
+  // ---------- 分布分桶 ----------
+  ({List<String> labels, List<double> longs, List<double> shorts}) _buckets() {
+    // 优先用服务端全窗口聚合; 接口不可用时回退到 recent 事件本地分桶
+    // (注意: recent 仅 50 条, 往往只覆盖最近几分钟, 24H 下会挤进末桶)
+    final tl = _tl;
+    if (tl != null && tl['range'] == _gran.toLowerCase()) {
+      final longs = [
+        for (final v in tl['longs'] as List) (Fmt.toNum(v) ?? 0).toDouble()
+      ];
+      final shorts = [
+        for (final v in tl['shorts'] as List) (Fmt.toNum(v) ?? 0).toDouble()
+      ];
+      final start = (Fmt.toNum(tl['start_ts']) ?? 0).toDouble();
+      final bucket = (Fmt.toNum(tl['bucket_sec']) ?? 3600) * 1000;
+      String p(int x) => x.toString().padLeft(2, '0');
+      final labels = [
+        for (var i = 0; i < longs.length; i++)
+          () {
+            final t = DateTime.fromMillisecondsSinceEpoch(
+                (start + i * bucket).round());
+            return '${p(t.hour)}:${p(t.minute)}';
+          }(),
+      ];
+      return (labels: labels, longs: longs, shorts: shorts);
+    }
+    final cfg = switch (_gran) {
+      '1H' => (span: 3600e3, bucket: 5 * 60e3),
+      '4H' => (span: 4 * 3600e3, bucket: 30 * 60e3),
+      _ => (span: 24 * 3600e3, bucket: 3600e3),
+    };
+    final newest = _events.fold<num>(
+        0, (m, e) => math.max(m, Fmt.toNum(e['ts']) ?? 0));
+    final now = DateTime.now().millisecondsSinceEpoch.toDouble();
+    final end = (newest > 0 && now - newest > cfg.span) ? newest : now;
+    final start = end - cfg.span;
+    final n = (cfg.span / cfg.bucket).ceil();
+    final longs = List<double>.filled(n, 0);
+    final shorts = List<double>.filled(n, 0);
+    String p(int x) => x.toString().padLeft(2, '0');
+    final labels = [
+      for (var i = 0; i < n; i++)
+        () {
+          final t =
+              DateTime.fromMillisecondsSinceEpoch((start + i * cfg.bucket).round());
+          return '${p(t.hour)}:${p(t.minute)}';
+        }(),
+    ];
+    for (final e in _events) {
+      final t = Fmt.toNum(e['ts']);
+      if (t == null || t < start) continue;
+      final i = math.min(n - 1, ((t - start) / cfg.bucket).floor());
+      final v = (Fmt.toNum(e['notional_usd']) ?? 0).toDouble();
+      if (_isLong(e)) {
+        longs[i] += v;
+      } else {
+        shorts[i] += v;
+      }
+    }
+    return (labels: labels, longs: longs, shorts: shorts);
   }
 
   // ---------- 交易所爆仓热力分布 (与 App 端一致的 treemap) ----------
@@ -324,37 +391,168 @@ class _LiquidationPageState extends State<LiquidationPage> {
     });
   }
 
-  // ---------- ROW 2: 分布图 + 环图 ----------
+  // ---------- ROW 2: 分布柱状图 + 环图 / ROW 3: 交易所热力分布 ----------
+  void _onGranChanged(String v) {
+    setState(() {
+      _gran = v;
+      _tl = null;
+      _exRows = const [];
+    });
+    _load();
+  }
+
   Widget _chartRow() {
     return LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth > 980;
       final dist = _distCard();
       final donut = _donutCard();
+      final heat = _heatmapCard();
       if (!wide) {
-        return Column(children: [dist, const SizedBox(height: 16), donut]);
+        return Column(children: [
+          dist,
+          const SizedBox(height: 16),
+          heat,
+          const SizedBox(height: 16),
+          donut,
+        ]);
       }
-      return McRow(spans: const [8, 4], children: [dist, donut]);
+      return Column(children: [
+        McRow(spans: const [8, 4], children: [dist, donut]),
+        const SizedBox(height: 16),
+        heat,
+      ]);
     });
   }
 
   Widget _distCard() {
+    final b = _buckets();
+    return McCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Expanded(
+            child: McSection('爆仓分布', tag: 'LIQUIDATION TIMELINE'),
+          ),
+          _Seg(
+            items: const [('1H', '1H'), ('4H', '4H'), ('24H', '24H')],
+            selected: _gran,
+            onChanged: _onGranChanged,
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          _LegendDot(Mc.up),
+          const SizedBox(width: 4),
+          Text('多单强平 ${Fmt.compact(_longTotal, prefix: '\$')}',
+              style: Mc.mono(10, color: Mc.up)),
+          const SizedBox(width: 12),
+          _LegendDot(Mc.down),
+          const SizedBox(width: 4),
+          Text('空单强平 ${Fmt.compact(_shortTotal, prefix: '\$')}',
+              style: Mc.mono(10, color: Mc.down)),
+        ]),
+        const SizedBox(height: 12),
+        SizedBox(height: 220, child: _distChart(b)),
+      ]),
+    );
+  }
+
+  Widget _distChart(
+      ({List<String> labels, List<double> longs, List<double> shorts}) b) {
+    if (b.labels.isEmpty) return const McEmpty('暂无分布数据');
+    var maxSum = 0.0;
+    for (var i = 0; i < b.longs.length; i++) {
+      maxSum = math.max(maxSum, b.longs[i] + b.shorts[i]);
+    }
+    if (maxSum <= 0) return const McEmpty('当前窗口暂无爆仓');
+    final barW = switch (_gran) {
+      '1H' => 14.0,
+      '4H' => 10.0,
+      _ => 7.0,
+    };
+    final labelEvery = (b.labels.length / 6).ceil();
+    return BarChart(BarChartData(
+      maxY: maxSum * 1.15,
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        getDrawingHorizontalLine: (v) => FlLine(
+            color: Mc.hairline.withValues(alpha: 0.3),
+            strokeWidth: 0.5,
+            dashArray: [4, 4]),
+      ),
+      borderData: FlBorderData(show: false),
+      barTouchData: BarTouchData(
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipColor: (_) => Mc.card,
+          getTooltipItem: (group, gi, rod, ri) {
+            final i = group.x;
+            if (i < 0 || i >= b.labels.length) return null;
+            return BarTooltipItem(
+              '${b.labels[i]}\n多单 ${Fmt.compact(b.longs[i], prefix: '\$')}\n空单 ${Fmt.compact(b.shorts[i], prefix: '\$')}',
+              Mc.mono(10),
+            );
+          },
+        ),
+      ),
+      titlesData: FlTitlesData(
+        topTitles: const AxisTitles(),
+        rightTitles: const AxisTitles(),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 22,
+            getTitlesWidget: (v, meta) {
+              final i = v.toInt();
+              if (i < 0 || i >= b.labels.length || i % labelEvery != 0) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(b.labels[i], style: Mc.mono(9, color: Mc.muted)),
+              );
+            },
+          ),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 44,
+            getTitlesWidget: (v, meta) => Text(Fmt.compact(v),
+                style: Mc.mono(9, color: Mc.muted)),
+          ),
+        ),
+      ),
+      barGroups: [
+        for (var i = 0; i < b.longs.length; i++)
+          BarChartGroupData(x: i, barRods: [
+            BarChartRodData(
+              toY: b.longs[i] + b.shorts[i],
+              width: barW,
+              color: Mc.up,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(2)),
+              rodStackItems: [
+                if (b.longs[i] > 0)
+                  BarChartRodStackItem(0, b.longs[i], Mc.up),
+                if (b.shorts[i] > 0)
+                  BarChartRodStackItem(
+                      b.longs[i], b.longs[i] + b.shorts[i], Mc.down),
+              ],
+            ),
+          ]),
+      ],
+    ));
+  }
+
+  Widget _heatmapCard() {
     return McCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Expanded(
             child: McSection('交易所爆仓热力分布', tag: 'EXCHANGE HEATMAP'),
           ),
-          _Seg(
-            items: const [('1H', '1H'), ('4H', '4H'), ('24H', '24H')],
-            selected: _gran,
-            onChanged: (v) {
-              setState(() {
-                _gran = v;
-                _exRows = const [];
-              });
-              _load();
-            },
-          ),
+          Text('窗口 $_gran · 随分布图粒度联动',
+              style: Mc.mono(10, color: Mc.muted)),
         ]),
         const SizedBox(height: 12),
         SizedBox(

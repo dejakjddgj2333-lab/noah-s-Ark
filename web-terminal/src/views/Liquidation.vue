@@ -8,6 +8,7 @@ import { fmtUsd, fmtBig, fmtPct, fmtPrice, fmtTime, coinOf } from '../utils/form
 const events = ref([])
 const coins = ref([])
 const timeline = ref(null) // 爆仓分布时间序列 (服务端全窗口聚合)
+const exRows = ref([]) // 交易所爆仓热力分布 (exchange-list, 与柱状图同粒度联动)
 const loading = ref(true)
 const assetFilter = ref('all') // all | BTC | ETH | SOL | other
 const gran = ref('24H')
@@ -106,6 +107,92 @@ const chartOption = computed(() => {
   }
 })
 
+// 交易所爆仓热力分布: exchange-list (CoinGlass / 自建聚合两种字段口径) → 按爆仓额降序
+function parseExList(raw) {
+  const list = Array.isArray(raw) ? raw : raw?.data
+  if (!Array.isArray(list)) return []
+  const num = (m, keys) => {
+    for (const k of keys) {
+      const v = Number(m[k])
+      if (Number.isFinite(v)) return v
+    }
+    return 0
+  }
+  return list
+    .map((e) => {
+      const name = String(e.exchangeName ?? e.exchange_name ?? e.exchange ?? e.name ?? '')
+      const long = num(e, ['longLiquidationUsd', 'longLiquidation_usd', 'long_liquidation_usd', 'longVolUsd', 'long_vol_usd'])
+      const short = num(e, ['shortLiquidationUsd', 'shortLiquidation_usd', 'short_liquidation_usd', 'shortVolUsd', 'short_vol_usd'])
+      let total = num(e, ['liquidationUsd', 'liquidation_usd', 'totalLiquidationUsd', 'volUsd', 'vol_usd'])
+      if (total <= 0) total = long + short
+      return { name, total, long, short }
+    })
+    .filter((r) => r.name && r.name.toLowerCase() !== 'all' && r.total > 0)
+    .sort((a, b) => b.total - a.total)
+}
+
+// 热力图 treemap: 面积 ∝ 爆仓额, 绿 = 多头清算主导 / 红 = 空头清算主导 (对齐 App/桌面端)
+const heatmapOption = computed(() => {
+  const rows = exRows.value.slice(0, 7)
+  const rest = exRows.value.slice(7)
+  if (rest.length) {
+    rows.push({
+      name: '其他',
+      total: rest.reduce((s, r) => s + r.total, 0),
+      long: rest.reduce((s, r) => s + r.long, 0),
+      short: rest.reduce((s, r) => s + r.short, 0),
+    })
+  }
+  const data = rows.map((r) => {
+    const longDom = r.long >= r.short
+    const dom = r.total ? Math.abs(r.long - r.short) / r.total : 0
+    const rgb = longDom ? '0,227,136' : '255,95,109'
+    return {
+      name: r.name,
+      value: Math.round(r.total),
+      row: r,
+      itemStyle: { color: `rgba(${rgb},${(0.55 + dom * 0.4).toFixed(2)})` },
+    }
+  })
+  return {
+    tooltip: {
+      backgroundColor: '#121D34',
+      borderColor: '#34415E',
+      textStyle: { color: '#F0F0FF', fontSize: 11, fontFamily: 'JetBrains Mono' },
+      formatter: (info) => {
+        const r = info.data?.row
+        if (!r) return info.name
+        return `${r.name}<br/>合计 ${fmtUsd(r.total)}<br/>多单 ${fmtUsd(r.long)} · 空单 ${fmtUsd(r.short)}`
+      },
+    },
+    series: [
+      {
+        type: 'treemap',
+        roam: false,
+        nodeClick: false,
+        breadcrumb: { show: false },
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        label: {
+          show: true,
+          color: '#FFFFFF',
+          fontFamily: 'JetBrains Mono',
+          fontSize: 11,
+          fontWeight: 600,
+          overflow: 'truncate',
+          formatter: (info) => `${info.name}\n${fmtUsd(info.value)}`,
+        },
+        upperLabel: { show: false },
+        itemStyle: { borderColor: '#0B1120', borderWidth: 0, gapWidth: 5, borderRadius: 6 },
+        levels: [{ itemStyle: { borderWidth: 0, gapWidth: 5, borderRadius: 6 } }],
+        data,
+      },
+    ],
+  }
+})
+
 // 多空爆仓比例环图
 const donutOption = computed(() => ({
   tooltip: { show: false },
@@ -125,14 +212,19 @@ const donutOption = computed(() => ({
 
 async function load() {
   try {
-    const [a, b, c] = await Promise.allSettled([
+    const [a, b, c, d] = await Promise.allSettled([
       overviewApi.liqRecent(50),
       overviewApi.liqCoinList(),
       overviewApi.liqTimeline(gran.value.toLowerCase()),
+      overviewApi.liqExchangeList(gran.value.toLowerCase()),
     ])
     if (a.status === 'fulfilled') events.value = a.value?.data || []
     if (b.status === 'fulfilled') coins.value = b.value?.coins || []
     if (c.status === 'fulfilled' && Array.isArray(c.value?.longs)) timeline.value = c.value
+    if (d.status === 'fulfilled') {
+      const rows = parseExList(d.value)
+      if (rows.length) exRows.value = rows
+    }
   } finally {
     loading.value = false
   }
@@ -140,6 +232,7 @@ async function load() {
 
 watch(gran, () => {
   timeline.value = null
+  exRows.value = []
   load()
 })
 
@@ -319,6 +412,29 @@ onBeforeUnmount(() => clearInterval(timer))
             <span class="text-ink-white font-medium">{{ longPct != null && longPct >= 50 ? '多头去杠杆 · 注意回踩风险' : '空头逼仓 · 注意反弹风险' }}</span>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ROW 2.5: 交易所爆仓热力分布 (EXCHANGE HEATMAP) -->
+    <section class="bg-card-navy border border-hairline rounded-xl p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-hairline/60">
+        <div class="flex items-center gap-3">
+          <span class="text-headline-sm font-headline-sm text-ink-white font-semibold">交易所爆仓热力分布 (EXCHANGE HEATMAP)</span>
+          <span class="text-label-sm font-label-sm text-steel-muted">窗口 {{ gran }} · 随分布图粒度联动</span>
+        </div>
+        <div class="flex items-center gap-3 text-label-sm font-mono-data">
+          <span class="flex items-center gap-1.5 text-bull-green">
+            <span class="w-2.5 h-2.5 bg-bull-green rounded-sm"></span> 多头清算主导
+          </span>
+          <span class="flex items-center gap-1.5 text-bear-red">
+            <span class="w-2.5 h-2.5 bg-bear-red rounded-sm"></span> 空头清算主导
+          </span>
+          <span class="text-steel-muted">面积 ∝ 爆仓额</span>
+        </div>
+      </div>
+      <div class="mt-4 pt-2">
+        <EChart v-if="exRows.length" :option="heatmapOption" height="260px" />
+        <div v-else class="text-steel-muted font-mono-data text-xs py-16 text-center">当前窗口暂无爆仓</div>
       </div>
     </section>
 
