@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +24,9 @@ class _LiquidationPageState extends State<LiquidationPage> {
 
   List<dynamic> _events = const [];
   List<dynamic> _coins = const [];
-  Map<String, dynamic>? _tl; // 爆仓分布时间序列 (服务端全窗口聚合)
+  // 交易所爆仓热力分布 (exchange-list, 按当前粒度拉取)
+  List<({String name, double total, double long, double short})> _exRows =
+      const [];
 
   String _gran = '24H'; // 1H | 4H | 24H
   String _filter = 'all'; // all | BTC | ETH | SOL | other
@@ -58,15 +59,14 @@ class _LiquidationPageState extends State<LiquidationPage> {
     final r = await Future.wait([
       _safe(api.liqRecent(limit: 50)),
       _safe(api.liqCoinList()),
-      _safe(api.liqTimeline(range: _gran.toLowerCase())),
+      _safe(api.liqExchangeList(range: _gran.toLowerCase())),
     ]);
     if (!mounted) return;
     setState(() {
       if (r[0] is Map && r[0]['data'] is List) _events = r[0]['data'] as List;
       if (r[1] is Map && r[1]['coins'] is List) _coins = r[1]['coins'] as List;
-      if (r[2] is Map && r[2]['longs'] is List) {
-        _tl = r[2] as Map<String, dynamic>;
-      }
+      final rows = _parseExList(r[2]);
+      if (rows.isNotEmpty) _exRows = rows;
       _fatal = _events.isEmpty && _coins.isEmpty;
       _loading = false;
     });
@@ -141,65 +141,59 @@ class _LiquidationPageState extends State<LiquidationPage> {
     return _events.where((e) => _coinOf(e['symbol']) == _filter).toList();
   }
 
-  // ---------- 分布分桶 ----------
-  ({List<String> labels, List<double> longs, List<double> shorts}) _buckets() {
-    // 优先用服务端全窗口聚合; 接口不可用时回退到 recent 事件本地分桶
-    // (注意: recent 仅 50 条, 往往只覆盖最近几分钟, 24H 下会挤进末桶)
-    final tl = _tl;
-    if (tl != null && tl['range'] == _gran.toLowerCase()) {
-      final longs = [
-        for (final v in tl['longs'] as List) (Fmt.toNum(v) ?? 0).toDouble()
-      ];
-      final shorts = [
-        for (final v in tl['shorts'] as List) (Fmt.toNum(v) ?? 0).toDouble()
-      ];
-      final start = (Fmt.toNum(tl['start_ts']) ?? 0).toDouble();
-      final bucket = (Fmt.toNum(tl['bucket_sec']) ?? 3600) * 1000;
-      String p(int x) => x.toString().padLeft(2, '0');
-      final labels = [
-        for (var i = 0; i < longs.length; i++)
-          () {
-            final t = DateTime.fromMillisecondsSinceEpoch(
-                (start + i * bucket).round());
-            return '${p(t.hour)}:${p(t.minute)}';
-          }(),
-      ];
-      return (labels: labels, longs: longs, shorts: shorts);
+  // ---------- 交易所爆仓热力分布 (与 App 端一致的 treemap) ----------
+  static double _numOf(Map<dynamic, dynamic> m, List<String> keys) {
+    for (final k in keys) {
+      final v = Fmt.toNum(m[k]);
+      if (v != null) return v.toDouble();
     }
-    final cfg = switch (_gran) {
-      '1H' => (span: 3600e3, bucket: 5 * 60e3),
-      '4H' => (span: 4 * 3600e3, bucket: 30 * 60e3),
-      _ => (span: 24 * 3600e3, bucket: 3600e3),
-    };
-    final newest = _events.fold<num>(
-        0, (m, e) => math.max(m, Fmt.toNum(e['ts']) ?? 0));
-    final now = DateTime.now().millisecondsSinceEpoch.toDouble();
-    final end = (newest > 0 && now - newest > cfg.span) ? newest : now;
-    final start = end - cfg.span;
-    final n = (cfg.span / cfg.bucket).ceil();
-    final longs = List<double>.filled(n, 0);
-    final shorts = List<double>.filled(n, 0);
-    String p(int x) => x.toString().padLeft(2, '0');
-    final labels = [
-      for (var i = 0; i < n; i++)
-        () {
-          final t =
-              DateTime.fromMillisecondsSinceEpoch((start + i * cfg.bucket).round());
-          return '${p(t.hour)}:${p(t.minute)}';
-        }(),
-    ];
-    for (final e in _events) {
-      final t = Fmt.toNum(e['ts']);
-      if (t == null || t < start) continue;
-      final i = math.min(n - 1, ((t - start) / cfg.bucket).floor());
-      final v = (Fmt.toNum(e['notional_usd']) ?? 0).toDouble();
-      if (_isLong(e)) {
-        longs[i] += v;
-      } else {
-        shorts[i] += v;
-      }
+    return 0;
+  }
+
+  /// exchange-list (CoinGlass / 自建聚合两种字段口径) → 按爆仓额降序.
+  static List<({String name, double total, double long, double short})>
+      _parseExList(dynamic raw) {
+    final list = raw is Map ? raw['data'] : raw;
+    if (list is! List) return const [];
+    final out = <({String name, double total, double long, double short})>[];
+    for (final e in list) {
+      if (e is! Map) continue;
+      final name = (e['exchangeName'] ??
+              e['exchange_name'] ??
+              e['exchange'] ??
+              e['name'] ??
+              '')
+          .toString();
+      if (name.isEmpty || name.toLowerCase() == 'all') continue;
+      final long = _numOf(e, const [
+        'longLiquidationUsd',
+        'longLiquidation_usd',
+        'long_liquidation_usd',
+        'longLiquidation',
+        'longVolUsd',
+        'long_vol_usd',
+      ]);
+      final short = _numOf(e, const [
+        'shortLiquidationUsd',
+        'shortLiquidation_usd',
+        'short_liquidation_usd',
+        'shortLiquidation',
+        'shortVolUsd',
+        'short_vol_usd',
+      ]);
+      var total = _numOf(e, const [
+        'liquidationUsd',
+        'liquidation_usd',
+        'totalLiquidationUsd',
+        'volUsd',
+        'vol_usd',
+      ]);
+      if (total <= 0) total = long + short;
+      if (total <= 0) continue;
+      out.add((name: name, total: total, long: long, short: short));
     }
-    return (labels: labels, longs: longs, shorts: shorts);
+    out.sort((a, b) => b.total.compareTo(a.total));
+    return out;
   }
 
   @override
@@ -344,12 +338,11 @@ class _LiquidationPageState extends State<LiquidationPage> {
   }
 
   Widget _distCard() {
-    final b = _buckets();
     return McCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Expanded(
-            child: McSection('爆仓分布', tag: 'LIQUIDATION TIMELINE'),
+            child: McSection('交易所爆仓热力分布', tag: 'EXCHANGE HEATMAP'),
           ),
           _Seg(
             items: const [('1H', '1H'), ('4H', '4H'), ('24H', '24H')],
@@ -357,116 +350,33 @@ class _LiquidationPageState extends State<LiquidationPage> {
             onChanged: (v) {
               setState(() {
                 _gran = v;
-                _tl = null;
+                _exRows = const [];
               });
               _load();
             },
           ),
         ]),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 250,
+          child: _exRows.isEmpty
+              ? const McEmpty('当前窗口暂无爆仓')
+              : _Heatmap(rows: _exRows),
+        ),
+        const SizedBox(height: 10),
         Row(children: [
           _LegendDot(Mc.up),
           const SizedBox(width: 4),
-          Text('多单强平 ${Fmt.compact(_longTotal, prefix: '\$')}',
-              style: Mc.mono(10, color: Mc.up)),
+          Text('多头清算主导', style: Mc.mono(10, color: Mc.muted)),
           const SizedBox(width: 12),
           _LegendDot(Mc.down),
           const SizedBox(width: 4),
-          Text('空单强平 ${Fmt.compact(_shortTotal, prefix: '\$')}',
-              style: Mc.mono(10, color: Mc.down)),
+          Text('空头清算主导', style: Mc.mono(10, color: Mc.muted)),
+          const Spacer(),
+          Text('实时根据成交刷新', style: Mc.mono(10, color: Mc.muted)),
         ]),
-        const SizedBox(height: 12),
-        SizedBox(height: 220, child: _distChart(b)),
       ]),
     );
-  }
-
-  Widget _distChart(
-      ({List<String> labels, List<double> longs, List<double> shorts}) b) {
-    if (b.labels.isEmpty) return const McEmpty('暂无分布数据');
-    var maxSum = 0.0;
-    for (var i = 0; i < b.longs.length; i++) {
-      maxSum = math.max(maxSum, b.longs[i] + b.shorts[i]);
-    }
-    if (maxSum <= 0) return const McEmpty('当前窗口暂无爆仓');
-    final barW = switch (_gran) {
-      '1H' => 14.0,
-      '4H' => 10.0,
-      _ => 7.0,
-    };
-    final labelEvery = (b.labels.length / 6).ceil();
-    return BarChart(BarChartData(
-      maxY: maxSum * 1.15,
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        getDrawingHorizontalLine: (v) => FlLine(
-            color: Mc.hairline.withValues(alpha: 0.3),
-            strokeWidth: 0.5,
-            dashArray: [4, 4]),
-      ),
-      borderData: FlBorderData(show: false),
-      barTouchData: BarTouchData(
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipColor: (_) => Mc.card,
-          getTooltipItem: (group, gi, rod, ri) {
-            final i = group.x;
-            if (i < 0 || i >= b.labels.length) return null;
-            return BarTooltipItem(
-              '${b.labels[i]}\n多单 ${Fmt.compact(b.longs[i], prefix: '\$')}\n空单 ${Fmt.compact(b.shorts[i], prefix: '\$')}',
-              Mc.mono(10),
-            );
-          },
-        ),
-      ),
-      titlesData: FlTitlesData(
-        topTitles: const AxisTitles(),
-        rightTitles: const AxisTitles(),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 22,
-            getTitlesWidget: (v, meta) {
-              final i = v.toInt();
-              if (i < 0 || i >= b.labels.length || i % labelEvery != 0) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(b.labels[i], style: Mc.mono(9, color: Mc.muted)),
-              );
-            },
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 44,
-            getTitlesWidget: (v, meta) => Text(Fmt.compact(v),
-                style: Mc.mono(9, color: Mc.muted)),
-          ),
-        ),
-      ),
-      barGroups: [
-        for (var i = 0; i < b.longs.length; i++)
-          BarChartGroupData(x: i, barRods: [
-            BarChartRodData(
-              toY: b.longs[i] + b.shorts[i],
-              width: barW,
-              color: Mc.up,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(2)),
-              rodStackItems: [
-                if (b.longs[i] > 0)
-                  BarChartRodStackItem(0, b.longs[i], Mc.up),
-                if (b.shorts[i] > 0)
-                  BarChartRodStackItem(
-                      b.longs[i], b.longs[i] + b.shorts[i], Mc.down),
-              ],
-            ),
-          ]),
-      ],
-    ));
   }
 
   Widget _donutCard() {
@@ -824,6 +734,124 @@ class _LegendDot extends StatelessWidget {
       height: 8,
       decoration: BoxDecoration(
           color: color, borderRadius: BorderRadius.circular(2)));
+}
+
+/// 交易所爆仓热力分布: slice-and-dice treemap, 面积 ∝ 爆仓额,
+/// 绿 = 多头清算主导, 红 = 空头清算主导 (对齐 App 端热力分布).
+class _Heatmap extends StatelessWidget {
+  const _Heatmap({required this.rows});
+
+  final List<({String name, double total, double long, double short})> rows;
+
+  static const double _gap = 6;
+  static const int _maxTiles = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    // 超过 8 家合并尾部为「其他」, 防小方块不可读
+    var items = rows;
+    if (items.length > _maxTiles) {
+      final rest = items.sublist(_maxTiles - 1);
+      items = [
+        ...items.sublist(0, _maxTiles - 1),
+        (
+          name: '其他',
+          total: rest.fold<double>(0, (s, r) => s + r.total),
+          long: rest.fold<double>(0, (s, r) => s + r.long),
+          short: rest.fold<double>(0, (s, r) => s + r.short),
+        ),
+      ];
+    }
+    final sum = items.fold<double>(0, (s, r) => s + r.total);
+    if (sum <= 0) return const McEmpty('当前窗口暂无爆仓');
+    return LayoutBuilder(builder: (context, c) {
+      final tiles = _layout(
+          items, Rect.fromLTWH(0, 0, c.maxWidth, c.maxHeight), sum);
+      return Stack(children: [
+        for (final t in tiles)
+          Positioned.fromRect(rect: t.$2, child: _tile(t.$1, sum)),
+      ]);
+    });
+  }
+
+  List<
+      (({String name, double total, double long, double short}), Rect)> _layout(
+      List<({String name, double total, double long, double short})> items,
+      Rect rect,
+      double sum) {
+    if (items.isEmpty) return const [];
+    if (items.length == 1) return [(items.first, rect.deflate(_gap / 2))];
+    // 按累计金额对半分组, 沿长边按比例切, 方块长宽比不至于太扁
+    final half = sum / 2;
+    var acc = 0.0, i = 0;
+    while (i < items.length - 1 && acc < half) {
+      acc += items[i].total;
+      i++;
+    }
+    final g1 = items.sublist(0, i);
+    final g2 = items.sublist(i);
+    final s1 = g1.fold<double>(0, (s, r) => s + r.total);
+    final s2 = sum - s1;
+    if (rect.width >= rect.height) {
+      final w = rect.width * s1 / sum;
+      return [
+        ..._layout(g1, Rect.fromLTWH(rect.left, rect.top, w, rect.height), s1),
+        ..._layout(g2,
+            Rect.fromLTWH(rect.left + w, rect.top, rect.width - w, rect.height), s2),
+      ];
+    }
+    final h = rect.height * s1 / sum;
+    return [
+      ..._layout(g1, Rect.fromLTWH(rect.left, rect.top, rect.width, h), s1),
+      ..._layout(g2,
+          Rect.fromLTWH(rect.left, rect.top + h, rect.width, rect.height - h), s2),
+    ];
+  }
+
+  Widget _tile(
+      ({String name, double total, double long, double short}) row, double sum) {
+    final longDom = row.long >= row.short;
+    final c = longDom ? Mc.up : Mc.down;
+    return LayoutBuilder(builder: (context, cc) {
+      final big = cc.maxWidth >= 130 && cc.maxHeight >= 90;
+      final mid = cc.maxWidth >= 68 && cc.maxHeight >= 40;
+      return Container(
+        padding: EdgeInsets.all(big ? 12 : 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [c.withValues(alpha: 0.9), c.withValues(alpha: 0.55)],
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(row.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Mc.mono(big ? 14 : 10,
+                    w: FontWeight.w700, color: Colors.white)),
+            if (mid)
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(Fmt.compact(row.total, prefix: '\$'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Mc.mono(big ? 17 : 11,
+                        w: FontWeight.w800, color: Colors.white)),
+                Text('占比 ${(row.total / sum * 100).toStringAsFixed(1)}%',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Mc.mono(9,
+                        color: Colors.white.withValues(alpha: 0.85))),
+              ]),
+          ],
+        ),
+      );
+    });
+  }
 }
 
 /// 行悬停高亮 (Mc.cardHigh)，无斑马纹。
