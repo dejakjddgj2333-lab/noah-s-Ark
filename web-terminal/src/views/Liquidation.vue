@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
+import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
 import EChart from '../components/EChart.vue'
 import CoinIcon from '../components/CoinIcon.vue'
 import { overviewApi } from '../api'
@@ -7,6 +7,7 @@ import { fmtUsd, fmtBig, fmtPct, fmtPrice, fmtTime, coinOf } from '../utils/form
 
 const events = ref([])
 const coins = ref([])
+const timeline = ref(null) // 爆仓分布时间序列 (服务端全窗口聚合)
 const loading = ref(true)
 const assetFilter = ref('all') // all | BTC | ETH | SOL | other
 const gran = ref('24H')
@@ -35,33 +36,48 @@ const filteredEvents = computed(() => {
   return events.value.filter((e) => coinOf(e.symbol) === assetFilter.value)
 })
 
-// 爆仓分布柱状图 (按粒度分桶聚合实时事件)
+// 爆仓分布柱状图: 优先服务端全窗口聚合 (timeline); 接口不可用时回退
+// recent 50 条本地分桶 (注意: 那 50 条往往只覆盖最近几分钟, 24H 下挤进末桶)
 const chartOption = computed(() => {
-  const cfg = {
-    '1H': { span: 3600e3, bucket: 5 * 60e3 },
-    '4H': { span: 4 * 3600e3, bucket: 30 * 60e3 },
-    '24H': { span: 24 * 3600e3, bucket: 3600e3 },
-  }[gran.value]
-  const newest = events.value.reduce((m, e) => Math.max(m, Number(e.ts) || 0), 0)
-  // 上游缓存可能滞后: 若最新事件已超出窗口, 窗口锚定到最新事件, 保证分布可见
-  const now = Date.now()
-  const end = newest && now - newest > cfg.span ? newest : now
-  const start = end - cfg.span
-  const n = Math.ceil(cfg.span / cfg.bucket)
-  const longs = Array(n).fill(0)
-  const shorts = Array(n).fill(0)
-  const labels = []
-  const p = (x) => String(x).padStart(2, '0')
-  for (let i = 0; i < n; i++) {
-    const t = new Date(start + i * cfg.bucket)
-    labels.push(`${p(t.getHours())}:${p(t.getMinutes())}`)
-  }
-  for (const e of events.value) {
-    const t = Number(e.ts)
-    if (!t || t < start) continue
-    const i = Math.min(n - 1, Math.floor((t - start) / cfg.bucket))
-    if (isLong(e)) longs[i] += Number(e.notional_usd || 0)
-    else shorts[i] += Number(e.notional_usd || 0)
+  let longs, shorts, labels
+  const tl = timeline.value
+  if (tl && tl.range === gran.value.toLowerCase() && Array.isArray(tl.longs)) {
+    longs = tl.longs.map(Number)
+    shorts = tl.shorts.map(Number)
+    const start = Number(tl.start_ts) || 0
+    const bucket = (Number(tl.bucket_sec) || 3600) * 1000
+    const p = (x) => String(x).padStart(2, '0')
+    labels = longs.map((_, i) => {
+      const t = new Date(start + i * bucket)
+      return `${p(t.getHours())}:${p(t.getMinutes())}`
+    })
+  } else {
+    const cfg = {
+      '1H': { span: 3600e3, bucket: 5 * 60e3 },
+      '4H': { span: 4 * 3600e3, bucket: 30 * 60e3 },
+      '24H': { span: 24 * 3600e3, bucket: 3600e3 },
+    }[gran.value]
+    const newest = events.value.reduce((m, e) => Math.max(m, Number(e.ts) || 0), 0)
+    // 上游缓存可能滞后: 若最新事件已超出窗口, 窗口锚定到最新事件, 保证分布可见
+    const now = Date.now()
+    const end = newest && now - newest > cfg.span ? newest : now
+    const start = end - cfg.span
+    const n = Math.ceil(cfg.span / cfg.bucket)
+    longs = Array(n).fill(0)
+    shorts = Array(n).fill(0)
+    labels = []
+    const p = (x) => String(x).padStart(2, '0')
+    for (let i = 0; i < n; i++) {
+      const t = new Date(start + i * cfg.bucket)
+      labels.push(`${p(t.getHours())}:${p(t.getMinutes())}`)
+    }
+    for (const e of events.value) {
+      const t = Number(e.ts)
+      if (!t || t < start) continue
+      const i = Math.min(n - 1, Math.floor((t - start) / cfg.bucket))
+      if (isLong(e)) longs[i] += Number(e.notional_usd || 0)
+      else shorts[i] += Number(e.notional_usd || 0)
+    }
   }
   return {
     grid: { left: 8, right: 8, top: 12, bottom: 24 },
@@ -109,13 +125,23 @@ const donutOption = computed(() => ({
 
 async function load() {
   try {
-    const [a, b] = await Promise.allSettled([overviewApi.liqRecent(50), overviewApi.liqCoinList()])
+    const [a, b, c] = await Promise.allSettled([
+      overviewApi.liqRecent(50),
+      overviewApi.liqCoinList(),
+      overviewApi.liqTimeline(gran.value.toLowerCase()),
+    ])
     if (a.status === 'fulfilled') events.value = a.value?.data || []
     if (b.status === 'fulfilled') coins.value = b.value?.coins || []
+    if (c.status === 'fulfilled' && Array.isArray(c.value?.longs)) timeline.value = c.value
   } finally {
     loading.value = false
   }
 }
+
+watch(gran, () => {
+  timeline.value = null
+  load()
+})
 
 onMounted(() => {
   load()

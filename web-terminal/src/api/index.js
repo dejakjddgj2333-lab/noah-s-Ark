@@ -39,6 +39,8 @@ export const overviewApi = {
     api.get('/market-overview/liquidations/exchange-list', { params: { range } }),
   liqRecent: (limit = 50) =>
     api.get('/market-overview/liquidations/recent', { params: { limit } }),
+  liqTimeline: (range = '24h') =>
+    api.get('/market-overview/liquidations/timeline', { params: { range } }),
   liqOrders: (minAmount = 100000, limit = 50) =>
     api.get('/market-overview/liquidations/orders', { params: { min_amount: minAmount, limit } }),
   liqCoinList: () => api.get('/market-overview/liquidations/coin-list'),

@@ -94,6 +94,8 @@ class ApiClient {
       _get('/market-overview/liquidations/exchange-list', {'range': range});
   Future<dynamic> liqRecent({int limit = 50}) =>
       _get('/market-overview/liquidations/recent', {'limit': limit});
+  Future<dynamic> liqTimeline({String range = '24h'}) =>
+      _get('/market-overview/liquidations/timeline', {'range': range});
   Future<dynamic> liqOrders({double minAmount = 100000, int limit = 50}) =>
       _get('/market-overview/liquidations/orders',
           {'min_amount': minAmount, 'limit': limit});

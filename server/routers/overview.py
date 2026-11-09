@@ -128,6 +128,67 @@ async def get_liq_recent(limit: int = Query(50, le=100)):
     }
 
 
+@router.get("/liquidations/timeline")
+async def get_liq_timeline(range: str = Query("24h", pattern="^(1h|4h|24h)$")):
+    """爆仓分布时间序列: hk_liq_events 全窗口分桶聚合 (long/short 分开).
+
+    替代客户端拿 recent 50 条本地分桶 — 那 50 条往往只覆盖最近几分钟,
+    24H 视图下全部挤进末桶, 分布图只剩一根柱子. 30s 进程内缓存.
+    """
+    from datetime import datetime, timezone
+
+    from sqlalchemy import func, select
+
+    from database import SessionLocal
+    from models.hk import HkLiqEvent
+
+    bucket = {"1h": 300, "4h": 1800, "24h": 3600}[range]
+    span = {"1h": 3600, "4h": 4 * 3600, "24h": 24 * 3600}[range]
+    key = f"liq-timeline|{range}"
+    now = time.time()
+    hit = _cache.get(key)
+    if hit and hit[1] > now:
+        return hit[0]
+
+    end = int(now // bucket) * bucket + bucket  # 含进行中的当前桶
+    start = end - span
+    epoch = func.extract("epoch", HkLiqEvent.ts)
+    b = (func.floor(epoch / bucket) * bucket).label("b")
+    async with SessionLocal() as db:
+        rows = (
+            await db.execute(
+                select(b, HkLiqEvent.side, func.sum(HkLiqEvent.notional_usd))
+                .where(
+                    HkLiqEvent.ts
+                    >= datetime.fromtimestamp(start, tz=timezone.utc).replace(
+                        tzinfo=None
+                    )
+                )
+                .group_by(b, HkLiqEvent.side)
+            )
+        ).all()
+
+    n = span // bucket
+    longs = [0.0] * n
+    shorts = [0.0] * n
+    for bstart, side, total in rows:
+        i = int((float(bstart) - start) / bucket)
+        if 0 <= i < n:
+            if side == "long":
+                longs[i] += float(total or 0)
+            else:
+                shorts[i] += float(total or 0)
+    data = {
+        "range": range,
+        "bucket_sec": bucket,
+        "start_ts": start * 1000,  # ms, 与事件 ts 口径一致
+        "longs": longs,
+        "shorts": shorts,
+    }
+    _cache[key] = (data, now + 30)
+    return data
+
+
 @router.get("/funding/exchange-rates")
 async def get_funding_exchange_rates(symbol: str = Query("BTC")):
     """单币种各所实时费率. free=Binance/OKX/Bybit 聚合, 60s 进程内缓存."""

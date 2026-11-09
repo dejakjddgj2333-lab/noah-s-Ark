@@ -25,6 +25,7 @@ class _LiquidationPageState extends State<LiquidationPage> {
 
   List<dynamic> _events = const [];
   List<dynamic> _coins = const [];
+  Map<String, dynamic>? _tl; // 爆仓分布时间序列 (服务端全窗口聚合)
 
   String _gran = '24H'; // 1H | 4H | 24H
   String _filter = 'all'; // all | BTC | ETH | SOL | other
@@ -57,11 +58,15 @@ class _LiquidationPageState extends State<LiquidationPage> {
     final r = await Future.wait([
       _safe(api.liqRecent(limit: 50)),
       _safe(api.liqCoinList()),
+      _safe(api.liqTimeline(range: _gran.toLowerCase())),
     ]);
     if (!mounted) return;
     setState(() {
       if (r[0] is Map && r[0]['data'] is List) _events = r[0]['data'] as List;
       if (r[1] is Map && r[1]['coins'] is List) _coins = r[1]['coins'] as List;
+      if (r[2] is Map && r[2]['longs'] is List) {
+        _tl = r[2] as Map<String, dynamic>;
+      }
       _fatal = _events.isEmpty && _coins.isEmpty;
       _loading = false;
     });
@@ -138,6 +143,29 @@ class _LiquidationPageState extends State<LiquidationPage> {
 
   // ---------- 分布分桶 ----------
   ({List<String> labels, List<double> longs, List<double> shorts}) _buckets() {
+    // 优先用服务端全窗口聚合; 接口不可用时回退到 recent 事件本地分桶
+    // (注意: recent 仅 50 条, 往往只覆盖最近几分钟, 24H 下会挤进末桶)
+    final tl = _tl;
+    if (tl != null && tl['range'] == _gran.toLowerCase()) {
+      final longs = [
+        for (final v in tl['longs'] as List) (Fmt.toNum(v) ?? 0).toDouble()
+      ];
+      final shorts = [
+        for (final v in tl['shorts'] as List) (Fmt.toNum(v) ?? 0).toDouble()
+      ];
+      final start = (Fmt.toNum(tl['start_ts']) ?? 0).toDouble();
+      final bucket = (Fmt.toNum(tl['bucket_sec']) ?? 3600) * 1000;
+      String p(int x) => x.toString().padLeft(2, '0');
+      final labels = [
+        for (var i = 0; i < longs.length; i++)
+          () {
+            final t = DateTime.fromMillisecondsSinceEpoch(
+                (start + i * bucket).round());
+            return '${p(t.hour)}:${p(t.minute)}';
+          }(),
+      ];
+      return (labels: labels, longs: longs, shorts: shorts);
+    }
     final cfg = switch (_gran) {
       '1H' => (span: 3600e3, bucket: 5 * 60e3),
       '4H' => (span: 4 * 3600e3, bucket: 30 * 60e3),
@@ -326,7 +354,13 @@ class _LiquidationPageState extends State<LiquidationPage> {
           _Seg(
             items: const [('1H', '1H'), ('4H', '4H'), ('24H', '24H')],
             selected: _gran,
-            onChanged: (v) => setState(() => _gran = v),
+            onChanged: (v) {
+              setState(() {
+                _gran = v;
+                _tl = null;
+              });
+              _load();
+            },
           ),
         ]),
         const SizedBox(height: 8),
