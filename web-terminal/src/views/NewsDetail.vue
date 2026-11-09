@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { newsApi, interactionApi, overviewApi, marketApi } from '../api'
 import { fmtDateTime, fmtAgo, fmtPct, fmtPrice, fmtUsd, ts } from '../utils/format'
+import { htmlToText } from '../utils/htmlText'
 import EChart from '../components/EChart.vue'
 
 const route = useRoute()
@@ -45,17 +46,18 @@ const gaugeOption = computed(() => ({
   }],
 }))
 
-// 简单 markdown 段落渲染: 按空行分段, 去 markdown 标记
-const paragraphs = computed(() => {
-  const c = article.value?.content || ''
-  return c
+// 正文: HTML 清洗为纯文本后按空行分段; 行首 markdown 标记仅剥开头, 不再全局删 `>` (会吃掉 HTML 标签)
+const cleanContent = computed(() => htmlToText(article.value?.content || ''))
+const cleanSummary = computed(() => htmlToText(article.value?.summary || ''))
+const paragraphs = computed(() =>
+  cleanContent.value
     .split(/\n{2,}/)
-    .map((p) => p.replace(/[#*>`]/g, '').trim())
+    .map((p) => p.replace(/^[#*\s>]+/, '').trim())
     .filter(Boolean)
-})
+)
 
-// 预估阅读用时 (~400 字/分钟)
-const readMinutes = computed(() => Math.max(1, Math.round((article.value?.content || '').length / 400)))
+// 预估阅读用时 (~400 字/分钟), 按清洗后字数
+const readMinutes = computed(() => Math.max(1, Math.round(cleanContent.value.length / 400)))
 
 // 从正文提取高关联标的
 const relatedCoins = computed(() => {
@@ -269,7 +271,7 @@ onMounted(load)
               <span class="text-label-sm font-label-sm text-steel-muted uppercase">预估阅读用时</span>
               <span class="font-mono-data text-mono-data text-ink-white font-medium flex items-center gap-1.5 mt-0.5">
                 <span class="material-symbols-outlined text-steel-muted" style="font-size: 14px;">hourglass_top</span>
-                {{ readMinutes }} min · {{ (article.content || '').length }} 字
+                {{ readMinutes }} min · {{ cleanContent.length }} 字
               </span>
             </div>
             <div class="flex flex-col col-span-2 sm:col-span-1">
@@ -294,11 +296,11 @@ onMounted(load)
         <!-- 正文 -->
         <div class="flex flex-col gap-5 text-on-surface">
           <!-- 摘要高亮引用块 -->
-          <blockquote v-if="article.summary" class="bg-card-navy-high border-l-4 border-primary-container p-4 rounded-r-lg my-2">
+          <blockquote v-if="cleanSummary" class="bg-card-navy-high border-l-4 border-primary-container p-4 rounded-r-lg my-2">
             <div class="flex items-start gap-3">
               <span class="material-symbols-outlined text-primary-container shrink-0 mt-0.5">format_quote</span>
               <div class="flex flex-col gap-1">
-                <p class="font-body-lg text-ink-white font-medium italic leading-relaxed">{{ article.summary }}</p>
+                <p class="font-body-lg text-ink-white font-medium italic leading-relaxed">{{ cleanSummary }}</p>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-label-sm font-label-sm text-primary font-semibold">— {{ article.source || 'MINGCE' }}</span>
                   <span class="text-label-sm font-label-sm text-steel-muted">情绪倾向: {{ sentiText }}</span>

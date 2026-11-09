@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { newsApi, marketApi, interactionApi } from '../api'
 import CoinIcon from '../components/CoinIcon.vue'
 import { fmtAgo, fmtPct, fmtPrice, fmtUsd, ts, coinOf } from '../utils/format'
+import { htmlToText } from '../utils/htmlText'
 
 const router = useRouter()
 
@@ -239,7 +240,7 @@ onBeforeUnmount(() => clearInterval(timer))
                     </button>
                   </div>
                 </div>
-                <p v-if="n.summary" class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">{{ n.summary }}</p>
+                <p v-if="n.summary" class="text-steel-muted text-[13px] line-clamp-1 font-body-md pr-12">{{ htmlToText(n.summary) }}</p>
                 <div class="flex items-center justify-between mt-2 pt-1 border-t border-hairline/40 text-[11px] font-mono-data text-steel-muted">
                   <div class="flex items-center gap-3">
                     <span class="text-ink-white font-medium">{{ n.source || '快讯' }}</span>

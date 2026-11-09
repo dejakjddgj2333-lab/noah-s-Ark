@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models.hk import HkComment, HkLike
 from models.shared import MacroEvent, NewsArticle
+from services.html_text import html_to_text
 
 router = APIRouter(prefix="/news", tags=["资讯"])
 
@@ -17,10 +18,11 @@ NEWS_CATEGORIES = ("flash", "notice", "research", "news")
 def _news_out(a: NewsArticle, lang: str = "zh", with_content: bool = True) -> dict:
     # 非中文: 有原文备份则出原文, 老数据无备份回退中文
     use_original = lang != "zh" and a.title_en
+    # title/summary/content 是采集来的整段 HTML, 出参统一降级为纯文本 (hk 侧只读不改库)
     data = {
         "id": a.id,
-        "title": a.title_en if use_original else a.title,
-        "summary": a.summary_en if use_original else a.summary,
+        "title": html_to_text(a.title_en if use_original else a.title),
+        "summary": html_to_text(a.summary_en if use_original else a.summary),
         "cover_url": a.cover_url,
         "source": a.source,
         "source_url": a.source_url,
@@ -33,7 +35,7 @@ def _news_out(a: NewsArticle, lang: str = "zh", with_content: bool = True) -> di
         "share_count": a.share_count,
     }
     if with_content:
-        data["content"] = a.content_en if use_original else a.content
+        data["content"] = html_to_text(a.content_en if use_original else a.content)
     return data
 
 

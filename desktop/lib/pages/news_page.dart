@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import '../theme.dart';
 import '../utils/format.dart';
+import '../utils/html_text.dart';
 import '../widgets/kit.dart';
 import '../widgets/shell.dart';
 import 'market_detail_page.dart';
@@ -563,7 +564,7 @@ class _NewsCardState extends State<_NewsCard> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final title = item['title']?.toString() ?? '';
-    final summary = item['summary']?.toString() ?? '';
+    final summary = htmlToText(item['summary']);
     final source = item['source']?.toString();
     final sourceUrl = item['source_url']?.toString().trim() ?? '';
     final favCount =
@@ -925,13 +926,14 @@ class _ArticlePanelState extends State<_ArticlePanel> {
   @override
   Widget build(BuildContext context) {
     final article = widget.article;
-    final content = article['content']?.toString() ?? '';
+    // 正文先做 HTML→纯文本清洗 (apitube 采集的是整段 HTML)
+    final content = htmlToText(article['content']);
     final paragraphs = content
         .split(RegExp(r'\n{2,}'))
-        .map((p) => p.replaceAll(RegExp(r'[#*>`]'), '').trim())
+        .map((p) => p.replaceAll(RegExp(r'^[#*\s>]+'), '').trim())
         .where((p) => p.isNotEmpty)
         .toList();
-    final summary = article['summary']?.toString() ?? '';
+    final summary = htmlToText(article['summary']);
     final sourceUrl = article['source_url']?.toString().trim() ?? '';
     final readMin = (content.length / 400).ceil().clamp(1, 1 << 31);
     final t = Fmt.parseServerTime(article['publish_at']);
