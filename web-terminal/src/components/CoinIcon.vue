@@ -1,7 +1,13 @@
 <script setup>
-// 币种图标: OKX CDN 网络图 → 加载失败回退首字母圆 (与 okx 项目一致)
+// 币种图标: 自有服务端缓存图 (服务端代取 OKX 并落盘, 国内直连 OKX CDN 不稳)
+// → 加载失败回退首字母圆
 import { computed, ref } from 'vue'
 import { coinOf } from '../utils/format'
+
+// 与 api/request.js 同一套 base 判定: dev 走 vite 代理, 生产直连后端
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (import.meta.env.DEV ? '/api' : 'https://shipapi.bdxapi.com/api')
 
 const props = defineProps({
   instId: { type: String, required: true },
@@ -10,7 +16,7 @@ const props = defineProps({
 
 const base = computed(() => coinOf(props.instId).toUpperCase())
 const url = computed(() =>
-  `https://static.okx.com/cdn/oksupport/asset/currency/icon/${base.value.toLowerCase()}.png`
+  `${API_BASE}/coin-icon/${base.value.toLowerCase()}.png`
 )
 
 const loaded = ref(false)

@@ -34,6 +34,7 @@ from routers import (
     app_config,
     auth,
     chat,
+    coin_icons,
     deposit,
     interaction,
     invite,
@@ -368,6 +369,7 @@ app.include_router(invite.router, prefix="/api")
 app.include_router(news.router, prefix="/api")
 app.include_router(interaction.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
+app.include_router(coin_icons.router, prefix="/api")
 app.include_router(market_ws.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(products.router, prefix="/api")

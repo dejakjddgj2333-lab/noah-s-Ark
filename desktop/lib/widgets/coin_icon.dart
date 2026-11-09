@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../api/api_client.dart';
 import '../theme.dart';
 
-/// 币种图标: OKX CDN 网络图 → 加载失败回退首字母圆 (与 web/app 端一致)。
+/// 币种图标: 自有服务端缓存图 (服务端代取 OKX 并落盘, 国内直连 OKX CDN 不稳)
+/// → 加载失败回退首字母圆 (与 web/app 端一致)。
 /// 传 instId 或裸币种都行: BTC-USDT-SWAP / BTCUSDT / BTC 均可。
 class CoinIcon extends StatelessWidget {
   const CoinIcon(this.symbol, {super.key, this.size = 24});
@@ -36,7 +38,7 @@ class CoinIcon extends StatelessWidget {
             ),
           ),
           Image.network(
-            'https://static.okx.com/cdn/oksupport/asset/currency/icon/${_base.toLowerCase()}.png',
+            '${ApiClient.apiBase}/coin-icon/${_base.toLowerCase()}.png',
             width: size,
             height: size,
             fit: BoxFit.cover,

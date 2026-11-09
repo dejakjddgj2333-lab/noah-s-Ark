@@ -12,6 +12,9 @@ services:
       - .env.prod     # 敏感值, 服务器本地文件, 不入库
       - .env.secrets  # GitHub Secrets 下发 (API key 等), 不入库; deploy.sh 保证存在
       - .env.config   # 非敏感开关, 入库跟踪; 放最后覆盖 .env.prod 旧值
+    volumes:
+      # 币种图标落盘缓存: 放宿主机运行目录根, 避开 server/ 的 rsync --delete 与容器重建
+      - ./coin-icons:/data/coin-icons
     restart: unless-stopped
     deploy:
       resources:

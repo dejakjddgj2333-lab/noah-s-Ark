@@ -13,9 +13,12 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
+  /// 生产后端 API 根 (币种图标等裸 URL 也用它拼).
+  static const String apiBase = 'https://shipapi.bdxapi.com/api';
+
   ApiClient._() {
     _dio = Dio(BaseOptions(
-      baseUrl: 'https://shipapi.bdxapi.com/api',
+      baseUrl: apiBase,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
     ));
