@@ -110,26 +110,32 @@ async def _bybit_loop() -> None:
 async def _okx_loop() -> None:
     """OKX 公共强平频道 (全 SWAP). 服务器到 OKX 通畅 (行情/费率同源).
 
-    sz 为合约张数, 名义额 = px * sz * ctVal (合约面值, 启动时拉一次).
+    sz 为合约张数, 面值分两种 (启动时拉 instruments):
+    - USDT 本位: ctVal 是币数量 (BTC-USDT-SWAP=0.01 BTC), 名义额 = px * sz * ctVal
+    - 币本位 (BTC-USD-SWAP): ctValCcy=USD, ctVal 本身就是美元面值 (BTC=$100),
+      名义额 = sz * ctVal, 不能再乘 px (否则虚增 price 倍, 曾把 $20 万算成 $148 亿)
     """
     import httpx
 
     url = "wss://ws.okx.com:8443/ws/v5/public"
-    ct_val: dict[str, float] = {}
-    try:
-        async with httpx.AsyncClient(timeout=12) as client:
-            resp = await client.get(
-                "https://www.okx.com/api/v5/public/instruments",
-                params={"instType": "SWAP"},
-            )
-            for it in (resp.json().get("data") or []):
-                v = float(it.get("ctVal") or 1)
-                ct_val[str(it.get("instId") or "")] = v
-        logger.info("liq_okx_instruments: %d", len(ct_val))
-    except Exception as exc:
-        logger.warning("liq_okx_instruments_failed: %s", str(exc)[:200])
-
+    ct_val: dict[str, tuple[float, str]] = {}
     while True:
+        if not ct_val:  # 空表硬算必错, 拉到为止
+            try:
+                async with httpx.AsyncClient(timeout=12) as client:
+                    resp = await client.get(
+                        "https://www.okx.com/api/v5/public/instruments",
+                        params={"instType": "SWAP"},
+                    )
+                for it in (resp.json().get("data") or []):
+                    v = float(it.get("ctVal") or 1)
+                    ccy = str(it.get("ctValCcy") or "")
+                    ct_val[str(it.get("instId") or "")] = (v, ccy)
+                logger.info("liq_okx_instruments: %d", len(ct_val))
+            except Exception as exc:
+                logger.warning("liq_okx_instruments_failed: %s", str(exc)[:200])
+                await asyncio.sleep(10)
+                continue
         try:
             async with websockets.connect(url, ping_interval=20) as ws:
                 await ws.send(json.dumps({
@@ -145,11 +151,18 @@ async def _okx_loop() -> None:
                             continue
                         for d in data:
                             inst_id = str(d.get("instId") or "")
-                            ct = ct_val.get(inst_id, 1.0)
+                            ct, ct_ccy = ct_val.get(inst_id, (1.0, ""))
                             # 强平明细在外层 details 数组: bkPx=破产价, sz=张数
                             for det in (d.get("details") or []):
                                 price = float(det.get("bkPx") or 0)
-                                qty = float(det.get("sz") or 0) * ct
+                                sz = float(det.get("sz") or 0)
+                                if ct_ccy == "USD":
+                                    # 币本位: 面值即 USD, 不乘价
+                                    notional = sz * ct
+                                    qty = notional / price if price > 0 else 0.0
+                                else:
+                                    qty = sz * ct
+                                    notional = price * qty
                                 # posSide=被强平仓位方向; net 按吃单方向推: sell=平多
                                 pos = det.get("posSide") or "net"
                                 if pos in ("long", "short"):
@@ -163,7 +176,7 @@ async def _okx_loop() -> None:
                                     side=side,
                                     price=price,
                                     qty=qty,
-                                    notional_usd=price * qty,
+                                    notional_usd=notional,
                                 ))
                     except Exception:
                         continue
