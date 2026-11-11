@@ -196,15 +196,17 @@ async def send_email_code(
                 status_code=status.HTTP_409_CONFLICT, detail="该邮箱已注册"
             )
     elif data.purpose == "reset":
-        # 忘记密码: 模糊提示不泄露注册状态. 邮箱不存在/非 active 时不写码不发信,
-        # 统一返回 ok (前端恒提示「验证码已发送」).
+        # 忘记密码: 邮箱不存在/非 active 直接报错 (2026-11-11 按用户要求明示,
+        # 放弃防枚举假成功 — 假成功让用户误以为已发送, 排查困难)
         existing = await db.execute(
             select(HkUser).where(
                 HkUser.email == data.email, HkUser.status == "active"
             )
         )
         if existing.scalar_one_or_none() is None:
-            return {"ok": True}
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="该邮箱未注册"
+            )
 
     latest = await _latest_code(db, data.email, data.purpose)
     if latest is not None:
