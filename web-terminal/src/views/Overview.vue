@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import EChart from '../components/EChart.vue'
+import CoinIcon from '../components/CoinIcon.vue'
 import { overviewApi, marketApi, newsApi } from '../api'
 import { fmtUsd, fmtPct, fmtBig, fmtPrice, fmtTime, fmtAgo, coinOf, ts } from '../utils/format'
 
@@ -472,6 +473,7 @@ onBeforeUnmount(() => clearInterval(timer))
                   <td class="py-2.5 pl-1 text-steel-muted">{{ String(i + 1).padStart(2, '0') }}</td>
                   <td class="py-2.5">
                     <div class="flex items-center gap-2">
+                      <CoinIcon :inst-id="t.instId" :size="18" />
                       <span class="font-bold text-ink-white">{{ coinOf(t.instId) }}</span>
                       <span class="text-[10px] text-steel-muted font-normal">{{ t.instId }}</span>
                       <span
