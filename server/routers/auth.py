@@ -18,7 +18,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -323,8 +323,12 @@ async def register(
 async def login(
     data: LoginIn, request: Request, db: AsyncSession = Depends(get_db)
 ):
+    # 用户名或邮箱均可登录 (邮箱不区分大小写)
     result = await db.execute(
-        select(HkUser).where(HkUser.username == data.username)
+        select(HkUser).where(
+            (HkUser.username == data.username)
+            | (func.lower(HkUser.email) == data.username.lower())
+        )
     )
     user = result.scalar_one_or_none()
     if user is None or not auth_service.verify_password(
