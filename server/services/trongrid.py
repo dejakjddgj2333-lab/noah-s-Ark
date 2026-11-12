@@ -114,3 +114,31 @@ async def fetch_block_number(client: httpx.AsyncClient, txid: str) -> int | None
     resp.raise_for_status()
     num = resp.json().get("blockNumber")
     return int(num) if num is not None else None
+
+
+async def token_balance(
+    client: httpx.AsyncClient, address: str, usdt_contract: str
+) -> Decimal:
+    """TRC20 余额 (balanceOf 常量调用). 未激活账户 /v1/accounts 返回空,
+    但合约存储里有余额 (收 TRC20 不激活账户), 必须用本函数兜底."""
+    from tronpy.keys import to_hex_address
+
+    param = to_hex_address(address)[2:].rjust(64, "0")
+    resp = await client.post(
+        f"{TRONGRID_BASE}/walletsolidity/triggerconstantcontract",
+        json={
+            "owner_address": address,
+            "contract_address": usdt_contract,
+            "function_selector": "balanceOf(address)",
+            "parameter": param,
+            "visible": True,
+        },
+        timeout=HTTP_TIMEOUT,
+    )
+    if resp.status_code == 429:
+        raise RateLimited(f"balanceOf {address} 429")
+    resp.raise_for_status()
+    result = resp.json().get("constant_result") or []
+    if not result:
+        return Decimal(0)
+    return Decimal(int(result[0], 16)) / Decimal(10**6)

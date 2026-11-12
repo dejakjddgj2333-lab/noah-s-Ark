@@ -1,10 +1,11 @@
-"""扫链监听服务: TronGrid 轮询充值地址, 确认后自动入账 (类微信/支付宝自动到账).
+"""扫链监听服务: 轮询充值地址, 确认后自动入账 (类微信/支付宝自动到账).
 
 - 只监听"已分配给用户"的地址
 - (network, txid) 唯一约束保证不重复入账
 - confirmations >= required 时入账本金账户, 状态 confirming -> credited
 - 低于最小充值金额的记 unmatched, 走客服人工处理
-- TronGrid 429 指数退避; 空闲地址池低于下限自动补足
+- 链: tron=TronGrid, evm=Etherscan V2, bsc=公共 RPC eth_getLogs (游标持久化)
+- 429 指数退避; 空闲地址池低于下限自动补足; 异常/停链/持续限流发邮件告警
 """
 from __future__ import annotations
 
@@ -12,12 +13,13 @@ import asyncio
 import logging
 from decimal import Decimal
 
+import httpx
 from sqlalchemy import func, select
 
 from config import config
 from database import SessionLocal
-from models.account import HkDepositAddress, HkDepositRecord
-from services import account_service, evmscan, trongrid
+from models.account import HkDepositAddress, HkDepositRecord, HkPlatformSetting
+from services import account_service, alert_service, bscrpc, evmscan, trongrid
 from services.deposit_service import NETWORKS
 
 logger = logging.getLogger(__name__)
@@ -27,12 +29,33 @@ POLL_INTERVAL_SEC = 30
 # 429 退避状态: 连续限流次数 -> sleep 秒数 (30s..5min 封顶)
 _throttle_hits = 0
 
-# Etherscan 套餐不覆盖的 EVM 网络 (如免费 key 不支持 BSC), 命中后停用本进程内扫描
+# Etherscan 套餐不覆盖的 EVM 网络, 命中后停用本进程内扫描
 _evm_disabled: set[str] = set()
+
+# BSC 扫块: 首轮从最近 N 块开始; 每轮窗口上限 (BSC 3s/块, 2000 块 ≈ 100 分钟)
+BSC_SEED_BLOCKS = 2000
+BSC_MAX_WINDOW = 2000
 
 
 def _throttle_sleep() -> float:
     return min(30 * (2 ** _throttle_hits), 300)
+
+
+async def _on_throttle(network: str) -> None:
+    global _throttle_hits
+    _throttle_hits += 1
+    logger.warning(
+        "deposit_monitor throttled (%s, hits=%s), skip round",
+        network,
+        _throttle_hits,
+    )
+    if _throttle_hits == 5:
+        await alert_service.alert(
+            "deposit_throttle",
+            "扫链持续限流",
+            f"{network} 网络连续限流 {_throttle_hits} 轮, "
+            "充值到账会延迟, 请检查 API 配额/节点。",
+        )
 
 
 async def _ensure_pool(db, network: str) -> None:
@@ -57,11 +80,34 @@ async def _ensure_pool(db, network: str) -> None:
     logger.info("deposit pool replenished: +%s %s addresses", created, network)
 
 
-async def _poll_network(db, client, network: str) -> None:
-    global _throttle_hits
+async def _get_scan_cursor(db, network: str) -> int | None:
+    row = (
+        await db.execute(
+            select(HkPlatformSetting).where(
+                HkPlatformSetting.key == f"deposit_scan_block_{network}"
+            )
+        )
+    ).scalar_one_or_none()
+    return int(row.value) if row and row.value.isdigit() else None
+
+
+async def _set_scan_cursor(db, network: str, block: int) -> None:
+    key = f"deposit_scan_block_{network}"
+    row = (
+        await db.execute(
+            select(HkPlatformSetting).where(HkPlatformSetting.key == key)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        db.add(HkPlatformSetting(key=key, value=str(block)))
+    else:
+        row.value = str(block)
+
+
+async def _poll_network(db, tron_client, plain_client, network: str) -> None:
     cfg = NETWORKS[network]
-    is_evm = cfg["chain"] == "evm"
-    if is_evm:
+    chain = cfg["chain"]  # tron | evm | bsc
+    if chain == "evm":
         if not evmscan.available():
             return  # 未配 Etherscan key: 跳过 EVM 网络 (TRC20 不受影响)
         if network in _evm_disabled:
@@ -77,25 +123,38 @@ async def _poll_network(db, client, network: str) -> None:
     if not addresses:
         return
 
+    # ---- 最新块高 (BSC 顺带确定本轮扫描窗口) ----
+    bsc_from = bsc_to = None
     try:
-        if is_evm:
-            latest = await evmscan.latest_block(client, cfg["chain_id"])
+        if chain == "evm":
+            latest = await evmscan.latest_block(plain_client, cfg["chain_id"])
+        elif chain == "bsc":
+            latest = await bscrpc.latest_block(plain_client)
+            cursor = await _get_scan_cursor(db, network)
+            bsc_from = (
+                cursor + 1 if cursor else max(latest - BSC_SEED_BLOCKS, 0)
+            )
+            bsc_to = min(latest, bsc_from + BSC_MAX_WINDOW)
         else:
-            latest = await trongrid.latest_block(client)
+            latest = await trongrid.latest_block(tron_client)
     except evmscan.ChainUnsupported:
         _evm_disabled.add(network)
         logger.error(
             "evmscan chain unsupported (free plan), disabling %s monitor",
             network,
         )
-        return
-    except (trongrid.RateLimited, evmscan.RateLimited):
-        # 限流只跳过本网络本轮, 不能向上抛 (会中断整个轮询周期)
-        _throttle_hits += 1
-        logger.warning(
-            "deposit_monitor throttled on latest_block (%s), skip network",
-            network,
+        await alert_service.alert(
+            f"deposit_chain_disabled_{network}",
+            f"{network} 扫链已停用",
+            "Etherscan 套餐不覆盖该链, 本进程内已停止扫描, "
+            "该网络充值不会自动到账。",
         )
+        return
+    except (trongrid.RateLimited, evmscan.RateLimited, bscrpc.RateLimited):
+        await _on_throttle(network)
+        return
+    except Exception as e:  # noqa: BLE001 节点故障不中断周期
+        logger.warning("deposit_monitor latest_block %s failed: %s", network, e)
         return
     if latest is None:
         return
@@ -105,14 +164,19 @@ async def _poll_network(db, client, network: str) -> None:
 
     for addr in addresses:
         try:
-            if is_evm:
+            if chain == "evm":
                 txs = await evmscan.fetch_incoming(
-                    client, cfg["chain_id"], addr.address,
+                    plain_client, cfg["chain_id"], addr.address,
                     cfg["usdt_contract"], cfg["decimals"],
+                )
+            elif chain == "bsc":
+                txs = await bscrpc.fetch_incoming(
+                    plain_client, cfg["usdt_contract"], addr.address,
+                    bsc_from, bsc_to, cfg["decimals"],
                 )
             else:
                 txs = await trongrid.fetch_incoming(
-                    client, addr.address, cfg["usdt_contract"]
+                    tron_client, addr.address, cfg["usdt_contract"]
                 )
         except evmscan.ChainUnsupported:
             _evm_disabled.add(network)
@@ -120,13 +184,15 @@ async def _poll_network(db, client, network: str) -> None:
                 "evmscan chain unsupported (free plan), disabling %s monitor",
                 network,
             )
-            return
-        except (trongrid.RateLimited, evmscan.RateLimited):
-            _throttle_hits += 1
-            logger.warning(
-                "deposit_monitor throttled (hits=%s), skip round",
-                _throttle_hits,
+            await alert_service.alert(
+                f"deposit_chain_disabled_{network}",
+                f"{network} 扫链已停用",
+                "Etherscan 套餐不覆盖该链, 本进程内已停止扫描, "
+                "该网络充值不会自动到账。",
             )
+            return
+        except (trongrid.RateLimited, evmscan.RateLimited, bscrpc.RateLimited):
+            await _on_throttle(network)
             return  # 本轮剩余地址跳过, 外层 sleep 退避
         except Exception as e:  # noqa: BLE001
             logger.warning("deposit_monitor poll %s failed: %s", addr.address, e)
@@ -144,29 +210,34 @@ async def _poll_network(db, client, network: str) -> None:
             if record is not None and record.status != "confirming":
                 continue  # 已终态 (credited/unmatched), 不重复处理
 
-            # TronGrid 列表无块高: 先取已有记录, 否则单条补查 (仅新/确认中 tx)
+            # 块高缺失: 先取已有记录, 否则单条补查 (仅新/确认中 tx)
             block_number = tx.get("block_number")
             if block_number is None:
                 if record is not None and record.block_number:
                     block_number = record.block_number
-                elif is_evm:
-                    continue  # EVM tokentx 应带块高, 缺失跳过
+                elif chain != "tron":
+                    continue  # EVM/BSC 应带块高, 缺失跳过
                 else:
                     try:
                         block_number = await trongrid.fetch_block_number(
-                            client, tx["txid"]
+                            tron_client, tx["txid"]
                         )
                     except trongrid.RateLimited:
-                        _throttle_hits += 1
-                        logger.warning(
-                            "deposit_monitor throttled on block fetch, skip round"
-                        )
+                        await _on_throttle(network)
                         return
                     if block_number is None:
                         continue  # 链上未确认/查不到, 下轮再试
 
             confirmations = max(latest - block_number + 1, 0)
             if record is None:
+                block_time = tx.get("block_time")
+                if block_time is None and chain == "bsc":
+                    try:  # BSC 日志不含时间戳, 建记录时单条补
+                        block_time = await bscrpc.block_time(
+                            plain_client, block_number
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("bsc block_time failed: %s", e)
                 record = HkDepositRecord(
                     user_id=addr.user_id,
                     network=network,
@@ -178,7 +249,7 @@ async def _poll_network(db, client, network: str) -> None:
                     required_confirmations=required,
                     status="confirming",
                     block_number=block_number,
-                    block_time=tx["block_time"],
+                    block_time=block_time,
                 )
                 # 低于最小充值金额: 不入账, 记 unmatched 人工处理
                 if tx["amount"] < min_deposit:
@@ -196,20 +267,30 @@ async def _poll_network(db, client, network: str) -> None:
 
         await db.commit()
 
+    # BSC: 全地址扫完推进游标
+    if chain == "bsc" and bsc_to is not None:
+        await _set_scan_cursor(db, network, bsc_to)
+        await db.commit()
+
 
 async def run_forever() -> None:
     """后台轮询循环. 由 app lifespan 启动, 异常自恢复不退出."""
     global _throttle_hits
     logger.info("deposit_monitor started, interval=%ss", POLL_INTERVAL_SEC)
-    async with trongrid.make_client() as client:
+    async with trongrid.make_client() as tron_client, httpx.AsyncClient() as plain_client:
         while True:
             try:
                 async with SessionLocal() as db:
                     for network in NETWORKS:
                         await _ensure_pool(db, network)
-                        await _poll_network(db, client, network)
+                        await _poll_network(db, tron_client, plain_client, network)
             except Exception as e:  # noqa: BLE001
                 logger.exception("deposit_monitor cycle error: %s", e)
+                await alert_service.alert(
+                    "deposit_cycle_error",
+                    "扫链周期异常",
+                    f"deposit_monitor 周期异常: {e!r} (已自动恢复, 持续出现需排查)",
+                )
             sleep_s = (
                 _throttle_sleep() if _throttle_hits > 0 else POLL_INTERVAL_SEC
             )

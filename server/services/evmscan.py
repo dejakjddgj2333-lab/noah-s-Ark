@@ -71,11 +71,7 @@ async def fetch_incoming(
     decimals: int,
     limit: int = 50,
 ) -> list[dict]:
-    """拉某地址的 USDT 转入 tokentx (归一化为 tron 同构字段). 429 抛 RateLimited.
-
-    注意: 免费 key 传 contractaddress 参数会被 Etherscan 以
-    "Invalid contract address format" 拒绝, 改为拉全量 tokentx 后本地过滤合约.
-    """
+    """拉某地址的 USDT 转入 tokentx (归一化为 tron 同构字段). 429 抛 RateLimited."""
     data = await _get(
         client,
         {
@@ -83,6 +79,7 @@ async def fetch_incoming(
             "module": "account",
             "action": "tokentx",
             "address": address,
+            "contractaddress": usdt_contract,
             "page": 1,
             "offset": limit,
             "sort": "desc",
@@ -91,8 +88,6 @@ async def fetch_incoming(
     out = []
     for tx in data.get("result", []) or []:
         try:
-            if tx.get("contractAddress", "").lower() != usdt_contract.lower():
-                continue  # 只要 USDT
             if tx.get("to", "").lower() != address.lower():
                 continue  # 只统计转入
             out.append(

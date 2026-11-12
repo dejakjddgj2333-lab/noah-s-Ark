@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.account import HkDepositAddress, HkDepositRecord
 from models.hk import utc_now
-from services import account_service, evmscan, trongrid
+from services import account_service, bscrpc, evmscan, trongrid
 
 # 网络配置: chain=tron 走 TronGrid; chain=evm 走 Etherscan V2 (chain_id 区分).
 # usdt_contract 为各网 USDT 官方合约; decimals 影响金额解析.
@@ -29,7 +29,7 @@ NETWORKS: dict[str, dict] = {
     },
     "erc20": {
         "name": "ERC20 (Ethereum)",
-        "usdt_contract": "0xdAC17F958D2ee523a1638c3018b8Eb7c0b51D39E4",
+        "usdt_contract": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "confirmations_required": 12,
         "min_deposit": "10",
         "decimals": 6,
@@ -42,12 +42,13 @@ NETWORKS: dict[str, dict] = {
         "confirmations_required": 15,
         "min_deposit": "10",
         "decimals": 18,
-        "chain": "evm",
+        # Etherscan 免费套餐不覆盖 BSC, 走公共 RPC eth_getLogs 扫块 (bscrpc)
+        "chain": "bsc",
         "chain_id": 56,
     },
     "arbitrum": {
         "name": "Arbitrum One",
-        "usdt_contract": "0xFd086bC7CD5C481DCC9C85C478Fbe1e0C31CaaF69",
+        "usdt_contract": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
         "confirmations_required": 12,
         "min_deposit": "10",
         "decimals": 6,
@@ -300,12 +301,22 @@ async def claim_by_txid(
                     cfg["usdt_contract"], cfg["decimals"], limit=200,
                 )
                 latest = await evmscan.latest_block(client, cfg["chain_id"])
+            elif cfg["chain"] == "bsc":
+                # 按 txid 回执精确认领, 只取转入本人地址的 Transfer
+                txs = await bscrpc.tx_receipt_transfers(
+                    client, txid, cfg["usdt_contract"], cfg["decimals"]
+                )
+                txs = [
+                    t for t in txs
+                    if t["to"].lower() == addr.address.lower()
+                ]
+                latest = await bscrpc.latest_block(client)
             else:
                 txs = await trongrid.fetch_incoming(
                     client, addr.address, cfg["usdt_contract"], limit=200
                 )
                 latest = await trongrid.latest_block(client)
-        except (trongrid.RateLimited, evmscan.RateLimited):
+        except (trongrid.RateLimited, evmscan.RateLimited, bscrpc.RateLimited):
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="链上查询限流, 请稍后重试",

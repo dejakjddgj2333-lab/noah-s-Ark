@@ -43,9 +43,16 @@ class Config:
     trongrid_api_key: str = os.getenv("TRONGRID_API_KEY", "")
     # Etherscan V2 API key (EVM 三网扫链; 一把 key 多链, etherscan.io 免费注册)
     etherscan_api_key: str = os.getenv("ETHERSCAN_API_KEY", "")
+    # BSC 公共 RPC (BEP20 扫链; Etherscan 免费套餐不覆盖 BSC;
+    # bsc-dataseed 系 eth_getLogs 限流严重, 默认 publicnode)
+    bsc_rpc_url: str = os.getenv(
+        "BSC_RPC_URL", "https://bsc-rpc.publicnode.com"
+    )
     # 充值地址池: 空闲低于下限自动补足到目标数
     deposit_pool_min: int = int(os.getenv("DEPOSIT_POOL_MIN", "20"))
     deposit_pool_target: int = int(os.getenv("DEPOSIT_POOL_TARGET", "50"))
+    # 扫链异常告警收件邮箱 (空 = 不告警)
+    alert_email: str = os.getenv("ALERT_EMAIL", "")
 
     # SMTP 注册验证码邮件
     smtp_host: str = os.getenv("SMTP_HOST", "")

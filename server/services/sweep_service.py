@@ -21,7 +21,7 @@ from models.account import (
     HkSweepRecord,
 )
 from models.hk import HkUser
-from services import evmscan, trongrid
+from services import bscrpc, evmscan, trongrid
 from services.deposit_service import NETWORKS, get_network
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,13 @@ async def _chain_balances(
             client, address, cfg["usdt_contract"]
         )
         gas_ok = native * Decimal(10**6) >= TRON_MIN_SUN
+    elif cfg["chain"] == "bsc":
+        usdt = await bscrpc.token_balance(
+            client, address, cfg["usdt_contract"], cfg["decimals"]
+        )
+        native = await bscrpc.native_balance(client, address)
+        price = await bscrpc.gas_price(client)
+        gas_ok = native >= Decimal(price * EVM_GAS_LIMIT) / Decimal(10**18)
     else:
         usdt = await evmscan.token_balance(
             client, cfg["chain_id"], address,
@@ -115,14 +122,19 @@ async def get_targets(db: AsyncSession) -> dict:
 async def _tron_balances(
     client: httpx.AsyncClient, address: str, usdt_contract: str
 ) -> tuple[Decimal, Decimal]:
-    """返回 (USDT 余额, TRX 余额)."""
+    """返回 (USDT 余额, TRX 余额).
+
+    未激活账户 (只收过 TRC20 没收过 TRX) /v1/accounts 返回空,
+    但 USDT 在合约存储里, 必须用 balanceOf 兜底, 否则归集页漏显示.
+    """
     resp = await client.get(
         f"{trongrid.TRONGRID_BASE}/v1/accounts/{address}",
         timeout=trongrid.HTTP_TIMEOUT,
     )
     data = resp.json().get("data") or []
     if not data:
-        return Decimal(0), Decimal(0)
+        usdt = await trongrid.token_balance(client, address, usdt_contract)
+        return usdt, Decimal(0)
     acc = data[0]
     trx = Decimal(acc.get("balance", 0)) / Decimal(10**6)
     usdt = Decimal(0)
@@ -213,12 +225,17 @@ def _tron_sweep(priv_hex: str, source: str, target: str, units: int,
 
 async def _evm_sweep(client: httpx.AsyncClient, cfg: dict, priv_hex: str,
                      source: str, target: str, units: int) -> str:
-    """eth_account 签名 + Etherscan proxy 广播, 返回 0x txid."""
+    """eth_account 签名 + 广播 (evm 走 Etherscan proxy, bsc 走公共 RPC), 返回 0x txid."""
     from eth_account import Account
 
     chain_id = cfg["chain_id"]
-    nonce = await evmscan.tx_nonce(client, chain_id, source)
-    price = await evmscan.gas_price(client, chain_id)
+    is_bsc = cfg["chain"] == "bsc"
+    if is_bsc:
+        nonce = await bscrpc.tx_nonce(client, source)
+        price = await bscrpc.gas_price(client)
+    else:
+        nonce = await evmscan.tx_nonce(client, chain_id, source)
+        price = await evmscan.gas_price(client, chain_id)
     data = (
         "0xa9059cbb"
         + target.lower().removeprefix("0x").rjust(64, "0")
@@ -234,7 +251,10 @@ async def _evm_sweep(client: httpx.AsyncClient, cfg: dict, priv_hex: str,
         "data": data,
     }
     signed = Account.sign_transaction(tx, priv_hex)
-    return await evmscan.send_raw_tx(client, chain_id, signed.raw_transaction.hex())
+    raw = signed.raw_transaction.hex()
+    if is_bsc:
+        return await bscrpc.send_raw_tx(client, raw)
+    return await evmscan.send_raw_tx(client, chain_id, raw)
 
 
 async def run_sweep(
@@ -279,6 +299,16 @@ async def run_sweep(
                         client, addr.address, cfg["usdt_contract"]
                     )
                     gas_ok = native * Decimal(10**6) >= TRON_MIN_SUN
+                elif cfg["chain"] == "bsc":
+                    usdt = await bscrpc.token_balance(
+                        client, addr.address,
+                        cfg["usdt_contract"], cfg["decimals"],
+                    )
+                    native = await bscrpc.native_balance(client, addr.address)
+                    price = await bscrpc.gas_price(client)
+                    gas_ok = native >= Decimal(price * EVM_GAS_LIMIT) / Decimal(
+                        10**18
+                    )
                 else:
                     usdt = await evmscan.token_balance(
                         client, cfg["chain_id"], addr.address,
