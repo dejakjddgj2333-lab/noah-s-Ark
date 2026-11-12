@@ -19,12 +19,25 @@ from sqlalchemy import func, select
 from config import config
 from database import SessionLocal
 from models.account import HkDepositAddress, HkDepositRecord, HkPlatformSetting
-from services import account_service, alert_service, bscrpc, evmscan, trongrid
+from services import (
+    account_service,
+    alert_service,
+    auth_service,
+    bscrpc,
+    deposit_service,
+    evmscan,
+    trongrid,
+)
+from services.chat_ws import chat_ws
 from services.deposit_service import NETWORKS
 
 logger = logging.getLogger(__name__)
 
-POLL_INTERVAL_SEC = 30
+# 分级轮询: 活跃用户 (WS 在线或 30min 内有 API 活动) 每轮都扫, 不活跃每 10min 全量扫.
+# 省链上 API 配额, 且活跃档可承受更快轮询间隔 (30s -> 15s).
+POLL_INTERVAL_SEC = 15
+ACTIVE_WINDOW_SEC = 1800
+FULL_SCAN_EVERY = 40  # 15s x 40 = 10min 一次全量
 
 # 429 退避状态: 连续限流次数 -> sleep 秒数 (30s..5min 封顶)
 _throttle_hits = 0
@@ -104,7 +117,14 @@ async def _set_scan_cursor(db, network: str, block: int) -> None:
         row.value = str(block)
 
 
-async def _poll_network(db, tron_client, plain_client, network: str) -> None:
+async def _poll_network(
+    db,
+    tron_client,
+    plain_client,
+    network: str,
+    active_ids: set[int],
+    full_scan: bool,
+) -> None:
     cfg = NETWORKS[network]
     chain = cfg["chain"]  # tron | evm | bsc
     if chain == "evm":
@@ -120,6 +140,9 @@ async def _poll_network(db, tron_client, plain_client, network: str) -> None:
         )
     )
     addresses = list(result.scalars().all())
+    if not full_scan:
+        # 分级轮询: 非全量轮只扫活跃用户地址 (离线用户的充值最多晚 10min 发现)
+        addresses = [a for a in addresses if a.user_id in active_ids]
     if not addresses:
         return
 
@@ -198,6 +221,7 @@ async def _poll_network(db, tron_client, plain_client, network: str) -> None:
             logger.warning("deposit_monitor poll %s failed: %s", addr.address, e)
             continue
 
+        credited: list[HkDepositRecord] = []
         for tx in txs:
             tx["txid"] = tx["txid"].lower().removeprefix("0x")  # 与补单归一化同口径
             existing = await db.execute(
@@ -263,12 +287,16 @@ async def _poll_network(db, tron_client, plain_client, network: str) -> None:
                 record.status == "confirming"
                 and record.confirmations >= required
             ):
-                await account_service.credit_principal(db, record)
+                if await account_service.credit_principal(db, record):
+                    credited.append(record)
 
         await db.commit()
+        # commit 之后通知, 防回滚假通知; 在线走 WS, 离线 APNs
+        for rec in credited:
+            await deposit_service.notify_credited(db, rec)
 
-    # BSC: 全地址扫完推进游标
-    if chain == "bsc" and bsc_to is not None:
+    # BSC: 全量轮全地址扫完才推进游标 (活跃轮只扫部分地址, 游标不动)
+    if chain == "bsc" and bsc_to is not None and full_scan:
         await _set_scan_cursor(db, network, bsc_to)
         await db.commit()
 
@@ -276,14 +304,26 @@ async def _poll_network(db, tron_client, plain_client, network: str) -> None:
 async def run_forever() -> None:
     """后台轮询循环. 由 app lifespan 启动, 异常自恢复不退出."""
     global _throttle_hits
-    logger.info("deposit_monitor started, interval=%ss", POLL_INTERVAL_SEC)
+    logger.info(
+        "deposit_monitor started, interval=%ss, full scan every %s rounds",
+        POLL_INTERVAL_SEC,
+        FULL_SCAN_EVERY,
+    )
+    cycle = 0
     async with trongrid.make_client() as tron_client, httpx.AsyncClient() as plain_client:
         while True:
             try:
+                cycle += 1
+                full_scan = cycle % FULL_SCAN_EVERY == 1
+                active_ids = set(await chat_ws.online_user_ids())
+                active_ids |= auth_service.recent_active_user_ids(ACTIVE_WINDOW_SEC)
                 async with SessionLocal() as db:
                     for network in NETWORKS:
                         await _ensure_pool(db, network)
-                        await _poll_network(db, tron_client, plain_client, network)
+                        await _poll_network(
+                            db, tron_client, plain_client, network,
+                            active_ids, full_scan,
+                        )
             except Exception as e:  # noqa: BLE001
                 logger.exception("deposit_monitor cycle error: %s", e)
                 await alert_service.alert(

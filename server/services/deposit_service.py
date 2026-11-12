@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import logging
 import re
 from decimal import Decimal
 
@@ -15,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.account import HkDepositAddress, HkDepositRecord
 from models.hk import utc_now
 from services import account_service, bscrpc, evmscan, trongrid
+
+logger = logging.getLogger(__name__)
 
 # 网络配置: chain=tron 走 TronGrid; chain=evm 走 Etherscan V2 (chain_id 区分).
 # usdt_contract 为各网 USDT 官方合约; decimals 影响金额解析.
@@ -58,6 +61,37 @@ NETWORKS: dict[str, dict] = {
 }
 
 MIN_DEPOSIT_VIOLATION = "低于最小充值金额, 记录为 unmatched 待人工处理"
+
+
+async def notify_credited(db: AsyncSession, record: HkDepositRecord) -> None:
+    """充值入账实时通知: 在线走 chat_ws 投递 (App 本地通知), 离线走 APNs.
+
+    必须在入账事务 commit 之后调用, 防回滚造成假通知.
+    """
+    from services import push_service
+    from services.chat_ws import chat_ws
+
+    payload = {
+        "type": "deposit_credited",
+        "network": record.network,
+        "amount": str(record.amount),
+        "txid": record.txid,
+    }
+    try:
+        await chat_ws.deliver_to_user(record.user_id, payload)
+    except Exception as e:  # noqa: BLE001 通知失败不影响入账
+        logger.warning("deposit notify ws failed: %s", e)
+    try:
+        await push_service.push_if_offline(
+            db,
+            record.user_id,
+            "充值到账",
+            f"{record.amount} USDT ({record.network.upper()}) 已入账本金账户",
+            {"type": "deposit_credited"},
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("deposit notify apns failed: %s", e)
+
 
 
 def get_network(network: str) -> dict:
@@ -388,8 +422,11 @@ async def claim_by_txid(
                 status.HTTP_400_BAD_REQUEST, detail="该 txid 与本账户无关"
             )
         return record
+    credited = False
     if record.status == "confirming" and record.confirmations >= required:
-        await account_service.credit_principal(db, record)
+        credited = await account_service.credit_principal(db, record)
     await db.commit()
     await db.refresh(record)
+    if credited:
+        await notify_credited(db, record)
     return record

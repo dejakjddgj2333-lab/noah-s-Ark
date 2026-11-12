@@ -42,6 +42,7 @@ import 'services/chat_db.dart';
 import 'services/chat_ws.dart';
 import 'services/push_service.dart';
 import 'services/feature_flag.dart';
+import 'services/finance_api.dart';
 import 'services/invite_link.dart';
 import 'services/widget_bridge.dart';
 
@@ -232,6 +233,26 @@ class _McShellState extends State<McShell> {
                 '[新消息]';
         PushService.instance.showLocal('$name', preview);
       }
+      return;
+    }
+    // 充值入账推送: 本地通知 + toast + 实时刷新余额 (资产页监听 WalletRefresh).
+    if (e['type'] == 'deposit_credited') {
+      final amount = (e['amount'] ?? '').toString();
+      final network = (e['network'] ?? '').toString().toUpperCase();
+      WalletRefresh.instance.bump();
+      final body = tr('deposit_credited_body')
+          .replaceAll('{amount}', amount)
+          .replaceAll('{network}', network);
+      PushService.instance.showLocal(tr('deposit_credited_title'), body);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: McColors.surfaceContainerHigh,
+          content: Text(body,
+              style: McText.sans(size: 13, color: McColors.onSurface)),
+          duration: const Duration(seconds: 4),
+        ));
       return;
     }
     if (e['type'] != 'friend_request') return;

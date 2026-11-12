@@ -40,6 +40,18 @@ class _AssetsPageState extends State<AssetsPage> {
     super.initState();
     _loadInvite();
     _loadData();
+    // 服务端推送入账 (充值等) → 实时重拉余额.
+    WalletRefresh.instance.addListener(_onWalletRefresh);
+  }
+
+  @override
+  void dispose() {
+    WalletRefresh.instance.removeListener(_onWalletRefresh);
+    super.dispose();
+  }
+
+  void _onWalletRefresh() {
+    if (mounted) _loadData();
   }
 
   /// 邀请码 (身份卡 chip 展示, 点击复制). 静默容错.

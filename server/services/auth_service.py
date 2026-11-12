@@ -38,6 +38,22 @@ logger = logging.getLogger(__name__)
 
 _ALGORITHM = "HS256"
 
+# 用户活跃追踪 (内存态, 进程级): 扫链分级轮询用 —— 活跃用户的充值地址扫得勤,
+# 不活跃的降频, 省链上 API 配额. 重启后全量降频, 用户一用 App 即回活跃档.
+_last_active: dict[int, float] = {}
+
+
+def touch_activity(user_id: int) -> None:
+    _last_active[user_id] = time.monotonic()
+
+
+def recent_active_user_ids(window_sec: int = 1800) -> set[int]:
+    """最近 window_sec 秒内有 API 活动的用户 id."""
+    now = time.monotonic()
+    return {
+        uid for uid, ts in _last_active.items() if now - ts <= window_sec
+    }
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
@@ -182,6 +198,7 @@ async def get_current_user(
         )
         if dev.scalar_one_or_none() is None:
             raise credentials_exc
+    touch_activity(user.id)  # 扫链分级轮询的活跃度依据
     return user
 
 

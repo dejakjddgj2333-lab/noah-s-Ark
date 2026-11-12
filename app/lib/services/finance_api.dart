@@ -1,5 +1,16 @@
+import 'package:flutter/foundation.dart';
+
 import 'api.dart';
 import 'auth.dart';
+
+/// 钱包/资产数据刷新信号: 服务端推送 (充值入账等) 后 bump,
+/// 资产页监听重拉余额. 页面内手动刷新仍走各自 _load().
+class WalletRefresh extends ChangeNotifier {
+  WalletRefresh._();
+  static final WalletRefresh instance = WalletRefresh._();
+
+  void bump() => notifyListeners();
+}
 
 /// 邀请返佣与等级体系 (V0.7) 业务接口封装.
 /// 后端 Decimal 序列化为字符串, 统一用 [d] 解析; 时间为 ISO 字符串.
