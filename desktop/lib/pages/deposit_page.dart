@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_client.dart';
+import '../state/wallet_refresh.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
@@ -54,17 +55,23 @@ class _DepositPageState extends State<DepositPage> {
   void initState() {
     super.initState();
     _load();
-    // 30s 轮询充值记录
+    // 30s 轮询充值记录 + 入账推送即时刷新
     _pollTimer = Timer.periodic(
         const Duration(seconds: 30), (_) => _loadRecords(quiet: true));
+    WalletRefresh.I.addListener(_onWalletRefresh);
   }
 
   @override
   void dispose() {
+    WalletRefresh.I.removeListener(_onWalletRefresh);
     _pollTimer?.cancel();
     _copyTimer?.cancel();
     _txidCtrl.dispose();
     super.dispose();
+  }
+
+  void _onWalletRefresh() {
+    if (mounted) _loadRecords(quiet: true);
   }
 
   Future<void> _load() async {

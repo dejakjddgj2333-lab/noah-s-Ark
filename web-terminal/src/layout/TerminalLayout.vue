@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import { newsApi } from '../api'
 import { fmtAgo, ts } from '../utils/format'
+import { chatWs } from '../utils/chatWs'
+import { bumpWalletRefresh } from '../utils/walletBus'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,6 +91,31 @@ function onDocClick(e) {
 }
 onMounted(() => document.addEventListener('click', onDocClick))
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+
+// ---------- 充值入账实时推送 (WS deposit_credited) ----------
+const depositToast = ref(null) // { amount, network }
+let depositToastTimer = null
+
+function onDepositCredited(ev) {
+  bumpWalletRefresh() // 资产/充值页 watch 重拉余额与记录
+  depositToast.value = {
+    amount: String(ev.amount ?? ''),
+    network: String(ev.network ?? '').toUpperCase(),
+  }
+  clearTimeout(depositToastTimer)
+  depositToastTimer = setTimeout(() => (depositToast.value = null), 6000)
+}
+
+function goDepositRecords() {
+  depositToast.value = null
+  router.push('/deposit')
+}
+
+onMounted(() => chatWs.on('deposit_credited', onDepositCredited))
+onBeforeUnmount(() => {
+  chatWs.off('deposit_credited', onDepositCredited)
+  clearTimeout(depositToastTimer)
+})
 </script>
 
 <template>
@@ -271,6 +298,27 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
         <router-view />
       </div>
     </main>
+
+    <!-- ===== 充值入账实时 toast (WS deposit_credited) ===== -->
+    <div
+      v-if="depositToast"
+      class="fixed bottom-6 right-6 z-50 w-80 bg-card-navy border border-bull-green/40 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-pointer overflow-hidden"
+      @click="goDepositRecords"
+    >
+      <div class="flex items-center gap-2.5 px-3.5 py-3">
+        <span class="material-symbols-outlined text-[18px] text-bull-green">check_circle</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-headline-sm text-headline-sm text-ink-white flex items-center gap-1.5">
+            充值到账
+            <span class="font-label-sm text-[9px] px-1 bg-bull-green/15 text-bull-green border border-bull-green/40 rounded">LIVE</span>
+          </div>
+          <div class="font-body-md text-[12px] text-steel-muted mt-0.5 truncate">
+            {{ depositToast.amount }} USDT ({{ depositToast.network }}) 已入账本金账户
+          </div>
+        </div>
+        <span class="material-symbols-outlined text-[14px] text-steel-muted">east</span>
+      </div>
+    </div>
   </div>
 </template>
 

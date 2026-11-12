@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../state/wallet_refresh.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
@@ -49,6 +50,18 @@ class _AssetsPageState extends State<AssetsPage> {
   void initState() {
     super.initState();
     _loadAll();
+    // 服务端推送入账 (充值等) → 实时重拉余额/明细.
+    WalletRefresh.I.addListener(_onWalletRefresh);
+  }
+
+  @override
+  void dispose() {
+    WalletRefresh.I.removeListener(_onWalletRefresh);
+    super.dispose();
+  }
+
+  void _onWalletRefresh() {
+    if (mounted) _loadAll();
   }
 
   void _loadAll() {

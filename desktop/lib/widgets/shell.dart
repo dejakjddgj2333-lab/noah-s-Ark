@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../pages/chat_page.dart';
 import '../pages/deposit_page.dart';
 import '../pages/news_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/search_results.dart';
 import '../pages/withdraw_page.dart';
 import '../state/auth_store.dart';
+import '../state/wallet_refresh.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/kit.dart';
@@ -65,6 +67,41 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 充值入账推送: toast + 刷新余额 (资产/充值页监听 WalletRefresh).
+    chatWsOn('deposit_credited', _onDepositCredited);
+  }
+
+  @override
+  void dispose() {
+    chatWsOff('deposit_credited', _onDepositCredited);
+    super.dispose();
+  }
+
+  void _onDepositCredited(Map<String, dynamic> e) {
+    if (!mounted) return;
+    WalletRefresh.I.bump();
+    final amount = (e['amount'] ?? '').toString();
+    final network = (e['network'] ?? '').toString().toUpperCase();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Mc.cardHigh,
+        content: Text('充值到账: $amount USDT ($network) 已入账本金账户',
+            style: Mc.body(13)),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: '查看',
+          textColor: Mc.cobaltSoft,
+          onPressed: () =>
+              ShellRouter.I.push('充值', 'DEPOSIT', const DepositPage()),
+        ),
+      ));
+  }
 
   @override
   Widget build(BuildContext context) {

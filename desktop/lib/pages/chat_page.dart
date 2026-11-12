@@ -125,6 +125,13 @@ class _ChatWs {
   }
 }
 
+/// 全局订阅/退订聊天 WS 事件 (充值入账推送等), 供 shell 等非聊天页使用.
+void chatWsOn(String type, void Function(Map<String, dynamic>) cb) =>
+    _ChatWs.I.on(type, cb);
+
+void chatWsOff(String type, void Function(Map<String, dynamic>) cb) =>
+    _ChatWs.I.off(type, cb);
+
 /// 聊天页: 左会话列表 + 右消息区, WebSocket 实时 + 5s 轮询兜底, 仅文本消息.
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});

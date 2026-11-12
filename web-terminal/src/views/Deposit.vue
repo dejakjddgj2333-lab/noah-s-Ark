@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import QRCode from 'qrcode'
 import { walletApi } from '../api/wallet'
 import { fmtNum, fmtDateTime, ts } from '../utils/format'
+import { walletRefreshTick } from '../utils/walletBus'
 
 const NETWORKS = ['trc20', 'erc20', 'bep20', 'arbitrum']
 const NET_LABEL = { trc20: 'TRC20 · Tron', erc20: 'ERC20 · Ethereum', bep20: 'BEP20 · BSC', arbitrum: 'Arbitrum One' }
@@ -78,6 +79,9 @@ async function load() {
   await Promise.all([loadAddress(), loadRecords()])
   loading.value = false
 }
+
+// 充值入账推送 → 即时刷新记录列表
+watch(walletRefreshTick, () => loadRecords())
 
 function switchNet(n) {
   if (network.value === n) return

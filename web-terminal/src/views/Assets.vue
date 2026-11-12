@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { productApi, orderApi, settlementApi, accountApi, inviteApi, vipApi } from '../api'
 import { fmtNum } from '../utils/format'
+import { walletRefreshTick } from '../utils/walletBus'
 
 const products = ref([])
 const orders = ref([])
@@ -93,6 +94,8 @@ async function loadLogs() {
   }
 }
 watch(logTab, loadLogs)
+// 充值入账推送 → 实时重拉余额/订单/明细
+watch(walletRefreshTick, () => load())
 
 const isActive = (o) => o.status === 'effective'
 const activeOrders = computed(() => orders.value.filter(isActive))
