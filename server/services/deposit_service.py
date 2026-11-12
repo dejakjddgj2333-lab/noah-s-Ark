@@ -326,6 +326,21 @@ async def claim_by_txid(
             detail="未查到该笔转入您充值地址的 USDT 记录, 请核对 txid 或联系客服",
         )
 
+    # TronGrid 列表接口不含块高, 单条补查
+    if tx["block_number"] is None and not is_evm:
+        async with trongrid.make_client() as client:
+            try:
+                tx["block_number"] = await trongrid.fetch_block_number(
+                    client, txid
+                )
+            except Exception:  # noqa: BLE001
+                tx["block_number"] = None
+        if tx["block_number"] is None:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="链上确认信息查询失败, 请稍后重试",
+            )
+
     confirmations = max((latest or tx["block_number"]) - tx["block_number"] + 1, 0)
     required = cfg["confirmations_required"]
     min_deposit = Decimal(cfg["min_deposit"])

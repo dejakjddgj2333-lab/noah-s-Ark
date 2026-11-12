@@ -27,6 +27,9 @@ POLL_INTERVAL_SEC = 30
 # 429 退避状态: 连续限流次数 -> sleep 秒数 (30s..5min 封顶)
 _throttle_hits = 0
 
+# Etherscan 套餐不覆盖的 EVM 网络 (如免费 key 不支持 BSC), 命中后停用本进程内扫描
+_evm_disabled: set[str] = set()
+
 
 def _throttle_sleep() -> float:
     return min(30 * (2 ** _throttle_hits), 300)
@@ -58,8 +61,11 @@ async def _poll_network(db, client, network: str) -> None:
     global _throttle_hits
     cfg = NETWORKS[network]
     is_evm = cfg["chain"] == "evm"
-    if is_evm and not evmscan.available():
-        return  # 未配 Etherscan key: 跳过 EVM 网络 (TRC20 不受影响)
+    if is_evm:
+        if not evmscan.available():
+            return  # 未配 Etherscan key: 跳过 EVM 网络 (TRC20 不受影响)
+        if network in _evm_disabled:
+            return  # 套餐不覆盖该链, 已停用
 
     result = await db.execute(
         select(HkDepositAddress).where(
@@ -71,10 +77,26 @@ async def _poll_network(db, client, network: str) -> None:
     if not addresses:
         return
 
-    if is_evm:
-        latest = await evmscan.latest_block(client, cfg["chain_id"])
-    else:
-        latest = await trongrid.latest_block(client)
+    try:
+        if is_evm:
+            latest = await evmscan.latest_block(client, cfg["chain_id"])
+        else:
+            latest = await trongrid.latest_block(client)
+    except evmscan.ChainUnsupported:
+        _evm_disabled.add(network)
+        logger.error(
+            "evmscan chain unsupported (free plan), disabling %s monitor",
+            network,
+        )
+        return
+    except (trongrid.RateLimited, evmscan.RateLimited):
+        # 限流只跳过本网络本轮, 不能向上抛 (会中断整个轮询周期)
+        _throttle_hits += 1
+        logger.warning(
+            "deposit_monitor throttled on latest_block (%s), skip network",
+            network,
+        )
+        return
     if latest is None:
         return
 
@@ -92,6 +114,13 @@ async def _poll_network(db, client, network: str) -> None:
                 txs = await trongrid.fetch_incoming(
                     client, addr.address, cfg["usdt_contract"]
                 )
+        except evmscan.ChainUnsupported:
+            _evm_disabled.add(network)
+            logger.error(
+                "evmscan chain unsupported (free plan), disabling %s monitor",
+                network,
+            )
+            return
         except (trongrid.RateLimited, evmscan.RateLimited):
             _throttle_hits += 1
             logger.warning(
@@ -105,7 +134,6 @@ async def _poll_network(db, client, network: str) -> None:
 
         for tx in txs:
             tx["txid"] = tx["txid"].lower().removeprefix("0x")  # 与补单归一化同口径
-            confirmations = max(latest - tx["block_number"] + 1, 0)
             existing = await db.execute(
                 select(HkDepositRecord).where(
                     HkDepositRecord.network == network,
@@ -113,6 +141,31 @@ async def _poll_network(db, client, network: str) -> None:
                 )
             )
             record = existing.scalar_one_or_none()
+            if record is not None and record.status != "confirming":
+                continue  # 已终态 (credited/unmatched), 不重复处理
+
+            # TronGrid 列表无块高: 先取已有记录, 否则单条补查 (仅新/确认中 tx)
+            block_number = tx.get("block_number")
+            if block_number is None:
+                if record is not None and record.block_number:
+                    block_number = record.block_number
+                elif is_evm:
+                    continue  # EVM tokentx 应带块高, 缺失跳过
+                else:
+                    try:
+                        block_number = await trongrid.fetch_block_number(
+                            client, tx["txid"]
+                        )
+                    except trongrid.RateLimited:
+                        _throttle_hits += 1
+                        logger.warning(
+                            "deposit_monitor throttled on block fetch, skip round"
+                        )
+                        return
+                    if block_number is None:
+                        continue  # 链上未确认/查不到, 下轮再试
+
+            confirmations = max(latest - block_number + 1, 0)
             if record is None:
                 record = HkDepositRecord(
                     user_id=addr.user_id,
@@ -124,7 +177,7 @@ async def _poll_network(db, client, network: str) -> None:
                     confirmations=confirmations,
                     required_confirmations=required,
                     status="confirming",
-                    block_number=tx["block_number"],
+                    block_number=block_number,
                     block_time=tx["block_time"],
                 )
                 # 低于最小充值金额: 不入账, 记 unmatched 人工处理
@@ -132,7 +185,7 @@ async def _poll_network(db, client, network: str) -> None:
                     record.status = "unmatched"
                 db.add(record)
                 await db.flush()
-            elif record.status == "confirming":
+            else:
                 record.confirmations = confirmations
 
             if (

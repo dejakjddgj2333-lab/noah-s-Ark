@@ -43,12 +43,17 @@ def extract_txs(data: dict, usdt_contract: str) -> list[dict]:
             ):
                 continue  # 其他代币不入账 (只统计 USDT)
             value = tx.get("value", "0")
+            # 注意: TronGrid trc20 列表接口不返回 block_number, 置 None,
+            # 由调用方按需调 fetch_block_number 补 (避免每 tx 多打一次请求).
+            block_number = tx.get("block_number")
             out.append(
                 {
                     "txid": tx["transaction_id"],
                     "from": tx.get("from", ""),
                     "to": tx.get("to", ""),
-                    "block_number": int(tx["block_number"]),
+                    "block_number": (
+                        int(block_number) if block_number is not None else None
+                    ),
                     "amount": Decimal(value) / Decimal(10**6),  # USDT 6 位小数
                     "block_time": datetime.fromtimestamp(
                         tx["block_timestamp"] / 1000
@@ -95,3 +100,17 @@ async def fetch_incoming(
         raise RateLimited(f"{address} 429")
     resp.raise_for_status()
     return extract_txs(resp.json(), usdt_contract)
+
+
+async def fetch_block_number(client: httpx.AsyncClient, txid: str) -> int | None:
+    """trc20 列表接口不含块高, 用 solidity gettransactioninfobyid 单条补查."""
+    resp = await client.get(
+        f"{TRONGRID_BASE}/walletsolidity/gettransactioninfobyid",
+        params={"value": txid},
+        timeout=HTTP_TIMEOUT,
+    )
+    if resp.status_code == 429:
+        raise RateLimited(f"gettransactioninfobyid {txid} 429")
+    resp.raise_for_status()
+    num = resp.json().get("blockNumber")
+    return int(num) if num is not None else None

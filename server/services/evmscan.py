@@ -27,6 +27,10 @@ class RateLimited(Exception):
     """Etherscan 限流/额度耗尽."""
 
 
+class ChainUnsupported(Exception):
+    """该链不在当前套餐覆盖范围 (如免费 key 不支持 BSC), 调用方应停用该链."""
+
+
 async def _get(client: httpx.AsyncClient, params: dict) -> dict:
     params = {**params, "apikey": config.etherscan_api_key}
     resp = await client.get(V2_BASE, params=params, timeout=HTTP_TIMEOUT)
@@ -39,6 +43,8 @@ async def _get(client: httpx.AsyncClient, params: dict) -> dict:
         result = str(data.get("result", ""))
         if "rate limit" in result.lower() or "limit" in result.lower():
             raise RateLimited(result)
+        if "not supported for this chain" in result.lower():
+            raise ChainUnsupported(result)
         raise RuntimeError(f"etherscan error: {result[:120]}")
     return data
 
@@ -50,7 +56,7 @@ async def latest_block(client: httpx.AsyncClient, chain_id: int) -> int | None:
             {"chainid": chain_id, "module": "proxy", "action": "eth_blockNumber"},
         )
         return int(data["result"], 16)
-    except RateLimited:
+    except (RateLimited, ChainUnsupported):
         raise
     except Exception as e:  # noqa: BLE001
         logger.warning("etherscan latest_block chain=%s failed: %s", chain_id, e)
@@ -65,7 +71,11 @@ async def fetch_incoming(
     decimals: int,
     limit: int = 50,
 ) -> list[dict]:
-    """拉某地址的 USDT 转入 tokentx (归一化为 tron 同构字段). 429 抛 RateLimited."""
+    """拉某地址的 USDT 转入 tokentx (归一化为 tron 同构字段). 429 抛 RateLimited.
+
+    注意: 免费 key 传 contractaddress 参数会被 Etherscan 以
+    "Invalid contract address format" 拒绝, 改为拉全量 tokentx 后本地过滤合约.
+    """
     data = await _get(
         client,
         {
@@ -73,7 +83,6 @@ async def fetch_incoming(
             "module": "account",
             "action": "tokentx",
             "address": address,
-            "contractaddress": usdt_contract,
             "page": 1,
             "offset": limit,
             "sort": "desc",
@@ -82,6 +91,8 @@ async def fetch_incoming(
     out = []
     for tx in data.get("result", []) or []:
         try:
+            if tx.get("contractAddress", "").lower() != usdt_contract.lower():
+                continue  # 只要 USDT
             if tx.get("to", "").lower() != address.lower():
                 continue  # 只统计转入
             out.append(
