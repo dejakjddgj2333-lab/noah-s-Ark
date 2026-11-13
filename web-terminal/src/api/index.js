@@ -177,7 +177,13 @@ export const aiApi = {
         localStorage.removeItem('mc_user')
         location.href = '/login'
       }
-      throw new Error(`AI 请求失败 (${resp.status})`)
+      // 试用限制等后端 detail 透传 (trial_expired / daily_limit)
+      let detail = ''
+      try {
+        const data = await resp.json()
+        if (typeof data?.detail === 'string') detail = data.detail
+      } catch { /* 非 JSON 忽略 */ }
+      throw new Error(detail || `AI 请求失败 (${resp.status})`)
     }
     const reader = resp.body.getReader()
     const decoder = new TextDecoder()

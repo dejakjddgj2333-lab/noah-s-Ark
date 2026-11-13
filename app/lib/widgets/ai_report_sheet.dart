@@ -32,6 +32,7 @@ class _AiKlineSheetState extends State<_AiKlineSheet> {
   String? _error;
   Map<String, dynamic>? _report;
   bool _cached = false;
+  Map<String, dynamic>? _trial; // 试用配额 (days_left / remaining_today)
 
   Map<String, (String, Color)> get _dirs => {
         'bullish': (tr('ai_dir_bullish'), McColors.bull),
@@ -63,13 +64,20 @@ class _AiKlineSheetState extends State<_AiKlineSheet> {
       if (res['ok'] == true && res['report'] is Map) {
         _report = Map<String, dynamic>.from(res['report'] as Map);
         _cached = res['cached'] == true;
+        _trial =
+            res['trial'] is Map ? Map<String, dynamic>.from(res['trial'] as Map) : null;
       } else {
         _error = res['error'] == 'insufficient_data'
             ? tr('ai_insufficient')
             : tr('ai_unavailable');
       }
     } catch (e) {
-      _error = e is ApiException ? e.message : tr('ai_unavailable');
+      _error = switch (e) {
+        ApiException(message: 'trial_expired') => tr('ai_trial_expired'),
+        ApiException(message: 'daily_limit') => tr('ai_daily_limit'),
+        ApiException(message: final m) => m,
+        _ => tr('ai_unavailable'),
+      };
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -127,6 +135,16 @@ class _AiKlineSheetState extends State<_AiKlineSheet> {
                     color: McColors.onSurface),
               ),
             ),
+            if (_trial != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: _badge(
+                    tr('ai_trial_badge')
+                        .replaceAll('{days}', '${_trial!['days_left']}')
+                        .replaceAll(
+                            '{left}', '${_trial!['remaining_today']}'),
+                    McColors.goldBright),
+              ),
             if (_cached && _report != null)
               Padding(
                 padding: const EdgeInsets.only(right: 6),

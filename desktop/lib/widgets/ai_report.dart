@@ -29,6 +29,7 @@ class _AiKlineDialogState extends State<_AiKlineDialog> {
   String? _error;
   Map<String, dynamic>? _report;
   bool _cached = false;
+  Map<String, dynamic>? _trial; // 试用配额 (days_left / remaining_today)
 
   static const _dirs = {
     'bullish': ('看多', Mc.bull),
@@ -59,13 +60,20 @@ class _AiKlineDialogState extends State<_AiKlineDialog> {
       if (res is Map && res['ok'] == true) {
         _report = Map<String, dynamic>.from(res['report'] as Map);
         _cached = res['cached'] == true;
+        _trial =
+            res['trial'] is Map ? Map<String, dynamic>.from(res['trial'] as Map) : null;
       } else {
         _error = res is Map && res['error'] == 'insufficient_data'
             ? 'K线数据不足, 换个周期试试'
             : 'AI 暂时不可用, 稍后再试';
       }
     } catch (e) {
-      _error = e is ApiException ? e.message : 'AI 请求失败';
+      _error = switch (e) {
+        ApiException(message: 'trial_expired') => 'AI 免费试用已结束, 敬请期待后续开放',
+        ApiException(message: 'daily_limit') => '今日 AI 免费次数已用完, 明天再来',
+        ApiException(message: final m) => m,
+        _ => 'AI 请求失败',
+      };
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -103,6 +111,13 @@ class _AiKlineDialogState extends State<_AiKlineDialog> {
               const SizedBox(width: 8),
               Text(widget.bar, style: Mc.mono(10, color: Mc.muted)),
               const Spacer(),
+              if (_trial != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: McBadge(
+                      '试用剩 ${_trial!['days_left']} 天 · 今日剩 ${_trial!['remaining_today']} 次',
+                      color: Mc.amber),
+                ),
               if (_cached && _report != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),

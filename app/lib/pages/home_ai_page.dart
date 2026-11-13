@@ -130,8 +130,12 @@ class _HomeAiPageState extends State<HomeAiPage> {
       if (!cancel.cancelled) {
         final last = _msgs.last;
         if (last.content.isEmpty) {
-          last.content =
-              '(${tr('ai_conn_fail')}: ${e is ApiException ? e.message : 'network'})';
+          last.content = switch (e) {
+            ApiException(message: 'trial_expired') => tr('ai_trial_expired'),
+            ApiException(message: 'daily_limit') => tr('ai_daily_limit'),
+            ApiException() => '(${tr('ai_conn_fail')}: ${e.message})',
+            _ => '(${tr('ai_conn_fail')}: network)',
+          };
         }
       }
     } finally {

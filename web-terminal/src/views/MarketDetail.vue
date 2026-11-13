@@ -139,23 +139,29 @@ const aiReport = ref(null)
 const aiError = ref('')
 const aiCached = ref(false)
 const aiBar = ref('')
+const aiTrial = ref(null) // 试用配额 {days_left, remaining_today}
 
 async function openAi() {
   aiOpen.value = true
   aiLoading.value = true
   aiError.value = ''
   aiReport.value = null
+  aiTrial.value = null
   aiBar.value = bar.value
   try {
     const res = await aiApi.klineAnalysis(instId.value, bar.value)
     if (res?.ok) {
       aiReport.value = res.report
       aiCached.value = res.cached
+      aiTrial.value = res.trial || null
     } else {
       aiError.value = res?.error === 'insufficient_data' ? 'K线数据不足, 换个周期试试' : 'AI 暂时不可用, 稍后再试'
     }
   } catch (e) {
-    aiError.value = e?.message || 'AI 请求失败'
+    aiError.value =
+      e?.message === 'trial_expired' ? 'AI 免费试用已结束, 敬请期待后续开放'
+        : e?.message === 'daily_limit' ? '今日 AI 免费次数已用完, 明天再来'
+          : e?.message || 'AI 请求失败'
   } finally {
     aiLoading.value = false
   }
@@ -902,6 +908,7 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(cdTimer); clearInter
             <span class="font-mono-data text-[10px] text-steel-muted font-normal">{{ aiBar }}</span>
           </span>
           <div class="flex items-center gap-2">
+            <span v-if="aiTrial" class="font-mono-data text-[9px] px-1 py-0.5 bg-amber-warn/12 border border-amber-warn/40 rounded text-amber-warn">试用剩 {{ aiTrial.days_left }} 天 · 今日剩 {{ aiTrial.remaining_today }} 次</span>
             <span v-if="aiCached && aiReport" class="font-mono-data text-[9px] px-1 py-0.5 bg-canvas-obsidian border border-hairline rounded text-steel-muted">周期内缓存</span>
             <button class="text-steel-muted hover:text-ink-white cursor-pointer" @click="aiOpen = false">
               <span class="material-symbols-outlined">close</span>

@@ -148,9 +148,14 @@ class _AiPageState extends State<AiPage> {
     } catch (e) {
       if (!(e is DioException && CancelToken.isCancel(e))) {
         final last = _msgs.last;
-        last.content = last.content.isEmpty
-            ? '(连接失败: ${e is ApiException ? e.message : '网络错误'})'
-            : last.content;
+        if (last.content.isEmpty) {
+          last.content = switch (e) {
+            ApiException(message: 'trial_expired') => '(AI 免费试用已结束, 敬请期待后续开放)',
+            ApiException(message: 'daily_limit') => '(今日 AI 免费次数已用完, 明天再来)',
+            ApiException(message: final m) => '(连接失败: $m)',
+            _ => '(连接失败: 网络错误)',
+          };
+        }
       }
     } finally {
       if (mounted) setState(() => _sending = false);

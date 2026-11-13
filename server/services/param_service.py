@@ -55,6 +55,16 @@ _PARAM_DEFS: list[dict] = [
     {"key": "withdraw_fee_arbitrum", "group": "withdraw", "name": "网络费 Arbitrum",
      "kind": "decimal", "default": config.withdraw_fee_arbitrum,
      "min": Decimal("0"), "max": Decimal("1000"), "desc": "Arbitrum 提现固定网络费 (USDT)"},
+    # ── AI 试用 ──
+    {"key": "ai_trial_enabled", "group": "ai_trial", "name": "AI 试用限制开关",
+     "kind": "int", "default": 1, "min": 0, "max": 1,
+     "desc": "1 = 启用 (注册日起限时 + 每日限次, 超限锁死); 0 = 完全开放不限"},
+    {"key": "ai_trial_days", "group": "ai_trial", "name": "AI 免费试用天数",
+     "kind": "int", "default": 3, "min": 1, "max": 365,
+     "desc": "自注册日起算的免费天数; 到期后 AI 功能 (K线分析/对话/综述) 锁死"},
+    {"key": "ai_trial_daily_limit", "group": "ai_trial", "name": "AI 试用每日次数",
+     "kind": "int", "default": 3, "min": 1, "max": 100,
+     "desc": "试用期内每日免费次数, 三个 AI 接口共用; 缓存命中不计次"},
     # ── 限流 ──
     {"key": "purchase_rate_limit", "group": "ratelimit", "name": "购买限流",
      "kind": "int", "default": config.purchase_rate_limit,

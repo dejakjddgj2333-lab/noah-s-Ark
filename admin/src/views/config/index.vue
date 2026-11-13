@@ -12,6 +12,7 @@ const edits = ref({})
 const GROUPS = [
   { key: 'convert', label: '收益转本金' },
   { key: 'withdraw', label: '提现' },
+  { key: 'ai_trial', label: 'AI 试用' },
   { key: 'ratelimit', label: '限流' },
 ]
 

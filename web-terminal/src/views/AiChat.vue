@@ -88,7 +88,12 @@ async function send(text) {
   } catch (e) {
     if (e?.name !== 'AbortError') {
       const last = msgs.value[msgs.value.length - 1]
-      last.content = last.content || `(连接失败: ${e.message})`
+      if (!last.content) {
+        last.content =
+          e?.message === 'trial_expired' ? '(AI 免费试用已结束, 敬请期待后续开放)'
+            : e?.message === 'daily_limit' ? '(今日 AI 免费次数已用完, 明天再来)'
+              : `(连接失败: ${e.message})`
+      }
     }
   } finally {
     sending.value = false

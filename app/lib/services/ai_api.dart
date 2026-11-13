@@ -10,7 +10,12 @@ import 'api.dart';
 class AiApi {
   AiApi._();
 
-  /// K线技术分析 {ok, report, cached, error}
+  /// 试用配额状态 {enabled, days_left, remaining_today, ...} (不计次).
+  static Future<Map<String, dynamic>> quota(String token) {
+    return McApi.get('/api/ai/quota', token: token);
+  }
+
+  /// K线技术分析 {ok, report, cached, error, trial}
   /// 冷启动要拉 K线 + 调 DeepSeek 生成, 较慢, 放宽到 60s (后端缓存命中则秒回).
   static Future<Map<String, dynamic>> klineAnalysis(String token, String instId,
       {String bar = '1D'}) {
