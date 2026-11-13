@@ -34,11 +34,26 @@ def enabled() -> bool:
     return int(param_service.get("ai_trial_enabled")) == 1
 
 
+def _anchor() -> date | None:
+    """统一生效日 (YYYYMMDD), 非法值视为不设置."""
+    v = int(param_service.get("ai_trial_start_date"))
+    try:
+        return date(v // 10000, (v // 100) % 100, v % 100)
+    except ValueError:
+        return None
+
+
+def _trial_start(user: HkUser) -> date:
+    """试用起算日 = max(注册日, 统一生效日): 老用户从生效日起也有完整试用期."""
+    reg = user.created_at.date() if user.created_at else _today()
+    anchor = _anchor()
+    return anchor if anchor is not None and anchor > reg else reg
+
+
 def trial_state(user: HkUser, used_today: int) -> dict:
     """试用状态快照 (端上展示用): days_left=0 即已到期锁死."""
     days = _days()
-    start = user.created_at.date() if user.created_at else _today()
-    elapsed = (_today() - start).days
+    elapsed = (_today() - _trial_start(user)).days
     days_left = max(days - elapsed, 0)
     return {
         "enabled": True,
@@ -58,8 +73,7 @@ async def check(db: AsyncSession, user: HkUser) -> HkAiQuota | None:
     """
     if not enabled():
         return None
-    start = user.created_at.date() if user.created_at else _today()
-    if (_today() - start).days >= _days():
+    if (_today() - _trial_start(user)).days >= _days():
         raise HTTPException(status.HTTP_403_FORBIDDEN, "trial_expired")
     row = (
         await db.execute(

@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException, status
@@ -61,7 +62,12 @@ _PARAM_DEFS: list[dict] = [
      "desc": "1 = 启用 (注册日起限时 + 每日限次, 超限锁死); 0 = 完全开放不限"},
     {"key": "ai_trial_days", "group": "ai_trial", "name": "AI 免费试用天数",
      "kind": "int", "default": 3, "min": 1, "max": 365,
-     "desc": "自注册日起算的免费天数; 到期后 AI 功能 (K线分析/对话/综述) 锁死"},
+     "desc": "试用期 = max(注册日, 统一生效日) 起算的免费天数; 到期后 AI 功能 (K线分析/对话/综述) 锁死"},
+    {"key": "ai_trial_start_date", "group": "ai_trial", "name": "AI 试用统一生效日",
+     "kind": "int",
+     "default": int(datetime.now(timezone.utc).strftime("%Y%m%d")),
+     "min": 20200101, "max": 21001231,
+     "desc": "格式 YYYYMMDD; 注册早于此日的老用户从这天起算试用期 (解决老用户立即到期); 建议保存一次钉死, 否则默认值随服务重启日期滚动"},
     {"key": "ai_trial_daily_limit", "group": "ai_trial", "name": "AI 试用每日次数",
      "kind": "int", "default": 3, "min": 1, "max": 100,
      "desc": "试用期内每日免费次数, 三个 AI 接口共用; 缓存命中不计次"},
